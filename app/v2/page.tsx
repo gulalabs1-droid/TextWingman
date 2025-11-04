@@ -1,0 +1,547 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { 
+  CheckCircle2, 
+  Sparkles, 
+  Shield, 
+  Target, 
+  TrendingUp,
+  ChevronDown,
+  Loader2,
+  Mail
+} from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import { useToast } from '@/hooks/use-toast';
+
+const fadeIn = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5 }
+};
+
+const staggerChildren = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+export default function V2TeaserPage() {
+  const [email, setEmail] = useState('');
+  const [referralSource, setReferralSource] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showStickyBar, setShowStickyBar] = useState(true);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes('@')) {
+      toast({
+        title: 'Invalid email',
+        description: 'Please enter a valid email address',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          ref: referralSource || null 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setIsSubmitted(true);
+        setShowStickyBar(false);
+        toast({
+          title: "You're in! 🎉",
+          description: "We'll email you when V2 goes live.",
+        });
+        
+        // Track event (optional)
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'v2_waitlist_submit', {
+            event_category: 'engagement',
+            event_label: 'v2_waitlist'
+          });
+        }
+      } else {
+        toast({
+          title: 'Oops!',
+          description: data.error || 'Something went wrong. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to join waitlist. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const scrollToWaitlist = () => {
+    document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Header */}
+      <nav className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="transition-transform hover:scale-105">
+            <Logo size="md" showText={true} className="cursor-pointer" />
+          </Link>
+          <div className="flex items-center gap-4">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
+              <Link href="/app">Try V1</Link>
+            </Button>
+            <Button 
+              onClick={scrollToWaitlist}
+              size="sm" 
+              className="bg-violet-600 text-white hover:bg-violet-700 rounded-xl font-semibold"
+            >
+              Join Waitlist
+            </Button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-16 md:py-24">
+        <motion.div 
+          className="max-w-4xl mx-auto text-center space-y-8"
+          initial="initial"
+          animate="animate"
+          variants={staggerChildren}
+        >
+          <motion.div 
+            variants={fadeIn}
+            className="inline-flex items-center gap-2 bg-violet-600/10 backdrop-blur text-violet-400 px-4 py-2 rounded-full text-sm font-medium border border-violet-600/20"
+          >
+            <Sparkles className="h-4 w-4" />
+            Coming in V2
+          </motion.div>
+          
+          <motion.h1 
+            variants={fadeIn}
+            className="text-5xl md:text-7xl font-bold tracking-tight"
+          >
+            Replies that get it right
+            <span className="block bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent mt-2">
+              because we verify them twice.
+            </span>
+          </motion.h1>
+          
+          <motion.p 
+            variants={fadeIn}
+            className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed"
+          >
+            V1 is live in testing. V2 adds a 4-layer, multi-agent system that drafts, rule-checks, adds context, and tone-verifies every reply. Fewer misses, more green-light lines.
+          </motion.p>
+          
+          <motion.div 
+            variants={fadeIn}
+            className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
+          >
+            <Button 
+              onClick={scrollToWaitlist}
+              size="lg" 
+              className="text-lg px-8 h-14 bg-violet-600 text-white hover:bg-violet-700 rounded-2xl font-bold shadow-2xl shadow-violet-600/20"
+            >
+              Join the V2 Waitlist
+            </Button>
+            <Button 
+              asChild
+              size="lg" 
+              variant="outline"
+              className="text-lg px-8 h-14 border-2 border-gray-700 hover:border-violet-600 rounded-2xl font-semibold"
+            >
+              <Link href="/app">Try V1 (testing)</Link>
+            </Button>
+          </motion.div>
+
+          {/* Badges */}
+          <motion.div 
+            variants={fadeIn}
+            className="flex flex-wrap justify-center gap-3 pt-8"
+          >
+            {['Dual-Check AI™', 'Context-Aware', 'Tone-Verified', 'Short. Smooth. On point.'].map((badge, idx) => (
+              <div 
+                key={idx}
+                className="px-4 py-2 rounded-full border border-violet-600/30 bg-violet-600/5 text-violet-300 text-sm font-medium"
+              >
+                {badge}
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* How It Works */}
+      <section className="container mx-auto px-4 py-20">
+        <motion.div
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          variants={staggerChildren}
+          className="max-w-5xl mx-auto"
+        >
+          <motion.div variants={fadeIn} className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+              How Dual-Check AI™ verifies your reply
+            </h2>
+            <p className="text-xl text-gray-400">
+              Four agents working together to get it right
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                icon: <Sparkles className="h-6 w-6" />,
+                title: 'Draft Agent',
+                desc: 'A/B/C options fast.',
+                color: 'violet'
+              },
+              {
+                icon: <Shield className="h-6 w-6" />,
+                title: 'Rule-Check',
+                desc: '≤ 18 words, no emojis, no double-text, respectful boundaries.',
+                color: 'blue'
+              },
+              {
+                icon: <Target className="h-6 w-6" />,
+                title: 'Context Agent',
+                desc: 'Adapts phrasing for Crush / New Match / Friend / Work / Family.',
+                color: 'purple'
+              },
+              {
+                icon: <CheckCircle2 className="h-6 w-6" />,
+                title: 'Tone Verify',
+                desc: 'Confirms Shorter / Spicier / Softer actually matches length + assertiveness + warmth.',
+                color: 'green'
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                variants={fadeIn}
+              >
+                <Card className="bg-gradient-to-br from-gray-900 to-black border-gray-800 h-full hover:border-violet-600/50 transition-all">
+                  <CardContent className="p-6">
+                    <div className={`w-12 h-12 rounded-2xl bg-${item.color}-600/10 flex items-center justify-center text-${item.color}-400 mb-4`}>
+                      {item.icon}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                    <p className="text-gray-400">{item.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* V1 vs V2 Comparison */}
+      <section className="container mx-auto px-4 py-20">
+        <motion.div
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          variants={staggerChildren}
+          className="max-w-5xl mx-auto"
+        >
+          <motion.div variants={fadeIn} className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">V1 vs V2</h2>
+            <p className="text-xl text-gray-400">Evolution of accuracy</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* V1 */}
+            <motion.div variants={fadeIn}>
+              <Card className="bg-gradient-to-br from-gray-900 to-black border-gray-800 h-full">
+                <CardContent className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold">V1</h3>
+                    <span className="px-3 py-1 rounded-full bg-green-600/10 text-green-400 text-sm font-medium">
+                      Testing Now
+                    </span>
+                  </div>
+                  <ul className="space-y-4">
+                    {[
+                      'Quick A/B/C replies',
+                      'Tone toggles (Shorter / Spicier / Softer)',
+                      'Share-card (She said / I said)',
+                      '3 free/day · Pro $7/mo or $29/yr'
+                    ].map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-300">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button asChild className="w-full mt-6" variant="outline">
+                    <Link href="/app">Try V1 Now</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* V2 */}
+            <motion.div variants={fadeIn}>
+              <Card className="bg-gradient-to-br from-violet-900/20 to-purple-900/20 border-violet-600/50 h-full relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <CardContent className="p-8 relative">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold">V2</h3>
+                    <span className="px-3 py-1 rounded-full bg-violet-600/20 text-violet-300 text-sm font-medium">
+                      Waitlist
+                    </span>
+                  </div>
+                  <ul className="space-y-4">
+                    {[
+                      'Multi-Agent Double-Check (rule-check + context + tone-verify)',
+                      'Style memory (saves your vibe)',
+                      'Conversation history awareness',
+                      'Smarter suggestions with fewer misses'
+                    ].map((feature, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <Sparkles className="h-5 w-5 text-violet-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-200 font-medium">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    onClick={scrollToWaitlist}
+                    className="w-full mt-6 bg-violet-600 hover:bg-violet-700"
+                  >
+                    Join Waitlist
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Timeline */}
+      <section className="container mx-auto px-4 py-20">
+        <motion.div
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          variants={staggerChildren}
+          className="max-w-4xl mx-auto"
+        >
+          <motion.div variants={fadeIn} className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">Timeline & Roadmap</h2>
+            <p className="text-xl text-gray-400">What&apos;s coming and when</p>
+          </motion.div>
+
+          <div className="space-y-6">
+            {[
+              { period: 'Now', title: 'V1 public testing', desc: 'Collecting feedback, tuning copies' },
+              { period: 'Week 1–2', title: 'Multi-Agent chain online', desc: 'Rule-Checker + Tone-Verifier' },
+              { period: 'Week 3–4', title: 'Context Agent + Style Memory', desc: 'Pro features' },
+              { period: 'After', title: 'Advisor insights & mobile releases', desc: 'Strategy, vibe check, iOS/Android' },
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                variants={fadeIn}
+                className="flex gap-6 items-start"
+              >
+                <div className="flex-shrink-0 w-24">
+                  <div className="px-3 py-1 rounded-full bg-violet-600/10 text-violet-400 text-sm font-medium text-center">
+                    {item.period}
+                  </div>
+                </div>
+                <Card className="flex-1 bg-gradient-to-br from-gray-900 to-black border-gray-800">
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-bold mb-1">{item.title}</h3>
+                    <p className="text-gray-400">{item.desc}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* FAQ */}
+      <section className="container mx-auto px-4 py-20">
+        <motion.div
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          variants={staggerChildren}
+          className="max-w-3xl mx-auto"
+        >
+          <motion.div variants={fadeIn} className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">FAQ</h2>
+          </motion.div>
+
+          <div className="space-y-6">
+            {[
+              {
+                q: 'Why do your replies feel more accurate?',
+                a: "Because we don't ship the first draft. V2 runs four agents on every reply: draft, rule-check, context, and tone-verify."
+              },
+              {
+                q: 'Does V1 still work?',
+                a: 'Yes. V1 is live in testing — try it free and tell us what hits or misses.'
+              }
+            ].map((item, idx) => (
+              <motion.div key={idx} variants={fadeIn}>
+                <Card className="bg-gradient-to-br from-gray-900 to-black border-gray-800">
+                  <CardContent className="p-6">
+                    <h3 className="text-xl font-bold mb-3">{item.q}</h3>
+                    <p className="text-gray-400 leading-relaxed">{item.a}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Waitlist */}
+      <section id="waitlist" className="container mx-auto px-4 py-20">
+        <motion.div
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          variants={staggerChildren}
+          className="max-w-2xl mx-auto"
+        >
+          <Card className="bg-gradient-to-br from-violet-900/20 to-purple-900/20 border-violet-600/50 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            <CardContent className="p-8 md:p-12 relative">
+              {!isSubmitted ? (
+                <>
+                  <motion.div variants={fadeIn} className="text-center mb-8">
+                    <Mail className="h-16 w-16 text-violet-400 mx-auto mb-6" />
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4">Be first on V2</h2>
+                    <p className="text-xl text-gray-400">
+                      Drop your email. We&apos;ll invite you to test Dual-Check AI™ early.
+                    </p>
+                  </motion.div>
+
+                  <motion.form variants={fadeIn} onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="h-14 text-lg bg-black/50 border-gray-700 focus:border-violet-600"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="text"
+                        placeholder="Where did you hear about this? (optional)"
+                        value={referralSource}
+                        onChange={(e) => setReferralSource(e.target.value)}
+                        className="h-12 bg-black/50 border-gray-700 focus:border-violet-600"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={isSubmitting}
+                      className="w-full h-14 text-lg font-bold bg-violet-600 hover:bg-violet-700"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Joining...
+                        </>
+                      ) : (
+                        'Join Waitlist'
+                      )}
+                    </Button>
+                  </motion.form>
+                </>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-8"
+                >
+                  <div className="w-20 h-20 rounded-full bg-green-600/20 flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle2 className="h-10 w-10 text-green-400" />
+                  </div>
+                  <h3 className="text-3xl font-bold mb-3">You&apos;re in! 🎉</h3>
+                  <p className="text-xl text-gray-400">
+                    We&apos;ll email you when V2 goes live.
+                  </p>
+                </motion.div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </section>
+
+      {/* Sticky Mobile Bar */}
+      {showStickyBar && !isSubmitted && (
+        <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur border-t border-gray-800 p-4 md:hidden z-50">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-sm font-medium text-gray-300">
+              V2 waitlist is open
+            </span>
+            <Button 
+              onClick={scrollToWaitlist}
+              size="sm"
+              className="bg-violet-600 hover:bg-violet-700 font-bold"
+            >
+              Join
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 mt-20">
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex flex-col items-center space-y-6">
+            <Logo size="lg" showText={true} />
+            <p className="text-gray-500 text-sm">
+              Built by Text Wingman • Dual-Check AI™
+            </p>
+            <div className="flex gap-6 text-sm text-gray-500">
+              <Link href="#" className="hover:text-white transition-colors">Terms</Link>
+              <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
+              <Link href="#" className="hover:text-white transition-colors">Contact</Link>
+            </div>
+            <p className="text-gray-600 text-xs">
+              © 2024 Text Wingman. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

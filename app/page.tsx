@@ -14,9 +14,16 @@ export default function HomePage() {
           <Link href="/" className="transition-transform hover:scale-105">
             <Logo size="md" showText={true} className="cursor-pointer" />
           </Link>
-          <div className="flex items-center gap-4">
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
-              <Link href="/app">Try Now</Link>
+          <div className="flex items-center gap-3">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
+              <Link href="/app">Try V1</Link>
+            </Button>
+            <Button asChild variant="ghost" className="relative text-white hover:bg-white/10 rounded-xl border border-violet-400/30 bg-violet-600/10">
+              <Link href="/v2" className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span>V2 Preview</span>
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+              </Link>
             </Button>
             <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 rounded-xl font-semibold">
               <Link href="#pricing">Pricing</Link>
