@@ -142,7 +142,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4 py-4">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4 pt-8 pb-4">
           {/* Free Tier */}
           <Card className="relative overflow-hidden bg-white/95 backdrop-blur border-0 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
             <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-gray-50 to-white">
@@ -183,8 +183,8 @@ export default function HomePage() {
           </Card>
 
           {/* Monthly */}
-          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-600 border-0 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 scale-105 rounded-3xl">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-6 py-2 rounded-full text-sm font-black shadow-xl">
+          <Card className="relative overflow-visible bg-gradient-to-br from-purple-600 to-indigo-600 border-0 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 rounded-3xl">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-6 py-2 rounded-full text-sm font-black shadow-xl whitespace-nowrap">
               🔥 MOST POPULAR
             </div>
             <CardHeader className="pb-8 pt-12">
