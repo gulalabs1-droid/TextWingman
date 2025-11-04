@@ -86,9 +86,9 @@ export function AnimatedShowcase() {
       </div>
 
       {/* Main Demo Card */}
-      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border-0 min-h-[600px] flex flex-col">
+      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border-0 h-[650px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
           <div className="flex items-center gap-2 text-purple-700 font-bold">
             <MessageCircle className="h-5 w-5" />
             <span>Text Wingman</span>
@@ -99,20 +99,20 @@ export function AnimatedShowcase() {
         </div>
 
         {/* Input Message */}
-        <div className="mb-6 animate-in fade-in duration-500">
+        <div className="mb-6 flex-shrink-0">
           <label className="text-sm font-semibold text-gray-700 mb-2 block">
             They said:
           </label>
-          <div className="bg-gray-100 rounded-2xl p-4 border-2 border-gray-200 min-h-[60px] flex items-center">
-            <p className="text-gray-800 italic">&ldquo;{example.input}&rdquo;</p>
+          <div className="bg-gray-100 rounded-2xl p-4 border-2 border-gray-200 h-[70px] flex items-center">
+            <p className="text-gray-800 italic line-clamp-2">&ldquo;{example.input}&rdquo;</p>
           </div>
         </div>
 
         {/* Content Area with Fixed Height */}
-        <div className="flex-1 min-h-[380px] flex flex-col">
+        <div className="flex-1 h-[380px] flex flex-col relative">
           {/* Generating State */}
           {stage === 'generating' && (
-            <div className="flex items-center justify-center h-full animate-in fade-in duration-300">
+            <div className="absolute inset-0 flex items-center justify-center animate-in fade-in duration-300">
               <div className="text-center space-y-4">
                 <Sparkles className="h-12 w-12 text-purple-600 mx-auto animate-pulse" />
                 <p className="text-purple-700 font-semibold">Crafting perfect replies...</p>
@@ -122,37 +122,39 @@ export function AnimatedShowcase() {
 
           {/* Results */}
           {stage === 'results' && (
-            <div className="space-y-4 animate-in slide-in-from-bottom duration-500">
-              <label className="text-sm font-semibold text-gray-700 mb-2 block">
+            <div className="absolute inset-0 space-y-3 animate-in slide-in-from-bottom duration-500 overflow-y-auto">
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
                 Your options:
               </label>
               {example.replies.map((reply, idx) => (
                 <div
                   key={idx}
                   style={{ animationDelay: `${idx * 150}ms` }}
-                  className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-4 border-2 border-purple-200 hover:border-purple-400 transition-all animate-in fade-in slide-in-from-bottom"
+                  className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-3 border-2 border-purple-200 hover:border-purple-400 transition-all animate-in fade-in slide-in-from-bottom"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl">{reply.emoji}</span>
-                      <span className="font-bold text-gray-900">{String.fromCharCode(65 + idx)}: {reply.tone}</span>
+                      <span className="text-xl">{reply.emoji}</span>
+                      <span className="font-bold text-gray-900 text-sm">{String.fromCharCode(65 + idx)}: {reply.tone}</span>
                     </div>
                     <Copy className="h-4 w-4 text-gray-400" />
                   </div>
-                  <p className="text-gray-700 font-medium">&ldquo;{reply.text}&rdquo;</p>
+                  <p className="text-gray-700 font-medium text-sm">&ldquo;{reply.text}&rdquo;</p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Success Badge */}
-        {stage === 'results' && (
-          <div className="mt-6 flex items-center justify-center gap-2 text-green-600 animate-in fade-in duration-700 delay-500">
-            <CheckCircle className="h-5 w-5" />
-            <span className="font-semibold">Generated in 3 seconds</span>
-          </div>
-        )}
+        {/* Success Badge - Fixed Position */}
+        <div className="mt-4 h-8 flex items-center justify-center flex-shrink-0">
+          {stage === 'results' && (
+            <div className="flex items-center gap-2 text-green-600 animate-in fade-in duration-700 delay-500">
+              <CheckCircle className="h-4 w-4" />
+              <span className="font-semibold text-sm">Generated in 3 seconds</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Progress Dots */}
