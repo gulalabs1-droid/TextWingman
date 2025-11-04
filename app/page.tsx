@@ -150,108 +150,158 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {/* Free Tier */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Free</CardTitle>
-              <CardDescription>Try it out</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">$0</span>
+          <Card className="relative overflow-hidden bg-white/95 backdrop-blur border-0 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
+            <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-gray-50 to-white">
+              <div className="space-y-2">
+                <CardTitle className="text-2xl font-bold text-gray-900">Free</CardTitle>
+                <CardDescription className="text-base text-gray-600">Try it out, no card needed</CardDescription>
+              </div>
+              <div className="mt-6 mb-2">
+                <span className="text-5xl font-black text-gray-900">$0</span>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>5 replies per day</span>
+            <CardContent className="space-y-6 pb-8">
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-green-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">5 AI replies per day</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>All 3 tone options</span>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-green-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">3 tone styles</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>Basic support</span>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-green-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">Context selector</span>
                 </li>
               </ul>
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/app">Get Started</Link>
+              <Button asChild className="w-full h-12 text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all" variant="outline">
+                <Link href="/app">Start Free →</Link>
               </Button>
+              <p className="text-xs text-center text-gray-500">No credit card required</p>
             </CardContent>
           </Card>
 
           {/* Monthly */}
-          <Card className="border-primary border-2 relative">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
-              Most Popular
+          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-600 border-0 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 scale-105 rounded-3xl">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-6 py-2 rounded-full text-sm font-black shadow-xl">
+              🔥 MOST POPULAR
             </div>
-            <CardHeader>
-              <CardTitle>Monthly</CardTitle>
-              <CardDescription>Unlimited access</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">$7</span>
-                <span className="text-muted-foreground">/month</span>
+            <CardHeader className="pb-8 pt-12">
+              <div className="space-y-2">
+                <CardTitle className="text-2xl font-bold text-white">Pro Monthly</CardTitle>
+                <CardDescription className="text-base text-purple-100">Unlimited texting superpowers</CardDescription>
               </div>
+              <div className="mt-6 mb-2 flex items-end gap-2">
+                <span className="text-5xl font-black text-white">$7</span>
+                <span className="text-xl text-purple-200 mb-1.5">/month</span>
+              </div>
+              <p className="text-sm text-purple-200">Less than a coffee ☕</p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span className="font-medium">Unlimited replies</span>
+            <CardContent className="space-y-6 pb-8">
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-white font-bold">Unlimited AI replies ♾️</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>All 3 tone options</span>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-white font-medium">All 3 tone styles</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>Share card generator</span>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-white font-medium">Viral share cards 🔗</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>Priority support</span>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-white font-medium">Priority support 🚀</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-white font-medium">Cancel anytime</span>
                 </li>
               </ul>
-              <Button asChild className="w-full">
-                <Link href="/app">Start Now</Link>
+              <Button asChild className="w-full h-14 text-lg font-black rounded-xl bg-white text-purple-700 hover:bg-gray-100 shadow-2xl hover:shadow-purple-900/30 hover:scale-105 transition-all">
+                <Link href="/app">Get Pro Now →</Link>
               </Button>
+              <p className="text-xs text-center text-purple-200">Join 1,000+ happy users</p>
             </CardContent>
           </Card>
 
           {/* Annual */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Annual</CardTitle>
-              <CardDescription>Best value</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">$29</span>
-                <span className="text-muted-foreground">/year</span>
+          <Card className="relative overflow-hidden bg-white/95 backdrop-blur border-2 border-purple-300 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
+            <div className="absolute top-6 right-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-1.5 rounded-full text-xs font-black shadow-lg rotate-3">
+              SAVE 65%
+            </div>
+            <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-purple-50 to-white">
+              <div className="space-y-2">
+                <CardTitle className="text-2xl font-bold text-gray-900">Pro Annual</CardTitle>
+                <CardDescription className="text-base text-gray-600">Best value for power users</CardDescription>
               </div>
-              <p className="text-sm text-primary font-medium">Save $55</p>
+              <div className="mt-6 mb-2 flex items-end gap-2">
+                <span className="text-5xl font-black text-gray-900">$29</span>
+                <span className="text-xl text-gray-500 mb-1.5">/year</span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-green-600">Save $55 vs monthly!</p>
+                <p className="text-xs text-gray-500">Just $2.42/month</p>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-3">
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span className="font-medium">Unlimited replies</span>
+            <CardContent className="space-y-6 pb-8">
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-gray-900 font-bold">Everything in Pro ✨</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>All 3 tone options</span>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">Unlimited replies forever</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>Share card generator</span>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">Lock in this price 🔒</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5" />
-                  <span>Priority support</span>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">Early access to new features</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">VIP support channel</span>
                 </li>
               </ul>
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/app">Get Annual</Link>
+              <Button asChild className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all">
+                <Link href="/app">Get Annual Deal →</Link>
               </Button>
+              <p className="text-xs text-center text-gray-500">Limited time offer</p>
             </CardContent>
           </Card>
         </div>
