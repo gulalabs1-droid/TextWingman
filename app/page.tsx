@@ -24,13 +24,13 @@ export default function HomePage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-8 h-14 bg-white text-black hover:bg-gray-100 shadow-2xl rounded-2xl font-bold transition-all active:scale-95 hover:shadow-purple-500/50">
+            <Button asChild size="lg" className="text-lg px-8 h-14 bg-white text-black hover:bg-gray-100 shadow-2xl hover:shadow-white/30 rounded-2xl font-bold transition-all duration-300 active:scale-95 hover:scale-105">
               <Link href="/app">
                 Try It Free
                 <MessageCircle className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild size="lg" className="text-lg px-8 h-14 bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-500 rounded-2xl font-semibold transition-all active:scale-95 shadow-lg">
+            <Button asChild size="lg" className="text-lg px-8 h-14 bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-400 rounded-2xl font-semibold transition-all duration-300 active:scale-95 hover:scale-105 shadow-lg hover:shadow-purple-400/40">
               <Link href="#pricing" className="scroll-smooth">View Pricing</Link>
             </Button>
           </div>

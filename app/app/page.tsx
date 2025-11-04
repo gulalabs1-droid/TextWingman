@@ -154,7 +154,7 @@ export default function AppPage() {
         </div>
 
         {/* Input Section */}
-        <Card className="mb-6 bg-white/95 backdrop-blur border-0 shadow-2xl rounded-2xl overflow-hidden">
+        <Card className="mb-6 bg-white/95 backdrop-blur-xl border-0 shadow-2xl hover:shadow-purple-500/10 rounded-2xl overflow-hidden transition-shadow duration-300">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Paste your message</CardTitle>
             <CardDescription className="text-sm">
@@ -235,7 +235,7 @@ export default function AppPage() {
                   <Card 
                     key={reply.tone} 
                     style={{ animationDelay: `${idx * 100}ms` }}
-                    className="relative overflow-hidden bg-white/95 backdrop-blur border-0 shadow-xl rounded-2xl transition-all hover:shadow-2xl hover:scale-[1.02] animate-in fade-in slide-in-from-bottom-3 duration-300"
+                    className="relative overflow-hidden bg-white/95 backdrop-blur-xl border-0 shadow-xl rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/10 hover:scale-[1.02] animate-in fade-in slide-in-from-bottom-3"
                   >
                     <div className={`absolute top-0 left-0 right-0 h-1.5 ${config.color}`} />
                     <CardHeader className="pb-2 pt-4">
