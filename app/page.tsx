@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, MessageCircle, Zap, Check } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { AnimatedShowcase } from "@/components/AnimatedShowcase";
+import { InteractiveDemo } from "@/components/InteractiveDemo";
 
 export default function HomePage() {
   return (
@@ -54,19 +56,23 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Demo Screenshot Placeholder */}
-        <div className="max-w-md md:max-w-2xl mx-auto mt-12 md:mt-16">
-          <div className="rounded-3xl border-4 border-white/20 bg-white/10 backdrop-blur shadow-2xl p-6 md:p-8">
-            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl h-80 md:h-96 flex items-center justify-center">
-              <div className="text-center space-y-4">
-                <Zap className="h-16 md:h-20 w-16 md:w-20 text-white mx-auto" />
-                <p className="text-base md:text-lg font-medium text-white/90">
-                  App Demo Preview
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Animated Showcase */}
+        <div className="mt-12 md:mt-16">
+          <AnimatedShowcase />
         </div>
+      </section>
+
+      {/* Interactive Demo Section */}
+      <section className="container mx-auto px-4 py-16 md:py-20">
+        <div className="text-center mb-12 space-y-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-white">
+            Try it yourself
+          </h2>
+          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto">
+            Type your own message and see the AI magic in action. No signup required.
+          </p>
+        </div>
+        <InteractiveDemo />
       </section>
 
       {/* Social Proof */}
