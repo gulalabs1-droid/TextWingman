@@ -48,18 +48,18 @@ export function AnimatedShowcase() {
       // After 2s, show generating
       setTimeout(() => setStage('generating'), 2000);
       
-      // After 3s total, show results
-      setTimeout(() => setStage('results'), 3000);
+      // After 3.5s total, show results
+      setTimeout(() => setStage('results'), 3500);
       
-      // After 7s total, move to next example
+      // After 10s total, move to next example
       setTimeout(() => {
         setCurrentExample((prev) => (prev + 1) % SHOWCASE_EXAMPLES.length);
         setStage('input');
-      }, 7000);
+      }, 10000);
     };
 
     cycleExample();
-    const interval = setInterval(cycleExample, 7000);
+    const interval = setInterval(cycleExample, 10000);
 
     return () => clearInterval(interval);
   }, [currentExample]);
