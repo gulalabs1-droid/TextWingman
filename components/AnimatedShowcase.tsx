@@ -86,7 +86,7 @@ export function AnimatedShowcase() {
       </div>
 
       {/* Main Demo Card */}
-      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border-0">
+      <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border-0 min-h-[600px] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2 text-purple-700 font-bold">
@@ -103,45 +103,48 @@ export function AnimatedShowcase() {
           <label className="text-sm font-semibold text-gray-700 mb-2 block">
             They said:
           </label>
-          <div className="bg-gray-100 rounded-2xl p-4 border-2 border-gray-200">
+          <div className="bg-gray-100 rounded-2xl p-4 border-2 border-gray-200 min-h-[60px] flex items-center">
             <p className="text-gray-800 italic">&ldquo;{example.input}&rdquo;</p>
           </div>
         </div>
 
-        {/* Generating State */}
-        {stage === 'generating' && (
-          <div className="flex items-center justify-center py-12 animate-in fade-in duration-300">
-            <div className="text-center space-y-4">
-              <Sparkles className="h-12 w-12 text-purple-600 mx-auto animate-pulse" />
-              <p className="text-purple-700 font-semibold">Crafting perfect replies...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Results */}
-        {stage === 'results' && (
-          <div className="space-y-4 animate-in slide-in-from-bottom duration-500">
-            <label className="text-sm font-semibold text-gray-700 mb-2 block">
-              Your options:
-            </label>
-            {example.replies.map((reply, idx) => (
-              <div
-                key={idx}
-                style={{ animationDelay: `${idx * 150}ms` }}
-                className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-4 border-2 border-purple-200 hover:border-purple-400 transition-all animate-in fade-in slide-in-from-bottom"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{reply.emoji}</span>
-                    <span className="font-bold text-gray-900">{String.fromCharCode(65 + idx)}: {reply.tone}</span>
-                  </div>
-                  <Copy className="h-4 w-4 text-gray-400" />
-                </div>
-                <p className="text-gray-700 font-medium">&ldquo;{reply.text}&rdquo;</p>
+        {/* Content Area with Fixed Height */}
+        <div className="flex-1 min-h-[380px] flex flex-col">
+          {/* Generating State */}
+          {stage === 'generating' && (
+            <div className="flex items-center justify-center h-full animate-in fade-in duration-300">
+              <div className="text-center space-y-4">
+                <Sparkles className="h-12 w-12 text-purple-600 mx-auto animate-pulse" />
+                <p className="text-purple-700 font-semibold">Crafting perfect replies...</p>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          )}
+
+          {/* Results */}
+          {stage === 'results' && (
+            <div className="space-y-4 animate-in slide-in-from-bottom duration-500">
+              <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                Your options:
+              </label>
+              {example.replies.map((reply, idx) => (
+                <div
+                  key={idx}
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                  className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-4 border-2 border-purple-200 hover:border-purple-400 transition-all animate-in fade-in slide-in-from-bottom"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{reply.emoji}</span>
+                      <span className="font-bold text-gray-900">{String.fromCharCode(65 + idx)}: {reply.tone}</span>
+                    </div>
+                    <Copy className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <p className="text-gray-700 font-medium">&ldquo;{reply.text}&rdquo;</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Success Badge */}
         {stage === 'results' && (
