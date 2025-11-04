@@ -155,7 +155,7 @@ export default function V2TeaserPage() {
           
           <motion.p 
             variants={fadeIn}
-            className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed"
+            className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
           >
             V1 is live in testing. V2 adds a 4-layer, multi-agent system that drafts, rule-checks, adds context, and tone-verifies every reply. Fewer misses, more green-light lines.
           </motion.p>
@@ -175,7 +175,7 @@ export default function V2TeaserPage() {
               asChild
               size="lg" 
               variant="outline"
-              className="text-lg px-8 h-14 border-2 border-gray-700 hover:border-violet-600 rounded-2xl font-semibold"
+              className="text-lg px-8 h-14 border-2 border-white/30 text-white hover:bg-white/10 hover:border-white rounded-2xl font-semibold"
             >
               <Link href="/app">Try V1 (testing)</Link>
             </Button>
@@ -208,10 +208,10 @@ export default function V2TeaserPage() {
           className="max-w-5xl mx-auto"
         >
           <motion.div variants={fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">
               How Dual-Check AI™ verifies your reply
             </h2>
-            <p className="text-xl text-gray-400">
+            <p className="text-xl text-gray-300">
               Four agents working together to get it right
             </p>
           </motion.div>
@@ -247,13 +247,13 @@ export default function V2TeaserPage() {
                 key={idx}
                 variants={fadeIn}
               >
-                <Card className="bg-gradient-to-br from-gray-900 to-black border-gray-800 h-full hover:border-violet-600/50 transition-all">
+                <Card className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700 h-full hover:border-violet-500 transition-all backdrop-blur">
                   <CardContent className="p-6">
                     <div className={`w-12 h-12 rounded-2xl bg-${item.color}-600/10 flex items-center justify-center text-${item.color}-400 mb-4`}>
                       {item.icon}
                     </div>
-                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                    <p className="text-gray-400">{item.desc}</p>
+                    <h3 className="text-xl font-bold mb-2 text-white">{item.title}</h3>
+                    <p className="text-gray-300">{item.desc}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -272,18 +272,18 @@ export default function V2TeaserPage() {
           className="max-w-5xl mx-auto"
         >
           <motion.div variants={fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">V1 vs V2</h2>
-            <p className="text-xl text-gray-400">Evolution of accuracy</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">V1 vs V2</h2>
+            <p className="text-xl text-gray-300">Evolution of accuracy</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {/* V1 */}
             <motion.div variants={fadeIn}>
-              <Card className="bg-gradient-to-br from-gray-900 to-black border-gray-800 h-full">
+              <Card className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700 h-full backdrop-blur">
                 <CardContent className="p-8">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-bold">V1</h3>
-                    <span className="px-3 py-1 rounded-full bg-green-600/10 text-green-400 text-sm font-medium">
+                    <h3 className="text-2xl font-bold text-white">V1</h3>
+                    <span className="px-3 py-1 rounded-full bg-green-600/20 text-green-300 text-sm font-medium border border-green-500/30">
                       Testing Now
                     </span>
                   </div>
@@ -296,11 +296,11 @@ export default function V2TeaserPage() {
                     ].map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3">
                         <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-300">{feature}</span>
+                        <span className="text-gray-200">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <Button asChild className="w-full mt-6" variant="outline">
+                  <Button asChild className="w-full mt-6 bg-white text-black hover:bg-gray-200 border-0" variant="outline">
                     <Link href="/app">Try V1 Now</Link>
                   </Button>
                 </CardContent>
@@ -309,12 +309,12 @@ export default function V2TeaserPage() {
 
             {/* V2 */}
             <motion.div variants={fadeIn}>
-              <Card className="bg-gradient-to-br from-violet-900/20 to-purple-900/20 border-violet-600/50 h-full relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <Card className="bg-gradient-to-br from-violet-900/40 to-purple-900/40 border-violet-500/70 h-full relative overflow-hidden backdrop-blur">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 <CardContent className="p-8 relative">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-2xl font-bold">V2</h3>
-                    <span className="px-3 py-1 rounded-full bg-violet-600/20 text-violet-300 text-sm font-medium">
+                    <h3 className="text-2xl font-bold text-white">V2</h3>
+                    <span className="px-3 py-1 rounded-full bg-violet-600/30 text-violet-200 text-sm font-medium border border-violet-400/30">
                       Waitlist
                     </span>
                   </div>
@@ -326,14 +326,14 @@ export default function V2TeaserPage() {
                       'Smarter suggestions with fewer misses'
                     ].map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3">
-                        <Sparkles className="h-5 w-5 text-violet-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-200 font-medium">{feature}</span>
+                        <Sparkles className="h-5 w-5 text-violet-300 mt-0.5 flex-shrink-0" />
+                        <span className="text-white font-medium">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   <Button 
                     onClick={scrollToWaitlist}
-                    className="w-full mt-6 bg-violet-600 hover:bg-violet-700"
+                    className="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white font-bold"
                   >
                     Join Waitlist
                   </Button>
@@ -354,8 +354,8 @@ export default function V2TeaserPage() {
           className="max-w-4xl mx-auto"
         >
           <motion.div variants={fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">Timeline & Roadmap</h2>
-            <p className="text-xl text-gray-400">What&apos;s coming and when</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">Timeline & Roadmap</h2>
+            <p className="text-xl text-gray-300">What&apos;s coming and when</p>
           </motion.div>
 
           <div className="space-y-6">
@@ -375,10 +375,10 @@ export default function V2TeaserPage() {
                     {item.period}
                   </div>
                 </div>
-                <Card className="flex-1 bg-gradient-to-br from-gray-900 to-black border-gray-800">
+                <Card className="flex-1 bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700 backdrop-blur">
                   <CardContent className="p-6">
-                    <h3 className="text-lg font-bold mb-1">{item.title}</h3>
-                    <p className="text-gray-400">{item.desc}</p>
+                    <h3 className="text-lg font-bold mb-1 text-white">{item.title}</h3>
+                    <p className="text-gray-300">{item.desc}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -397,7 +397,7 @@ export default function V2TeaserPage() {
           className="max-w-3xl mx-auto"
         >
           <motion.div variants={fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">FAQ</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">FAQ</h2>
           </motion.div>
 
           <div className="space-y-6">
@@ -412,10 +412,10 @@ export default function V2TeaserPage() {
               }
             ].map((item, idx) => (
               <motion.div key={idx} variants={fadeIn}>
-                <Card className="bg-gradient-to-br from-gray-900 to-black border-gray-800">
+                <Card className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700 backdrop-blur">
                   <CardContent className="p-6">
-                    <h3 className="text-xl font-bold mb-3">{item.q}</h3>
-                    <p className="text-gray-400 leading-relaxed">{item.a}</p>
+                    <h3 className="text-xl font-bold mb-3 text-white">{item.q}</h3>
+                    <p className="text-gray-300 leading-relaxed">{item.a}</p>
                   </CardContent>
                 </Card>
               </motion.div>
