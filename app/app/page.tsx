@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,15 +50,34 @@ const EXAMPLE_MESSAGES = [
   "That's actually pretty funny lol"
 ];
 
+const TAGLINES = [
+  "Flirt smarter, not harder 💘",
+  "Replies smoother than silk 🎯",
+  "Built for game, not games 🔥",
+  "Your secret weapon for perfect texts ⚡",
+  "Never fumble a reply again 💯",
+  "Text like a pro, every time 🌟"
+];
+
 export default function AppPage() {
   const [message, setMessage] = useState('');
   const [replies, setReplies] = useState<Reply[]>([]);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [showExamples, setShowExamples] = useState(true);
+  const [currentTagline, setCurrentTagline] = useState(0);
+  const [showCraftedMessage, setShowCraftedMessage] = useState(false);
   const { toast } = useToast();
   
   const charCount = message.length;
+
+  // Rotate taglines every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTagline((prev) => (prev + 1) % TAGLINES.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleGenerate = async () => {
     if (!message.trim()) {
@@ -117,6 +136,10 @@ export default function AppPage() {
       } else {
         throw new Error('No replies received from server');
       }
+
+      // Show "crafted with care" message
+      setShowCraftedMessage(true);
+      setTimeout(() => setShowCraftedMessage(false), 3000);
 
       toast({
         title: "✨ Replies generated!",
@@ -180,11 +203,11 @@ export default function AppPage() {
         <Card className="mb-8 bg-white/95 backdrop-blur-xl border-0 shadow-2xl hover:shadow-purple-500/20 rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="pb-4 pt-6 bg-gradient-to-br from-purple-50 to-white">
             <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-purple-600" />
-              Paste your message
+              <MessageCircle className="h-5 w-5 text-purple-600 animate-bounce" />
+              What'd they say? Drop it here 👇
             </CardTitle>
-            <CardDescription className="text-sm text-gray-600">
-              Get 3 perfect AI-powered replies instantly ✨
+            <CardDescription className="text-sm text-gray-600 font-medium">
+              Wing it like a pro — paste the text and we'll handle the rest ✨
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-6 pb-6">
@@ -195,7 +218,7 @@ export default function AppPage() {
                   setMessage(e.target.value);
                   if (e.target.value.trim()) setShowExamples(false);
                 }}
-                placeholder="Paste the message you received here..."
+                placeholder="Drop their message here... we got you 💬"
                 className="w-full min-h-[130px] p-5 pb-8 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all shadow-sm hover:shadow-md focus:shadow-lg"
                 maxLength={500}
                 aria-label="Message input"
@@ -228,24 +251,31 @@ export default function AppPage() {
               </div>
             )}
 
-            <Button
-              onClick={handleGenerate}
-              disabled={loading || !message.trim()}
-              className="w-full h-14 text-base bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-700 shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              size="lg"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Generating amazing replies...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  Generate Replies
-                </>
+            <div className="space-y-2">
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !message.trim()}
+                className="w-full h-14 text-base bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-700 shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none"
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Crafting perfect replies...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Generate Replies
+                  </>
+                )}
+              </Button>
+              {!loading && !replies.length && (
+                <p className="text-center text-xs text-gray-500 font-medium animate-fade-in transition-opacity duration-500">
+                  {TAGLINES[currentTagline]}
+                </p>
               )}
-            </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -253,8 +283,13 @@ export default function AppPage() {
         {replies.length > 0 && (
           <div className="space-y-5 animate-in fade-in slide-in-from-bottom-5 duration-500">
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Choose your reply</h2>
-              <p className="text-purple-200 text-sm">Pick your favorite and copy it 👇</p>
+              {showCraftedMessage && (
+                <p className="text-purple-300 text-sm font-medium animate-in fade-in duration-300 mb-2">
+                  ✨ Crafted with care just for you 💬
+                </p>
+              )}
+              <h2 className="text-2xl font-bold text-white animate-in slide-in-from-top duration-300">Choose your reply</h2>
+              <p className="text-purple-200 text-sm animate-in fade-in duration-500 delay-100">Pick your favorite and copy it 👇</p>
             </div>
             <div className="grid gap-4">
               {replies.map((reply, idx) => {
@@ -263,15 +298,15 @@ export default function AppPage() {
                 return (
                   <Card 
                     key={reply.tone} 
-                    style={{ animationDelay: `${idx * 100}ms` }}
-                    className="relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-300 hover:shadow-purple-500/30 hover:scale-[1.03] hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-3"
+                    style={{ animationDelay: `${idx * 150}ms` }}
+                    className="relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-500 hover:shadow-purple-500/40 hover:scale-[1.04] hover:-translate-y-2 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group"
                   >
-                    <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient}`} />
-                    <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${config.gradient} rounded-full blur-3xl opacity-10`} />
+                    <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient} transition-all duration-300 group-hover:h-4`} />
+                    <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${config.gradient} rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity duration-500`} />
                     <CardHeader className="pb-4 pt-8">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-3xl shadow-xl`}>
+                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-3xl shadow-xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
                             {config.emoji}
                           </div>
                           <div>
@@ -292,9 +327,9 @@ export default function AppPage() {
                       </div>
                       <Button
                         onClick={() => handleCopy(reply.text, reply.tone)}
-                        className={`w-full h-14 rounded-2xl font-bold text-base shadow-xl transition-all active:scale-95 hover:shadow-2xl hover:-translate-y-0.5 ${
+                        className={`w-full h-14 rounded-2xl font-bold text-base shadow-xl transition-all duration-300 active:scale-95 hover:shadow-2xl hover:-translate-y-1 ${
                           isCopied 
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white' 
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-in zoom-in duration-200' 
                             : `bg-gradient-to-r ${config.gradient} hover:opacity-95 text-white`
                         }`}
                         size="lg"
@@ -317,13 +352,13 @@ export default function AppPage() {
             </div>
 
             {/* Try Again Button */}
-            <div className="text-center pt-6">
+            <div className="text-center pt-6 animate-in fade-in duration-500 delay-300">
               <Button
                 onClick={handleTryAgain}
                 variant="outline"
-                className="bg-white/95 hover:bg-white text-purple-700 border-2 border-purple-300 hover:border-purple-500 rounded-2xl font-bold shadow-xl hover:shadow-2xl px-10 h-12 transition-all hover:scale-105"
+                className="bg-white/95 hover:bg-white text-purple-700 border-2 border-purple-300 hover:border-purple-500 rounded-2xl font-bold shadow-xl hover:shadow-2xl px-10 h-12 transition-all duration-300 hover:scale-105 animate-pulse hover:animate-none"
               >
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="h-4 w-4 mr-2 animate-spin" />
                 Try Another Message
               </Button>
             </div>
