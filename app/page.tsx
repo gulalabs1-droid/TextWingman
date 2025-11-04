@@ -94,15 +94,15 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-12">
+      <section className="container mx-auto px-4 py-20 mt-8">
+        <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4 text-white">How It Works</h2>
           <p className="text-xl text-white/80">
             Three simple steps to perfect replies
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-8">
           <Card className="text-center">
             <CardHeader>
               <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -148,15 +148,15 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="container mx-auto px-4 py-20">
-        <div className="text-center mb-12">
+      <section id="pricing" className="container mx-auto px-4 py-20 mt-12">
+        <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4 text-white">Simple Pricing</h2>
           <p className="text-xl text-white/80">
             Choose the plan that works for you
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4 py-4">
           {/* Free Tier */}
           <Card className="relative overflow-hidden bg-white/95 backdrop-blur border-0 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
             <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-gray-50 to-white">
