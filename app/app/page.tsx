@@ -59,6 +59,17 @@ const TAGLINES = [
   "Text like a pro, every time 🌟"
 ];
 
+type ContextType = 'crush' | 'friend' | 'colleague' | 'family' | 'ex' | 'new_match' | null;
+
+const CONTEXT_OPTIONS = [
+  { value: 'crush', label: 'Crush/Dating', emoji: '💘', description: 'Someone you\'re into' },
+  { value: 'friend', label: 'Friend', emoji: '🤝', description: 'Close friend' },
+  { value: 'colleague', label: 'Work', emoji: '💼', description: 'Professional' },
+  { value: 'family', label: 'Family', emoji: '👪', description: 'Family member' },
+  { value: 'ex', label: 'Ex', emoji: '💔', description: 'Complicated' },
+  { value: 'new_match', label: 'New Match', emoji: '✨', description: 'First messages' },
+] as const;
+
 export default function AppPage() {
   const [message, setMessage] = useState('');
   const [replies, setReplies] = useState<Reply[]>([]);
@@ -67,6 +78,8 @@ export default function AppPage() {
   const [showExamples, setShowExamples] = useState(true);
   const [currentTagline, setCurrentTagline] = useState(0);
   const [showCraftedMessage, setShowCraftedMessage] = useState(false);
+  const [selectedContext, setSelectedContext] = useState<ContextType>(null);
+  const [sharing, setSharing] = useState<string | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -158,16 +171,56 @@ export default function AppPage() {
   };
 
   const handleCopy = async (text: string, tone: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(tone);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(tone);
+      toast({
+        title: "✓ Copied!",
+        description: "Reply copied to clipboard",
+      });
+      setTimeout(() => setCopied(null), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleShare = async (reply: Reply) => {
+    setSharing(reply.tone);
     
-    // Visual feedback
-    setTimeout(() => setCopied(null), 2000);
-    
-    toast({
-      title: "✓ Copied!",
-      description: `${TONE_CONFIG[tone as keyof typeof TONE_CONFIG].label} reply ready to send`,
-    });
+    try {
+      // Create shareable URL with conversation data
+      const shareData = {
+        theirMessage: message.substring(0, 100),
+        myReply: reply.text,
+        tone: reply.tone,
+      };
+      
+      // Encode data for URL
+      const encoded = btoa(JSON.stringify(shareData));
+      const shareUrl = `${window.location.origin}/share/${encoded}`;
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      
+      toast({
+        title: "🔗 Share link copied!",
+        description: "Paste it on TikTok, Instagram, or Twitter",
+        duration: 3000,
+      });
+      
+      setTimeout(() => setSharing(null), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to create share link",
+        description: "Please try again",
+        variant: "destructive",
+      });
+      setSharing(null);
+    }
   };
 
   const handleTryAgain = () => {
@@ -211,6 +264,34 @@ export default function AppPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-6 pb-6">
+            {/* Context Selector */}
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <span>🎯</span> Who is this?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {CONTEXT_OPTIONS.map((context) => (
+                  <button
+                    key={context.value}
+                    onClick={() => setSelectedContext(selectedContext === context.value ? null : context.value as ContextType)}
+                    className={`p-3 rounded-xl border-2 transition-all duration-200 text-left hover:scale-105 ${
+                      selectedContext === context.value
+                        ? 'border-purple-500 bg-purple-50 shadow-md'
+                        : 'border-gray-200 bg-white hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="text-xl mb-1">{context.emoji}</div>
+                    <div className="text-xs font-bold text-gray-900">{context.label}</div>
+                    <div className="text-[10px] text-gray-500">{context.description}</div>
+                  </button>
+                ))}
+              </div>
+              {selectedContext && (
+                <p className="text-xs text-purple-600 font-medium animate-in fade-in duration-200">
+                  ✨ Replies will be optimized for {CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label}
+                </p>
+              )}
+            </div>
             <div className="relative">
               <textarea
                 value={message}
@@ -232,7 +313,7 @@ export default function AppPage() {
 
             {/* Example Messages */}
             {showExamples && !message && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-3 duration-300">
+              <div className="space-y-2 animate-in fade-in duration-300">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Lightbulb className="h-4 w-4" />
                   <span>Try an example:</span>
@@ -325,26 +406,49 @@ export default function AppPage() {
                           {reply.text ? reply.text.split(' ').length : 0} words
                         </span>
                       </div>
-                      <Button
-                        onClick={() => handleCopy(reply.text, reply.tone)}
-                        className={`w-full h-14 rounded-2xl font-bold text-base shadow-xl transition-all duration-300 active:scale-95 hover:shadow-2xl hover:-translate-y-1 ${
-                          isCopied 
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-in zoom-in duration-200' 
-                            : `bg-gradient-to-r ${config.gradient} hover:opacity-95 text-white`
-                        }`}
-                        size="lg"
-                      >
-                        {isCopied ? (
-                          <>
-                            ✓ Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy
-                          </>
-                        )}
-                      </Button>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          onClick={() => handleCopy(reply.text, reply.tone)}
+                          className={`h-14 rounded-2xl font-bold text-base shadow-xl transition-all duration-300 active:scale-95 hover:shadow-2xl hover:-translate-y-1 ${
+                            isCopied 
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-in zoom-in duration-200' 
+                              : `bg-gradient-to-r ${config.gradient} hover:opacity-95 text-white`
+                          }`}
+                          size="lg"
+                        >
+                          {isCopied ? (
+                            <>
+                              ✓ Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={() => handleShare(reply)}
+                          variant="outline"
+                          className={`h-14 rounded-2xl font-bold text-base border-2 shadow-lg transition-all duration-300 active:scale-95 hover:shadow-xl hover:-translate-y-1 ${
+                            sharing === reply.tone
+                              ? 'border-purple-500 bg-purple-50 text-purple-700'
+                              : 'border-gray-300 hover:border-purple-400 bg-white text-gray-700'
+                          }`}
+                          size="lg"
+                        >
+                          {sharing === reply.tone ? (
+                            <>
+                              🔗 Link Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Share
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 );
