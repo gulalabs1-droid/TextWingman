@@ -2,12 +2,30 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, MessageCircle, Zap, Check } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600">
+      {/* Header/Navbar */}
+      <nav className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="transition-transform hover:scale-105">
+            <Logo size="md" showText={true} className="cursor-pointer" />
+          </Link>
+          <div className="flex items-center gap-4">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
+              <Link href="/app">Try Now</Link>
+            </Button>
+            <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 rounded-xl font-semibold">
+              <Link href="#pricing">Pricing</Link>
+            </Button>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-20 text-center">
+      <section className="container mx-auto px-4 py-12 md:py-16 text-center">
         <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur text-white px-4 py-2 rounded-full text-sm font-medium border border-white/20">
             <Sparkles className="h-4 w-4" />
@@ -241,10 +259,13 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-white/20">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center text-sm text-white/60">
-            <p>&copy; 2024 Text Wingman. All rights reserved.</p>
-            <div className="flex gap-6 justify-center mt-4">
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex flex-col items-center space-y-6">
+            <Logo size="lg" showText={true} />
+            <p className="text-sm text-white/60 text-center max-w-md">
+              Your AI-powered text companion for perfect replies every time.
+            </p>
+            <div className="flex gap-6 text-sm text-white/60">
               <Link href="/terms" className="hover:text-white transition">
                 Terms
               </Link>
@@ -255,6 +276,7 @@ export default function HomePage() {
                 Contact
               </Link>
             </div>
+            <p className="text-xs text-white/40">&copy; 2024 Text Wingman. All rights reserved.</p>
           </div>
         </div>
       </footer>

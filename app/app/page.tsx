@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -169,10 +170,9 @@ export default function AppPage() {
               Back
             </Link>
           </Button>
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-purple-300" />
-            <h1 className="text-2xl font-bold text-white">Text Wingman</h1>
-          </div>
+          <Link href="/" className="transition-transform hover:scale-105">
+            <Logo size="sm" showText={true} />
+          </Link>
           <div className="w-20" /> {/* Spacer */}
         </div>
 
