@@ -433,15 +433,15 @@ export default function V2TeaserPage() {
           variants={staggerChildren}
           className="max-w-2xl mx-auto"
         >
-          <Card className="bg-gradient-to-br from-violet-900/20 to-purple-900/20 border-violet-600/50 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <Card className="bg-gradient-to-br from-violet-100 to-purple-100 border-violet-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-violet-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
             <CardContent className="p-8 md:p-12 relative">
               {!isSubmitted ? (
                 <>
                   <motion.div variants={fadeIn} className="text-center mb-8">
-                    <Mail className="h-16 w-16 text-violet-400 mx-auto mb-6" />
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">Be first on V2</h2>
-                    <p className="text-xl text-gray-400">
+                    <Mail className="h-16 w-16 text-violet-600 mx-auto mb-6" />
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Be first on V2</h2>
+                    <p className="text-xl text-gray-700">
                       Drop your email. We&apos;ll invite you to test Dual-Check AI™ early.
                     </p>
                   </motion.div>
@@ -454,7 +454,7 @@ export default function V2TeaserPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="h-14 text-lg bg-black/50 border-gray-700 focus:border-violet-600"
+                        className="h-14 text-lg bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-violet-600 focus:ring-violet-600"
                         disabled={isSubmitting}
                       />
                     </div>
@@ -464,7 +464,7 @@ export default function V2TeaserPage() {
                         placeholder="Where did you hear about this? (optional)"
                         value={referralSource}
                         onChange={(e) => setReferralSource(e.target.value)}
-                        className="h-12 bg-black/50 border-gray-700 focus:border-violet-600"
+                        className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-violet-600 focus:ring-violet-600"
                         disabled={isSubmitting}
                       />
                     </div>
