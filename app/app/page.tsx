@@ -264,36 +264,38 @@ export default function AppPage() {
                   <Card 
                     key={reply.tone} 
                     style={{ animationDelay: `${idx * 100}ms` }}
-                    className="relative overflow-hidden bg-white/98 backdrop-blur-xl border-2 border-white/50 shadow-2xl rounded-3xl transition-all duration-300 hover:shadow-purple-500/30 hover:scale-[1.03] hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-3"
+                    className="relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-300 hover:shadow-purple-500/30 hover:scale-[1.03] hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-3"
                   >
-                    <div className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${config.gradient}`} />
-                    <div className={`absolute top-0 right-0 w-32 h-32 ${config.lightBg} rounded-full blur-3xl opacity-30 -translate-y-16 translate-x-16`} />
-                    <CardHeader className="pb-3 pt-6">
+                    <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient}`} />
+                    <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${config.gradient} rounded-full blur-3xl opacity-10`} />
+                    <CardHeader className="pb-4 pt-8">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-2xl shadow-lg`}>
+                        <div className="flex items-center gap-4">
+                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-3xl shadow-xl`}>
                             {config.emoji}
                           </div>
                           <div>
-                            <CardTitle className="text-lg font-bold text-gray-900">{config.label}</CardTitle>
-                            <CardDescription className="text-xs text-gray-600 font-medium">{config.description}</CardDescription>
+                            <CardTitle className="text-xl font-bold text-gray-900">{config.label}</CardTitle>
+                            <CardDescription className="text-sm text-gray-600 font-semibold">{config.description}</CardDescription>
                           </div>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="pt-2 space-y-4">
-                      <p className="text-base text-gray-800 leading-relaxed font-medium px-1">{reply.text}</p>
-                      <div className="flex items-center justify-between px-1">
-                        <span className="text-xs text-gray-500 font-semibold bg-gray-100 px-3 py-1.5 rounded-full">
+                    <CardContent className="pt-2 space-y-5 pb-6">
+                      <div className={`${config.lightBg} rounded-2xl p-5 border-2 border-gray-100`}>
+                        <p className="text-lg text-gray-900 leading-relaxed font-medium">{reply.text}</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-bold bg-gradient-to-r ${config.gradient} text-white px-4 py-2 rounded-full shadow-md`}>
                           {reply.text ? reply.text.split(' ').length : 0} words
                         </span>
                       </div>
                       <Button
                         onClick={() => handleCopy(reply.text, reply.tone)}
-                        className={`w-full h-12 rounded-2xl font-bold shadow-lg transition-all active:scale-95 hover:shadow-xl ${
+                        className={`w-full h-14 rounded-2xl font-bold text-base shadow-xl transition-all active:scale-95 hover:shadow-2xl hover:-translate-y-0.5 ${
                           isCopied 
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' 
-                            : `bg-gradient-to-r ${config.gradient} hover:opacity-90`
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white' 
+                            : `bg-gradient-to-r ${config.gradient} hover:opacity-95 text-white`
                         }`}
                         size="lg"
                       >
@@ -332,23 +334,25 @@ export default function AppPage() {
         {loading && (
           <div className="space-y-4 animate-in fade-in duration-300">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="relative overflow-hidden bg-white/95 backdrop-blur border-0 shadow-2xl rounded-3xl">
-                <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-300 to-gray-400 animate-pulse" />
-                <CardHeader className="pb-3 pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 bg-gray-200 rounded-2xl animate-pulse" />
+              <Card key={i} className="relative overflow-hidden bg-white border-2 border-gray-100 shadow-2xl rounded-3xl">
+                <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-purple-400 to-indigo-400 animate-pulse" />
+                <CardHeader className="pb-4 pt-8">
+                  <div className="flex items-center gap-4">
+                    <div className="h-14 w-14 bg-gray-200 rounded-2xl animate-pulse" />
                     <div className="space-y-2">
-                      <div className="h-5 w-24 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-3 w-32 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-6 w-28 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-4 w-36 bg-gray-100 rounded animate-pulse" />
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4 pb-6">
-                  <div className="space-y-2">
-                    <div className="h-4 w-full bg-gray-200 rounded animate-pulse" />
-                    <div className="h-4 w-4/5 bg-gray-200 rounded animate-pulse" />
+                <CardContent className="space-y-5 pb-6">
+                  <div className="bg-gray-50 rounded-2xl p-5 border-2 border-gray-100">
+                    <div className="space-y-2">
+                      <div className="h-5 w-full bg-gray-200 rounded animate-pulse" />
+                      <div className="h-5 w-4/5 bg-gray-200 rounded animate-pulse" />
+                    </div>
                   </div>
-                  <div className="h-12 w-full bg-gray-100 rounded-2xl animate-pulse" />
+                  <div className="h-14 w-full bg-gradient-to-r from-purple-200 to-indigo-200 rounded-2xl animate-pulse" />
                 </CardContent>
               </Card>
             ))}
