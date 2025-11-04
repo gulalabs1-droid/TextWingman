@@ -204,10 +204,10 @@ export default function AppPage() {
           <CardHeader className="pb-4 pt-6 bg-gradient-to-br from-purple-50 to-white">
             <CardTitle className="text-xl font-bold flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-purple-600 animate-bounce" />
-              What'd they say? Drop it here 👇
+              What&apos;d they say? Drop it here 👇
             </CardTitle>
             <CardDescription className="text-sm text-gray-600 font-medium">
-              Wing it like a pro — paste the text and we'll handle the rest ✨
+              Wing it like a pro — paste the text and we&apos;ll handle the rest ✨
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-6 pb-6">
