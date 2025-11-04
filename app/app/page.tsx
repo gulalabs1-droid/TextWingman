@@ -91,11 +91,18 @@ export default function AppPage() {
         return;
       }
       
-      setReplies([
-        { tone: 'shorter', text: data.replies.shorter },
-        { tone: 'spicier', text: data.replies.spicier },
-        { tone: 'softer', text: data.replies.softer },
-      ]);
+      // API returns array of replies, validate and use it
+      if (Array.isArray(data.replies) && data.replies.length > 0) {
+        // Ensure all replies have required properties
+        const validReplies = data.replies.filter(r => r && r.tone && r.text);
+        if (validReplies.length > 0) {
+          setReplies(validReplies);
+        } else {
+          throw new Error('Invalid reply format received');
+        }
+      } else {
+        throw new Error('No replies received from server');
+      }
 
       toast({
         title: "✨ Replies generated!",
@@ -246,12 +253,10 @@ export default function AppPage() {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-3 pb-4">
-                      <p className="text-sm leading-relaxed min-h-[60px] text-gray-800">
-                        {reply.text}
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                        <span>{reply.text.split(' ').length} words</span>
+                    <CardContent className="pt-2">
+                      <p className="text-sm text-gray-700 mb-3 leading-relaxed">{reply.text}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{reply.text ? reply.text.split(' ').length : 0} words</span>
                       </div>
                       <Button
                         onClick={() => handleCopy(reply.text, reply.tone)}
