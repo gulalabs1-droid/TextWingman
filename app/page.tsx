@@ -162,7 +162,7 @@ export default function HomePage() {
             <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-gray-50 to-white">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-gray-900">Free</CardTitle>
-                <CardDescription className="text-base text-gray-600">Try it out, no card needed</CardDescription>
+                <CardDescription className="text-base text-gray-600">Perfect to get started</CardDescription>
               </div>
               <div className="mt-6 mb-2">
                 <span className="text-5xl font-black text-gray-900">$0</span>
@@ -174,19 +174,19 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">5 AI replies per day</span>
+                  <span className="text-gray-700 font-medium">5 replies per day</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">3 tone styles</span>
+                  <span className="text-gray-700 font-medium">All 3 tone options</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">Context selector</span>
+                  <span className="text-gray-700 font-medium">Smart context selector</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-12 text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all" variant="outline">
@@ -204,7 +204,7 @@ export default function HomePage() {
             <CardHeader className="pb-8 pt-12">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-white">Pro Monthly</CardTitle>
-                <CardDescription className="text-base text-purple-100">Unlimited texting superpowers</CardDescription>
+                <CardDescription className="text-base text-purple-100">Unlimited replies for any conversation</CardDescription>
               </div>
               <div className="mt-6 mb-2 flex items-end gap-2">
                 <span className="text-5xl font-black text-white">$7</span>
@@ -260,7 +260,7 @@ export default function HomePage() {
             <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-purple-50 to-white">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-gray-900">Pro Annual</CardTitle>
-                <CardDescription className="text-base text-gray-600">Best value for power users</CardDescription>
+                <CardDescription className="text-base text-gray-600">Best value — save over 65%</CardDescription>
               </div>
               <div className="mt-6 mb-2 flex items-end gap-2">
                 <span className="text-5xl font-black text-gray-900">$29</span>
