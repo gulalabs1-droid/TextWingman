@@ -61,24 +61,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="container mx-auto px-4 py-8">
-        <div className="flex flex-wrap justify-center gap-8 text-center text-white/80">
-          <div>
-            <div className="text-3xl font-bold text-white">10K+</div>
-            <div className="text-sm">Users</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold text-white">50K+</div>
-            <div className="text-sm">Replies Generated</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold text-white">4.9★</div>
-            <div className="text-sm">User Rating</div>
-          </div>
-        </div>
-      </section>
-
       {/* Features Section */}
       <section className="container mx-auto px-4 py-20 mt-8">
         <div className="text-center mb-16">
