@@ -24,13 +24,13 @@ export default function HomePage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-8 h-14 bg-white text-purple-600 hover:bg-gray-100 shadow-2xl rounded-2xl font-bold transition-all active:scale-95 hover:shadow-purple-500/50">
+            <Button asChild size="lg" className="text-lg px-8 h-14 bg-white text-black hover:bg-gray-100 shadow-2xl rounded-2xl font-bold transition-all active:scale-95 hover:shadow-purple-500/50">
               <Link href="/app">
                 Try It Free
                 <MessageCircle className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg px-8 h-14 border-2 border-white/30 text-white hover:bg-white/10 rounded-2xl font-semibold transition-all active:scale-95">
+            <Button asChild size="lg" className="text-lg px-8 h-14 bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-500 rounded-2xl font-semibold transition-all active:scale-95 shadow-lg">
               <Link href="#pricing" className="scroll-smooth">View Pricing</Link>
             </Button>
           </div>
@@ -47,6 +47,24 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="container mx-auto px-4 py-8">
+        <div className="flex flex-wrap justify-center gap-8 text-center text-white/80">
+          <div>
+            <div className="text-3xl font-bold text-white">10K+</div>
+            <div className="text-sm">Users</div>
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-white">50K+</div>
+            <div className="text-sm">Replies Generated</div>
+          </div>
+          <div>
+            <div className="text-3xl font-bold text-white">4.9★</div>
+            <div className="text-sm">User Rating</div>
           </div>
         </div>
       </section>

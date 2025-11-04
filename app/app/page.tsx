@@ -57,38 +57,55 @@ export default function AppPage() {
       return;
     }
 
+    if (message.trim().length < 3) {
+      toast({
+        title: "Message too short",
+        description: "Please enter a longer message for better results",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
+    setReplies([]); // Clear previous replies
+    
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message: message.trim() }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         if (response.status === 429) {
-          // Usage limit hit
           toast({
-            title: "Usage limit reached",
-            description: data.message || "Upgrade to continue using Text Wingman",
+            title: "Daily limit reached",
+            description: "Upgrade to Pro for unlimited replies!",
+            variant: "destructive",
           });
-          return;
+        } else {
+          throw new Error(data.error || 'Failed to generate replies');
         }
-        throw new Error(data.error || 'Failed to generate replies');
+        return;
       }
+      
+      setReplies([
+        { tone: 'shorter', text: data.replies.shorter },
+        { tone: 'spicier', text: data.replies.spicier },
+        { tone: 'softer', text: data.replies.softer },
+      ]);
 
-      setReplies(data.replies);
       toast({
-        title: "Replies generated!",
-        description: "Choose your favorite and copy it",
+        title: "✨ Replies generated!",
+        description: "Pick your favorite and copy it",
       });
     } catch (error) {
-      console.error(error);
+      console.error('Generation error:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate replies. Please try again.",
+        title: "Oops! Something went wrong",
+        description: error instanceof Error ? error.message : "Failed to generate replies. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -152,11 +169,14 @@ export default function AppPage() {
                   setMessage(e.target.value);
                   if (e.target.value.trim()) setShowExamples(false);
                 }}
-                placeholder="Paste the message here..."
-                className="w-full min-h-[120px] p-4 rounded-xl border-2 border-gray-200 bg-white text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="Paste the message you received here..."
+                className="w-full min-h-[120px] p-4 pb-8 rounded-xl border-2 border-gray-200 bg-white text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 maxLength={500}
+                aria-label="Message input"
               />
-              <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+              <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
+                charCount > 450 ? 'text-red-500 font-semibold' : 'text-gray-400'
+              }`}>
                 {charCount}/500
               </div>
             </div>
