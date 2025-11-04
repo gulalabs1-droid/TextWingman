@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Sparkles, MessageCircle, Zap, Check } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { AnimatedShowcase } from "@/components/AnimatedShowcase";
-import { InteractiveDemo } from "@/components/InteractiveDemo";
 
 export default function HomePage() {
   return (
@@ -60,19 +59,6 @@ export default function HomePage() {
         <div className="mt-12 md:mt-16">
           <AnimatedShowcase />
         </div>
-      </section>
-
-      {/* Interactive Demo Section */}
-      <section className="container mx-auto px-4 py-16 md:py-20">
-        <div className="text-center mb-12 space-y-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Try it yourself
-          </h2>
-          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto">
-            Type your own message and see the AI magic in action. No signup required.
-          </p>
-        </div>
-        <InteractiveDemo />
       </section>
 
       {/* Social Proof */}
