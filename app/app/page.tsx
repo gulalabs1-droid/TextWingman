@@ -95,6 +95,7 @@ export default function AppPage() {
       if (Array.isArray(data.replies) && data.replies.length > 0) {
         // Ensure all replies have required properties
         const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
+        
         if (validReplies.length > 0) {
           setReplies(validReplies);
         } else {

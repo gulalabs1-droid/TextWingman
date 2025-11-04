@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         
-        // TODO: Update user subscription status in database
         console.log('Checkout completed:', session.id);
         
         // Store subscription info if Supabase is configured

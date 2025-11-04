@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Add authentication and check user subscription status
-    // For now, we'll use a simple IP-based rate limiting
+    // IP-based rate limiting for free tier
+    // TODO: Add user authentication for personalized limits
     const ip = request.headers.get('x-forwarded-for') || 'anonymous';
     
     // Check usage count if Supabase is configured
