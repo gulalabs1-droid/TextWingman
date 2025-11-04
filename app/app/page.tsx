@@ -195,7 +195,7 @@ export default function AppPage() {
                       onClick={() => handleExampleClick(example)}
                       className="text-left text-sm p-2 rounded-lg border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-gray-700"
                     >
-                      "{example}"
+                      &ldquo;{example}&rdquo;
                     </button>
                   ))}
                 </div>

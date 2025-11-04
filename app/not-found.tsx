@@ -11,7 +11,7 @@ export default function NotFound() {
           Page Not Found
         </h2>
         <p className="text-gray-600 mb-6">
-          Oops! The page you're looking for doesn't exist.
+          Oops! The page you&apos;re looking for doesn&apos;t exist.
         </p>
         <div className="flex gap-3 justify-center flex-col sm:flex-row">
           <Button asChild className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800">

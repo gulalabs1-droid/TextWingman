@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
         // TODO: Update user subscription status in database
         console.log('Checkout completed:', session.id);
         
-        // Store subscription info
-        if (session.customer && session.subscription) {
+        // Store subscription info if Supabase is configured
+        if (supabase && session.customer && session.subscription) {
           const { error } = await supabase
             .from('subscriptions')
             .upsert({
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
             });
 
           if (error) {
-            console.error('Failed to store subscription:', error);
+            console.error('Error storing subscription:', error);
           }
         }
         break;
@@ -59,16 +59,18 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         
-        const { error } = await supabase
-          .from('subscriptions')
-          .update({
-            status: subscription.status,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('subscription_id', subscription.id);
+        if (supabase) {
+          const { error } = await supabase
+            .from('subscriptions')
+            .update({
+              status: subscription.status,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('subscription_id', subscription.id);
 
-        if (error) {
-          console.error('Failed to update subscription:', error);
+          if (error) {
+            console.error('Failed to update subscription:', error);
+          }
         }
         break;
       }
@@ -76,16 +78,18 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         
-        const { error } = await supabase
-          .from('subscriptions')
-          .update({
-            status: 'canceled',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('subscription_id', subscription.id);
+        if (supabase) {
+          const { error } = await supabase
+            .from('subscriptions')
+            .update({
+              status: 'cancelled',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('subscription_id', subscription.id);
 
-        if (error) {
-          console.error('Failed to cancel subscription:', error);
+          if (error) {
+            console.error('Failed to cancel subscription:', error);
+          }
         }
         break;
       }

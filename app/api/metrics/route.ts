@@ -3,6 +3,14 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
+    // Return zero metrics if Supabase is not configured
+    if (!supabase) {
+      return NextResponse.json({
+        today: { count: 0, limit: 5, remaining: 5 },
+        allTime: { count: 0 },
+      });
+    }
+
     // Get IP for basic user identification (in production, use proper auth)
     const ip = request.headers.get('x-forwarded-for') || 'anonymous';
     
