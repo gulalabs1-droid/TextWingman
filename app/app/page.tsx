@@ -94,7 +94,7 @@ export default function AppPage() {
       // API returns array of replies, validate and use it
       if (Array.isArray(data.replies) && data.replies.length > 0) {
         // Ensure all replies have required properties
-        const validReplies = data.replies.filter(r => r && r.tone && r.text);
+        const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
         if (validReplies.length > 0) {
           setReplies(validReplies);
         } else {
