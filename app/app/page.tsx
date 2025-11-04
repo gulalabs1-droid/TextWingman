@@ -80,6 +80,9 @@ export default function AppPage() {
   const [showCraftedMessage, setShowCraftedMessage] = useState(false);
   const [selectedContext, setSelectedContext] = useState<ContextType>(null);
   const [sharing, setSharing] = useState<string | null>(null);
+  const [usageCount, setUsageCount] = useState(0);
+  const [usageLimit] = useState(5);
+  const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -143,6 +146,7 @@ export default function AppPage() {
         
         if (validReplies.length > 0) {
           setReplies(validReplies);
+      setUsageCount(prev => prev + 1);
         } else {
           throw new Error('Invalid reply format received');
         }
@@ -175,8 +179,8 @@ export default function AppPage() {
       await navigator.clipboard.writeText(text);
       setCopied(tone);
       toast({
-        title: "✓ Copied!",
-        description: "Reply copied to clipboard",
+        title: "✓ Copied to clipboard!",
+        description: "Paste it into your chat app",
       });
       setTimeout(() => setCopied(null), 2000);
     } catch (err) {
@@ -192,18 +196,40 @@ export default function AppPage() {
     setSharing(reply.tone);
     
     try {
-      // Create shareable URL with conversation data
+      // Call API to create share card
+      const response = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          theirMessage: message.substring(0, 100),
+          myReply: reply.text,
+          tone: reply.tone,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.slug) {
+        const shareUrl = `${window.location.origin}/share/${data.slug}`;
+        await navigator.clipboard.writeText(shareUrl);
+        
+        toast({
+          title: "🔗 Share link created!",
+          description: "Paste it on TikTok, Instagram, or Twitter",
+          duration: 3000,
+        });
+      }
+      
+      setTimeout(() => setSharing(null), 2000);
+    } catch (err) {
+      // Fallback to client-side encoding
       const shareData = {
         theirMessage: message.substring(0, 100),
         myReply: reply.text,
         tone: reply.tone,
       };
-      
-      // Encode data for URL
       const encoded = btoa(JSON.stringify(shareData));
       const shareUrl = `${window.location.origin}/share/${encoded}`;
-      
-      // Copy to clipboard
       await navigator.clipboard.writeText(shareUrl);
       
       toast({
@@ -213,13 +239,6 @@ export default function AppPage() {
       });
       
       setTimeout(() => setSharing(null), 2000);
-    } catch (err) {
-      toast({
-        title: "Failed to create share link",
-        description: "Please try again",
-        variant: "destructive",
-      });
-      setSharing(null);
     }
   };
 
@@ -251,6 +270,50 @@ export default function AppPage() {
           </Link>
           <div className="w-20" /> {/* Spacer */}
         </div>
+
+        {/* Usage Bar */}
+        {usageCount > 0 && (
+          <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 text-white shadow-lg animate-in slide-in-from-top duration-300">
+            <div className="container mx-auto px-4 py-3">
+              <div className="flex items-center justify-between max-w-2xl mx-auto">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">⚡</span>
+                    <div>
+                      <p className="text-sm font-bold">
+                        {usageLimit - usageCount} free {usageLimit - usageCount === 1 ? 'reply' : 'replies'} left today
+                      </p>
+                      <p className="text-xs text-purple-200">
+                        {usageCount}/{usageLimit} used
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                {usageCount >= usageLimit - 1 && (
+                  <Button 
+                    asChild
+                    size="sm" 
+                    className="bg-white text-purple-700 hover:bg-gray-100 font-bold rounded-xl shadow-lg"
+                  >
+                    <Link href="/#pricing">Upgrade →</Link>
+                  </Button>
+                )}
+                {usageCount < usageLimit - 1 && (
+                  <div className="flex gap-1">
+                    {Array.from({ length: usageLimit }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          i < usageCount ? 'bg-purple-300' : 'bg-white/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Input Section */}
         <Card className="mb-8 bg-white/95 backdrop-blur-xl border-0 shadow-2xl hover:shadow-purple-500/20 rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1">
@@ -311,20 +374,40 @@ export default function AppPage() {
               </div>
             </div>
 
-            {/* Example Messages */}
-            {showExamples && !message && (
-              <div className="space-y-2 animate-in fade-in duration-300">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Lightbulb className="h-4 w-4" />
-                  <span>Try an example:</span>
+            {/* Quick Examples Button */}
+            {!message && (
+              <button
+                onClick={() => setShowExamplesDrawer(!showExamplesDrawer)}
+                className="w-full p-3 rounded-xl border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-50 transition-all text-purple-700 font-medium text-sm flex items-center justify-center gap-2"
+              >
+                <Lightbulb className="h-4 w-4" />
+                {showExamplesDrawer ? 'Hide' : 'Show'} Quick Examples
+              </button>
+            )}
+
+            {/* Examples Drawer */}
+            {showExamplesDrawer && !message && (
+              <div className="space-y-2 animate-in slide-in-from-top duration-300 bg-gradient-to-br from-purple-50 to-white p-4 rounded-2xl border-2 border-purple-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-purple-700">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Try these examples:</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowExamplesDrawer(false)}
+                    className="text-purple-400 hover:text-purple-600"
+                  >
+                    ✕
+                  </button>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   {EXAMPLE_MESSAGES.map((example, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleExampleClick(example)}
-                      className="text-left text-sm p-2 rounded-lg border border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all text-gray-700"
+                      className="text-left text-sm p-3 rounded-xl border-2 border-purple-200 hover:border-purple-400 bg-white hover:bg-purple-50 transition-all text-gray-700 font-medium"
                     >
+                      <span className="text-purple-500 font-bold mr-2">{idx + 1}.</span>
                       &ldquo;{example}&rdquo;
                     </button>
                   ))}
@@ -376,6 +459,7 @@ export default function AppPage() {
               {replies.map((reply, idx) => {
                 const config = TONE_CONFIG[reply.tone];
                 const isCopied = copied === reply.tone;
+                const label = ['A', 'B', 'C'][idx];
                 return (
                   <Card 
                     key={reply.tone} 
@@ -384,6 +468,14 @@ export default function AppPage() {
                   >
                     <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient} transition-all duration-300 group-hover:h-4`} />
                     <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${config.gradient} rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity duration-500`} />
+                    
+                    {/* A/B/C Label */}
+                    <div className="absolute top-6 right-6 z-10">
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white font-black text-lg shadow-xl`}>
+                        {label}
+                      </div>
+                    </div>
+
                     <CardHeader className="pb-4 pt-8">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -409,21 +501,22 @@ export default function AppPage() {
                       <div className="grid grid-cols-2 gap-3">
                         <Button
                           onClick={() => handleCopy(reply.text, reply.tone)}
-                          className={`h-14 rounded-2xl font-bold text-base shadow-xl transition-all duration-300 active:scale-95 hover:shadow-2xl hover:-translate-y-1 ${
+                          className={`h-14 rounded-2xl font-bold text-base shadow-xl transition-all duration-300 active:scale-95 ${
                             isCopied 
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-in zoom-in duration-200' 
-                              : `bg-gradient-to-r ${config.gradient} hover:opacity-95 text-white`
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-500/50 scale-105' 
+                              : `bg-gradient-to-r ${config.gradient} hover:opacity-95 text-white hover:shadow-2xl hover:-translate-y-1`
                           }`}
                           size="lg"
                         >
                           {isCopied ? (
                             <>
-                              ✓ Copied!
+                              <span className="text-2xl mr-2">✓</span>
+                              Copied!
                             </>
                           ) : (
                             <>
                               <Copy className="h-4 w-4 mr-2" />
-                              Copy
+                              Copy {label}
                             </>
                           )}
                         </Button>

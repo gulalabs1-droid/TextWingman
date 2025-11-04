@@ -2,27 +2,34 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { originalMessage, reply, tone } = await request.json();
+    const { theirMessage, myReply, tone } = await request.json();
 
-    if (!originalMessage || !reply || !tone) {
+    if (!theirMessage || !myReply || !tone) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // TODO: Implement share card generation
-    // This would use canvas or a service like Cloudinary to generate an image
-    // with blurred names and the conversation
+    // Create share data
+    const shareData = {
+      theirMessage: theirMessage.substring(0, 100),
+      myReply: myReply.substring(0, 200),
+      tone,
+      timestamp: Date.now(),
+    };
     
-    // For now, return a placeholder
+    // Encode to base64 for URL slug
+    const slug = Buffer.from(JSON.stringify(shareData)).toString('base64url');
+    
+    // TODO: Optionally store in database for analytics
+    // - Track share counts
+    // - Measure viral coefficient
+    // - Identify popular tones
+    
     return NextResponse.json({
-      message: 'Share card generation coming soon!',
-      data: {
-        originalMessage: originalMessage.substring(0, 100),
-        reply: reply.substring(0, 100),
-        tone,
-      },
+      slug,
+      shareUrl: `/share/${slug}`,
     });
   } catch (error) {
     console.error('Error generating share card:', error);
