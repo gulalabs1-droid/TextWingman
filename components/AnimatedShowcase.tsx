@@ -5,7 +5,7 @@ import { MessageCircle, Sparkles, Copy, CheckCircle } from 'lucide-react';
 
 const SHOWCASE_EXAMPLES = [
   {
-    title: "Dating Scenario",
+    title: "💘 Dating",
     context: "Crush/Dating 💘",
     input: "Hey, what are you doing this weekend?",
     replies: [
@@ -15,7 +15,7 @@ const SHOWCASE_EXAMPLES = [
     ]
   },
   {
-    title: "Friend Scenario",
+    title: "🤝 Friend",
     context: "Friend 🤝",
     input: "Dude where have you been??",
     replies: [
@@ -25,7 +25,7 @@ const SHOWCASE_EXAMPLES = [
     ]
   },
   {
-    title: "Work Scenario",
+    title: "💼 Work",
     context: "Work 💼",
     input: "Can we push the meeting to 3pm?",
     replies: [
