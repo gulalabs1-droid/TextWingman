@@ -46,6 +46,28 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
             </filter>
           </defs>
           
+          {/* Left Angel Wing - Lower feathers */}
+          <path
+            d="M20 55 Q 8 58, 3 62 Q 6 55, 12 52 Q 10 54, 8 56 Z"
+            fill="url(#logoGradient)"
+            opacity="0.5"
+          />
+          <path
+            d="M20 48 Q 6 50, 2 54 Q 5 48, 10 46 Q 8 48, 6 50 Z"
+            fill="url(#logoGradient)"
+            opacity="0.6"
+          />
+          <path
+            d="M20 41 Q 5 42, 1 46 Q 4 41, 9 39 Q 7 41, 5 43 Z"
+            fill="url(#logoGradient)"
+            opacity="0.7"
+          />
+          <path
+            d="M20 34 Q 6 34, 2 38 Q 5 34, 10 32 Q 8 34, 6 36 Z"
+            fill="url(#logoGradient)"
+            opacity="0.8"
+          />
+
           {/* Message Bubble */}
           <path
             d="M20 30 C20 20, 30 15, 45 15 L70 15 C80 15, 85 20, 85 30 L85 55 C85 65, 80 70, 70 70 L50 70 L35 85 L35 70 L30 70 C20 70, 20 65, 20 55 Z"
@@ -53,16 +75,31 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
             filter="url(#glow)"
           />
           
-          {/* Wing accent */}
+          {/* Right Angel Wing - Lower feathers */}
           <path
-            d="M70 40 Q 85 35, 95 30 Q 90 40, 85 45 Q 88 42, 90 40 Z"
+            d="M85 55 Q 92 58, 97 62 Q 94 55, 88 52 Q 90 54, 92 56 Z"
             fill="url(#logoGradient)"
-            opacity="0.9"
+            opacity="0.5"
           />
           <path
-            d="M70 50 Q 85 48, 95 45 Q 90 52, 85 55 Q 88 52, 90 50 Z"
+            d="M85 48 Q 94 50, 98 54 Q 95 48, 90 46 Q 92 48, 94 50 Z"
+            fill="url(#logoGradient)"
+            opacity="0.6"
+          />
+          <path
+            d="M85 41 Q 95 42, 99 46 Q 96 41, 91 39 Q 93 41, 95 43 Z"
             fill="url(#logoGradient)"
             opacity="0.7"
+          />
+          <path
+            d="M85 34 Q 94 34, 98 38 Q 95 34, 90 32 Q 92 34, 94 36 Z"
+            fill="url(#logoGradient)"
+            opacity="0.8"
+          />
+          <path
+            d="M85 27 Q 96 26, 99 30 Q 96 27, 91 25 Q 93 27, 95 29 Z"
+            fill="url(#logoGradient)"
+            opacity="0.9"
           />
           
           {/* Sparkle dots inside bubble */}
