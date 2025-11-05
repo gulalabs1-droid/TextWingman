@@ -174,8 +174,7 @@ export default function V2TeaserPage() {
             <Button 
               asChild
               size="lg" 
-              variant="outline"
-              className="text-lg px-8 h-14 border-2 border-white/30 text-white hover:bg-white/10 hover:border-white rounded-2xl font-semibold"
+              className="text-lg px-8 h-14 border-2 border-white bg-white text-black hover:bg-gray-100 rounded-2xl font-semibold"
             >
               <Link href="/app">Try V1 (testing)</Link>
             </Button>
