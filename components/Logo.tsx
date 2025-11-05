@@ -46,35 +46,35 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
             </filter>
           </defs>
           
-          {/* Left Angel Wing - Bold and white */}
-          <g opacity="0.95">
-            {/* Outer large feather */}
+          {/* Left Angel Wing - Classic angelic design */}
+          <g opacity="0.9" filter="url(#glow)">
+            {/* Main wing shape */}
             <path
-              d="M22 50 Q 5 52, 1 58 Q 3 48, 12 45 Q 8 50, 5 54 Z"
+              d="M18 42 Q 8 40, 2 45 Q 1 38, 8 32 Q 2 35, 1 40 L 18 42 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.95"
             />
-            {/* Middle feather */}
+            {/* Secondary feathers */}
             <path
-              d="M22 42 Q 7 43, 3 48 Q 5 40, 13 38 Q 9 43, 6 46 Z"
+              d="M18 48 Q 10 48, 4 52 Q 3 46, 10 43 Q 6 47, 4 50 L 18 48 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.9"
             />
-            {/* Upper feather */}
             <path
-              d="M22 34 Q 8 34, 4 38 Q 6 32, 14 30 Q 10 34, 7 37 Z"
+              d="M18 54 Q 12 55, 7 58 Q 6 53, 12 51 Q 9 54, 7 56 L 18 54 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.85"
             />
-            {/* Top feather */}
+            {/* Upper feathers */}
             <path
-              d="M24 26 Q 10 25, 6 28 Q 8 24, 15 22 Q 12 26, 9 28 Z"
+              d="M20 36 Q 11 33, 5 36 Q 4 30, 11 27 Q 7 31, 5 34 L 20 36 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.95"
+            />
+            <path
+              d="M22 30 Q 14 26, 8 28 Q 7 23, 13 20 Q 10 24, 8 26 L 22 30 Z"
+              fill="white"
+              opacity="0.9"
             />
           </g>
 
@@ -85,42 +85,35 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
             filter="url(#glow)"
           />
           
-          {/* Right Angel Wing - Bold and white */}
-          <g opacity="0.95">
-            {/* Outer large feather */}
+          {/* Right Angel Wing - Classic angelic design */}
+          <g opacity="0.9" filter="url(#glow)">
+            {/* Main wing shape */}
             <path
-              d="M83 50 Q 95 52, 99 58 Q 97 48, 88 45 Q 92 50, 95 54 Z"
+              d="M87 42 Q 92 40, 98 45 Q 99 38, 92 32 Q 98 35, 99 40 L 87 42 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.95"
             />
-            {/* Middle feather */}
+            {/* Secondary feathers */}
             <path
-              d="M83 42 Q 93 43, 97 48 Q 95 40, 87 38 Q 91 43, 94 46 Z"
+              d="M87 48 Q 90 48, 96 52 Q 97 46, 90 43 Q 94 47, 96 50 L 87 48 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.9"
             />
-            {/* Upper feather */}
             <path
-              d="M83 34 Q 92 34, 96 38 Q 94 32, 86 30 Q 90 34, 93 37 Z"
+              d="M87 54 Q 88 55, 93 58 Q 94 53, 88 51 Q 91 54, 93 56 L 87 54 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.85"
             />
-            {/* Top feather */}
+            {/* Upper feathers */}
             <path
-              d="M81 26 Q 90 25, 94 28 Q 92 24, 85 22 Q 88 26, 91 28 Z"
+              d="M85 36 Q 89 33, 95 36 Q 96 30, 89 27 Q 93 31, 95 34 L 85 36 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.95"
             />
-            {/* Extra top feather for more presence */}
             <path
-              d="M80 18 Q 88 16, 92 18 Q 90 16, 84 14 Q 87 17, 90 19 Z"
+              d="M83 30 Q 86 26, 92 28 Q 93 23, 87 20 Q 90 24, 92 26 L 83 30 Z"
               fill="white"
-              stroke="white"
-              strokeWidth="0.5"
+              opacity="0.9"
             />
           </g>
           
