@@ -189,7 +189,7 @@ export default function V2TeaserPage() {
             {['Dual-Check AI™', 'Context-Aware', 'Tone-Verified', 'Short. Smooth. On point.'].map((badge, idx) => (
               <div 
                 key={idx}
-                className="px-4 py-2 rounded-full border border-violet-600/30 bg-violet-600/5 text-violet-300 text-sm font-medium"
+                className="px-4 py-2 rounded-full border border-violet-400/50 bg-violet-500/15 text-violet-200 text-sm font-medium"
               >
                 {badge}
               </div>
@@ -217,47 +217,57 @@ export default function V2TeaserPage() {
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {[
-              {
-                icon: <Sparkles className="h-6 w-6" />,
-                title: 'Draft Agent',
-                desc: 'A/B/C options fast.',
-                color: 'violet'
-              },
-              {
-                icon: <Shield className="h-6 w-6" />,
-                title: 'Rule-Check',
-                desc: '≤ 18 words, no emojis, no double-text, respectful boundaries.',
-                color: 'blue'
-              },
-              {
-                icon: <Target className="h-6 w-6" />,
-                title: 'Context Agent',
-                desc: 'Adapts phrasing for Crush / New Match / Friend / Work / Family.',
-                color: 'purple'
-              },
-              {
-                icon: <CheckCircle2 className="h-6 w-6" />,
-                title: 'Tone Verify',
-                desc: 'Confirms Shorter / Spicier / Softer actually matches length + assertiveness + warmth.',
-                color: 'green'
-              },
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                variants={fadeIn}
-              >
-                <Card className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700 h-full hover:border-violet-500 transition-all backdrop-blur">
-                  <CardContent className="p-6">
-                    <div className={`w-12 h-12 rounded-2xl bg-${item.color}-600/10 flex items-center justify-center text-${item.color}-400 mb-4`}>
-                      {item.icon}
-                    </div>
-                    <h3 className="text-xl font-bold mb-2 text-white">{item.title}</h3>
-                    <p className="text-gray-300">{item.desc}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+            {/* Draft Agent */}
+            <motion.div variants={fadeIn}>
+              <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-violet-500/50 h-full hover:border-violet-400 transition-all">
+                <CardContent className="p-6">
+                  <div className="w-12 h-12 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-4">
+                    <Sparkles className="h-6 w-6 text-violet-400" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2 text-white">Draft Agent</h3>
+                  <p className="text-gray-300">A/B/C options fast.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Rule-Check */}
+            <motion.div variants={fadeIn}>
+              <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-blue-500/50 h-full hover:border-blue-400 transition-all">
+                <CardContent className="p-6">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-4">
+                    <Shield className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2 text-white">Rule-Check</h3>
+                  <p className="text-gray-300">≤ 18 words, no emojis, no double-text, respectful boundaries.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Context Agent */}
+            <motion.div variants={fadeIn}>
+              <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-purple-500/50 h-full hover:border-purple-400 transition-all">
+                <CardContent className="p-6">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center mb-4">
+                    <Target className="h-6 w-6 text-purple-400" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2 text-white">Context Agent</h3>
+                  <p className="text-gray-300">Adapts phrasing for Crush / New Match / Friend / Work / Family.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Tone Verify */}
+            <motion.div variants={fadeIn}>
+              <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-green-500/50 h-full hover:border-green-400 transition-all">
+                <CardContent className="p-6">
+                  <div className="w-12 h-12 rounded-2xl bg-green-500/20 flex items-center justify-center mb-4">
+                    <CheckCircle2 className="h-6 w-6 text-green-400" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2 text-white">Tone Verify</h3>
+                  <p className="text-gray-300">Confirms Shorter / Spicier / Softer actually matches length + assertiveness + warmth.</p>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
         </motion.div>
       </section>
