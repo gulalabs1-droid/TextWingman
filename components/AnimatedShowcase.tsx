@@ -51,15 +51,15 @@ export function AnimatedShowcase() {
       // After 3.5s total, show results
       setTimeout(() => setStage('results'), 3500);
       
-      // After 10s total, move to next example
+      // After 15s total, move to next example
       setTimeout(() => {
         setCurrentExample((prev) => (prev + 1) % SHOWCASE_EXAMPLES.length);
         setStage('input');
-      }, 10000);
+      }, 15000);
     };
 
     cycleExample();
-    const interval = setInterval(cycleExample, 10000);
+    const interval = setInterval(cycleExample, 15000);
 
     return () => clearInterval(interval);
   }, [currentExample]);
@@ -74,7 +74,7 @@ export function AnimatedShowcase() {
           <button
             key={idx}
             onClick={() => setCurrentExample(idx)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`px-6 py-3 rounded-xl text-base font-semibold transition-all ${
               idx === currentExample
                 ? 'bg-white text-purple-700 shadow-lg'
                 : 'bg-white/10 text-white/70 hover:bg-white/20'
