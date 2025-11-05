@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Sparkles, Copy, CheckCircle } from 'lucide-react';
 
 const SHOWCASE_EXAMPLES = [
@@ -39,30 +39,38 @@ const SHOWCASE_EXAMPLES = [
 export function AnimatedShowcase() {
   const [currentExample, setCurrentExample] = useState(0);
   const [stage, setStage] = useState<'input' | 'generating' | 'results'>('input');
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
-    const cycleExample = () => {
+    const startCycle = () => {
+      // Clear any existing timeouts
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current = [];
+
       // Reset to input stage
       setStage('input');
       
       // After 2s, show generating
-      setTimeout(() => setStage('generating'), 2000);
+      timeoutsRef.current.push(setTimeout(() => setStage('generating'), 2000));
       
       // After 3.5s total, show results
-      setTimeout(() => setStage('results'), 3500);
+      timeoutsRef.current.push(setTimeout(() => setStage('results'), 3500));
       
-      // After 20s total, move to next example
-      setTimeout(() => {
+      // After 12s total, move to next example
+      timeoutsRef.current.push(setTimeout(() => {
         setCurrentExample((prev) => (prev + 1) % SHOWCASE_EXAMPLES.length);
-        setStage('input');
-      }, 20000);
+      }, 12000));
     };
 
-    cycleExample();
-    const interval = setInterval(cycleExample, 20000);
+    startCycle();
+    intervalRef.current = setInterval(startCycle, 12000);
 
-    return () => clearInterval(interval);
-  }, [currentExample]);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
 
   const example = SHOWCASE_EXAMPLES[currentExample];
 
