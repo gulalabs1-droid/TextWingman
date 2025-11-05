@@ -51,15 +51,15 @@ export function AnimatedShowcase() {
       // After 3.5s total, show results
       setTimeout(() => setStage('results'), 3500);
       
-      // After 15s total, move to next example
+      // After 20s total, move to next example
       setTimeout(() => {
         setCurrentExample((prev) => (prev + 1) % SHOWCASE_EXAMPLES.length);
         setStage('input');
-      }, 15000);
+      }, 20000);
     };
 
     cycleExample();
-    const interval = setInterval(cycleExample, 15000);
+    const interval = setInterval(cycleExample, 20000);
 
     return () => clearInterval(interval);
   }, [currentExample]);
