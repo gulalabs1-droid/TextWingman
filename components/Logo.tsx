@@ -46,27 +46,37 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
             </filter>
           </defs>
           
-          {/* Left Angel Wing - Lower feathers */}
-          <path
-            d="M20 55 Q 8 58, 3 62 Q 6 55, 12 52 Q 10 54, 8 56 Z"
-            fill="url(#logoGradient)"
-            opacity="0.5"
-          />
-          <path
-            d="M20 48 Q 6 50, 2 54 Q 5 48, 10 46 Q 8 48, 6 50 Z"
-            fill="url(#logoGradient)"
-            opacity="0.6"
-          />
-          <path
-            d="M20 41 Q 5 42, 1 46 Q 4 41, 9 39 Q 7 41, 5 43 Z"
-            fill="url(#logoGradient)"
-            opacity="0.7"
-          />
-          <path
-            d="M20 34 Q 6 34, 2 38 Q 5 34, 10 32 Q 8 34, 6 36 Z"
-            fill="url(#logoGradient)"
-            opacity="0.8"
-          />
+          {/* Left Angel Wing - Bold and white */}
+          <g opacity="0.95">
+            {/* Outer large feather */}
+            <path
+              d="M22 50 Q 5 52, 1 58 Q 3 48, 12 45 Q 8 50, 5 54 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+            {/* Middle feather */}
+            <path
+              d="M22 42 Q 7 43, 3 48 Q 5 40, 13 38 Q 9 43, 6 46 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+            {/* Upper feather */}
+            <path
+              d="M22 34 Q 8 34, 4 38 Q 6 32, 14 30 Q 10 34, 7 37 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+            {/* Top feather */}
+            <path
+              d="M24 26 Q 10 25, 6 28 Q 8 24, 15 22 Q 12 26, 9 28 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+          </g>
 
           {/* Message Bubble */}
           <path
@@ -75,32 +85,44 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
             filter="url(#glow)"
           />
           
-          {/* Right Angel Wing - Lower feathers */}
-          <path
-            d="M85 55 Q 92 58, 97 62 Q 94 55, 88 52 Q 90 54, 92 56 Z"
-            fill="url(#logoGradient)"
-            opacity="0.5"
-          />
-          <path
-            d="M85 48 Q 94 50, 98 54 Q 95 48, 90 46 Q 92 48, 94 50 Z"
-            fill="url(#logoGradient)"
-            opacity="0.6"
-          />
-          <path
-            d="M85 41 Q 95 42, 99 46 Q 96 41, 91 39 Q 93 41, 95 43 Z"
-            fill="url(#logoGradient)"
-            opacity="0.7"
-          />
-          <path
-            d="M85 34 Q 94 34, 98 38 Q 95 34, 90 32 Q 92 34, 94 36 Z"
-            fill="url(#logoGradient)"
-            opacity="0.8"
-          />
-          <path
-            d="M85 27 Q 96 26, 99 30 Q 96 27, 91 25 Q 93 27, 95 29 Z"
-            fill="url(#logoGradient)"
-            opacity="0.9"
-          />
+          {/* Right Angel Wing - Bold and white */}
+          <g opacity="0.95">
+            {/* Outer large feather */}
+            <path
+              d="M83 50 Q 95 52, 99 58 Q 97 48, 88 45 Q 92 50, 95 54 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+            {/* Middle feather */}
+            <path
+              d="M83 42 Q 93 43, 97 48 Q 95 40, 87 38 Q 91 43, 94 46 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+            {/* Upper feather */}
+            <path
+              d="M83 34 Q 92 34, 96 38 Q 94 32, 86 30 Q 90 34, 93 37 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+            {/* Top feather */}
+            <path
+              d="M81 26 Q 90 25, 94 28 Q 92 24, 85 22 Q 88 26, 91 28 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+            {/* Extra top feather for more presence */}
+            <path
+              d="M80 18 Q 88 16, 92 18 Q 90 16, 84 14 Q 87 17, 90 19 Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="0.5"
+            />
+          </g>
           
           {/* Sparkle dots inside bubble */}
           <circle cx="40" cy="38" r="3" fill="white" opacity="0.9" />
