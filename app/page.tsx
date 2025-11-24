@@ -307,7 +307,7 @@ export default function HomePage() {
                 Contact
               </Link>
             </div>
-            <p className="text-xs text-white/40">&copy; 2024 Text Wingman. All rights reserved.</p>
+            <p className="text-xs text-white/40">&copy; 2025 Text Wingman. All rights reserved.</p>
           </div>
         </div>
       </footer>

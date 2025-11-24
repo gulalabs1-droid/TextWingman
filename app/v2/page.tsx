@@ -546,7 +546,7 @@ export default function V2TeaserPage() {
               <Link href="#" className="hover:text-white transition-colors">Contact</Link>
             </div>
             <p className="text-gray-600 text-xs">
-              © 2024 Text Wingman. All rights reserved.
+              © 2025 Text Wingman. All rights reserved.
             </p>
           </div>
         </div>
