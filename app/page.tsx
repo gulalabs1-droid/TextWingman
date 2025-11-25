@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Zap, Check } from "lucide-react";
+import { Sparkles, MessageCircle, Zap, Check, X, Star } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { AnimatedShowcase } from "@/components/AnimatedShowcase";
 
@@ -163,6 +163,12 @@ export default function HomePage() {
                   </div>
                   <span className="text-gray-700 font-medium">Smart context selector</span>
                 </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <X className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <span className="text-gray-400 font-medium">Smart vibe tracking</span>
+                </li>
               </ul>
               <Button asChild className="w-full h-12 text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all" variant="outline">
                 <Link href="/app">Start Free →</Link>
@@ -219,11 +225,17 @@ export default function HomePage() {
                   </div>
                   <span className="text-white font-medium">Cancel anytime</span>
                 </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-white font-medium">Smart vibe tracking 🎯</span>
+                </li>
               </ul>
               <Button asChild className="w-full h-14 text-lg font-black rounded-xl bg-white text-purple-700 hover:bg-gray-100 shadow-2xl hover:shadow-purple-900/30 hover:scale-105 transition-all">
                 <Link href="/app">Get Pro Now →</Link>
               </Button>
-              <p className="text-xs text-center text-purple-200">Join 1,000+ happy users</p>
+              <p className="text-xs text-center text-purple-200 mt-2">Instant upgrade — no interruption to your chats</p>
             </CardContent>
           </Card>
 
@@ -278,11 +290,132 @@ export default function HomePage() {
                   </div>
                   <span className="text-gray-700 font-medium">VIP support channel</span>
                 </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">Smart vibe tracking 🎯</span>
+                </li>
               </ul>
               <Button asChild className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all">
                 <Link href="/app">Get Annual Deal →</Link>
               </Button>
-              <p className="text-xs text-center text-gray-500">Limited time offer</p>
+              <p className="text-xs text-center text-gray-500">Billed once, in full. Cancel anytime.</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Comparison Table */}
+        <div className="max-w-2xl mx-auto mt-16 px-4">
+          <h3 className="text-2xl font-bold text-white text-center mb-8">Free vs Pro</h3>
+          <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/20">
+                  <th className="text-left p-4 text-white/80 font-medium">Feature</th>
+                  <th className="text-center p-4 text-white/80 font-medium">Free</th>
+                  <th className="text-center p-4 text-white font-bold bg-purple-600/30">Pro</th>
+                </tr>
+              </thead>
+              <tbody className="text-white/90">
+                <tr className="border-b border-white/10">
+                  <td className="p-4">Daily replies</td>
+                  <td className="text-center p-4">5</td>
+                  <td className="text-center p-4 bg-purple-600/10 font-bold">Unlimited ♾️</td>
+                </tr>
+                <tr className="border-b border-white/10">
+                  <td className="p-4">Tone options</td>
+                  <td className="text-center p-4">3</td>
+                  <td className="text-center p-4 bg-purple-600/10">3</td>
+                </tr>
+                <tr className="border-b border-white/10">
+                  <td className="p-4">Viral share cards</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
+                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-white/10">
+                  <td className="p-4">Smart vibe tracking</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
+                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
+                </tr>
+                <tr>
+                  <td className="p-4">Priority support</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
+                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-white mb-4">Loved by Texters Everywhere</h2>
+          <p className="text-white/70">Join 1,000+ happy users crushing their conversations</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {/* Testimonial 1 */}
+          <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
+            <CardContent className="pt-6">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-white/90 mb-4">
+                "I used to overthink every text. Now I just paste and pick. My dating life has never been smoother 🔥"
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">J</div>
+                <div>
+                  <p className="font-semibold">Jake M.</p>
+                  <p className="text-sm text-white/60">Pro user since 2024</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Testimonial 2 */}
+          <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
+            <CardContent className="pt-6">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-white/90 mb-4">
+                "The softer tone option saved my relationship. Seriously. Best $7 I ever spent."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">S</div>
+                <div>
+                  <p className="font-semibold">Sarah K.</p>
+                  <p className="text-sm text-white/60">Annual subscriber</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Testimonial 3 */}
+          <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
+            <CardContent className="pt-6">
+              <div className="flex gap-1 mb-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <p className="text-white/90 mb-4">
+                "Finally, an AI that actually gets texting culture. The spicier replies are *chef's kiss* 💯"
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">M</div>
+                <div>
+                  <p className="font-semibold">Marcus T.</p>
+                  <p className="text-sm text-white/60">Power user</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
