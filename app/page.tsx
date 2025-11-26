@@ -96,44 +96,92 @@ export default function HomePage() {
       <section id="before-after" className="container mx-auto px-4 py-16">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">The Glow-Up Is Real</h2>
-          <p className="text-white/70">See the difference AI makes</p>
+          <p className="text-white/70">From dry to magnetic in one tap ✨</p>
         </div>
-        <div className="max-w-3xl mx-auto grid md:grid-cols-2 gap-6">
-          {/* Before */}
-          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-3 h-3 rounded-full bg-red-400"></div>
-              <span className="text-red-300 font-semibold text-sm uppercase tracking-wide">Before</span>
-            </div>
-            <div className="space-y-3">
-              <div className="bg-gray-800/50 rounded-xl p-4">
-                <p className="text-gray-400 text-sm mb-1">They said:</p>
-                <p className="text-white">&ldquo;wyd tonight?&rdquo;</p>
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Dating Example */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                <span className="text-red-300 font-semibold text-sm uppercase tracking-wide">Before</span>
+                <span className="ml-auto text-xs text-white/40">💕 Dating</span>
               </div>
-              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
-                <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                <p className="text-red-200">&ldquo;nm just chilling hbu&rdquo;</p>
-                <p className="text-red-400 text-xs mt-2">😬 Dry. No energy. Conversation killer.</p>
+              <div className="space-y-3">
+                <div className="bg-gray-800/50 rounded-xl p-4">
+                  <p className="text-gray-400 text-sm mb-1">They said:</p>
+                  <p className="text-white">&ldquo;wyd tonight?&rdquo;</p>
+                </div>
+                <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+                  <p className="text-gray-400 text-sm mb-1">Your reply:</p>
+                  <p className="text-red-200">&ldquo;chillin, u?&rdquo;</p>
+                  <p className="text-red-400 text-xs mt-2">😬 Low effort. No energy. Dead end.</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white/5 backdrop-blur border border-purple-500/30 rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                <span className="text-green-300 font-semibold text-sm uppercase tracking-wide">After</span>
+              </div>
+              <div className="space-y-3">
+                <div className="bg-gray-800/50 rounded-xl p-4">
+                  <p className="text-gray-400 text-sm mb-1">They said:</p>
+                  <p className="text-white">&ldquo;wyd tonight?&rdquo;</p>
+                </div>
+                <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
+                  <p className="text-gray-400 text-sm mb-1">Your reply:</p>
+                  <p className="text-green-200">&ldquo;that&apos;s a maybe. what&apos;s the move?&rdquo;</p>
+                  <p className="text-green-400 text-xs mt-2">✨ Creates tension. Invites more.</p>
+                </div>
               </div>
             </div>
           </div>
-          {/* After */}
-          <div className="bg-white/5 backdrop-blur border border-purple-500/30 rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-3 h-3 rounded-full bg-green-400"></div>
-              <span className="text-green-300 font-semibold text-sm uppercase tracking-wide">After (with Wingman)</span>
-            </div>
-            <div className="space-y-3">
-              <div className="bg-gray-800/50 rounded-xl p-4">
-                <p className="text-gray-400 text-sm mb-1">They said:</p>
-                <p className="text-white">&ldquo;wyd tonight?&rdquo;</p>
+
+          {/* Friends Example */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                <span className="text-red-300 font-semibold text-sm uppercase tracking-wide">Before</span>
+                <span className="ml-auto text-xs text-white/40">🤝 Friends</span>
               </div>
-              <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
-                <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                <p className="text-green-200">&ldquo;depends... what&apos;d you have in mind? 👀&rdquo;</p>
-                <p className="text-green-400 text-xs mt-2">✨ Smooth. Curious. Keeps it going.</p>
+              <div className="space-y-3">
+                <div className="bg-gray-800/50 rounded-xl p-4">
+                  <p className="text-gray-400 text-sm mb-1">They said:</p>
+                  <p className="text-white">&ldquo;u tryna link up?&rdquo;</p>
+                </div>
+                <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+                  <p className="text-gray-400 text-sm mb-1">Your reply:</p>
+                  <p className="text-red-200">&ldquo;idk bro maybe later&rdquo;</p>
+                  <p className="text-red-400 text-xs mt-2">😬 Flaky. Non-committal. Mid.</p>
+                </div>
               </div>
             </div>
+            <div className="bg-white/5 backdrop-blur border border-purple-500/30 rounded-2xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                <span className="text-green-300 font-semibold text-sm uppercase tracking-wide">After</span>
+              </div>
+              <div className="space-y-3">
+                <div className="bg-gray-800/50 rounded-xl p-4">
+                  <p className="text-gray-400 text-sm mb-1">They said:</p>
+                  <p className="text-white">&ldquo;u tryna link up?&rdquo;</p>
+                </div>
+                <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
+                  <p className="text-gray-400 text-sm mb-1">Your reply:</p>
+                  <p className="text-green-200">&ldquo;pull up if u free, i&apos;m around&rdquo;</p>
+                  <p className="text-green-400 text-xs mt-2">✨ Open. Confident. Inviting.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="text-center pt-4">
+            <Link href="/app" className="text-purple-300 hover:text-white text-sm font-medium transition-colors">
+              Get replies that hit every time → <span className="underline">Try it free</span>
+            </Link>
           </div>
         </div>
       </section>
