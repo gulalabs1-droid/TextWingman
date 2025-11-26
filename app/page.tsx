@@ -88,11 +88,11 @@ export default function HomePage() {
             <div className="space-y-3">
               <div className="bg-gray-800/50 rounded-xl p-4">
                 <p className="text-gray-400 text-sm mb-1">They said:</p>
-                <p className="text-white">"wyd tonight?"</p>
+                <p className="text-white">&ldquo;wyd tonight?&rdquo;</p>
               </div>
               <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
                 <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                <p className="text-red-200">"nm just chilling hbu"</p>
+                <p className="text-red-200">&ldquo;nm just chilling hbu&rdquo;</p>
                 <p className="text-red-400 text-xs mt-2">😬 Dry. No energy. Conversation killer.</p>
               </div>
             </div>
@@ -106,11 +106,11 @@ export default function HomePage() {
             <div className="space-y-3">
               <div className="bg-gray-800/50 rounded-xl p-4">
                 <p className="text-gray-400 text-sm mb-1">They said:</p>
-                <p className="text-white">"wyd tonight?"</p>
+                <p className="text-white">&ldquo;wyd tonight?&rdquo;</p>
               </div>
               <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
                 <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                <p className="text-green-200">"depends... what'd you have in mind? 👀"</p>
+                <p className="text-green-200">&ldquo;depends... what&apos;d you have in mind? 👀&rdquo;</p>
                 <p className="text-green-400 text-xs mt-2">✨ Smooth. Curious. Keeps it going.</p>
               </div>
             </div>
@@ -488,7 +488,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-white/90 mb-4">
-                "I used to overthink every text. Now I just paste and pick. My dating life has never been smoother 🔥"
+                &ldquo;I used to overthink every text. Now I just paste and pick. My dating life has never been smoother 🔥&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">J</div>
@@ -509,7 +509,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-white/90 mb-4">
-                "The softer tone option saved my relationship. Seriously. Best $7 I ever spent."
+                &ldquo;The softer tone option saved my relationship. Seriously. Best $7 I ever spent.&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">S</div>
@@ -530,7 +530,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-white/90 mb-4">
-                "Finally, an AI that actually gets texting culture. The spicier replies are *chef's kiss* 💯"
+                &ldquo;Finally, an AI that actually gets texting culture. The spicier replies are *chef&apos;s kiss* 💯&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">M</div>
