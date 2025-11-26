@@ -336,10 +336,7 @@ export default function HomePage() {
 
           {/* Monthly */}
           <Card className="relative overflow-visible bg-gradient-to-br from-purple-600 to-indigo-600 border-0 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 rounded-3xl">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-6 py-2 rounded-full text-sm font-black shadow-xl whitespace-nowrap">
-              🔥 MOST POPULAR
-            </div>
-            <CardHeader className="pb-8 pt-12">
+            <CardHeader className="pb-8 pt-8">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-white">Pro Monthly</CardTitle>
                 <CardDescription className="text-base text-purple-100">Unlimited replies for any conversation</CardDescription>
@@ -356,37 +353,37 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-bold">Unlimited AI replies ♾️</span>
+                  <span className="text-white font-bold">Never run out of replies ♾️</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">All 3 tone styles</span>
+                  <span className="text-white font-medium">Shorter, Spicier, Softer tones</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">Viral share cards 🔗</span>
+                  <span className="text-white font-medium">Flex with share cards 🔗</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-yellow-400/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Sparkles className="h-4 w-4 text-yellow-300" />
+                  </div>
+                  <span className="text-yellow-200 font-bold">Smart Vibe Tracking 🎯</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">Priority support 🚀</span>
+                  <span className="text-white font-medium">Priority support</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
                   <span className="text-white font-medium">Cancel anytime</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-white font-medium">Smart vibe tracking 🎯</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-14 text-lg font-black rounded-xl bg-white text-purple-700 hover:bg-gray-100 shadow-2xl hover:shadow-purple-900/30 hover:scale-105 transition-all">
@@ -397,11 +394,14 @@ export default function HomePage() {
           </Card>
 
           {/* Annual */}
-          <Card className="relative overflow-hidden bg-white/95 backdrop-blur border-2 border-purple-300 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
-            <div className="absolute top-6 right-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-1.5 rounded-full text-xs font-black shadow-lg rotate-3">
+          <Card className="relative overflow-visible bg-white/95 backdrop-blur border-2 border-purple-400 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-6 py-2 rounded-full text-sm font-black shadow-xl whitespace-nowrap">
+              🔥 MOST POPULAR
+            </div>
+            <div className="absolute top-14 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-black shadow-lg rotate-3">
               SAVE 65%
             </div>
-            <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-purple-50 to-white">
+            <CardHeader className="pb-8 pt-12 bg-gradient-to-br from-purple-50 to-white">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-gray-900">Pro Annual</CardTitle>
                 <CardDescription className="text-base text-gray-600">Best value — save over 65%</CardDescription>
@@ -412,7 +412,7 @@ export default function HomePage() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-bold text-green-600">Save $55 vs monthly!</p>
-                <p className="text-xs text-gray-500">Just $2.42/month</p>
+                <p className="text-xs text-gray-500">Just $2.42/month • <span className="font-semibold">Only $0.08/day</span></p>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 pb-8">
@@ -421,31 +421,31 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-900 font-bold">Everything in Pro ✨</span>
+                  <span className="text-gray-900 font-bold">Everything in Pro Monthly ✨</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">Unlimited replies forever</span>
+                  <span className="text-gray-700 font-medium">Text like a legend, forever</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">Lock in this price 🔒</span>
+                  <span className="text-gray-700 font-medium">Price locked — never pay more 🔒</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">Early access to new features</span>
+                  <span className="text-gray-700 font-medium">First dibs on new features</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">VIP support channel</span>
+                  <span className="text-gray-700 font-medium">VIP support — skip the line</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
