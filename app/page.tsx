@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Zap, Check, X, Star } from "lucide-react";
+import { Sparkles, MessageCircle, Zap, Check, X, Star, ArrowRight, Brain, Filter, Target, Heart, Briefcase, Users } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { AnimatedShowcase } from "@/components/AnimatedShowcase";
 
@@ -40,6 +40,10 @@ export default function HomePage() {
             AI-Powered Text Replies
           </div>
           
+          <p className="text-lg md:text-xl text-purple-200 font-medium">
+            Replies that hit. Confidence that shows.
+          </p>
+          
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
             Never Text Alone
             <span className="block bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent mt-2">Again</span>
@@ -57,7 +61,7 @@ export default function HomePage() {
               </Link>
             </Button>
             <Button asChild size="lg" className="text-lg px-8 h-14 bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-400 rounded-2xl font-semibold transition-all duration-300 active:scale-95 hover:scale-105 shadow-lg hover:shadow-purple-400/40">
-              <Link href="#pricing" className="scroll-smooth">View Pricing</Link>
+              <Link href="#before-after" className="scroll-smooth">See It In Action</Link>
             </Button>
           </div>
         </div>
@@ -65,6 +69,113 @@ export default function HomePage() {
         {/* Animated Showcase */}
         <div className="mt-12 md:mt-16">
           <AnimatedShowcase />
+        </div>
+      </section>
+
+      {/* Before & After Section */}
+      <section id="before-after" className="container mx-auto px-4 py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">The Glow-Up Is Real</h2>
+          <p className="text-white/70">See the difference AI makes</p>
+        </div>
+        <div className="max-w-3xl mx-auto grid md:grid-cols-2 gap-6">
+          {/* Before */}
+          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-3 h-3 rounded-full bg-red-400"></div>
+              <span className="text-red-300 font-semibold text-sm uppercase tracking-wide">Before</span>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-gray-800/50 rounded-xl p-4">
+                <p className="text-gray-400 text-sm mb-1">They said:</p>
+                <p className="text-white">"wyd tonight?"</p>
+              </div>
+              <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
+                <p className="text-gray-400 text-sm mb-1">Your reply:</p>
+                <p className="text-red-200">"nm just chilling hbu"</p>
+                <p className="text-red-400 text-xs mt-2">😬 Dry. No energy. Conversation killer.</p>
+              </div>
+            </div>
+          </div>
+          {/* After */}
+          <div className="bg-white/5 backdrop-blur border border-purple-500/30 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-3 h-3 rounded-full bg-green-400"></div>
+              <span className="text-green-300 font-semibold text-sm uppercase tracking-wide">After (with Wingman)</span>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-gray-800/50 rounded-xl p-4">
+                <p className="text-gray-400 text-sm mb-1">They said:</p>
+                <p className="text-white">"wyd tonight?"</p>
+              </div>
+              <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
+                <p className="text-gray-400 text-sm mb-1">Your reply:</p>
+                <p className="text-green-200">"depends... what'd you have in mind? 👀"</p>
+                <p className="text-green-400 text-xs mt-2">✨ Smooth. Curious. Keeps it going.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Works For Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold text-white mb-3">Works For Every Conversation</h2>
+          <p className="text-white/70">Pick your vibe, we handle the rest</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <Card className="bg-gradient-to-br from-pink-500/20 to-purple-500/20 border-pink-500/30 text-white text-center hover:scale-105 transition-transform">
+            <CardContent className="pt-6">
+              <Heart className="h-10 w-10 mx-auto mb-4 text-pink-400" />
+              <h3 className="text-xl font-bold mb-2">Dating</h3>
+              <p className="text-white/70 text-sm">Flirty, tension-building replies that keep them interested</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-white text-center hover:scale-105 transition-transform">
+            <CardContent className="pt-6">
+              <Users className="h-10 w-10 mx-auto mb-4 text-blue-400" />
+              <h3 className="text-xl font-bold mb-2">Friends</h3>
+              <p className="text-white/70 text-sm">Casual, witty responses with just the right humor</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-gray-500/20 to-slate-500/20 border-gray-500/30 text-white text-center hover:scale-105 transition-transform">
+            <CardContent className="pt-6">
+              <Briefcase className="h-10 w-10 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-xl font-bold mb-2">Work</h3>
+              <p className="text-white/70 text-sm">Professional, clean replies that sound polished</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Why It Hits Harder Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Why Text Wingman Hits Harder</h2>
+          <p className="text-white/70">Not just another AI — built specifically for texting</p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-center">
+            <Brain className="h-8 w-8 mx-auto mb-3 text-purple-400" />
+            <h3 className="font-bold text-white mb-2">Detects Intent</h3>
+            <p className="text-white/60 text-sm">Reads tone + hidden meaning in their message</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-center">
+            <Target className="h-8 w-8 mx-auto mb-3 text-pink-400" />
+            <h3 className="font-bold text-white mb-2">Matches Your Style</h3>
+            <p className="text-white/60 text-sm">Short, confident, smooth — your vibe, amplified</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-center">
+            <Filter className="h-8 w-8 mx-auto mb-3 text-blue-400" />
+            <h3 className="font-bold text-white mb-2">Filters Cringe</h3>
+            <p className="text-white/60 text-sm">No over-texting, no needy vibes, no L replies</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-center">
+            <Zap className="h-8 w-8 mx-auto mb-3 text-yellow-400" />
+            <h3 className="font-bold text-white mb-2">3 Optimized Options</h3>
+            <p className="text-white/60 text-sm">Shorter, Spicier, Softer — pick your perfect reply</p>
+          </div>
         </div>
       </section>
 
@@ -168,6 +279,18 @@ export default function HomePage() {
                     <X className="h-4 w-4 text-gray-400" />
                   </div>
                   <span className="text-gray-400 font-medium">Smart vibe tracking</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <X className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <span className="text-gray-400 font-medium">Tone calibration</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <X className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <span className="text-gray-400 font-medium">Priority speed</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-12 text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all" variant="outline">
@@ -441,6 +564,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="text-xs text-white/40">&copy; 2025 Text Wingman. All rights reserved.</p>
+            <p className="text-xs text-white/30 mt-2">Built with ❤️ by real people in DC — made for real conversations.</p>
           </div>
         </div>
       </footer>
