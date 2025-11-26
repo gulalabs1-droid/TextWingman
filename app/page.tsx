@@ -8,6 +8,13 @@ import { AnimatedShowcase } from "@/components/AnimatedShowcase";
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600">
+      {/* Urgency Banner */}
+      <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white text-center py-2 px-4 text-sm font-medium">
+        <span className="animate-pulse inline-block mr-2">🚀</span>
+        Launch Special: <span className="font-bold">$7/mo</span> — Price increases Jan 1st
+        <Link href="#pricing" className="ml-2 underline hover:no-underline">Lock it in →</Link>
+      </div>
+
       {/* Header/Navbar */}
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
@@ -63,6 +70,19 @@ export default function HomePage() {
             <Button asChild size="lg" className="text-lg px-8 h-14 bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-400 rounded-2xl font-semibold transition-all duration-300 active:scale-95 hover:scale-105 shadow-lg hover:shadow-purple-400/40">
               <Link href="#before-after" className="scroll-smooth">See It In Action</Link>
             </Button>
+          </div>
+          
+          {/* Trust Line */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-white/60">
+            <span className="flex items-center gap-1">
+              <Check className="h-4 w-4 text-green-400" /> Free forever
+            </span>
+            <span className="flex items-center gap-1">
+              <Check className="h-4 w-4 text-green-400" /> No credit card
+            </span>
+            <span className="flex items-center gap-1">
+              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /> Loved by 1,000+ texters
+            </span>
           </div>
         </div>
 
