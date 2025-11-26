@@ -131,8 +131,8 @@ export default function HomePage() {
                 </div>
                 <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
                   <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                  <p className="text-green-200">&ldquo;haven&apos;t decided yet. what u got in mind? 👀&rdquo;</p>
-                  <p className="text-green-400 text-xs mt-2">✨ Smooth. Curious. Keeps it open.</p>
+                  <p className="text-green-200">&ldquo;depends. what u thinking? 👀&rdquo;</p>
+                  <p className="text-green-400 text-xs mt-2">✨ Short. Curious. Pull energy.</p>
                 </div>
               </div>
             </div>
@@ -170,8 +170,8 @@ export default function HomePage() {
                 </div>
                 <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
                   <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                  <p className="text-green-200">&ldquo;pull up if u free, i&apos;m around&rdquo;</p>
-                  <p className="text-green-400 text-xs mt-2">✨ Open. Confident. Inviting.</p>
+                  <p className="text-green-200">&ldquo;say less, pull up&rdquo;</p>
+                  <p className="text-green-400 text-xs mt-2">✨ Short. Confident. Action.</p>
                 </div>
               </div>
             </div>
