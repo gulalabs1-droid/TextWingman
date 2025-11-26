@@ -131,8 +131,8 @@ export default function HomePage() {
                 </div>
                 <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
                   <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                  <p className="text-green-200">&ldquo;that&apos;s a maybe. what&apos;s the move?&rdquo;</p>
-                  <p className="text-green-400 text-xs mt-2">✨ Creates tension. Invites more.</p>
+                  <p className="text-green-200">&ldquo;haven&apos;t decided yet. what u got in mind? 👀&rdquo;</p>
+                  <p className="text-green-400 text-xs mt-2">✨ Smooth. Curious. Keeps it open.</p>
                 </div>
               </div>
             </div>
@@ -650,6 +650,13 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Sticky Mobile CTA */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent md:hidden z-50">
+        <Button asChild className="w-full h-12 text-base font-bold rounded-xl bg-white text-black hover:bg-gray-100 shadow-2xl">
+          <Link href="/app">Try It Free →</Link>
+        </Button>
+      </div>
     </div>
   );
 }
