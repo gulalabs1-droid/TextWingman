@@ -125,25 +125,31 @@ export default function HomePage() {
           <p className="text-white/70">Pick your vibe, we handle the rest</p>
         </div>
         <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <Card className="bg-gradient-to-br from-pink-500/20 to-purple-500/20 border-pink-500/30 text-white text-center hover:scale-105 transition-transform">
-            <CardContent className="pt-6">
-              <Heart className="h-10 w-10 mx-auto mb-4 text-pink-400" />
+          <Card className="bg-gradient-to-br from-pink-600 to-purple-700 border-0 text-white text-center hover:scale-105 transition-transform shadow-xl shadow-pink-500/20">
+            <CardContent className="pt-6 pb-6">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/20 flex items-center justify-center">
+                <Heart className="h-7 w-7 text-white" />
+              </div>
               <h3 className="text-xl font-bold mb-2">Dating</h3>
-              <p className="text-white/70 text-sm">Flirty, tension-building replies that keep them interested</p>
+              <p className="text-white/90 text-sm">Flirty, tension-building replies that keep them interested</p>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/30 text-white text-center hover:scale-105 transition-transform">
-            <CardContent className="pt-6">
-              <Users className="h-10 w-10 mx-auto mb-4 text-blue-400" />
+          <Card className="bg-gradient-to-br from-blue-600 to-cyan-700 border-0 text-white text-center hover:scale-105 transition-transform shadow-xl shadow-blue-500/20">
+            <CardContent className="pt-6 pb-6">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/20 flex items-center justify-center">
+                <Users className="h-7 w-7 text-white" />
+              </div>
               <h3 className="text-xl font-bold mb-2">Friends</h3>
-              <p className="text-white/70 text-sm">Casual, witty responses with just the right humor</p>
+              <p className="text-white/90 text-sm">Casual, witty responses with just the right humor</p>
             </CardContent>
           </Card>
-          <Card className="bg-gradient-to-br from-gray-500/20 to-slate-500/20 border-gray-500/30 text-white text-center hover:scale-105 transition-transform">
-            <CardContent className="pt-6">
-              <Briefcase className="h-10 w-10 mx-auto mb-4 text-gray-400" />
+          <Card className="bg-gradient-to-br from-slate-600 to-gray-700 border-0 text-white text-center hover:scale-105 transition-transform shadow-xl shadow-gray-500/20">
+            <CardContent className="pt-6 pb-6">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/20 flex items-center justify-center">
+                <Briefcase className="h-7 w-7 text-white" />
+              </div>
               <h3 className="text-xl font-bold mb-2">Work</h3>
-              <p className="text-white/70 text-sm">Professional, clean replies that sound polished</p>
+              <p className="text-white/90 text-sm">Professional, clean replies that sound polished</p>
             </CardContent>
           </Card>
         </div>
@@ -156,25 +162,33 @@ export default function HomePage() {
           <p className="text-white/70">Not just another AI — built specifically for texting</p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-center">
-            <Brain className="h-8 w-8 mx-auto mb-3 text-purple-400" />
+          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-purple-500/30 flex items-center justify-center">
+              <Brain className="h-6 w-6 text-purple-300" />
+            </div>
             <h3 className="font-bold text-white mb-2">Detects Intent</h3>
-            <p className="text-white/60 text-sm">Reads tone + hidden meaning in their message</p>
+            <p className="text-white/80 text-sm">Reads tone + hidden meaning in their message</p>
           </div>
-          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-center">
-            <Target className="h-8 w-8 mx-auto mb-3 text-pink-400" />
+          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-pink-500/30 flex items-center justify-center">
+              <Target className="h-6 w-6 text-pink-300" />
+            </div>
             <h3 className="font-bold text-white mb-2">Matches Your Style</h3>
-            <p className="text-white/60 text-sm">Short, confident, smooth — your vibe, amplified</p>
+            <p className="text-white/80 text-sm">Short, confident, smooth — your vibe, amplified</p>
           </div>
-          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-center">
-            <Filter className="h-8 w-8 mx-auto mb-3 text-blue-400" />
+          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-blue-500/30 flex items-center justify-center">
+              <Filter className="h-6 w-6 text-blue-300" />
+            </div>
             <h3 className="font-bold text-white mb-2">Filters Cringe</h3>
-            <p className="text-white/60 text-sm">No over-texting, no needy vibes, no L replies</p>
+            <p className="text-white/80 text-sm">No over-texting, no needy vibes, no L replies</p>
           </div>
-          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 text-center">
-            <Zap className="h-8 w-8 mx-auto mb-3 text-yellow-400" />
+          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-yellow-500/30 flex items-center justify-center">
+              <Zap className="h-6 w-6 text-yellow-300" />
+            </div>
             <h3 className="font-bold text-white mb-2">3 Optimized Options</h3>
-            <p className="text-white/60 text-sm">Shorter, Spicier, Softer — pick your perfect reply</p>
+            <p className="text-white/80 text-sm">Shorter, Spicier, Softer — pick your perfect reply</p>
           </div>
         </div>
       </section>
