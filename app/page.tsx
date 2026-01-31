@@ -16,14 +16,7 @@ export default function HomePage() {
           </Link>
           <div className="flex items-center gap-3">
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
-              <Link href="/app">Try V1</Link>
-            </Button>
-            <Button asChild variant="ghost" className="relative text-white hover:bg-white/10 rounded-xl border border-violet-400/30 bg-violet-600/10">
-              <Link href="/v2" className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                <span>V2 Preview</span>
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
-              </Link>
+              <Link href="/app">Try Free</Link>
             </Button>
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
               <Link href="/dashboard">Dashboard</Link>
@@ -437,19 +430,19 @@ export default function HomePage() {
               BEST VALUE
             </div>
             <div className="absolute top-14 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-black shadow-lg rotate-3">
-              SAVE 34%
+              SAVE 80%
             </div>
             <CardHeader className="pb-8 pt-12 bg-gradient-to-br from-purple-50 to-white">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-gray-900">Pro Annual</CardTitle>
-                <CardDescription className="text-base text-gray-600">Best value — save big</CardDescription>
+                <CardDescription className="text-base text-gray-600">Best value — save 80%</CardDescription>
               </div>
               <div className="mt-6 mb-2 flex items-end gap-2">
                 <span className="text-5xl font-black text-gray-900">$99.99</span>
                 <span className="text-xl text-gray-500 mb-1.5">/year</span>
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-bold text-green-600">Save $419.49 vs weekly</p>
+                <p className="text-sm font-bold text-green-600">Save $419 vs weekly</p>
                 <p className="text-xs text-gray-500">Just $1.92/week</p>
               </div>
             </CardHeader>

@@ -180,22 +180,6 @@ export default async function DashboardPage() {
             </Link>
           )}
 
-          {/* V2 Preview - Muted secondary placement */}
-          <Link 
-            href="/v2"
-            className="block bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5 hover:bg-white/10 transition-colors group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gray-600 rounded-xl flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white/70" />
-              </div>
-              <div>
-                <h3 className="font-medium text-white/70 group-hover:text-white/90 transition-colors">V2 Preview</h3>
-                <p className="text-sm text-white/40">Coming soon</p>
-              </div>
-            </div>
-          </Link>
-
         </div>
       </div>
     </div>
