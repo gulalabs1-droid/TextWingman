@@ -11,7 +11,8 @@ import { Sparkles, MessageCircle } from 'lucide-react';
 type ShareData = {
   theirMessage: string;
   myReply: string;
-  tone: 'shorter' | 'spicier' | 'softer';
+  tone?: 'shorter' | 'spicier' | 'softer';
+  type?: 'best' | 'playful' | 'direct' | 'escalation';
 };
 
 const TONE_CONFIG = {
@@ -29,6 +30,26 @@ const TONE_CONFIG = {
     label: 'Softer',
     gradient: 'from-green-500 to-emerald-500',
     emoji: '💚',
+  },
+  best: {
+    label: 'Best Option',
+    gradient: 'from-green-500 to-emerald-500',
+    emoji: '✅',
+  },
+  playful: {
+    label: 'Playful',
+    gradient: 'from-purple-500 to-pink-500',
+    emoji: '😏',
+  },
+  direct: {
+    label: 'Direct',
+    gradient: 'from-blue-500 to-indigo-500',
+    emoji: '🎯',
+  },
+  escalation: {
+    label: 'Escalation',
+    gradient: 'from-orange-500 to-red-500',
+    emoji: '🔥',
   },
 };
 
@@ -74,7 +95,8 @@ export default function SharePage() {
     );
   }
 
-  const config = TONE_CONFIG[shareData.tone];
+  const styleKey = shareData.type || shareData.tone || 'best';
+  const config = TONE_CONFIG[styleKey as keyof typeof TONE_CONFIG];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 py-12 px-4">

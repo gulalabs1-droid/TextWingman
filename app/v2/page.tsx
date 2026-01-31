@@ -301,7 +301,7 @@ export default function V2TeaserPage() {
                       'Quick A/B/C replies',
                       'Tone toggles (Shorter / Spicier / Softer)',
                       'Share-card (She said / I said)',
-                      '3 free/day · Pro $7/mo or $29/yr'
+                      '3 free/day · Pro $7.99/mo or $39/yr'
                     ].map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3">
                         <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />

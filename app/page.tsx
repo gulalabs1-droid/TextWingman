@@ -11,7 +11,7 @@ export default function HomePage() {
       {/* Urgency Banner */}
       <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white text-center py-2 px-4 text-sm font-medium">
         <span className="animate-pulse inline-block mr-2">🚀</span>
-        Launch Special: <span className="font-bold">$7/mo</span> — Price increases Jan 1st
+        Founder Pricing: <span className="font-bold">$9.99/mo</span> — Lock in this rate forever
         <Link href="#pricing" className="ml-2 underline hover:no-underline">Lock it in →</Link>
       </div>
 
@@ -31,6 +31,12 @@ export default function HomePage() {
                 <span>V2 Preview</span>
                 <span className="absolute -top-1 -right-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
               </Link>
+            </Button>
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
+              <Link href="/login">Login</Link>
             </Button>
             <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 rounded-xl font-semibold">
               <Link href="#pricing">Pricing</Link>
@@ -320,17 +326,18 @@ export default function HomePage() {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4 text-white">Simple Pricing</h2>
           <p className="text-xl text-white/80">
-            Choose the plan that works for you
+            Start free. Upgrade when you're ready.
           </p>
+          <p className="text-sm text-purple-300 mt-4">Founder pricing — lock in these rates forever</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4 pt-8 pb-4">
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4 pt-8 pb-4">
           {/* Free Tier */}
           <Card className="relative overflow-hidden bg-white/95 backdrop-blur border-0 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
             <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-gray-50 to-white">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-gray-900">Free</CardTitle>
-                <CardDescription className="text-base text-gray-600">Perfect to get started</CardDescription>
+                <CardDescription className="text-base text-gray-600">Try it out</CardDescription>
               </div>
               <div className="mt-6 mb-2">
                 <span className="text-5xl font-black text-gray-900">$0</span>
@@ -342,37 +349,31 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">5 replies per day</span>
+                  <span className="text-gray-700 font-medium">3 replies per day</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">All 3 tone options</span>
+                  <span className="text-gray-700 font-medium">1 default tone</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">Smart context selector</span>
+                  <span className="text-gray-700 font-medium">Basic context selection</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <X className="h-4 w-4 text-gray-400" />
                   </div>
-                  <span className="text-gray-400 font-medium">Smart vibe tracking</span>
+                  <span className="text-gray-400 font-medium">All tone modes</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <X className="h-4 w-4 text-gray-400" />
                   </div>
-                  <span className="text-gray-400 font-medium">Tone calibration</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <X className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <span className="text-gray-400 font-medium">Priority speed</span>
+                  <span className="text-gray-400 font-medium">Share cards</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-12 text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all" variant="outline">
@@ -382,18 +383,20 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Monthly */}
+          {/* Pro Monthly - Highlighted */}
           <Card className="relative overflow-visible bg-gradient-to-br from-purple-600 to-indigo-600 border-0 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 rounded-3xl">
-            <CardHeader className="pb-8 pt-8">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-purple-700 px-6 py-2 rounded-full text-sm font-black shadow-xl whitespace-nowrap">
+              MOST POPULAR
+            </div>
+            <CardHeader className="pb-8 pt-12">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-white">Pro Monthly</CardTitle>
-                <CardDescription className="text-base text-purple-100">Unlimited replies for any conversation</CardDescription>
+                <CardDescription className="text-base text-purple-100">Unlimited replies, all features</CardDescription>
               </div>
               <div className="mt-6 mb-2 flex items-end gap-2">
-                <span className="text-5xl font-black text-white">$7</span>
+                <span className="text-5xl font-black text-white">$9.99</span>
                 <span className="text-xl text-purple-200 mb-1.5">/month</span>
               </div>
-              <p className="text-sm text-purple-200">Less than a coffee ☕</p>
             </CardHeader>
             <CardContent className="space-y-6 pb-8">
               <ul className="space-y-4">
@@ -401,66 +404,60 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-bold">Never run out of replies ♾️</span>
+                  <span className="text-white font-bold">Unlimited replies</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">Shorter, Spicier, Softer tones</span>
+                  <span className="text-white font-medium">All tone modes</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">Flex with share cards 🔗</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-yellow-400/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Sparkles className="h-4 w-4 text-yellow-300" />
-                  </div>
-                  <span className="text-yellow-200 font-bold">Smart Vibe Tracking 🎯</span>
+                  <span className="text-white font-medium">Best output formatting (A/B/C)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">Priority support</span>
+                  <span className="text-white font-medium">Share cards</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="h-4 w-4 text-white" />
+                  <div className="w-6 h-6 rounded-full bg-purple-400/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Sparkles className="h-4 w-4 text-purple-200" />
                   </div>
-                  <span className="text-white font-medium">Cancel anytime</span>
+                  <span className="text-purple-200 font-medium italic">Coming soon: Vibe memory, predictions</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-14 text-lg font-black rounded-xl bg-white text-purple-700 hover:bg-gray-100 shadow-2xl hover:shadow-purple-900/30 hover:scale-105 transition-all">
-                <Link href="/app">Get Pro Now →</Link>
+                <Link href="/app">Get Pro →</Link>
               </Button>
-              <p className="text-xs text-center text-purple-200 mt-2">Instant upgrade — no interruption to your chats</p>
+              <p className="text-xs text-center text-purple-200">Cancel anytime</p>
             </CardContent>
           </Card>
 
-          {/* Annual */}
+          {/* Pro Annual - Best Value */}
           <Card className="relative overflow-visible bg-white/95 backdrop-blur border-2 border-purple-400 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-3xl">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-6 py-2 rounded-full text-sm font-black shadow-xl whitespace-nowrap">
-              🔥 MOST POPULAR
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-full text-sm font-black shadow-xl whitespace-nowrap">
+              BEST VALUE
             </div>
             <div className="absolute top-14 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-black shadow-lg rotate-3">
-              SAVE 65%
+              SAVE 34%
             </div>
             <CardHeader className="pb-8 pt-12 bg-gradient-to-br from-purple-50 to-white">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-gray-900">Pro Annual</CardTitle>
-                <CardDescription className="text-base text-gray-600">Best value — save over 65%</CardDescription>
+                <CardDescription className="text-base text-gray-600">Best value — save big</CardDescription>
               </div>
               <div className="mt-6 mb-2 flex items-end gap-2">
-                <span className="text-5xl font-black text-gray-900">$29</span>
+                <span className="text-5xl font-black text-gray-900">$79</span>
                 <span className="text-xl text-gray-500 mb-1.5">/year</span>
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-bold text-green-600">Save $55 vs monthly!</p>
-                <p className="text-xs text-gray-500">Just $2.42/month • <span className="font-semibold">Only $0.08/day</span></p>
+                <p className="text-sm font-bold text-green-600">Save $40.88 vs monthly</p>
+                <p className="text-xs text-gray-500">Just $6.58/month</p>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 pb-8">
@@ -469,41 +466,29 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-900 font-bold">Everything in Pro Monthly ✨</span>
+                  <span className="text-gray-900 font-bold">Everything in Pro Monthly</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">Text like a legend, forever</span>
+                  <span className="text-gray-700 font-medium">Price locked forever</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">Price locked — never pay more 🔒</span>
+                  <span className="text-gray-700 font-medium">First access to new features</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">First dibs on new features</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <span className="text-gray-700 font-medium">VIP support — skip the line</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <span className="text-gray-700 font-medium">Smart vibe tracking 🎯</span>
+                  <span className="text-gray-700 font-medium">Priority support</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all">
-                <Link href="/app">Get Annual Deal →</Link>
+                <Link href="/app">Get Annual →</Link>
               </Button>
               <p className="text-xs text-center text-gray-500">Billed once, in full. Cancel anytime.</p>
             </CardContent>
@@ -525,26 +510,21 @@ export default function HomePage() {
               <tbody className="text-white/90">
                 <tr className="border-b border-white/10">
                   <td className="p-4">Daily replies</td>
-                  <td className="text-center p-4">5</td>
-                  <td className="text-center p-4 bg-purple-600/10 font-bold">Unlimited ♾️</td>
+                  <td className="text-center p-4">3</td>
+                  <td className="text-center p-4 bg-purple-600/10 font-bold">Unlimited</td>
                 </tr>
                 <tr className="border-b border-white/10">
                   <td className="p-4">Tone options</td>
-                  <td className="text-center p-4">3</td>
-                  <td className="text-center p-4 bg-purple-600/10">3</td>
+                  <td className="text-center p-4">1</td>
+                  <td className="text-center p-4 bg-purple-600/10">All</td>
                 </tr>
                 <tr className="border-b border-white/10">
-                  <td className="p-4">Viral share cards</td>
-                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
-                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
-                </tr>
-                <tr className="border-b border-white/10">
-                  <td className="p-4">Smart vibe tracking</td>
+                  <td className="p-4">Output options (A/B/C)</td>
                   <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
                   <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
                 </tr>
                 <tr>
-                  <td className="p-4">Priority support</td>
+                  <td className="p-4">Share cards</td>
                   <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
                   <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
                 </tr>
@@ -591,7 +571,7 @@ export default function HomePage() {
                 ))}
               </div>
               <p className="text-white/90 mb-4">
-                &ldquo;The softer tone option saved my relationship. Seriously. Best $7 I ever spent.&rdquo;
+                &ldquo;The softer tone option saved my relationship. Seriously. Best investment I ever made.&rdquo;
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">S</div>
