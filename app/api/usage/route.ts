@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+let supabase: SupabaseClient | null = null;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabase() {
+  if (!supabase) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+    
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabase;
+}
 
 const FREE_LIMIT = parseInt(process.env.FREE_USAGE_LIMIT || '5');
 const RESET_HOURS = 24;
@@ -26,7 +37,7 @@ export async function GET(request: NextRequest) {
     const ip = getClientIP(request);
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
 
-    const { count, error } = await supabase
+    const { count, error } = await getSupabase()
       .from('usage_logs')
       .select('*', { count: 'exact', head: true })
       .eq('ip_address', ip)
@@ -60,7 +71,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || 'unknown';
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
 
-    const { count, error: countError } = await supabase
+    const { count, error: countError } = await getSupabase()
       .from('usage_logs')
       .select('*', { count: 'exact', head: true })
       .eq('ip_address', ip)
@@ -83,7 +94,7 @@ export async function POST(request: NextRequest) {
       }, { status: 429 });
     }
 
-    const { error: insertError } = await supabase
+    const { error: insertError } = await getSupabase()
       .from('usage_logs')
       .insert({
         ip_address: ip,
