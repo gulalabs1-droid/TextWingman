@@ -312,7 +312,7 @@ export default function HomePage() {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4 text-white">Simple Pricing</h2>
           <p className="text-xl text-white/80">
-            Start free. Upgrade when you're ready.
+            Start free. Upgrade when you&apos;re ready.
           </p>
           <p className="text-sm text-purple-300 mt-4">Founder pricing — lock in these rates forever</p>
         </div>

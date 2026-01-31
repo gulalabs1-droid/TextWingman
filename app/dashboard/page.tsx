@@ -118,7 +118,7 @@ export default async function DashboardPage() {
                     />
                   </div>
                   {showUpgradeNudge && (
-                    <p className="text-xs text-white/70 mt-2">You're almost out. Pro removes limits and unlocks full tone control.</p>
+                    <p className="text-xs text-white/70 mt-2">You&apos;re almost out. Pro removes limits and unlocks full tone control.</p>
                   )}
                 </>
               )}

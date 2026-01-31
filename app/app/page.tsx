@@ -335,7 +335,7 @@ export default function AppPage() {
               <Crown className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">You've used all 5 free replies</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;ve used all 5 free replies</h2>
               <p className="text-gray-600">Unlock unlimited replies + full style control</p>
               <p className="text-sm text-gray-400 mt-2">Free replies reset in 24 hours</p>
             </div>
