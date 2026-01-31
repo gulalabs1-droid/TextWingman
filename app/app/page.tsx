@@ -82,52 +82,54 @@ export default function AppPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   
-  // Usage state - persisted in localStorage with 24-hour reset
+  // Usage state - tracked server-side by IP
   const [usageCount, setUsageCount] = useState(0);
+  const [remainingReplies, setRemainingReplies] = useState(5);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [usageLoaded, setUsageLoaded] = useState(false);
   const FREE_LIMIT = 5;
 
-  // Load usage from localStorage on mount
+  // Load usage from server on mount
   useEffect(() => {
-    const stored = localStorage.getItem('textwingman_usage');
-    if (stored) {
-      const { count, timestamp } = JSON.parse(stored);
-      const now = Date.now();
-      const hoursSinceReset = (now - timestamp) / (1000 * 60 * 60);
-      
-      if (hoursSinceReset >= 24) {
-        // Reset after 24 hours
-        localStorage.setItem('textwingman_usage', JSON.stringify({ count: 0, timestamp: now }));
-        setUsageCount(0);
-      } else {
-        setUsageCount(count);
+    const fetchUsage = async () => {
+      try {
+        const res = await fetch('/api/usage');
+        if (res.ok) {
+          const data = await res.json();
+          setUsageCount(data.usageCount);
+          setRemainingReplies(data.remaining);
+        }
+      } catch (error) {
+        console.error('Failed to fetch usage:', error);
+      } finally {
+        setUsageLoaded(true);
       }
-    } else {
-      // First visit
-      localStorage.setItem('textwingman_usage', JSON.stringify({ count: 0, timestamp: Date.now() }));
-    }
+    };
+    fetchUsage();
   }, []);
 
-  // Save usage to localStorage whenever it changes
-  const incrementUsage = () => {
-    const newCount = usageCount + 1;
-    setUsageCount(newCount);
-    const stored = localStorage.getItem('textwingman_usage');
-    const timestamp = stored ? JSON.parse(stored).timestamp : Date.now();
-    localStorage.setItem('textwingman_usage', JSON.stringify({ count: newCount, timestamp }));
-  };
-
-  const getRemainingReplies = () => Math.max(0, FREE_LIMIT - usageCount);
-
-  const getHoursUntilReset = () => {
-    const stored = localStorage.getItem('textwingman_usage');
-    if (stored) {
-      const { timestamp } = JSON.parse(stored);
-      const hoursSinceReset = (Date.now() - timestamp) / (1000 * 60 * 60);
-      return Math.max(0, Math.ceil(24 - hoursSinceReset));
+  // Log usage to server and update state
+  const incrementUsage = async () => {
+    try {
+      const res = await fetch('/api/usage', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setUsageCount(data.usageCount);
+        setRemainingReplies(data.remaining);
+        return true;
+      } else if (res.status === 429) {
+        setShowPaywall(true);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to log usage:', error);
     }
-    return 24;
+    return true;
   };
+
+  const getRemainingReplies = () => remainingReplies;
+
+  const getHoursUntilReset = () => 24;
   
   const { toast } = useToast();
 
@@ -197,7 +199,7 @@ export default function AppPage() {
           { label: 'Escalation Move', text: getEscalationText(), type: 'escalation', rationale: 'Push for the number or date' },
         ];
         setReplies(transformedReplies);
-        incrementUsage();
+        await incrementUsage();
       }
 
       toast({
