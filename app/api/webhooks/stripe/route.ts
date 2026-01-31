@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+let supabase: SupabaseClient | null = null;
+
+function getSupabase() {
+  if (!supabase) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+    
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabase;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -55,7 +67,7 @@ export async function POST(request: NextRequest) {
           const userId = session.metadata?.user_id;
 
           if (userId) {
-            const { error } = await supabase
+            const { error } = await getSupabase()
               .from('user_subscriptions')
               .upsert({
                 user_id: userId,
@@ -78,7 +90,7 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         
-        const { error } = await supabase
+        const { error } = await getSupabase()
           .from('user_subscriptions')
           .update({
             status: subscription.status,
@@ -96,7 +108,7 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         
-        const { error } = await supabase
+        const { error } = await getSupabase()
           .from('user_subscriptions')
           .update({
             status: 'canceled',
