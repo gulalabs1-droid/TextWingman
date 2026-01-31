@@ -6,15 +6,11 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export const PRICING = {
   weekly: {
-    price: 4.99,
+    price: 9.99,
     priceId: process.env.STRIPE_PRICE_ID_WEEKLY || 'price_weekly',
   },
-  monthly: {
-    price: 9.99,
-    priceId: process.env.STRIPE_PRICE_ID_MONTHLY || 'price_monthly',
-  },
   annual: {
-    price: 79,
+    price: 99.99,
     priceId: process.env.STRIPE_PRICE_ID_ANNUAL || 'price_annual',
   },
 };

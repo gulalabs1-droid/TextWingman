@@ -292,7 +292,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold">${subscription.plan_type === 'weekly' ? '4.99/wk' : subscription.plan_type === 'monthly' ? '9.99/mo' : '79/yr'}</p>
+                      <p className="text-sm font-bold">${subscription.plan_type === 'weekly' ? '9.99/wk' : subscription.plan_type === 'annual' ? '99.99/yr' : '9.99/wk'}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -309,7 +309,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <Button asChild className="bg-white text-purple-700 hover:bg-gray-100 font-bold rounded-xl">
-                      <Link href="/#pricing">$9.99/mo</Link>
+                      <Link href="/#pricing">$9.99/wk</Link>
                     </Button>
                   </div>
                 </CardContent>

@@ -8,13 +8,6 @@ import { AnimatedShowcase } from "@/components/AnimatedShowcase";
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600">
-      {/* Urgency Banner */}
-      <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 text-white text-center py-2 px-4 text-sm font-medium">
-        <span className="animate-pulse inline-block mr-2">🚀</span>
-        Founder Pricing: <span className="font-bold">$9.99/mo</span> — Lock in this rate forever
-        <Link href="#pricing" className="ml-2 underline hover:no-underline">Lock it in →</Link>
-      </div>
-
       {/* Header/Navbar */}
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
@@ -390,12 +383,12 @@ export default function HomePage() {
             </div>
             <CardHeader className="pb-8 pt-12">
               <div className="space-y-2">
-                <CardTitle className="text-2xl font-bold text-white">Pro Monthly</CardTitle>
+                <CardTitle className="text-2xl font-bold text-white">Pro Weekly</CardTitle>
                 <CardDescription className="text-base text-purple-100">Unlimited replies, all features</CardDescription>
               </div>
               <div className="mt-6 mb-2 flex items-end gap-2">
                 <span className="text-5xl font-black text-white">$9.99</span>
-                <span className="text-xl text-purple-200 mb-1.5">/month</span>
+                <span className="text-xl text-purple-200 mb-1.5">/week</span>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 pb-8">
@@ -452,12 +445,12 @@ export default function HomePage() {
                 <CardDescription className="text-base text-gray-600">Best value — save big</CardDescription>
               </div>
               <div className="mt-6 mb-2 flex items-end gap-2">
-                <span className="text-5xl font-black text-gray-900">$79</span>
+                <span className="text-5xl font-black text-gray-900">$99.99</span>
                 <span className="text-xl text-gray-500 mb-1.5">/year</span>
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-bold text-green-600">Save $40.88 vs monthly</p>
-                <p className="text-xs text-gray-500">Just $6.58/month</p>
+                <p className="text-sm font-bold text-green-600">Save $419.49 vs weekly</p>
+                <p className="text-xs text-gray-500">Just $1.92/week</p>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 pb-8">
@@ -466,7 +459,7 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-purple-600" />
                   </div>
-                  <span className="text-gray-900 font-bold">Everything in Pro Monthly</span>
+                  <span className="text-gray-900 font-bold">Everything in Pro Weekly</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">

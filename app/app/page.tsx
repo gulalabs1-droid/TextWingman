@@ -341,10 +341,10 @@ export default function AppPage() {
             </div>
             <div className="space-y-3">
               <Button 
-                onClick={() => handleCheckout('monthly')}
+                onClick={() => handleCheckout('weekly')}
                 className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl"
               >
-                Unlock Pro - $9.99/month
+                Unlock Pro - $9.99/week
               </Button>
               <p className="text-xs text-gray-500">Cancel anytime</p>
             </div>

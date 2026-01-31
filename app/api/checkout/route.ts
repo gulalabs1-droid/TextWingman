@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const { plan, userId, userEmail } = await request.json();
 
-    if (!plan || !['weekly', 'monthly', 'annual'].includes(plan)) {
+    if (!plan || !['weekly', 'annual'].includes(plan)) {
       return NextResponse.json(
         { error: 'Invalid plan' },
         { status: 400 }
