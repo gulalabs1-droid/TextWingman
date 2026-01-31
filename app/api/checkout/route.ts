@@ -3,9 +3,9 @@ import { stripe, PRICING } from '@/lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
-    const { plan } = await request.json();
+    const { plan, userId, userEmail } = await request.json();
 
-    if (!plan || !['monthly', 'annual'].includes(plan)) {
+    if (!plan || !['weekly', 'monthly', 'annual'].includes(plan)) {
       return NextResponse.json(
         { error: 'Invalid plan' },
         { status: 400 }
@@ -27,6 +27,10 @@ export async function POST(request: NextRequest) {
       success_url: `${origin}/app?success=true`,
       cancel_url: `${origin}/app?canceled=true`,
       allow_promotion_codes: true,
+      customer_email: userEmail || undefined,
+      metadata: {
+        user_id: userId || '',
+      },
     });
 
     return NextResponse.json({ url: session.url });
