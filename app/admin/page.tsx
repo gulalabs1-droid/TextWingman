@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase/client';
 import { 
   BarChart3, 
   Users, 
@@ -14,10 +13,12 @@ import {
   RefreshCw,
   Crown,
   ArrowUpRight,
-  Loader2
+  Loader2,
+  Lock
 } from 'lucide-react';
 
-const ADMIN_EMAIL = 'cjdj123ct@gmail.com';
+// Simple admin password - change this to something secure
+const ADMIN_PASSWORD = 'textwingman2025';
 
 type Metrics = {
   dailyGenerations: number;
@@ -35,34 +36,36 @@ type Metrics = {
 };
 
 export default function AdminPage() {
-  const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Check if already authenticated via localStorage
   useEffect(() => {
-    checkAuth();
+    const savedAuth = localStorage.getItem('admin_auth');
+    if (savedAuth === 'true') {
+      setAuthorized(true);
+      fetchMetrics();
+    }
   }, []);
 
-  const checkAuth = async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     
-    if (!user) {
-      router.push('/login');
-      return;
+    if (password === ADMIN_PASSWORD) {
+      localStorage.setItem('admin_auth', 'true');
+      setAuthorized(true);
+      setError(null);
+      await fetchMetrics();
+    } else {
+      setError('Wrong password');
     }
-    
-    if (user.email !== ADMIN_EMAIL) {
-      setError('Access denied. Admin only.');
-      setLoading(false);
-      return;
-    }
-    
-    setAuthorized(true);
-    await fetchMetrics();
+    setLoading(false);
   };
 
   const fetchMetrics = async () => {
@@ -97,20 +100,36 @@ export default function AdminPage() {
     );
   }
 
-  if (error || !authorized) {
+  // Show password login form if not authorized
+  if (!authorized) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <Card className="bg-gray-900 border-red-500/50">
-          <CardContent className="p-8 text-center">
-            <div className="text-red-500 text-6xl mb-4">🚫</div>
-            <h1 className="text-2xl font-bold text-white mb-2">Access Denied</h1>
-            <p className="text-gray-400">{error || 'You are not authorized to view this page.'}</p>
-            <Button 
-              onClick={() => router.push('/dashboard')} 
-              className="mt-4 bg-purple-600 hover:bg-purple-700"
-            >
-              Go to Dashboard
-            </Button>
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+        <Card className="bg-gray-900 border-purple-500/50 w-full max-w-md">
+          <CardContent className="p-8">
+            <div className="text-center mb-6">
+              <Lock className="h-12 w-12 text-purple-500 mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+              <p className="text-gray-400 mt-2">Enter password to access</p>
+            </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter admin password"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+              {error && (
+                <p className="text-red-400 text-sm text-center">{error}</p>
+              )}
+              <Button 
+                type="submit"
+                disabled={loading}
+                className="w-full bg-purple-600 hover:bg-purple-700 h-12 font-bold"
+              >
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Access Dashboard'}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
@@ -327,7 +346,7 @@ export default function AdminPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-gray-600 text-sm">
-          <p>🔒 Admin access only • {ADMIN_EMAIL}</p>
+          <p>🔒 Admin access only</p>
         </div>
       </div>
     </div>
