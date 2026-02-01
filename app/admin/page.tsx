@@ -136,7 +136,32 @@ export default function AdminPage() {
     );
   }
 
-  if (!metrics) return null;
+  if (!metrics) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center flex-col gap-4">
+        {refreshing ? (
+          <>
+            <Loader2 className="h-8 w-8 text-purple-500 animate-spin" />
+            <p className="text-gray-400">Loading metrics...</p>
+          </>
+        ) : error ? (
+          <>
+            <p className="text-red-400 text-lg">{error}</p>
+            <Button onClick={fetchMetrics} className="bg-purple-600 hover:bg-purple-700">
+              Retry
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-gray-400">No data loaded</p>
+            <Button onClick={fetchMetrics} className="bg-purple-600 hover:bg-purple-700">
+              Load Metrics
+            </Button>
+          </>
+        )}
+      </div>
+    );
+  }
 
   const statCards = [
     {
