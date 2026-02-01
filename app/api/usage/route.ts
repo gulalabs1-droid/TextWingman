@@ -20,6 +20,10 @@ function getSupabase() {
 const FREE_LIMIT = 3; // Matches homepage pricing: 3 free replies per day
 const RESET_HOURS = 24;
 
+// VPN/Abuse Detection - Moderate tolerance
+const VPN_ABUSE_THRESHOLD = 5; // Max different IPs per fingerprint in 1 hour
+const VPN_CHECK_WINDOW_HOURS = 1;
+
 function getClientIP(request: NextRequest): string {
   const forwardedFor = request.headers.get('x-forwarded-for');
   if (forwardedFor) {
@@ -30,6 +34,14 @@ function getClientIP(request: NextRequest): string {
     return realIP;
   }
   return '127.0.0.1';
+}
+
+// Get browser fingerprint from headers (lightweight)
+function getFingerprint(request: NextRequest): string {
+  const ua = request.headers.get('user-agent') || '';
+  const lang = request.headers.get('accept-language') || '';
+  // Create a simple fingerprint from stable headers
+  return Buffer.from(`${ua}-${lang}`).toString('base64').substring(0, 32);
 }
 
 export async function GET(request: NextRequest) {
@@ -69,7 +81,32 @@ export async function POST(request: NextRequest) {
   try {
     const ip = getClientIP(request);
     const userAgent = request.headers.get('user-agent') || 'unknown';
+    const fingerprint = getFingerprint(request);
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
+    const vpnCheckTime = new Date(Date.now() - VPN_CHECK_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+
+    // VPN/Abuse check: Count unique IPs for this fingerprint in last hour
+    const { data: recentLogs } = await getSupabase()
+      .from('usage_logs')
+      .select('ip_address')
+      .eq('fingerprint', fingerprint)
+      .gte('created_at', vpnCheckTime);
+
+    if (recentLogs) {
+      const uniqueIPs = new Set(recentLogs.map(log => log.ip_address));
+      uniqueIPs.add(ip); // Include current IP
+      
+      if (uniqueIPs.size >= VPN_ABUSE_THRESHOLD) {
+        return NextResponse.json({
+          error: 'vpn_abuse_detected',
+          message: 'Unusual activity detected. Upgrade to Pro for unlimited access.',
+          upgradeUrl: '/#pricing',
+          usageCount: FREE_LIMIT,
+          remaining: 0,
+          canGenerate: false,
+        }, { status: 429 });
+      }
+    }
 
     const { count, error: countError } = await getSupabase()
       .from('usage_logs')
@@ -100,6 +137,7 @@ export async function POST(request: NextRequest) {
         ip_address: ip,
         user_agent: userAgent,
         action: 'generate_reply',
+        fingerprint: fingerprint,
       });
 
     if (insertError) {

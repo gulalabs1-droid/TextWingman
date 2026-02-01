@@ -27,9 +27,13 @@ export async function POST(request: NextRequest) {
     // - Measure viral coefficient
     // - Identify popular tones
     
+    // Generate image URL for OG sharing
+    const imageUrl = `/api/share/image?their=${encodeURIComponent(shareData.theirMessage)}&reply=${encodeURIComponent(shareData.myReply)}&tone=${tone}`;
+    
     return NextResponse.json({
       slug,
       shareUrl: `/share/${slug}`,
+      imageUrl,
     });
   } catch (error) {
     console.error('Error generating share card:', error);
