@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     // Return zero metrics if Supabase is not configured
     if (!supabase) {
       return NextResponse.json({
-        today: { count: 0, limit: 5, remaining: 5 },
+        today: { count: 0, limit: 3, remaining: 3 },
         allTime: { count: 0 },
       });
     }
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const { data: todayLogs, error: todayError } = await supabase
       .from('usage_logs')
       .select('*')
-      .eq('user_ip', ip)
+      .eq('ip_address', ip)
       .gte('created_at', today);
 
     if (todayError) {
@@ -31,13 +31,13 @@ export async function GET(request: NextRequest) {
     const { data: allLogs, error: allError } = await supabase
       .from('usage_logs')
       .select('*')
-      .eq('user_ip', ip);
+      .eq('ip_address', ip);
 
     if (allError) {
       throw allError;
     }
 
-    const freeLimit = parseInt(process.env.FREE_USAGE_LIMIT || '5');
+    const freeLimit = 3; // Matches homepage pricing: 3 free replies per day
 
     return NextResponse.json({
       today: {
