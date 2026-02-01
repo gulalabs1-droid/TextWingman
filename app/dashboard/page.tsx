@@ -5,7 +5,7 @@ import SignOutButton from './sign-out-button'
 import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   // if (!user) {
