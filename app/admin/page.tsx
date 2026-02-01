@@ -42,16 +42,28 @@ export default function AdminPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
   // Check if already authenticated via localStorage
   useEffect(() => {
-    const savedAuth = localStorage.getItem('admin_auth');
-    if (savedAuth === 'true') {
-      setAuthorized(true);
-      fetchMetrics();
+    setMounted(true);
+    try {
+      const savedAuth = localStorage.getItem('admin_auth');
+      if (savedAuth === 'true') {
+        setAuthorized(true);
+      }
+    } catch (e) {
+      console.error('localStorage error:', e);
     }
   }, []);
+
+  // Fetch metrics when authorized
+  useEffect(() => {
+    if (authorized && mounted) {
+      fetchMetrics();
+    }
+  }, [authorized, mounted]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +104,8 @@ export default function AdminPage() {
     }
   };
 
-  if (loading) {
+  // SSR guard
+  if (!mounted) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <Loader2 className="h-8 w-8 text-purple-500 animate-spin" />
