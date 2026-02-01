@@ -81,9 +81,9 @@ export default function AppPage() {
   const [selectedContext, setSelectedContext] = useState<ContextType>(null);
   const [sharing, setSharing] = useState<string | null>(null);
   const [usageCount, setUsageCount] = useState(0);
-  const [remainingReplies, setRemainingReplies] = useState(5);
+  const [remainingReplies, setRemainingReplies] = useState(3);
   const [showPaywall, setShowPaywall] = useState(false);
-  const usageLimit = 5;
+  const usageLimit = 3; // Matches homepage pricing: 3 free replies per day
   const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
   const { toast } = useToast();
   
@@ -335,7 +335,7 @@ export default function AppPage() {
               <Crown className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;ve used all 5 free replies</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;ve used all 3 free replies</h2>
               <p className="text-gray-600">Unlock unlimited replies + full style control</p>
               <p className="text-sm text-gray-400 mt-2">Free replies reset in 24 hours</p>
             </div>

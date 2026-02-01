@@ -41,7 +41,7 @@ export default async function DashboardPage() {
     full_name: profile?.full_name,
     subscription_status: (isPro ? (subscription?.plan_type || 'monthly') : 'free') as 'free' | 'monthly' | 'annual' | 'weekly',
     usage_count: usageCount || 0,
-    usage_limit: 5,
+    usage_limit: 3, // Matches homepage pricing: 3 free replies per day
   }
 
   const subscriptionConfig = {
