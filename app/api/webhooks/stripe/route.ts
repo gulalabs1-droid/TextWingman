@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
           if (userId) {
             const { error } = await getSupabase()
-              .from('user_subscriptions')
+              .from('subscriptions')
               .upsert({
                 user_id: userId,
                 stripe_customer_id: session.customer as string,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         
         const { error } = await getSupabase()
-          .from('user_subscriptions')
+          .from('subscriptions')
           .update({
             status: subscription.status,
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         
         const { error } = await getSupabase()
-          .from('user_subscriptions')
+          .from('subscriptions')
           .update({
             status: 'canceled',
             updated_at: new Date().toISOString(),

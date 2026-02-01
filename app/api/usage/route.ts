@@ -17,7 +17,7 @@ function getSupabase() {
   return supabase;
 }
 
-const FREE_LIMIT = parseInt(process.env.FREE_USAGE_LIMIT || '5');
+const FREE_LIMIT = 3; // Matches homepage pricing: 3 free replies per day
 const RESET_HOURS = 24;
 
 function getClientIP(request: NextRequest): string {
@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       .insert({
         ip_address: ip,
         user_agent: userAgent,
+        action: 'generate_reply',
       });
 
     if (insertError) {

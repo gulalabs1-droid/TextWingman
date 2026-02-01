@@ -66,7 +66,7 @@ export default function ProfilePage() {
   const fetchSubscription = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('user_subscriptions')
+        .from('subscriptions')
         .select('plan_type, status, current_period_end')
         .eq('user_id', userId)
         .single();

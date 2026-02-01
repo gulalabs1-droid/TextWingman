@@ -29,7 +29,19 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/dashboard')
+    // Check onboarding status and redirect accordingly
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .single()
+      
+      router.push(profile?.onboarding_completed ? '/dashboard' : '/onboarding')
+    } else {
+      router.push('/dashboard')
+    }
     router.refresh()
   }
 

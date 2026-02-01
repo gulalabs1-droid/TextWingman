@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateReplies, generateRepliesWithAgent } from '@/lib/openai';
 import { supabase } from '@/lib/supabase';
 
-const FREE_USAGE_LIMIT = parseInt(process.env.FREE_USAGE_LIMIT || '5');
+const FREE_USAGE_LIMIT = 3; // Matches homepage pricing: 3 free replies per day
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,28 +19,41 @@ export async function POST(request: NextRequest) {
     // TODO: Add user authentication for personalized limits
     const ip = request.headers.get('x-forwarded-for') || 'anonymous';
     
-    // Check usage count if Supabase is configured
+    // Server-side usage check - always enforce limits
     if (supabase) {
-      const today = new Date().toISOString().split('T')[0];
-      const { data: usageLogs, error: fetchError } = await supabase
+      const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count, error: fetchError } = await supabase
         .from('usage_logs')
-        .select('*')
-        .eq('user_ip', ip)
-        .gte('created_at', today);
+        .select('*', { count: 'exact', head: true })
+        .eq('ip_address', ip)
+        .gte('created_at', cutoffTime);
 
       if (fetchError) {
         console.error('Supabase error:', fetchError);
       }
 
       // Check if free tier limit reached
-      if (usageLogs && usageLogs.length >= FREE_USAGE_LIMIT) {
+      if (count !== null && count >= FREE_USAGE_LIMIT) {
         return NextResponse.json(
           { 
             error: 'Usage limit reached',
-            message: `You've reached your daily limit of ${FREE_USAGE_LIMIT} free replies. Upgrade to continue!`,
+            message: `You've reached your daily limit of ${FREE_USAGE_LIMIT} free replies. Upgrade to Pro for unlimited!`,
           },
           { status: 429 }
         );
+      }
+
+      // Log usage BEFORE generating (prevents bypass)
+      const { error: insertError } = await supabase
+        .from('usage_logs')
+        .insert({
+          ip_address: ip,
+          user_agent: request.headers.get('user-agent') || 'unknown',
+          action: 'generate_reply',
+        });
+
+      if (insertError) {
+        console.error('Failed to log usage:', insertError);
       }
     }
 

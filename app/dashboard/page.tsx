@@ -8,15 +8,39 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // if (!user) {
-  //   redirect('/login')
-  // }
+  if (!user) {
+    redirect('/login')
+  }
 
-  // Demo data - replace with actual user profile data from Supabase
+  // Fetch profile data
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', user.id)
+    .single()
+
+  // Fetch subscription data
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('plan_type, status, current_period_end')
+    .eq('user_id', user.id)
+    .single()
+
+  // Get today's usage count
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const { count: usageCount } = await supabase
+    .from('usage_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', today.toISOString())
+
+  const isPro = subscription?.status === 'active'
   const userProfile = {
-    email: user?.email || 'demo@example.com',
-    subscription_status: 'free' as 'free' | 'monthly' | 'annual',
-    usage_count: 3,
+    email: profile?.email || user.email || 'user@example.com',
+    full_name: profile?.full_name,
+    subscription_status: (isPro ? (subscription?.plan_type || 'monthly') : 'free') as 'free' | 'monthly' | 'annual' | 'weekly',
+    usage_count: usageCount || 0,
     usage_limit: 5,
   }
 
@@ -26,6 +50,12 @@ export default async function DashboardPage() {
       color: 'bg-gray-500',
       textColor: 'text-gray-400',
       icon: Zap,
+    },
+    weekly: {
+      label: 'Pro Weekly',
+      color: 'bg-purple-500',
+      textColor: 'text-purple-400',
+      icon: Crown,
     },
     monthly: {
       label: 'Pro Monthly',
