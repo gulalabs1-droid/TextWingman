@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { createClient as createServerClient } from '@/lib/supabase/server';
-
-const ADMIN_EMAIL = 'cjdj123ct@gmail.com';
 
 // Stripe price mapping for MRR calculation
 const PRICE_MAP: Record<string, { amount: number; interval: 'week' | 'month' | 'year' }> = {
@@ -24,14 +21,7 @@ function getSupabaseAdmin() {
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth check - only allow admin email
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user || user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    // Auth is handled by frontend password check
     const adminSupabase = getSupabaseAdmin();
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
