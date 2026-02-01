@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateReplies, generateRepliesWithAgent } from '@/lib/openai';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 const FREE_USAGE_LIMIT = 3; // Matches homepage pricing: 3 free replies per day
+
+// Use service role key to bypass RLS for usage tracking
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +24,10 @@ export async function POST(request: NextRequest) {
     }
 
     // IP-based rate limiting for free tier
-    // TODO: Add user authentication for personalized limits
-    const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'anonymous';
+    
+    const supabase = getSupabaseAdmin();
     
     // Server-side usage check - always enforce limits
     if (supabase) {
@@ -29,7 +39,7 @@ export async function POST(request: NextRequest) {
         .gte('created_at', cutoffTime);
 
       if (fetchError) {
-        console.error('Supabase error:', fetchError);
+        console.error('Supabase usage check error:', fetchError);
       }
 
       // Check if free tier limit reached
@@ -55,6 +65,8 @@ export async function POST(request: NextRequest) {
       if (insertError) {
         console.error('Failed to log usage:', insertError);
       }
+    } else {
+      console.warn('No Supabase admin client - usage not tracked');
     }
 
     // Generate replies using OpenAI
