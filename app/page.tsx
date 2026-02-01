@@ -14,18 +14,18 @@ export default function HomePage() {
           <Link href="/" className="transition-transform hover:scale-105">
             <Logo size="md" showText={true} className="cursor-pointer" />
           </Link>
-          <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden md:flex">
               <Link href="/app">Try Free</Link>
             </Button>
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
+              <Link href="#pricing">Pricing</Link>
+            </Button>
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
               <Link href="/login">Login</Link>
             </Button>
             <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 rounded-xl font-semibold">
-              <Link href="#pricing">Pricing</Link>
+              <Link href="/login">Sign Up</Link>
             </Button>
           </div>
         </div>

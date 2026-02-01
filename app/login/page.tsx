@@ -2,7 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Logo } from '@/components/Logo'
+import { Sparkles } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -10,6 +13,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [mode, setMode] = useState<'signin' | 'signup'>('signup')
   const router = useRouter()
   const supabase = createClient()
 
@@ -29,7 +33,6 @@ export default function LoginPage() {
       return
     }
 
-    // Check onboarding status and redirect accordingly
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       const { data: profile } = await supabase
@@ -62,21 +65,30 @@ export default function LoginPage() {
       return
     }
 
-    setMessage('Check your email to confirm your account.')
+    setMessage('Check your email to confirm your account!')
     setIsLoading(false)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="w-full max-w-md p-8 space-y-6 bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-4">
+      {/* Logo */}
+      <Link href="/" className="mb-8 transition-transform hover:scale-105">
+        <Logo size="lg" showText={true} />
+      </Link>
+
+      <div className="w-full max-w-md p-8 space-y-6 bg-white/95 backdrop-blur rounded-3xl shadow-2xl">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-white">Welcome</h1>
-          <p className="mt-2 text-gray-400">Sign in or create an account</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {mode === 'signup' ? 'Create Account' : 'Welcome Back'}
+          </h1>
+          <p className="mt-2 text-gray-600">
+            {mode === 'signup' ? 'Start getting perfect replies today' : 'Sign in to continue'}
+          </p>
         </div>
 
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={mode === 'signup' ? handleSignUp : handleSignIn}>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
               Email
             </label>
             <input
@@ -85,13 +97,13 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="mt-1 w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
               Password
             </label>
             <input
@@ -101,43 +113,77 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="mt-1 w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="mt-1 w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="p-3 bg-red-50 border-2 border-red-200 rounded-xl">
+              <p className="text-sm text-red-600 font-medium">{error}</p>
             </div>
           )}
 
           {message && (
-            <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-lg">
-              <p className="text-sm text-green-400">{message}</p>
+            <div className="p-3 bg-green-50 border-2 border-green-200 rounded-xl">
+              <p className="text-sm text-green-600 font-medium">{message}</p>
             </div>
           )}
 
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              onClick={handleSignIn}
-              disabled={isLoading}
-              className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-            >
-              {isLoading ? 'Loading...' : 'Sign In'}
-            </button>
-            <button
-              type="button"
-              onClick={handleSignUp}
-              disabled={isLoading}
-              className="flex-1 py-3 px-4 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-600/50 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-            >
-              {isLoading ? 'Loading...' : 'Sign Up'}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full py-4 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              'Loading...'
+            ) : mode === 'signup' ? (
+              <>
+                <Sparkles className="h-5 w-5" />
+                Create Free Account
+              </>
+            ) : (
+              'Sign In'
+            )}
+          </button>
         </form>
+
+        <div className="text-center">
+          {mode === 'signup' ? (
+            <p className="text-gray-600">
+              Already have an account?{' '}
+              <button
+                onClick={() => setMode('signin')}
+                className="text-purple-600 font-semibold hover:text-purple-700 transition-colors"
+              >
+                Sign In
+              </button>
+            </p>
+          ) : (
+            <p className="text-gray-600">
+              Don&apos;t have an account?{' '}
+              <button
+                onClick={() => setMode('signup')}
+                className="text-purple-600 font-semibold hover:text-purple-700 transition-colors"
+              >
+                Sign Up Free
+              </button>
+            </p>
+          )}
+        </div>
+
+        {mode === 'signup' && (
+          <p className="text-center text-xs text-gray-400">
+            3 free replies per day • No credit card required
+          </p>
+        )}
       </div>
+
+      <p className="mt-6 text-purple-200 text-sm">
+        <Link href="/" className="hover:text-white transition-colors">
+          ← Back to home
+        </Link>
+      </p>
     </div>
   )
 }

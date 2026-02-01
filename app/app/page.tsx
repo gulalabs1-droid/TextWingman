@@ -80,6 +80,8 @@ export default function AppPage() {
   const [showCraftedMessage, setShowCraftedMessage] = useState(false);
   const [selectedContext, setSelectedContext] = useState<ContextType>(null);
   const [sharing, setSharing] = useState<string | null>(null);
+  const [shareMenuOpen, setShareMenuOpen] = useState<string | null>(null);
+  const [vpnBlocked, setVpnBlocked] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
   const [remainingReplies, setRemainingReplies] = useState(3);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -172,11 +174,12 @@ export default function AppPage() {
 
       if (!response.ok) {
         if (response.status === 429) {
-          toast({
-            title: "Daily limit reached",
-            description: "Upgrade to Pro for unlimited replies!",
-            variant: "destructive",
-          });
+          // Check if VPN abuse detected
+          if (data.error === 'vpn_abuse_detected') {
+            setVpnBlocked(true);
+          } else {
+            setShowPaywall(true);
+          }
         } else {
           throw new Error(data.error || 'Failed to generate replies');
         }
@@ -242,11 +245,10 @@ export default function AppPage() {
     }
   };
 
-  const handleShare = async (reply: Reply) => {
+  // Share: Copy link
+  const handleShareLink = async (reply: Reply) => {
     setSharing(reply.tone);
-    
     try {
-      // Call API to create share card
       const response = await fetch('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -256,40 +258,53 @@ export default function AppPage() {
           tone: reply.tone,
         }),
       });
-      
       const data = await response.json();
-      
       if (data.slug) {
         const shareUrl = `${window.location.origin}/share/${data.slug}`;
         await navigator.clipboard.writeText(shareUrl);
-        
-        toast({
-          title: "🔗 Share link created!",
-          description: "Paste it on TikTok, Instagram, or Twitter",
-          duration: 3000,
-        });
+        toast({ title: "🔗 Share link copied!", description: "Paste on TikTok, Instagram, or Twitter" });
       }
-      
-      setTimeout(() => setSharing(null), 2000);
     } catch (err) {
-      // Fallback to client-side encoding
-      const shareData = {
-        theirMessage: message.substring(0, 100),
-        myReply: reply.text,
-        tone: reply.tone,
-      };
-      const encoded = btoa(JSON.stringify(shareData));
-      const shareUrl = `${window.location.origin}/share/${encoded}`;
-      await navigator.clipboard.writeText(shareUrl);
-      
-      toast({
-        title: "🔗 Share link copied!",
-        description: "Paste it on TikTok, Instagram, or Twitter",
-        duration: 3000,
-      });
-      
-      setTimeout(() => setSharing(null), 2000);
+      const encoded = btoa(JSON.stringify({ theirMessage: message.substring(0, 100), myReply: reply.text, tone: reply.tone }));
+      await navigator.clipboard.writeText(`${window.location.origin}/share/${encoded}`);
+      toast({ title: "🔗 Share link copied!" });
     }
+    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
+  };
+
+  // Share: Download image
+  const handleDownloadImage = async (reply: Reply) => {
+    setSharing(reply.tone);
+    try {
+      const imageUrl = `/api/share/image?their=${encodeURIComponent(message.substring(0, 100))}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
+      const res = await fetch(imageUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `textwingman-${reply.tone}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "📥 Image downloaded!", description: "Share it anywhere" });
+    } catch (err) {
+      toast({ title: "Failed to download", variant: "destructive" });
+    }
+    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
+  };
+
+  // Share: Copy image to clipboard
+  const handleCopyImage = async (reply: Reply) => {
+    setSharing(reply.tone);
+    try {
+      const imageUrl = `/api/share/image?their=${encodeURIComponent(message.substring(0, 100))}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
+      const res = await fetch(imageUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast({ title: "� Image copied!", description: "Paste it in any app" });
+    } catch (err) {
+      toast({ title: "Failed to copy image", description: "Try downloading instead", variant: "destructive" });
+    }
+    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
   };
 
   const handleTryAgain = () => {
@@ -330,6 +345,38 @@ export default function AppPage() {
       });
     }
   };
+
+  // VPN Abuse Block Modal
+  if (vpnBlocked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-white/95 backdrop-blur rounded-3xl overflow-hidden">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto">
+              <span className="text-3xl">🛡️</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Unusual Activity Detected</h2>
+              <p className="text-gray-600">We noticed multiple connections from different locations.</p>
+              <p className="text-sm text-gray-400 mt-2">This can happen with VPNs or shared networks.</p>
+            </div>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => handleCheckout('weekly')}
+                className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl"
+              >
+                Unlock Pro - No Limits
+              </Button>
+              <p className="text-xs text-gray-500">Pro users get unlimited access from anywhere</p>
+            </div>
+            <button onClick={() => setVpnBlocked(false)} className="text-sm text-gray-400 hover:text-gray-600">
+              Try again later
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Paywall Modal
   if (showPaywall) {
@@ -634,27 +681,49 @@ export default function AppPage() {
                             </>
                           )}
                         </Button>
-                        <Button
-                          onClick={() => handleShare(reply)}
-                          variant="outline"
-                          className={`h-14 rounded-2xl font-bold text-base border-2 shadow-lg transition-all duration-300 active:scale-95 hover:shadow-xl hover:-translate-y-1 ${
-                            sharing === reply.tone
-                              ? 'border-purple-500 bg-purple-50 text-purple-700'
-                              : 'border-gray-300 hover:border-purple-400 bg-white text-gray-700'
-                          }`}
-                          size="lg"
-                        >
-                          {sharing === reply.tone ? (
-                            <>
-                              🔗 Link Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Share
-                            </>
+                        <div className="relative">
+                          <Button
+                            onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
+                            variant="outline"
+                            className={`h-14 rounded-2xl font-bold text-base border-2 shadow-lg transition-all duration-300 active:scale-95 hover:shadow-xl hover:-translate-y-1 ${
+                              sharing === reply.tone
+                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                : 'border-gray-300 hover:border-purple-400 bg-white text-gray-700'
+                            }`}
+                            size="lg"
+                          >
+                            {sharing === reply.tone ? (
+                              <>✓ Shared!</>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Share
+                              </>
+                            )}
+                          </Button>
+                          {shareMenuOpen === reply.tone && (
+                            <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-xl shadow-2xl border-2 border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                              <button
+                                onClick={() => handleShareLink(reply)}
+                                className="w-full px-4 py-3 text-left text-sm font-medium hover:bg-purple-50 flex items-center gap-2 border-b border-gray-100"
+                              >
+                                🔗 Copy Share Link
+                              </button>
+                              <button
+                                onClick={() => handleDownloadImage(reply)}
+                                className="w-full px-4 py-3 text-left text-sm font-medium hover:bg-purple-50 flex items-center gap-2 border-b border-gray-100"
+                              >
+                                📥 Download Image
+                              </button>
+                              <button
+                                onClick={() => handleCopyImage(reply)}
+                                className="w-full px-4 py-3 text-left text-sm font-medium hover:bg-purple-50 flex items-center gap-2"
+                              >
+                                📋 Copy Image
+                              </button>
+                            </div>
                           )}
-                        </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
