@@ -190,7 +190,13 @@ export default function AppPage() {
         
         if (validReplies.length > 0) {
           setReplies(validReplies);
-          await incrementUsage();
+          // Refresh usage count from server (usage already logged server-side in /api/generate)
+          const usageRes = await fetch('/api/usage');
+          if (usageRes.ok) {
+            const usageData = await usageRes.json();
+            setUsageCount(usageData.usageCount);
+            setRemainingReplies(usageData.remaining);
+          }
         } else {
           throw new Error('Invalid reply format received');
         }
