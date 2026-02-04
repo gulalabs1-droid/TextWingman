@@ -60,15 +60,16 @@ export async function POST(request: NextRequest) {
     if (supabase) {
       const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       
-      // Build query - check by user_id if logged in, otherwise by IP
+      // Build query - for logged-in users, count BOTH user_id matches AND ip_address matches
+      // This ensures old logs (before user_id tracking) still count
       let query = supabase
         .from('usage_logs')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', cutoffTime);
       
       if (userId) {
-        // Logged-in user: check by user_id (persists across browsers)
-        query = query.eq('user_id', userId);
+        // OR query: user_id matches OR ip_address matches (catches legacy logs)
+        query = query.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
       } else {
         // Anonymous user: check by IP
         query = query.eq('ip_address', ip);

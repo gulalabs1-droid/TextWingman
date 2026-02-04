@@ -55,14 +55,16 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await serverSupabase.auth.getUser();
     const userId = user?.id || null;
 
-    // Build query - check by user_id if logged in, otherwise by IP
+    // Build query - for logged-in users, count BOTH user_id matches AND ip_address matches
+    // This ensures old logs (before user_id tracking) still count
     let query = getSupabase()
       .from('usage_logs')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', cutoffTime);
     
     if (userId) {
-      query = query.eq('user_id', userId);
+      // OR query: user_id matches OR ip_address matches (catches legacy logs)
+      query = query.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
     } else {
       query = query.eq('ip_address', ip);
     }
@@ -129,14 +131,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build query - check by user_id if logged in, otherwise by IP
+    // Build query - for logged-in users, count BOTH user_id matches AND ip_address matches
+    // This ensures old logs (before user_id tracking) still count
     let countQuery = getSupabase()
       .from('usage_logs')
       .select('*', { count: 'exact', head: true })
       .gte('created_at', cutoffTime);
     
     if (userId) {
-      countQuery = countQuery.eq('user_id', userId);
+      // OR query: user_id matches OR ip_address matches (catches legacy logs)
+      countQuery = countQuery.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
     } else {
       countQuery = countQuery.eq('ip_address', ip);
     }
