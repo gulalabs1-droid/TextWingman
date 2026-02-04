@@ -394,10 +394,18 @@ export default function AppPage() {
             </div>
             <div className="space-y-3">
               <Button 
-                onClick={() => handleCheckout('weekly')}
-                className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl"
+                onClick={() => handleCheckout('annual')}
+                className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl relative"
               >
-                Unlock Pro - $9.99/week
+                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">Best Value</span>
+                Unlock Pro - $99.99/year
+              </Button>
+              <Button 
+                onClick={() => handleCheckout('weekly')}
+                variant="outline"
+                className="w-full h-12 border-2 border-purple-300 text-purple-700 font-semibold rounded-2xl hover:bg-purple-50"
+              >
+                $9.99/week
               </Button>
               <p className="text-xs text-gray-500">Cancel anytime</p>
             </div>
