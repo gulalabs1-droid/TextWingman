@@ -26,14 +26,18 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .single()
 
-  // Get today's usage count
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const { count: usageCount } = await supabase
+  // Get usage count (24-hour rolling window to match generate API)
+  const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  
+  // Check usage by user_id first
+  const { count: userIdCount } = await supabase
     .from('usage_logs')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
-    .gte('created_at', today.toISOString())
+    .gte('created_at', cutoffTime)
+  
+  // Use the count (will be 0 if no logs with user_id yet)
+  const usageCount = userIdCount || 0
 
   const isPro = subscription?.status === 'active'
   const userProfile = {
