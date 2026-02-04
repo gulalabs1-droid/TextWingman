@@ -15,7 +15,7 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message } = await request.json();
+    const { message, context } = await request.json();
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -49,6 +49,17 @@ export async function POST(request: NextRequest) {
           const replies = process.env.TEXT_WINGMAN_AGENT_ID
             ? await generateRepliesWithAgent(message)
             : await generateReplies(message);
+          
+          // Save to reply history for Pro users
+          await supabaseAdmin
+            .from('reply_history')
+            .insert({
+              user_id: userId,
+              their_message: message,
+              generated_replies: replies,
+              context: context || null,
+            });
+          
           return NextResponse.json({ replies });
         }
       }
@@ -113,6 +124,18 @@ export async function POST(request: NextRequest) {
     const replies = process.env.TEXT_WINGMAN_AGENT_ID
       ? await generateRepliesWithAgent(message)
       : await generateReplies(message);
+
+    // Save to reply history for logged-in users
+    if (userId && supabase) {
+      await supabase
+        .from('reply_history')
+        .insert({
+          user_id: userId,
+          their_message: message,
+          generated_replies: replies,
+          context: context || null,
+        });
+    }
 
     return NextResponse.json({ replies });
   } catch (error) {

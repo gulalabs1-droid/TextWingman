@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import SignOutButton from './sign-out-button'
-import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard } from 'lucide-react'
+import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -38,6 +38,14 @@ export default async function DashboardPage() {
   
   // Use the count (will be 0 if no logs with user_id yet)
   const usageCount = userIdCount || 0
+
+  // Fetch recent replies for this user
+  const { data: recentReplies } = await supabase
+    .from('reply_history')
+    .select('id, their_message, generated_replies, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(3)
 
   const isPro = subscription?.status === 'active'
   const userProfile = {
@@ -78,7 +86,7 @@ export default async function DashboardPage() {
   const currentPlan = subscriptionConfig[userProfile.subscription_status]
   const PlanIcon = currentPlan.icon
   const usagePercentage = (userProfile.usage_count / userProfile.usage_limit) * 100
-  const showUpgradeNudge = userProfile.subscription_status === 'free' && userProfile.usage_count >= 4
+  const isAtLimit = userProfile.subscription_status === 'free' && userProfile.usage_count >= userProfile.usage_limit
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600">
@@ -103,17 +111,34 @@ export default async function DashboardPage() {
             <h1 className="text-3xl md:text-4xl font-bold text-white">Your next reply sets the tone.</h1>
           </div>
 
-          {/* Main CTA - Launch Text Wingman */}
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-10 text-center shadow-2xl shadow-purple-500/30">
-            <h2 className="text-2xl font-bold text-white mb-6">Paste any message. Get 3 perfect replies.</h2>
-            <Link 
-              href="/app"
-              className="inline-flex items-center gap-2 bg-white text-purple-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl"
-            >
-              <MessageCircle className="h-6 w-6" />
-              Start Texting
-            </Link>
-          </div>
+          {/* Main CTA - Changes based on limit status */}
+          {isAtLimit ? (
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-3xl p-10 text-center shadow-2xl shadow-red-500/30">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <AlertCircle className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">You&apos;ve used all 3 free replies today</h2>
+              <p className="text-white/80 mb-6">Unlimited replies unlock instantly with Pro</p>
+              <Link 
+                href="/pricing"
+                className="inline-flex items-center gap-2 bg-white text-red-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl"
+              >
+                <Crown className="h-6 w-6" />
+                Upgrade to Pro →
+              </Link>
+            </div>
+          ) : (
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-10 text-center shadow-2xl shadow-purple-500/30">
+              <h2 className="text-2xl font-bold text-white mb-6">Paste any message. Get 3 perfect replies.</h2>
+              <Link 
+                href="/app"
+                className="inline-flex items-center gap-2 bg-white text-purple-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl"
+              >
+                <MessageCircle className="h-6 w-6" />
+                Start Texting
+              </Link>
+            </div>
+          )}
 
           {/* Stats Grid */}
           <div className="grid md:grid-cols-3 gap-4">
@@ -131,14 +156,14 @@ export default async function DashboardPage() {
             </div>
 
             {/* Usage Stats */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <div className={`bg-white/10 backdrop-blur-sm rounded-2xl border p-6 ${isAtLimit ? 'border-red-500/50' : 'border-white/20'}`}>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isAtLimit ? 'bg-red-500' : 'bg-blue-500'}`}>
                   <TrendingUp className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <p className="text-sm text-white/60">Today&apos;s Usage</p>
-                  <p className="font-bold text-white">
+                  <p className={`font-bold ${isAtLimit ? 'text-red-400' : 'text-white'}`}>
                     {userProfile.usage_count} / {userProfile.subscription_status === 'free' ? userProfile.usage_limit : '∞'}
                   </p>
                 </div>
@@ -147,12 +172,12 @@ export default async function DashboardPage() {
                 <>
                   <div className="w-full bg-white/20 rounded-full h-2">
                     <div 
-                      className={`h-2 rounded-full transition-all ${usagePercentage >= 80 ? 'bg-red-500' : 'bg-blue-500'}`}
+                      className={`h-2 rounded-full transition-all ${isAtLimit ? 'bg-red-500' : usagePercentage >= 67 ? 'bg-orange-500' : 'bg-blue-500'}`}
                       style={{ width: `${Math.min(usagePercentage, 100)}%` }}
                     />
                   </div>
-                  {showUpgradeNudge && (
-                    <p className="text-xs text-white/70 mt-2">You&apos;re almost out. Pro removes limits and unlocks full tone control.</p>
+                  {isAtLimit && (
+                    <p className="text-xs text-red-400 mt-2 font-medium">Free limit reached • Resets in 24h</p>
                   )}
                 </>
               )}
@@ -212,6 +237,64 @@ export default async function DashboardPage() {
                 </div>
               </div>
             </Link>
+          )}
+
+          {/* Recent Replies Section */}
+          {recentReplies && recentReplies.length > 0 && (
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-purple-400" />
+                Your Recent Replies
+              </h3>
+              <div className="space-y-3">
+                {recentReplies.map((reply) => {
+                  const replies = reply.generated_replies as string[]
+                  const firstReply = replies?.[0] || 'No reply'
+                  return (
+                    <div key={reply.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                      <p className="text-white/60 text-xs mb-1 truncate">They said: &quot;{reply.their_message}&quot;</p>
+                      <p className="text-white font-medium">&quot;{firstReply}&quot;</p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Locked Features Teaser - for free users */}
+          {userProfile.subscription_status === 'free' && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                <Lock className="h-5 w-5 text-purple-400" />
+                Unlock with Pro
+              </h3>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="flex items-center gap-3 text-white/60">
+                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">♾️</span>
+                  </div>
+                  <span className="text-sm">Unlimited replies</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/60">
+                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">🎯</span>
+                  </div>
+                  <span className="text-sm">All tone styles</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/60">
+                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                    <span className="text-lg">📱</span>
+                  </div>
+                  <span className="text-sm">Shareable cards</span>
+                </div>
+              </div>
+              <Link 
+                href="/pricing"
+                className="mt-4 block text-center text-purple-400 hover:text-purple-300 text-sm font-medium"
+              >
+                See all Pro features →
+              </Link>
+            </div>
           )}
 
         </div>
