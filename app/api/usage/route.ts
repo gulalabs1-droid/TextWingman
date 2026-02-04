@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
 let supabase: SupabaseClient | null = null;
 
@@ -49,11 +50,24 @@ export async function GET(request: NextRequest) {
     const ip = getClientIP(request);
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
 
-    const { count, error } = await getSupabase()
+    // Check if user is logged in
+    const serverSupabase = await createServerClient();
+    const { data: { user } } = await serverSupabase.auth.getUser();
+    const userId = user?.id || null;
+
+    // Build query - check by user_id if logged in, otherwise by IP
+    let query = getSupabase()
       .from('usage_logs')
       .select('*', { count: 'exact', head: true })
-      .eq('ip_address', ip)
       .gte('created_at', cutoffTime);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    } else {
+      query = query.eq('ip_address', ip);
+    }
+
+    const { count, error } = await query;
 
     if (error) {
       console.error('Usage check error:', error);
@@ -85,34 +99,49 @@ export async function POST(request: NextRequest) {
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
     const vpnCheckTime = new Date(Date.now() - VPN_CHECK_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
 
-    // VPN/Abuse check: Count unique IPs for this fingerprint in last hour
-    const { data: recentLogs } = await getSupabase()
-      .from('usage_logs')
-      .select('ip_address')
-      .eq('fingerprint', fingerprint)
-      .gte('created_at', vpnCheckTime);
+    // Check if user is logged in
+    const serverSupabase = await createServerClient();
+    const { data: { user } } = await serverSupabase.auth.getUser();
+    const userId = user?.id || null;
 
-    if (recentLogs) {
-      const uniqueIPs = new Set(recentLogs.map(log => log.ip_address));
-      uniqueIPs.add(ip); // Include current IP
-      
-      if (uniqueIPs.size >= VPN_ABUSE_THRESHOLD) {
-        return NextResponse.json({
-          error: 'vpn_abuse_detected',
-          message: 'Unusual activity detected. Upgrade to Pro for unlimited access.',
-          upgradeUrl: '/#pricing',
-          usageCount: FREE_LIMIT,
-          remaining: 0,
-          canGenerate: false,
-        }, { status: 429 });
+    // VPN/Abuse check: Count unique IPs for this fingerprint in last hour (skip for logged-in users)
+    if (!userId) {
+      const { data: recentLogs } = await getSupabase()
+        .from('usage_logs')
+        .select('ip_address')
+        .eq('fingerprint', fingerprint)
+        .gte('created_at', vpnCheckTime);
+
+      if (recentLogs) {
+        const uniqueIPs = new Set(recentLogs.map(log => log.ip_address));
+        uniqueIPs.add(ip); // Include current IP
+        
+        if (uniqueIPs.size >= VPN_ABUSE_THRESHOLD) {
+          return NextResponse.json({
+            error: 'vpn_abuse_detected',
+            message: 'Unusual activity detected. Upgrade to Pro for unlimited access.',
+            upgradeUrl: '/#pricing',
+            usageCount: FREE_LIMIT,
+            remaining: 0,
+            canGenerate: false,
+          }, { status: 429 });
+        }
       }
     }
 
-    const { count, error: countError } = await getSupabase()
+    // Build query - check by user_id if logged in, otherwise by IP
+    let countQuery = getSupabase()
       .from('usage_logs')
       .select('*', { count: 'exact', head: true })
-      .eq('ip_address', ip)
       .gte('created_at', cutoffTime);
+    
+    if (userId) {
+      countQuery = countQuery.eq('user_id', userId);
+    } else {
+      countQuery = countQuery.eq('ip_address', ip);
+    }
+
+    const { count, error: countError } = await countQuery;
 
     if (countError) {
       console.error('Usage count error:', countError);
@@ -135,6 +164,7 @@ export async function POST(request: NextRequest) {
       .from('usage_logs')
       .insert({
         ip_address: ip,
+        user_id: userId,
         user_agent: userAgent,
         action: 'generate_reply',
         fingerprint: fingerprint,
