@@ -442,18 +442,24 @@ export default function AppPage() {
 
         {/* Usage Bar */}
         {usageCount > 0 && (
-          <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 text-white shadow-lg animate-in slide-in-from-top duration-300">
+          <div className={`fixed top-0 left-0 right-0 z-50 text-white shadow-lg animate-in slide-in-from-top duration-300 ${
+            usageCount >= usageLimit 
+              ? 'bg-gradient-to-r from-red-600 via-red-700 to-orange-600' 
+              : 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600'
+          }`}>
             <div className="container mx-auto px-4 py-3">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">⚡</span>
+                    <span className="text-2xl">{usageCount >= usageLimit ? '🚫' : '⚡'}</span>
                     <div>
                       <p className="text-sm font-bold">
-                        {remainingReplies} free {remainingReplies === 1 ? 'reply' : 'replies'} left today
+                        {usageCount >= usageLimit 
+                          ? 'Free limit reached' 
+                          : `${remainingReplies} free ${remainingReplies === 1 ? 'reply' : 'replies'} left today`}
                       </p>
-                      <p className="text-xs text-purple-200">
-                        {usageCount}/{usageLimit} used
+                      <p className="text-xs text-white/70">
+                        {Math.min(usageCount, usageLimit)}/{usageLimit} used
                       </p>
                     </div>
                   </div>
