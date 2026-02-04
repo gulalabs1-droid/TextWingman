@@ -15,6 +15,9 @@ export default function HomePage() {
             <Logo size="md" showText={true} className="cursor-pointer" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
+              <Link href="/v2">V2</Link>
+            </Button>
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden md:flex">
               <Link href="/app">Try Free</Link>
             </Button>
