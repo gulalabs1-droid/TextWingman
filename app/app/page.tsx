@@ -420,7 +420,7 @@ export default function AppPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
-      <div className="container mx-auto px-4 py-8 max-w-md md:max-w-2xl">
+      <div className={`container mx-auto px-4 py-8 max-w-md md:max-w-2xl ${usageCount > 0 ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Button asChild variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all">
