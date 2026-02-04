@@ -1,13 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Crown, Check, ArrowLeft, MessageCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { createClient } from '@/lib/supabase/client'
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null)
+  const [user, setUser] = useState<{ email: string } | null>(null)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const { toast } = useToast()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user ? { email: user.email || '' } : null)
+      setCheckingAuth(false)
+    }
+    checkAuth()
+  }, [supabase.auth])
 
   const handleCheckout = async (plan: 'weekly' | 'annual') => {
     setLoading(plan)
@@ -15,7 +28,7 @@ export default function PricingPage() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, userEmail: user?.email }),
       })
 
       const data = await res.json()
@@ -39,21 +52,52 @@ export default function PricingPage() {
     }
   }
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600">
       {/* Header */}
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 text-white/80 hover:text-white">
-            <ArrowLeft className="h-5 w-5" />
-            Back to Dashboard
-          </Link>
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">Text Wingman</span>
-          </Link>
+          {user ? (
+            <Link href="/dashboard" className="flex items-center gap-2 text-white/80 hover:text-white">
+              <ArrowLeft className="h-5 w-5" />
+              Back to Dashboard
+            </Link>
+          ) : (
+            <Link href="/" className="flex items-center gap-2 text-white/80 hover:text-white">
+              <ArrowLeft className="h-5 w-5" />
+              Back to Home
+            </Link>
+          )}
+          <div className="flex items-center gap-4">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <MessageCircle className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-white hidden sm:block">Text Wingman</span>
+            </Link>
+            {!checkingAuth && (
+              user ? (
+                <button
+                  onClick={handleSignOut}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-colors"
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="bg-white text-purple-600 px-4 py-2 rounded-xl font-medium hover:bg-gray-100 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              )
+            )}
+          </div>
         </div>
       </nav>
 
