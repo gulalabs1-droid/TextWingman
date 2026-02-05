@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
         if (subscription) {
           // Pro user - generate without limits
           const replies = process.env.TEXT_WINGMAN_AGENT_ID
-            ? await generateRepliesWithAgent(message)
-            : await generateReplies(message);
+            ? await generateRepliesWithAgent(message, context)
+            : await generateReplies(message, context);
           
           // Save to reply history for Pro users
           try {
@@ -132,8 +132,8 @@ export async function POST(request: NextRequest) {
 
     // Generate replies using OpenAI
     const replies = process.env.TEXT_WINGMAN_AGENT_ID
-      ? await generateRepliesWithAgent(message)
-      : await generateReplies(message);
+      ? await generateRepliesWithAgent(message, context)
+      : await generateReplies(message, context);
 
     // Save to reply history for logged-in users
     if (userId && supabase) {

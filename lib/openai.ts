@@ -15,12 +15,27 @@ export interface GeneratedReply {
   text: string;
 }
 
-const SYSTEM_PROMPT = `You are Text Wingman — an AI that helps users craft smooth and confident text replies.
+const CONTEXT_GUIDANCE: Record<string, string> = {
+  crush: "This is someone the user has romantic interest in. Be flirty, playful, create intrigue. Show interest without being desperate.",
+  friend: "This is a close friend. Be casual, fun, comfortable. Inside jokes energy. No need to impress.",
+  work: "This is a work colleague. Keep it professional but personable. Friendly without being too casual.",
+  family: "This is a family member. Be warm, respectful, appropriate for family dynamics.",
+  ex: "This is an ex. Be measured, composed, unbothered. Don't seem bitter or too eager. Maintain dignity.",
+  newmatch: "This is a new dating app match. Be intriguing, confident, create curiosity. Stand out from boring openers.",
+};
+
+function buildSystemPrompt(context?: string): string {
+  const contextHint = context && CONTEXT_GUIDANCE[context] 
+    ? `\nRELATIONSHIP CONTEXT: ${CONTEXT_GUIDANCE[context]}`
+    : "";
+
+  return `You are Text Wingman — an AI that helps users craft smooth and confident text replies.
 
 IMPORTANT CONTEXT:
 - The user will paste a message that SOMEONE ELSE sent TO THEM
 - You generate replies for THE USER to send BACK to that person
 - Example: If they paste "hello bob", the user IS Bob receiving a greeting. Generate replies for Bob to respond, like "Hey! What's up?" NOT "Hey Bob!" (that would be greeting yourself)
+${contextHint}
 
 Generate 3 options:
 - Option A (Shorter): Brief, casual, low-effort response
@@ -34,6 +49,7 @@ CRITICAL RULES:
 - Tone = confident, warm, natural
 - Sound like a real person texting
 - Generate RESPONSES to the message, not variations of it
+- Tailor your tone to the relationship context provided
 
 Return ONLY a JSON object with this exact structure:
 {
@@ -41,13 +57,14 @@ Return ONLY a JSON object with this exact structure:
   "spicier": "your playful reply here", 
   "softer": "your warm reply here"
 }`;
+}
 
-export async function generateReplies(message: string): Promise<GeneratedReply[]> {
+export async function generateReplies(message: string, context?: string): Promise<GeneratedReply[]> {
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: buildSystemPrompt(context) },
         { role: 'user', content: `Generate 3 reply options for this message: "${message}"` }
       ],
       temperature: 0.8,
@@ -73,12 +90,12 @@ export async function generateReplies(message: string): Promise<GeneratedReply[]
 }
 
 // Alternative: Using OpenAI Assistants API with Agent ID
-export async function generateRepliesWithAgent(message: string): Promise<GeneratedReply[]> {
+export async function generateRepliesWithAgent(message: string, context?: string): Promise<GeneratedReply[]> {
   const agentId = process.env.TEXT_WINGMAN_AGENT_ID;
   
   if (!agentId) {
     // Fallback to regular completion
-    return generateReplies(message);
+    return generateReplies(message, context);
   }
 
   try {
