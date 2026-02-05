@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Lock } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
 type Reply = {
@@ -657,30 +657,51 @@ export default function AppPage() {
               </div>
             )}
 
-            {/* V2 Toggle - Pro Only */}
-            {isPro && (
-              <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="text-sm font-bold text-green-800">V2 Verified Mode</p>
-                    <p className="text-xs text-green-600">≤18 words • No emojis • No needy text • Tone-matched</p>
-                  </div>
+            {/* V2 Toggle - Show to all users */}
+            <div className={`flex items-center justify-between p-3 rounded-xl border-2 ${
+              isPro 
+                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
+                : 'bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200'
+            }`}>
+              <div className="flex items-center gap-2">
+                <Shield className={`h-5 w-5 ${isPro ? 'text-green-600' : 'text-purple-600'}`} />
+                <div>
+                  <p className={`text-sm font-bold ${isPro ? 'text-green-800' : 'text-purple-800'}`}>
+                    V2 Verified Mode {!isPro && <span className="text-xs font-normal text-purple-500">(Pro)</span>}
+                  </p>
+                  <p className={`text-xs ${isPro ? 'text-green-600' : 'text-purple-500'}`}>
+                    3-agent pipeline • ≤18 words • No emojis • Tone-verified
+                  </p>
                 </div>
-                <button
-                  onClick={() => setV2Mode(!v2Mode)}
-                  className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
-                    v2Mode ? 'bg-green-500' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
-                      v2Mode ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
               </div>
-            )}
+              <button
+                onClick={() => {
+                  if (isPro) {
+                    setV2Mode(!v2Mode);
+                  } else {
+                    setShowPaywall(true);
+                    toast({
+                      title: "🔒 V2 is Pro-only",
+                      description: "Upgrade to unlock 3-agent verified replies",
+                    });
+                  }
+                }}
+                className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  v2Mode && isPro ? 'bg-green-500' : isPro ? 'bg-gray-300' : 'bg-purple-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+                    v2Mode && isPro ? 'translate-x-6' : 'translate-x-0'
+                  }`}
+                />
+                {!isPro && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
+                    <Lock className="h-2.5 w-2.5 text-white" />
+                  </span>
+                )}
+              </button>
+            </div>
 
             <div className="space-y-2">
               <Button
