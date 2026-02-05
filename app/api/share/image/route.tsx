@@ -4,11 +4,12 @@ import { NextRequest } from 'next/server';
 export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const theirMessage = searchParams.get('their') || 'Hey, what are you up to?';
+  const myReply = searchParams.get('reply') || 'Just thinking about you';
+  const tone = searchParams.get('tone') || 'spicier';
+
   try {
-    const { searchParams } = new URL(request.url);
-    const theirMessage = searchParams.get('their') || 'Hey, what are you up to?';
-    const myReply = searchParams.get('reply') || 'Just thinking about you 😏';
-    const tone = searchParams.get('tone') || 'spicier';
 
     const toneConfig: Record<string, { color: string; emoji: string; label: string }> = {
       shorter: { color: '#3B82F6', emoji: '⚡', label: 'Shorter' },
@@ -130,8 +131,34 @@ export async function GET(request: NextRequest) {
         height: 600,
       }
     );
-  } catch (e) {
+  } catch (e: unknown) {
     console.error('Share image error:', e);
-    return new Response('Failed to generate image', { status: 500 });
+    // Return a simple fallback image with error info
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#7C3AED',
+            color: 'white',
+            fontSize: '24px',
+            fontWeight: 'bold',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div>Text Wingman</div>
+            <div style={{ fontSize: '18px', marginTop: '10px', opacity: 0.8 }}>
+              {myReply.substring(0, 50)}
+            </div>
+          </div>
+        </div>
+      ),
+      { width: 800, height: 600 }
+    );
   }
 }
