@@ -47,6 +47,44 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(3)
 
+  // Fetch style stats (tone preferences from copy_logs)
+  const { data: copyLogs } = await supabase
+    .from('copy_logs')
+    .select('tone')
+    .eq('user_id', user.id)
+
+  // Calculate favorite tone
+  let favoriteTone: string | null = null
+  let totalCopies = 0
+  if (copyLogs && copyLogs.length > 0) {
+    totalCopies = copyLogs.length
+    const toneCounts: Record<string, number> = {}
+    copyLogs.forEach(log => {
+      if (log.tone) {
+        toneCounts[log.tone] = (toneCounts[log.tone] || 0) + 1
+      }
+    })
+    let maxCount = 0
+    for (const [tone, count] of Object.entries(toneCounts)) {
+      if (count > maxCount) {
+        maxCount = count
+        favoriteTone = tone
+      }
+    }
+  }
+
+  // Format tone label
+  const toneLabels: Record<string, string> = {
+    shorter: 'Shorter',
+    spicier: 'Spicier', 
+    softer: 'Softer',
+  }
+  const toneEmojis: Record<string, string> = {
+    shorter: '⚡',
+    spicier: '🔥',
+    softer: '💚',
+  }
+
   const isPro = subscription?.status === 'active'
   const userProfile = {
     email: profile?.email || user.email || 'user@example.com',
@@ -239,6 +277,30 @@ export default async function DashboardPage() {
               </div>
             </Link>
           </div>
+
+          {/* Style Snapshot - Show after 3+ copies */}
+          {totalCopies >= 3 && favoriteTone && (
+            <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-sm rounded-2xl border border-indigo-500/30 p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
+                  <span className="text-lg">🧠</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Your Style Snapshot</h3>
+                  <p className="text-xs text-white/50">Based on {totalCopies} copied replies</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{toneEmojis[favoriteTone] || '✨'}</span>
+                  <div>
+                    <p className="text-xs text-white/50">You usually pick</p>
+                    <p className="font-bold text-white">{toneLabels[favoriteTone] || favoriteTone} replies</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Upgrade Card - Single strong placement for free users */}
           {userProfile.subscription_status === 'free' && (
