@@ -5,13 +5,20 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
   text: string;
 };
+
+type V2Meta = {
+  ruleChecks: Record<string, boolean>;
+  toneChecks: Record<string, boolean>;
+  confidence: Record<string, number>;
+  notes?: string;
+} | null;
 
 const TONE_CONFIG = {
   shorter: {
@@ -87,11 +94,14 @@ export default function AppPage() {
   const [showPaywall, setShowPaywall] = useState(false);
   const usageLimit = 3; // Matches homepage pricing: 3 free replies per day
   const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
+  const [v2Mode, setV2Mode] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+  const [v2Meta, setV2Meta] = useState<V2Meta>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
 
-  // Load usage from server on mount
+  // Load usage and Pro status from server on mount
   useEffect(() => {
     const fetchUsage = async () => {
       try {
@@ -100,6 +110,10 @@ export default function AppPage() {
           const data = await res.json();
           setUsageCount(data.usageCount);
           setRemainingReplies(data.remaining);
+          // Check if user is Pro (unlimited or has active subscription)
+          if (data.isPro || data.remaining === 999) {
+            setIsPro(true);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch usage:', error);
@@ -162,12 +176,18 @@ export default function AppPage() {
 
     setLoading(true);
     setReplies([]); // Clear previous replies
+    setV2Meta(null); // Clear previous V2 meta
     
     try {
-      const response = await fetch('/api/generate', {
+      // Use V2 API if enabled (Pro-only)
+      const endpoint = v2Mode && isPro ? '/api/generate-v2' : '/api/generate';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message.trim() }),
+        body: JSON.stringify({ 
+          message: message.trim(),
+          context: selectedContext || 'crush'
+        }),
       });
 
       const data = await response.json();
@@ -186,25 +206,38 @@ export default function AppPage() {
         return;
       }
       
-      // API returns array of replies, validate and use it
-      if (Array.isArray(data.replies) && data.replies.length > 0) {
+      // Handle V2 response format
+      if (v2Mode && isPro && data.shorter && data.spicier && data.softer) {
+        const v2Replies: Reply[] = [
+          { tone: 'shorter', text: data.shorter },
+          { tone: 'spicier', text: data.spicier },
+          { tone: 'softer', text: data.softer },
+        ];
+        setReplies(v2Replies);
+        if (data.meta) {
+          setV2Meta(data.meta);
+        }
+      }
+      // Handle V1 response format
+      else if (Array.isArray(data.replies) && data.replies.length > 0) {
         // Ensure all replies have required properties
         const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
         
         if (validReplies.length > 0) {
           setReplies(validReplies);
-          // Refresh usage count from server (usage already logged server-side in /api/generate)
-          const usageRes = await fetch('/api/usage');
-          if (usageRes.ok) {
-            const usageData = await usageRes.json();
-            setUsageCount(usageData.usageCount);
-            setRemainingReplies(usageData.remaining);
-          }
         } else {
           throw new Error('Invalid reply format received');
         }
       } else {
         throw new Error('No replies received from server');
+      }
+      
+      // Refresh usage count from server
+      const usageRes = await fetch('/api/usage');
+      if (usageRes.ok) {
+        const usageData = await usageRes.json();
+        setUsageCount(usageData.usageCount);
+        setRemainingReplies(usageData.remaining);
       }
 
       // Show "crafted with care" message
@@ -590,22 +623,51 @@ export default function AppPage() {
               </div>
             )}
 
+            {/* V2 Toggle - Pro Only */}
+            {isPro && (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-sm font-bold text-green-800">V2 Verified Mode</p>
+                    <p className="text-xs text-green-600">Rule-checked + tone-verified replies</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setV2Mode(!v2Mode)}
+                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                    v2Mode ? 'bg-green-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      v2Mode ? 'translate-x-8' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Button
                 onClick={handleGenerate}
                 disabled={loading || !message.trim()}
-                className="w-full h-14 text-base bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-700 shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none"
+                className={`w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none ${
+                  v2Mode && isPro
+                    ? 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
+                    : 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-700'
+                }`}
                 size="lg"
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Crafting perfect replies...
+                    {v2Mode && isPro ? 'Running V2 pipeline...' : 'Crafting perfect replies...'}
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 h-5 w-5" />
-                    Generate Replies
+                    {v2Mode && isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                    {v2Mode && isPro ? 'Generate V2 Replies' : 'Generate Replies'}
                   </>
                 )}
               </Button>
@@ -668,10 +730,38 @@ export default function AppPage() {
                       <div className={`${config.lightBg} rounded-2xl p-5 border-2 border-gray-100`}>
                         <p className="text-lg text-gray-900 leading-relaxed font-medium">{reply.text}</p>
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
                         <span className={`text-xs font-bold bg-gradient-to-r ${config.gradient} text-white px-4 py-2 rounded-full shadow-md`}>
                           {reply.text ? reply.text.split(' ').length : 0} words
                         </span>
+                        {/* V2 Badges */}
+                        {v2Meta && (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {v2Meta.ruleChecks[reply.tone] && (
+                              <span className="flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 px-3 py-1.5 rounded-full">
+                                <CheckCircle className="h-3 w-3" />
+                                Rule-Compliant
+                              </span>
+                            )}
+                            {v2Meta.toneChecks[reply.tone] && (
+                              <span className="flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full">
+                                <CheckCircle className="h-3 w-3" />
+                                Tone Verified
+                              </span>
+                            )}
+                            {v2Meta.confidence[reply.tone] !== undefined && (
+                              <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
+                                v2Meta.confidence[reply.tone] >= 80 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : v2Meta.confidence[reply.tone] >= 60 
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-red-100 text-red-700'
+                              }`}>
+                                {v2Meta.confidence[reply.tone]}% confident
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <Button
