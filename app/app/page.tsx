@@ -114,6 +114,7 @@ export default function AppPage() {
           // Check if user is Pro (unlimited or has active subscription)
           if (data.isPro || data.remaining === 999) {
             setIsPro(true);
+            setV2Mode(true); // V2 is default for Pro users
           }
         }
       } catch (error) {
@@ -281,6 +282,14 @@ export default function AppPage() {
         title: "✓ Copied to clipboard!",
         description: "Paste it into your chat app",
       });
+      
+      // Log which tone was copied (for personalization data)
+      fetch('/api/log-copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tone, isV2: v2Mode && isPro }),
+      }).catch(() => {}); // Fire and forget
+      
       setTimeout(() => setCopied(null), 2000);
     } catch (err) {
       toast({
@@ -800,55 +809,57 @@ export default function AppPage() {
                         <p className="text-lg text-gray-900 leading-relaxed font-medium">{reply.text}</p>
                       </div>
                       <div className="flex items-center justify-between flex-wrap gap-2">
-                        <span className={`text-xs font-bold bg-gradient-to-r ${config.gradient} text-white px-4 py-2 rounded-full shadow-md`}>
-                          {reply.text ? reply.text.split(' ').length : 0} words
-                        </span>
-                        {/* V2 Badges with Tooltips */}
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold bg-gradient-to-r ${config.gradient} text-white px-4 py-2 rounded-full shadow-md`}>
+                            {reply.text ? reply.text.split(' ').length : 0} words
+                          </span>
+                          {/* Verified Reply Badge for Pro V2 */}
+                          {isPro && v2Mode && (
+                            <span 
+                              className="flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-full shadow-md cursor-help group relative"
+                              title="✓ Verified Reply (V2)"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                              Verified
+                              {/* Tooltip */}
+                              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-gray-900 text-white text-xs rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
+                                <span className="font-bold block mb-1">✅ Safe to Send</span>
+                                <span className="block">• Under 18 words</span>
+                                <span className="block">• No needy language</span>
+                                <span className="block">• Tone: {config.label}</span>
+                                <span className="block">• No emojis</span>
+                              </span>
+                            </span>
+                          )}
+                        </div>
+                        {/* V2 Meta Badges */}
                         {v2Meta && (
                           <div className="flex items-center gap-2 flex-wrap">
-                            {v2Meta.ruleChecks[reply.tone] && (
-                              <span 
-                                className="flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 px-3 py-1.5 rounded-full cursor-help"
-                                title="✓ ≤18 words • No emojis • No needy language • No double questions"
-                              >
-                                <CheckCircle className="h-3 w-3" />
-                                Rule-Compliant
-                              </span>
-                            )}
-                            {!v2Meta.ruleChecks[reply.tone] && v2Meta.ruleChecks[reply.tone] !== undefined && (
-                              <span 
-                                className="flex items-center gap-1 text-xs font-bold bg-yellow-100 text-yellow-700 px-3 py-1.5 rounded-full cursor-help"
-                                title="Some rules not met - best attempt shown"
-                              >
-                                ⚠️ Partial
-                              </span>
-                            )}
                             {v2Meta.toneChecks[reply.tone] && (
                               <span 
                                 className="flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full cursor-help"
-                                title={`Matches ${reply.tone} tone: ${reply.tone === 'shorter' ? 'minimal, confident' : reply.tone === 'spicier' ? 'assertive, flirty tension' : 'warm, considerate'}`}
+                                title={`Matches ${reply.tone} tone`}
                               >
                                 <CheckCircle className="h-3 w-3" />
-                                Tone Verified
-                              </span>
-                            )}
-                            {v2Meta.confidence[reply.tone] !== undefined && (
-                              <span 
-                                className={`text-xs font-bold px-3 py-1.5 rounded-full cursor-help ${
-                                  v2Meta.confidence[reply.tone] >= 80 
-                                    ? 'bg-green-100 text-green-700' 
-                                    : v2Meta.confidence[reply.tone] >= 60 
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-red-100 text-red-700'
-                                }`}
-                                title={`Confidence score: ${v2Meta.confidence[reply.tone] >= 80 ? 'Strong match' : v2Meta.confidence[reply.tone] >= 60 ? 'Acceptable' : 'Weak match'}`}
-                              >
-                                {v2Meta.confidence[reply.tone]}% confident
+                                Tone Match
                               </span>
                             )}
                           </div>
                         )}
                       </div>
+                      
+                      {/* Practice Mode Tease - V3 */}
+                      {isPro && (
+                        <div className="mt-2">
+                          <button 
+                            disabled
+                            className="w-full text-xs text-gray-400 bg-gray-50 border border-dashed border-gray-200 rounded-xl py-2 px-3 cursor-not-allowed flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
+                            title="See how this text might land — before you send it."
+                          >
+                            🧪 Practice Mode <span className="text-purple-400 font-medium">(Coming Soon)</span>
+                          </button>
+                        </div>
+                      )}
                       <div className="grid grid-cols-2 gap-3">
                         <Button
                           onClick={() => handleCopy(reply.text, reply.tone)}

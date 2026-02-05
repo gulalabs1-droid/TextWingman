@@ -115,6 +115,13 @@ export default async function DashboardPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-8">
           
+          {/* Pro V2 Banner - shows for Pro users */}
+          {isPro && (
+            <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
+              <span className="text-green-400 text-sm font-medium">✨ You're using Verified Replies (V2)</span>
+            </div>
+          )}
+
           {/* Welcome Section */}
           <div className="text-center space-y-2">
             <h1 className="text-3xl md:text-4xl font-bold text-white">Your next reply sets the tone.</h1>
@@ -127,7 +134,7 @@ export default async function DashboardPage() {
                 <AlertCircle className="h-8 w-8 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">You&apos;ve used all 3 free replies today</h2>
-              <p className="text-white/80 mb-6">Unlimited replies unlock instantly with Pro</p>
+              <p className="text-white/80 mb-6">Unlimited Verified Replies — never send a risky text again.</p>
               <Link 
                 href="/pricing"
                 className="inline-flex items-center gap-2 bg-white text-red-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl"
@@ -138,7 +145,7 @@ export default async function DashboardPage() {
             </div>
           ) : (
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-10 text-center shadow-2xl shadow-purple-500/30">
-              <h2 className="text-2xl font-bold text-white mb-6">Paste any message. Get 3 perfect replies.</h2>
+              <h2 className="text-2xl font-bold text-white mb-6">{isPro ? 'Get verified replies. Never overthink a text again.' : 'Paste any message. Get 3 perfect replies.'}</h2>
               <Link 
                 href="/app"
                 className="inline-flex items-center gap-2 bg-white text-purple-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl"
@@ -191,7 +198,7 @@ export default async function DashboardPage() {
                 </>
               )}
               {userProfile.subscription_status !== 'free' && (
-                <p className="text-sm text-green-400">Unlimited replies</p>
+                <p className="text-sm text-green-400">Unlimited verified replies</p>
               )}
             </div>
 
@@ -252,8 +259,8 @@ export default async function DashboardPage() {
           {recentReplies && recentReplies.length > 0 && (
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
               <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-purple-400" />
-                Your Recent Replies
+                <Sparkles className="h-5 w-5 text-green-400" />
+                Your Recent Wins
               </h3>
               <div className="space-y-3">
                 {recentReplies.map((reply) => {
@@ -293,7 +300,7 @@ export default async function DashboardPage() {
                   <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
                     <span className="text-lg">♾️</span>
                   </div>
-                  <span className="text-sm">Unlimited replies</span>
+                  <span className="text-sm">Unlimited verified replies</span>
                 </div>
                 <div className="flex items-center gap-3 text-white/60">
                   <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
