@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 
 let supabase: SupabaseClient | null = null;
 
@@ -56,24 +57,35 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await serverSupabase.auth.getUser();
     const userId = user?.id || null;
 
-    // Check if user has active Pro subscription or is beta tester
+    // Check entitlements (includes admin, beta, and Stripe users)
     let isPro = false;
     let isBetaTester = false;
-    if (userId) {
+    let isAdmin = false;
+    let tier = 'free';
+    
+    if (userId && user?.email) {
+      // Auto-grant elite access for admin emails
+      await ensureAdminAccess(userId, user.email);
+      
+      // Get user's tier from entitlements system
+      const entitlement = await getUserTier(userId, user.email);
+      tier = entitlement.tier;
+      isAdmin = entitlement.isAdmin;
+      isPro = hasPro(entitlement.tier);
+      
+      // Check if beta tester (from subscriptions table for FAMTEST7 users)
       const { data: subscription } = await getSupabase()
         .from('subscriptions')
-        .select('status, plan_type, is_beta_tester')
+        .select('is_beta_tester')
         .eq('user_id', userId)
         .single();
-      
-      isPro = subscription?.status === 'active';
       isBetaTester = subscription?.is_beta_tester === true;
     }
     
     // Determine user's limit
     const userLimit = isBetaTester ? BETA_LIMIT : FREE_LIMIT;
 
-    // Pro users get unlimited - skip usage check
+    // Pro/Elite users get unlimited - skip usage check
     if (isPro) {
       return NextResponse.json({
         usageCount: 0,
@@ -82,6 +94,8 @@ export async function GET(request: NextRequest) {
         canGenerate: true,
         resetHours: RESET_HOURS,
         isPro: true,
+        isAdmin,
+        tier,
         userId: userId,
         userEmail: user?.email || null,
       });
@@ -142,9 +156,29 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await serverSupabase.auth.getUser();
     const userId = user?.id || null;
 
-    // Check if user is beta tester
+    // Check entitlements and beta tester status
     let isBetaTester = false;
-    if (userId) {
+    let isPro = false;
+    
+    if (userId && user?.email) {
+      // Auto-grant elite access for admin emails
+      await ensureAdminAccess(userId, user.email);
+      
+      // Get user's tier
+      const entitlement = await getUserTier(userId, user.email);
+      isPro = hasPro(entitlement.tier);
+      
+      // If Pro/Elite, skip usage tracking entirely
+      if (isPro) {
+        return NextResponse.json({
+          usageCount: 0,
+          remaining: 999,
+          limit: 999,
+          canGenerate: true,
+        });
+      }
+      
+      // Check beta tester status
       const { data: subscription } = await getSupabase()
         .from('subscriptions')
         .select('is_beta_tester')

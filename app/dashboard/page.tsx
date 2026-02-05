@@ -1,9 +1,11 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import SignOutButton from './sign-out-button'
 import FeedbackSection from './feedback-section'
-import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle, User } from 'lucide-react'
+import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle, User, Shield } from 'lucide-react'
+import { isAdminEmail } from '@/lib/isAdmin'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -86,13 +88,35 @@ export default async function DashboardPage() {
     softer: '💚',
   }
 
-  const isPro = subscription?.status === 'active'
+  // Check if user is admin
+  const isAdmin = isAdminEmail(user.email)
+  
+  // Check entitlements table for admin/elite access
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { data: entitlement } = await adminSupabase
+    .from('entitlements')
+    .select('tier, source')
+    .eq('user_id', user.id)
+    .single()
+  
+  // Admin or entitlement-based Pro access
+  const hasEntitlementAccess = entitlement?.tier === 'pro' || entitlement?.tier === 'elite'
+  const isPro = subscription?.status === 'active' || hasEntitlementAccess || isAdmin
+  const tier = entitlement?.tier || (subscription?.status === 'active' ? 'pro' : 'free')
+  const accessSource = entitlement?.source || (subscription?.status === 'active' ? 'stripe' : null)
+  
   const userProfile = {
     email: profile?.email || user.email || 'user@example.com',
     full_name: profile?.full_name,
     subscription_status: (isPro ? (subscription?.plan_type || 'monthly') : 'free') as 'free' | 'monthly' | 'annual' | 'weekly',
     usage_count: usageCount || 0,
     usage_limit: 3, // Matches homepage pricing: 3 free replies per day
+    isAdmin,
+    tier,
+    accessSource,
   }
 
   const subscriptionConfig = {
@@ -168,8 +192,17 @@ export default async function DashboardPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-8">
           
-          {/* Pro V2 Banner - shows for Pro users */}
-          {isPro && (
+          {/* Admin Badge - shows for owner/admin users */}
+          {isAdmin && (
+            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
+              <Shield className="h-5 w-5 text-amber-400" />
+              <span className="text-amber-400 text-sm font-bold">Owner Access</span>
+              <span className="text-amber-400/60 text-xs">• Elite tier • No billing required</span>
+            </div>
+          )}
+          
+          {/* Pro V2 Banner - shows for Pro users (not admins, they see above) */}
+          {isPro && !isAdmin && (
             <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
               <span className="text-green-400 text-sm font-medium">✨ You&apos;re using Verified Replies (V2)</span>
             </div>
@@ -180,8 +213,8 @@ export default async function DashboardPage() {
             <h1 className="text-3xl md:text-4xl font-bold text-white">Your next reply sets the tone.</h1>
           </div>
 
-          {/* Main CTA - Changes based on limit status */}
-          {isAtLimit ? (
+          {/* Main CTA - Changes based on limit status (admins never see upgrade prompts) */}
+          {isAtLimit && !isAdmin ? (
             <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-3xl p-10 text-center shadow-2xl shadow-red-500/30">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <AlertCircle className="h-8 w-8 text-white" />
@@ -197,11 +230,23 @@ export default async function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-10 text-center shadow-2xl shadow-purple-500/30">
-              <h2 className="text-2xl font-bold text-white mb-6">{isPro ? 'Get verified replies. Never overthink a text again.' : 'Paste any message. Get 3 perfect replies.'}</h2>
+            <div className={`rounded-3xl p-10 text-center shadow-2xl ${
+              isAdmin 
+                ? 'bg-gradient-to-r from-amber-600 to-orange-600 shadow-amber-500/30' 
+                : 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-purple-500/30'
+            }`}>
+              <h2 className="text-2xl font-bold text-white mb-6">
+                {isAdmin 
+                  ? 'Owner Mode: Full Elite access enabled.' 
+                  : isPro 
+                    ? 'Get verified replies. Never overthink a text again.' 
+                    : 'Paste any message. Get 3 perfect replies.'}
+              </h2>
               <Link 
                 href="/app"
-                className="inline-flex items-center gap-2 bg-white text-purple-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl"
+                className={`inline-flex items-center gap-2 bg-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl ${
+                  isAdmin ? 'text-amber-600' : 'text-purple-600'
+                }`}
               >
                 <MessageCircle className="h-6 w-6" />
                 Start Texting
