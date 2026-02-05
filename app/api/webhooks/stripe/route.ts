@@ -82,6 +82,20 @@ export async function POST(request: NextRequest) {
             if (error) {
               console.error('Error storing subscription:', error);
             }
+
+            // Mark user as beta tester if they used FAMTEST7 coupon
+            if (subscription.discount?.coupon?.name === 'FAMTEST7') {
+              const { error: betaError } = await getSupabase()
+                .from('subscriptions')
+                .update({ is_beta_tester: true })
+                .eq('user_id', userId);
+              
+              if (betaError) {
+                console.error('Error marking beta tester:', betaError);
+              } else {
+                console.log('Marked user as beta tester:', userId);
+              }
+            }
           }
         }
         break;
