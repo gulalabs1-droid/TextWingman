@@ -648,13 +648,13 @@ export default function AppPage() {
                 </div>
                 <button
                   onClick={() => setV2Mode(!v2Mode)}
-                  className={`relative w-14 h-7 rounded-full transition-colors ${
+                  className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
                     v2Mode ? 'bg-green-500' : 'bg-gray-300'
                   }`}
                 >
                   <span
-                    className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                      v2Mode ? 'translate-x-8' : 'translate-x-1'
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+                      v2Mode ? 'translate-x-6' : 'translate-x-0'
                     }`}
                   />
                 </button>
