@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
             : await generateReplies(message);
           
           // Save to reply history for Pro users
-          await supabaseAdmin
+          const { error: historyError } = await supabaseAdmin
             .from('reply_history')
             .insert({
               user_id: userId,
@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
               generated_replies: replies,
               context: context || null,
             });
+          
+          if (historyError) {
+            console.error('Failed to save reply history:', historyError);
+          }
           
           return NextResponse.json({ replies });
         }
@@ -127,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     // Save to reply history for logged-in users
     if (userId && supabase) {
-      await supabase
+      const { error: historyError } = await supabase
         .from('reply_history')
         .insert({
           user_id: userId,
@@ -135,6 +139,10 @@ export async function POST(request: NextRequest) {
           generated_replies: replies,
           context: context || null,
         });
+      
+      if (historyError) {
+        console.error('Failed to save reply history for free user:', historyError);
+      }
     }
 
     return NextResponse.json({ replies });
