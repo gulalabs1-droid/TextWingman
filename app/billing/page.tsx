@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/client';
 const supabase = createClient();
 
 type Subscription = {
-  plan_type: 'weekly' | 'monthly' | 'annual';
+  plan_type: 'weekly' | 'annual';
   status: 'active' | 'canceled' | 'past_due';
   current_period_end: string;
   created_at: string;
@@ -70,7 +70,6 @@ export default function BillingPage() {
   const getPlanPrice = (planType: string) => {
     switch (planType) {
       case 'weekly': return '$9.99/week';
-      case 'monthly': return '$29.99/month';
       case 'annual': return '$99.99/year';
       default: return '$9.99/week';
     }
@@ -79,7 +78,6 @@ export default function BillingPage() {
   const getPlanLabel = (planType: string) => {
     switch (planType) {
       case 'weekly': return 'Pro Weekly';
-      case 'monthly': return 'Pro Monthly';
       case 'annual': return 'Pro Annual';
       default: return 'Pro';
     }
