@@ -392,6 +392,22 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+
+            {/* Report an Issue - Lightweight Support */}
+            <div className="pt-6 border-t border-white/10">
+              <p className="text-white/50 text-sm text-center mb-3">
+                Something feel off? Tell us — we read everything.
+              </p>
+              <a
+                href={`mailto:gulalabs1@gmail.com?subject=Text Wingman Feedback&body=${encodeURIComponent(
+                  `\n\n---\nUser: ${user.email}\nPlan: ${subscription?.status === 'active' ? `Pro ${subscription.plan_type}` : 'Free'}\nBrowser: ${typeof window !== 'undefined' ? navigator.userAgent : 'Unknown'}`
+                )}`}
+                className="flex items-center justify-center gap-2 text-purple-300 hover:text-white text-sm transition-colors"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Report an issue
+              </a>
+            </div>
           </div>
         )}
       </div>
