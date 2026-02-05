@@ -486,6 +486,27 @@ export default function AppPage() {
           </Button>
         </div>
 
+        {/* Pro V2 Status Banner */}
+        {isPro && v2Mode && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border border-green-500/30 backdrop-blur">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-green-100">V2 Verified Mode Active</p>
+                  <p className="text-xs text-green-300/80">3-agent pipeline: Draft → Rule-Check → Tone-Verify</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-green-500/30 text-green-200 px-2 py-1 rounded-full">≤18 words</span>
+                <span className="text-xs bg-blue-500/30 text-blue-200 px-2 py-1 rounded-full">No emojis</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Usage Bar - Hidden for Pro users */}
         {usageCount > 0 && !isPro && (
           <div className={`fixed top-0 left-0 right-0 z-50 text-white shadow-lg animate-in slide-in-from-top duration-300 ${
