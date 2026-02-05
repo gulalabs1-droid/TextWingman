@@ -466,11 +466,11 @@ export default function AppPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
-      <div className={`container mx-auto px-4 py-8 max-w-md md:max-w-2xl ${usageCount > 0 ? 'pt-20' : ''}`}>
+      <div className={`container mx-auto px-4 py-8 max-w-md md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Button asChild variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all">
-            <Link href="/">
+            <Link href="/dashboard">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Link>
@@ -486,8 +486,8 @@ export default function AppPage() {
           </Button>
         </div>
 
-        {/* Usage Bar */}
-        {usageCount > 0 && (
+        {/* Usage Bar - Hidden for Pro users */}
+        {usageCount > 0 && !isPro && (
           <div className={`fixed top-0 left-0 right-0 z-50 text-white shadow-lg animate-in slide-in-from-top duration-300 ${
             usageCount >= usageLimit 
               ? 'bg-gradient-to-r from-red-600 via-red-700 to-orange-600' 

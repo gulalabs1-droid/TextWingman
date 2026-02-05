@@ -55,6 +55,31 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await serverSupabase.auth.getUser();
     const userId = user?.id || null;
 
+    // Check if user has active Pro subscription
+    let isPro = false;
+    if (userId) {
+      const { data: subscription } = await getSupabase()
+        .from('subscriptions')
+        .select('status, plan_type')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
+      
+      isPro = !!subscription;
+    }
+
+    // Pro users get unlimited - skip usage check
+    if (isPro) {
+      return NextResponse.json({
+        usageCount: 0,
+        remaining: 999,
+        limit: FREE_LIMIT,
+        canGenerate: true,
+        resetHours: RESET_HOURS,
+        isPro: true,
+      });
+    }
+
     // Build query - for logged-in users, count BOTH user_id matches AND ip_address matches
     // This ensures old logs (before user_id tracking) still count
     let query = getSupabase()
@@ -86,6 +111,7 @@ export async function GET(request: NextRequest) {
       limit: FREE_LIMIT,
       canGenerate,
       resetHours: RESET_HOURS,
+      isPro: false,
     });
   } catch (error) {
     console.error('Usage API error:', error);
