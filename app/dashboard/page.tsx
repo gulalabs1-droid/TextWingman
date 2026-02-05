@@ -118,7 +118,7 @@ export default async function DashboardPage() {
           {/* Pro V2 Banner - shows for Pro users */}
           {isPro && (
             <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
-              <span className="text-green-400 text-sm font-medium">✨ You're using Verified Replies (V2)</span>
+              <span className="text-green-400 text-sm font-medium">✨ You&apos;re using Verified Replies (V2)</span>
             </div>
           )}
 

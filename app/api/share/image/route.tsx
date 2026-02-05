@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
                   borderLeft: '4px solid #D1D5DB',
                 }}
               >
-                "{theirMessage.substring(0, 100)}"
+                {`"${theirMessage.substring(0, 100)}"`}
               </div>
             </div>
 
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
                   fontWeight: 600,
                 }}
               >
-                "{myReply.substring(0, 150)}"
+                {`"${myReply.substring(0, 150)}"`}
               </div>
             </div>
 
