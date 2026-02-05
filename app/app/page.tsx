@@ -643,7 +643,7 @@ export default function AppPage() {
                   <Shield className="h-5 w-5 text-green-600" />
                   <div>
                     <p className="text-sm font-bold text-green-800">V2 Verified Mode</p>
-                    <p className="text-xs text-green-600">Rule-checked + tone-verified replies</p>
+                    <p className="text-xs text-green-600">≤18 words • No emojis • No needy text • Tone-matched</p>
                   </div>
                 </div>
                 <button

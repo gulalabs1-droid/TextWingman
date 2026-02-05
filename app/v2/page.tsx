@@ -114,14 +114,14 @@ export default function V2TeaserPage() {
           </Link>
           <div className="flex items-center gap-4">
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
-              <Link href="/app">Try V1</Link>
+              <Link href="/app">Try App</Link>
             </Button>
             <Button 
-              onClick={scrollToWaitlist}
+              asChild
               size="sm" 
-              className="bg-violet-600 text-white hover:bg-violet-700 rounded-xl font-semibold"
+              className="bg-green-600 text-white hover:bg-green-700 rounded-xl font-semibold"
             >
-              Join Waitlist
+              <Link href="/pricing">Get Pro</Link>
             </Button>
           </div>
         </div>
@@ -137,10 +137,10 @@ export default function V2TeaserPage() {
         >
           <motion.div 
             variants={fadeIn}
-            className="inline-flex items-center gap-2 bg-violet-600/10 backdrop-blur text-violet-400 px-4 py-2 rounded-full text-sm font-medium border border-violet-600/20"
+            className="inline-flex items-center gap-2 bg-green-600/20 backdrop-blur text-green-400 px-4 py-2 rounded-full text-sm font-medium border border-green-500/30"
           >
-            <Sparkles className="h-4 w-4" />
-            Coming in V2
+            <CheckCircle2 className="h-4 w-4" />
+            V2 is Live for Pro Users
           </motion.div>
           
           <motion.h1 
@@ -148,8 +148,8 @@ export default function V2TeaserPage() {
             className="text-5xl md:text-7xl font-bold tracking-tight"
           >
             Replies that get it right
-            <span className="block bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent mt-2">
-              because we verify them twice.
+            <span className="block bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mt-2">
+              verified by 3 AI agents.
             </span>
           </motion.h1>
           
@@ -157,7 +157,7 @@ export default function V2TeaserPage() {
             variants={fadeIn}
             className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed"
           >
-            V1 is live in testing. V2 adds a 4-layer, multi-agent system that drafts, rule-checks, adds context, and tone-verifies every reply. Fewer misses, more green-light lines.
+            V2 is <span className="text-green-400 font-semibold">now live</span> for Pro users. A 3-agent pipeline that drafts, enforces rules (≤18 words, no emojis, no needy text), and verifies tone. Every reply is checked twice before you see it.
           </motion.p>
           
           <motion.div 
@@ -165,18 +165,18 @@ export default function V2TeaserPage() {
             className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
           >
             <Button 
-              onClick={scrollToWaitlist}
+              asChild
               size="lg" 
-              className="text-lg px-8 h-14 bg-violet-600 text-white hover:bg-violet-700 rounded-2xl font-bold shadow-2xl shadow-violet-600/20"
+              className="text-lg px-8 h-14 bg-green-600 text-white hover:bg-green-700 rounded-2xl font-bold shadow-2xl shadow-green-600/20"
             >
-              Join the V2 Waitlist
+              <Link href="/app">Try V2 Now →</Link>
             </Button>
             <Button 
               asChild
               size="lg" 
-              className="text-lg px-8 h-14 border-2 border-white bg-white text-black hover:bg-gray-100 rounded-2xl font-semibold"
+              className="text-lg px-8 h-14 border-2 border-white bg-transparent text-white hover:bg-white/10 rounded-2xl font-semibold"
             >
-              <Link href="/app">Try V1 (testing)</Link>
+              <Link href="/pricing">Get Pro Access</Link>
             </Button>
           </motion.div>
 
@@ -185,7 +185,7 @@ export default function V2TeaserPage() {
             variants={fadeIn}
             className="flex flex-wrap justify-center gap-3 pt-8"
           >
-            {['Dual-Check AI™', 'Context-Aware', 'Tone-Verified', 'Short. Smooth. On point.'].map((badge, idx) => (
+            {['3-Agent Pipeline', '≤18 Words Enforced', 'Tone-Verified', 'No Emojis • No Needy Text'].map((badge, idx) => (
               <div 
                 key={idx}
                 className="px-4 py-2 rounded-full border border-violet-400/50 bg-violet-500/15 text-violet-200 text-sm font-medium"
@@ -323,28 +323,29 @@ export default function V2TeaserPage() {
                 <CardContent className="p-8 relative">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-2xl font-bold text-white">V2</h3>
-                    <span className="px-3 py-1 rounded-full bg-violet-600/30 text-violet-200 text-sm font-medium border border-violet-400/30">
-                      Waitlist
+                    <span className="px-3 py-1 rounded-full bg-green-600/30 text-green-300 text-sm font-medium border border-green-400/30 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                      Live Now
                     </span>
                   </div>
                   <ul className="space-y-4">
                     {[
-                      'Multi-Agent Double-Check (rule-check + context + tone-verify)',
-                      'Style memory (saves your vibe)',
-                      'Conversation history awareness',
-                      'Smarter suggestions with fewer misses'
+                      '3-Agent Pipeline: Draft → Rule-Check → Tone-Verify',
+                      'Enforced: ≤18 words, no emojis, no needy language',
+                      'Auto-revise: Fixes violations up to 2x before showing',
+                      'Confidence scores + verification badges'
                     ].map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3">
-                        <Sparkles className="h-5 w-5 text-violet-300 mt-0.5 flex-shrink-0" />
+                        <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                         <span className="text-white font-medium">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   <Button 
-                    onClick={scrollToWaitlist}
-                    className="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white font-bold"
+                    asChild
+                    className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold"
                   >
-                    Join Waitlist
+                    <Link href="/app">Try V2 Now</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -363,16 +364,16 @@ export default function V2TeaserPage() {
           className="max-w-4xl mx-auto"
         >
           <motion.div variants={fadeIn} className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">Timeline & Roadmap</h2>
-            <p className="text-xl text-gray-300">What&apos;s coming and when</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">What V2 Does</h2>
+            <p className="text-xl text-gray-300">The 3-agent verification pipeline</p>
           </motion.div>
 
           <div className="space-y-6">
             {[
-              { period: 'Now', title: 'V1 public testing', desc: 'Collecting feedback, tuning copies' },
-              { period: 'Week 1–2', title: 'Multi-Agent chain online', desc: 'Rule-Checker + Tone-Verifier' },
-              { period: 'Week 3–4', title: 'Context Agent + Style Memory', desc: 'Pro features' },
-              { period: 'After', title: 'Advisor insights & mobile releases', desc: 'Strategy, vibe check, iOS/Android' },
+              { period: 'Step 1', title: 'Draft Agent', desc: 'Generates 3 reply options: Shorter, Spicier, Softer' },
+              { period: 'Step 2', title: 'Rule-Check Agent', desc: 'Enforces ≤18 words, no emojis, no needy language, no double questions. Auto-revises up to 2x.' },
+              { period: 'Step 3', title: 'Tone-Verify Agent', desc: 'Confirms each reply matches its intended tone. Scores confidence 0-100.' },
+              { period: 'Result', title: 'Verified Replies', desc: 'You see badges: ✅ Rule-Compliant • ✅ Tone Verified • Confidence %' },
             ].map((item, idx) => (
               <motion.div
                 key={idx}
@@ -519,7 +520,7 @@ export default function V2TeaserPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur border-t border-gray-800 p-4 md:hidden z-50">
           <div className="flex items-center justify-between gap-4">
             <span className="text-sm font-medium text-gray-300">
-              V2 waitlist is open
+              V2 is live for Pro
             </span>
             <Button 
               onClick={scrollToWaitlist}
