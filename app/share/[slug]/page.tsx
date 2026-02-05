@@ -61,11 +61,20 @@ export default function SharePage() {
   useEffect(() => {
     try {
       if (params.slug) {
-        const decoded = atob(params.slug as string);
+        // Convert base64url to standard base64
+        let base64 = (params.slug as string)
+          .replace(/-/g, '+')
+          .replace(/_/g, '/');
+        // Add padding if needed
+        while (base64.length % 4) {
+          base64 += '=';
+        }
+        const decoded = atob(base64);
         const data = JSON.parse(decoded);
         setShareData(data);
       }
     } catch (err) {
+      console.error('Share decode error:', err);
       setError(true);
     }
   }, [params.slug]);
