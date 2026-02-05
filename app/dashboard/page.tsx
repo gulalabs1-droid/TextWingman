@@ -248,8 +248,19 @@ export default async function DashboardPage() {
               </h3>
               <div className="space-y-3">
                 {recentReplies.map((reply) => {
-                  const replies = reply.generated_replies as string[]
-                  const firstReply = replies?.[0] || 'No reply'
+                  // Parse generated_replies - could be JSON string or already parsed array
+                  let parsedReplies: Array<{tone: string; text: string}> = []
+                  try {
+                    const raw = reply.generated_replies
+                    if (typeof raw === 'string') {
+                      parsedReplies = JSON.parse(raw)
+                    } else if (Array.isArray(raw)) {
+                      parsedReplies = raw
+                    }
+                  } catch {
+                    parsedReplies = []
+                  }
+                  const firstReply = parsedReplies?.[0]?.text || 'No reply'
                   return (
                     <div key={reply.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
                       <p className="text-white/60 text-xs mb-1 truncate">They said: &quot;{reply.their_message}&quot;</p>

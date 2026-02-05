@@ -349,11 +349,25 @@ export default function ProfilePage() {
                           <div>
                             <p className="text-xs text-gray-500 mb-1">Your replies:</p>
                             <div className="space-y-2">
-                              {item.generated_replies?.slice(0, 3).map((reply, idx) => (
-                                <div key={idx} className="text-sm p-2 rounded-lg bg-purple-50 border border-purple-100">
-                                  <span className="text-purple-600 font-medium">{reply.tone}:</span> {reply.text}
-                                </div>
-                              ))}
+                              {(() => {
+                                // Parse generated_replies - could be JSON string or already parsed array
+                                let parsedReplies: Array<{tone: string; text: string}> = [];
+                                try {
+                                  const raw = item.generated_replies;
+                                  if (typeof raw === 'string') {
+                                    parsedReplies = JSON.parse(raw);
+                                  } else if (Array.isArray(raw)) {
+                                    parsedReplies = raw;
+                                  }
+                                } catch {
+                                  parsedReplies = [];
+                                }
+                                return parsedReplies?.slice(0, 3).map((reply, idx) => (
+                                  <div key={idx} className="text-sm p-2 rounded-lg bg-purple-50 border border-purple-100">
+                                    <span className="text-purple-600 font-medium">{reply.tone}:</span> {reply.text}
+                                  </div>
+                                ));
+                              })()}
                             </div>
                           </div>
                           <p className="text-xs text-gray-400">
