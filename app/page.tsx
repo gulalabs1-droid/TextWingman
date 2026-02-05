@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Zap, Check, X, Star, ArrowRight, Brain, Filter, Target, Heart, Briefcase, Users } from "lucide-react";
+import { Sparkles, MessageCircle, Zap, Check, X, Star, ArrowRight, Brain, Filter, Target, Heart, Briefcase, Users, Shield, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { AnimatedShowcase } from "@/components/AnimatedShowcase";
 
@@ -65,6 +65,18 @@ export default function HomePage() {
             <Button asChild size="lg" className="text-lg px-8 h-14 bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-400 rounded-2xl font-semibold transition-all duration-300 active:scale-95 hover:scale-105 shadow-lg hover:shadow-purple-400/40">
               <Link href="#before-after" className="scroll-smooth">See It In Action</Link>
             </Button>
+          </div>
+          
+          {/* V2 Verification Badges */}
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            {['3-Agent Pipeline', '≤18 Words Enforced', 'Tone-Verified', 'No Emojis • No Needy Text'].map((badge, idx) => (
+              <div 
+                key={idx}
+                className="px-4 py-2 rounded-full border border-green-400/50 bg-green-500/15 text-green-200 text-sm font-medium"
+              >
+                {badge}
+              </div>
+            ))}
           </div>
           
           {/* Trust Line */}
@@ -268,6 +280,64 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* V2 Pipeline Visualization */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-violet-500/20 text-violet-300 px-4 py-2 rounded-full text-sm font-medium border border-violet-500/30 mb-4">
+            <Shield className="h-4 w-4" />
+            V2 Pipeline
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">How V2 Verifies Every Reply</h2>
+          <p className="text-white/70">Four agents working together to get it right</p>
+        </div>
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="flex gap-4 md:gap-6 items-start">
+            <div className="flex-shrink-0 w-20 md:w-24">
+              <div className="px-3 py-1.5 rounded-full bg-violet-500/20 text-violet-300 text-xs md:text-sm font-medium text-center border border-violet-500/30">
+                Step 1
+              </div>
+            </div>
+            <div className="flex-1 bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 md:p-5">
+              <h3 className="text-lg font-bold mb-1 text-white">Draft Agent</h3>
+              <p className="text-white/70 text-sm md:text-base">Generates 3 reply options: Shorter, Spicier, Softer</p>
+            </div>
+          </div>
+          <div className="flex gap-4 md:gap-6 items-start">
+            <div className="flex-shrink-0 w-20 md:w-24">
+              <div className="px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 text-xs md:text-sm font-medium text-center border border-blue-500/30">
+                Step 2
+              </div>
+            </div>
+            <div className="flex-1 bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 md:p-5">
+              <h3 className="text-lg font-bold mb-1 text-white">Rule-Check Agent</h3>
+              <p className="text-white/70 text-sm md:text-base">Enforces ≤18 words, no emojis, no needy language. Auto-revises up to 2x.</p>
+            </div>
+          </div>
+          <div className="flex gap-4 md:gap-6 items-start">
+            <div className="flex-shrink-0 w-20 md:w-24">
+              <div className="px-3 py-1.5 rounded-full bg-green-500/20 text-green-300 text-xs md:text-sm font-medium text-center border border-green-500/30">
+                Step 3
+              </div>
+            </div>
+            <div className="flex-1 bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 md:p-5">
+              <h3 className="text-lg font-bold mb-1 text-white">Tone-Verify Agent</h3>
+              <p className="text-white/70 text-sm md:text-base">Confirms each reply matches its intended tone. Scores confidence 0-100.</p>
+            </div>
+          </div>
+          <div className="flex gap-4 md:gap-6 items-start">
+            <div className="flex-shrink-0 w-20 md:w-24">
+              <div className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs md:text-sm font-medium text-center border border-emerald-500/30">
+                Result
+              </div>
+            </div>
+            <div className="flex-1 bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur border border-green-500/30 rounded-xl p-4 md:p-5">
+              <h3 className="text-lg font-bold mb-1 text-white">Verified Replies</h3>
+              <p className="text-white/70 text-sm md:text-base">You see badges: ✅ Rule-Compliant • ✅ Tone Verified • Confidence %</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="container mx-auto px-4 py-20 mt-8">
         <div className="text-center mb-16">
@@ -297,11 +367,11 @@ export default function HomePage() {
               <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <span className="text-2xl font-bold text-primary">2</span>
               </div>
-              <CardTitle>Get 3 Options</CardTitle>
+              <CardTitle>V2 Verifies It</CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription>
-                AI generates Shorter, Spicier, and Softer reply options instantly
+                3 agents draft, rule-check, and tone-verify your reply options
               </CardDescription>
             </CardContent>
           </Card>
@@ -315,7 +385,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Choose your favorite, copy it, and send with confidence
+                Choose your verified reply and send with confidence
               </CardDescription>
             </CardContent>
           </Card>
