@@ -3,26 +3,42 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { Agent, run } from "@openai/agents";
-import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 
-const OutputSchema = z.object({
-  shorter: z.string(),
-  spicier: z.string(),
-  softer: z.string(),
-  meta: z.object({
-    ruleChecks: z.record(z.string(), z.boolean()),
-    toneChecks: z.record(z.string(), z.boolean()),
-    confidence: z.record(z.string(), z.number()),
-    notes: z.string().optional(),
-  }),
-});
+const MAX_REVISE_ATTEMPTS = 2;
 
-// 1) Draft Agent
+// Supabase admin client for logging
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+// Safety check for harmful content
+const HARMFUL_PATTERNS = [
+  /threaten/i, /kill/i, /hurt/i, /attack/i,
+  /harassment/i, /stalk/i, /doxx/i,
+  /child/i, /minor/i, /underage/i,
+  /illegal/i, /drugs/i, /weapon/i,
+];
+
+function containsHarmfulContent(message: string): boolean {
+  return HARMFUL_PATTERNS.some(pattern => pattern.test(message));
+}
+
+// 1) Draft Agent - with safety guardrails
 const DraftAgent = new Agent({
   name: "DraftAgent",
   instructions: `
 You generate 3 text replies: shorter, spicier, softer.
 Keep them natural and realistic. No explanations.
+
+SAFETY RULES (MUST FOLLOW):
+- If the message involves harassment, threats, illegal activity, sexual content involving minors, doxxing, or anything harmful: return safe, neutral alternatives or politely decline.
+- Never generate replies that could be used for manipulation, coercion, or harm.
+- Keep replies appropriate and respectful.
+
 Return JSON with keys: shorter, spicier, softer.
 `,
 });
@@ -31,16 +47,20 @@ Return JSON with keys: shorter, spicier, softer.
 const RuleAgent = new Agent({
   name: "RuleCheckAgent",
   instructions: `
-You enforce these rules:
-- <= 18 words
-- no emojis
-- no needy language (e.g., "please", "sorry", "i miss you", "why you not")
-- no double questions
-If a reply fails, rewrite it to pass while keeping the intent.
+You enforce these rules STRICTLY:
+- <= 18 words (count carefully)
+- no emojis (none at all)
+- no needy language (e.g., "please", "sorry", "i miss you", "why you not", "can you", "would you")
+- no double questions (only one ? allowed)
+
+For EACH reply, check if it passes ALL rules.
+If a reply fails ANY rule, rewrite it to pass while keeping the intent.
+
 Return JSON:
 {
   "fixed": { "shorter": "...", "spicier": "...", "softer": "..." },
-  "passes": { "shorter": true/false, "spicier": true/false, "softer": true/false }
+  "passes": { "shorter": true/false, "spicier": true/false, "softer": true/false },
+  "violations": { "shorter": ["rule1"], "spicier": [], "softer": ["rule2"] }
 }
 `,
 });
@@ -49,10 +69,14 @@ Return JSON:
 const ToneAgent = new Agent({
   name: "ToneVerifyAgent",
   instructions: `
-Check if each reply matches its tone:
-- shorter = minimal, confident
-- spicier = more assertive / flirty tension
-- softer = warmer / considerate
+Check if each reply matches its intended tone:
+- shorter = minimal, confident, direct (few words, no fluff)
+- spicier = more assertive, playful tension, slight edge or flirtation
+- softer = warmer, considerate, gentle, understanding
+
+Rate confidence 0-100 based on how well each reply matches its tone.
+80+ = strong match, 60-79 = acceptable, <60 = weak match
+
 Return JSON:
 {
   "passes": { "shorter": true/false, "spicier": true/false, "softer": true/false },
@@ -62,34 +86,100 @@ Return JSON:
 });
 
 export async function POST(req: Request) {
+  const startTime = Date.now();
   const { message, context } = await req.json();
+  
+  // Get user info from headers for logging
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  
+  // Safety check
+  if (containsHarmfulContent(message)) {
+    return NextResponse.json({
+      shorter: "I'd rather keep things positive. What else is on your mind?",
+      spicier: "Let's talk about something more fun instead.",
+      softer: "I appreciate you sharing, but let's switch topics.",
+      meta: {
+        ruleChecks: { shorter: true, spicier: true, softer: true },
+        toneChecks: { shorter: true, spicier: true, softer: true },
+        confidence: { shorter: 100, spicier: 100, softer: 100 },
+        notes: "Safety redirect applied",
+        safetyRedirect: true,
+      },
+    });
+  }
 
-  // Draft
-  const draftRes = await run(DraftAgent, `Context: ${context}\nMessage: ${message}`);
-  let drafts = safeJson(draftRes.finalOutput);
+  let drafts: any = {};
+  let rule: any = {};
+  let fixed: any = {};
+  let tone: any = {};
+  let reviseAttempts = 0;
+  let allPassed = false;
 
-  // Rule check (1 pass; add loop later)
-  const ruleRes = await run(RuleAgent, JSON.stringify(drafts));
-  const rule = safeJson(ruleRes.finalOutput);
+  try {
+    // Step 1: Draft
+    const draftRes = await run(DraftAgent, `Context: ${context}\nMessage: ${message}`);
+    drafts = safeJson(draftRes.finalOutput);
 
-  const fixed = rule.fixed ?? drafts;
+    // Step 2: Rule check with revise loop (max 2 attempts)
+    let currentDrafts = drafts;
+    
+    while (reviseAttempts < MAX_REVISE_ATTEMPTS && !allPassed) {
+      const ruleRes = await run(RuleAgent, JSON.stringify(currentDrafts));
+      rule = safeJson(ruleRes.finalOutput);
+      
+      // Check if all pass
+      const passes = rule.passes || {};
+      allPassed = passes.shorter && passes.spicier && passes.softer;
+      
+      if (!allPassed && rule.fixed) {
+        // Use fixed versions for next iteration
+        currentDrafts = rule.fixed;
+      }
+      
+      reviseAttempts++;
+    }
 
-  // Tone verify
-  const toneRes = await run(ToneAgent, JSON.stringify(fixed));
-  const tone = safeJson(toneRes.finalOutput);
+    fixed = rule.fixed ?? currentDrafts;
 
+    // Step 3: Tone verify
+    const toneRes = await run(ToneAgent, JSON.stringify(fixed));
+    tone = safeJson(toneRes.finalOutput);
+
+  } catch (error) {
+    console.error("V2 pipeline error:", error);
+    return NextResponse.json({ error: "V2 generation failed" }, { status: 500 });
+  }
+
+  const latency = Date.now() - startTime;
+
+  // Build response payload
   const payload = {
     ...fixed,
     meta: {
       ruleChecks: rule.passes ?? {},
       toneChecks: tone.passes ?? {},
       confidence: tone.confidence ?? {},
-      notes: "V2 verified pipeline",
+      notes: allPassed 
+        ? "V2 verified - all rules passed" 
+        : `V2 verified - best attempt after ${reviseAttempts} revisions`,
+      reviseAttempts,
+      allRulesPassed: allPassed,
+      latencyMs: latency,
     },
   };
 
-  // Optional: validate
-  // OutputSchema.parse(payload);
+  // Log to Supabase (async, don't block response)
+  logV2Run({
+    ip,
+    context,
+    message: message.substring(0, 100),
+    rulePassRate: calculatePassRate(rule.passes),
+    tonePassRate: calculatePassRate(tone.passes),
+    avgConfidence: calculateAvgConfidence(tone.confidence),
+    latencyMs: latency,
+    reviseAttempts,
+    allPassed,
+  });
 
   return NextResponse.json(payload);
 }
@@ -100,5 +190,50 @@ function safeJson(input: any) {
     return input;
   } catch {
     return {};
+  }
+}
+
+function calculatePassRate(passes: Record<string, boolean> | undefined): number {
+  if (!passes) return 0;
+  const values = Object.values(passes);
+  if (values.length === 0) return 0;
+  return Math.round((values.filter(v => v).length / values.length) * 100);
+}
+
+function calculateAvgConfidence(confidence: Record<string, number> | undefined): number {
+  if (!confidence) return 0;
+  const values = Object.values(confidence);
+  if (values.length === 0) return 0;
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+}
+
+async function logV2Run(data: {
+  ip: string;
+  context: string;
+  message: string;
+  rulePassRate: number;
+  tonePassRate: number;
+  avgConfidence: number;
+  latencyMs: number;
+  reviseAttempts: number;
+  allPassed: boolean;
+}) {
+  try {
+    const supabase = getSupabaseAdmin();
+    if (!supabase) return;
+    
+    await supabase.from("v2_runs").insert({
+      ip_address: data.ip,
+      context: data.context,
+      message_preview: data.message,
+      rule_pass_rate: data.rulePassRate,
+      tone_pass_rate: data.tonePassRate,
+      avg_confidence: data.avgConfidence,
+      latency_ms: data.latencyMs,
+      revise_attempts: data.reviseAttempts,
+      all_passed: data.allPassed,
+    });
+  } catch (error) {
+    console.error("Failed to log V2 run:", error);
   }
 }

@@ -97,6 +97,7 @@ export default function AppPage() {
   const [v2Mode, setV2Mode] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [v2Meta, setV2Meta] = useState<V2Meta>(null);
+  const [v2Step, setV2Step] = useState<string | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -177,10 +178,21 @@ export default function AppPage() {
     setLoading(true);
     setReplies([]); // Clear previous replies
     setV2Meta(null); // Clear previous V2 meta
+    setV2Step(null);
     
     try {
       // Use V2 API if enabled (Pro-only)
       const endpoint = v2Mode && isPro ? '/api/generate-v2' : '/api/generate';
+      
+      // Show progress steps for V2
+      if (v2Mode && isPro) {
+        setV2Step('drafting');
+        await new Promise(r => setTimeout(r, 800));
+        setV2Step('rule-checking');
+        await new Promise(r => setTimeout(r, 600));
+        setV2Step('tone-verifying');
+      }
+      
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -257,6 +269,7 @@ export default function AppPage() {
       });
     } finally {
       setLoading(false);
+      setV2Step(null);
     }
   };
 
@@ -662,7 +675,12 @@ export default function AppPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {v2Mode && isPro ? 'Running V2 pipeline...' : 'Crafting perfect replies...'}
+                    {v2Mode && isPro ? (
+                      v2Step === 'drafting' ? '✍️ Drafting replies...' :
+                      v2Step === 'rule-checking' ? '📋 Rule-checking...' :
+                      v2Step === 'tone-verifying' ? '🎯 Tone-verifying...' :
+                      'Finalizing...'
+                    ) : 'Crafting perfect replies...'}
                   </>
                 ) : (
                   <>
@@ -734,29 +752,46 @@ export default function AppPage() {
                         <span className={`text-xs font-bold bg-gradient-to-r ${config.gradient} text-white px-4 py-2 rounded-full shadow-md`}>
                           {reply.text ? reply.text.split(' ').length : 0} words
                         </span>
-                        {/* V2 Badges */}
+                        {/* V2 Badges with Tooltips */}
                         {v2Meta && (
                           <div className="flex items-center gap-2 flex-wrap">
                             {v2Meta.ruleChecks[reply.tone] && (
-                              <span className="flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 px-3 py-1.5 rounded-full">
+                              <span 
+                                className="flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 px-3 py-1.5 rounded-full cursor-help"
+                                title="✓ ≤18 words • No emojis • No needy language • No double questions"
+                              >
                                 <CheckCircle className="h-3 w-3" />
                                 Rule-Compliant
                               </span>
                             )}
+                            {!v2Meta.ruleChecks[reply.tone] && v2Meta.ruleChecks[reply.tone] !== undefined && (
+                              <span 
+                                className="flex items-center gap-1 text-xs font-bold bg-yellow-100 text-yellow-700 px-3 py-1.5 rounded-full cursor-help"
+                                title="Some rules not met - best attempt shown"
+                              >
+                                ⚠️ Partial
+                              </span>
+                            )}
                             {v2Meta.toneChecks[reply.tone] && (
-                              <span className="flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full">
+                              <span 
+                                className="flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full cursor-help"
+                                title={`Matches ${reply.tone} tone: ${reply.tone === 'shorter' ? 'minimal, confident' : reply.tone === 'spicier' ? 'assertive, flirty tension' : 'warm, considerate'}`}
+                              >
                                 <CheckCircle className="h-3 w-3" />
                                 Tone Verified
                               </span>
                             )}
                             {v2Meta.confidence[reply.tone] !== undefined && (
-                              <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
-                                v2Meta.confidence[reply.tone] >= 80 
-                                  ? 'bg-green-100 text-green-700' 
-                                  : v2Meta.confidence[reply.tone] >= 60 
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-red-100 text-red-700'
-                              }`}>
+                              <span 
+                                className={`text-xs font-bold px-3 py-1.5 rounded-full cursor-help ${
+                                  v2Meta.confidence[reply.tone] >= 80 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : v2Meta.confidence[reply.tone] >= 60 
+                                      ? 'bg-yellow-100 text-yellow-700'
+                                      : 'bg-red-100 text-red-700'
+                                }`}
+                                title={`Confidence score: ${v2Meta.confidence[reply.tone] >= 80 ? 'Strong match' : v2Meta.confidence[reply.tone] >= 60 ? 'Acceptable' : 'Weak match'}`}
+                              >
                                 {v2Meta.confidence[reply.tone]}% confident
                               </span>
                             )}
