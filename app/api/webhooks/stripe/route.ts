@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         console.log('Checkout completed:', session.id);
         
         if (session.customer && session.subscription) {
-          // Get subscription details to determine plan type
+          // Get subscription details
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
           const priceId = subscription.items.data[0]?.price?.id;
           
@@ -63,10 +63,11 @@ export async function POST(request: NextRequest) {
           if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) planType = 'monthly';
           if (priceId === process.env.STRIPE_PRICE_ID_ANNUAL) planType = 'annual';
 
-          // Get user_id from metadata (we'll add this to checkout)
-          const userId = session.metadata?.user_id;
+          // Get user_id from client_reference_id (preferred) or metadata
+          const userId = session.client_reference_id || session.metadata?.user_id;
 
           if (userId) {
+            // Upsert subscription - Stripe is the ONLY writer
             const { error } = await getSupabase()
               .from('subscriptions')
               .upsert({
@@ -74,28 +75,22 @@ export async function POST(request: NextRequest) {
                 stripe_customer_id: session.customer as string,
                 stripe_subscription_id: session.subscription as string,
                 plan_type: planType,
-                status: 'active',
+                price_id: priceId,
+                status: subscription.status,
                 current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                cancel_at_period_end: subscription.cancel_at_period_end,
+                canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+                is_beta_tester: subscription.discount?.coupon?.name === 'FAMTEST7',
                 updated_at: new Date().toISOString(),
               }, { onConflict: 'user_id' });
 
             if (error) {
               console.error('Error storing subscription:', error);
+            } else {
+              console.log('Subscription stored for user:', userId, 'plan:', planType);
             }
-
-            // Mark user as beta tester if they used FAMTEST7 coupon
-            if (subscription.discount?.coupon?.name === 'FAMTEST7') {
-              const { error: betaError } = await getSupabase()
-                .from('subscriptions')
-                .update({ is_beta_tester: true })
-                .eq('user_id', userId);
-              
-              if (betaError) {
-                console.error('Error marking beta tester:', betaError);
-              } else {
-                console.log('Marked user as beta tester:', userId);
-              }
-            }
+          } else {
+            console.error('No user_id found in checkout session:', session.id);
           }
         }
         break;
@@ -105,30 +100,36 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         console.log('Subscription created:', subscription.id);
         
+        const priceId = subscription.items.data[0]?.price?.id;
+        let planType = 'weekly';
+        if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) planType = 'monthly';
+        if (priceId === process.env.STRIPE_PRICE_ID_ANNUAL) planType = 'annual';
+        
         // Get user_id from subscription metadata
         const userId = subscription.metadata?.user_id;
         
         if (userId) {
-          // Update profiles table to mark user as Pro
-          const { error: profileError } = await getSupabase()
-            .from('profiles')
+          // Upsert subscription - Stripe is the ONLY writer
+          const { error } = await getSupabase()
+            .from('subscriptions')
             .upsert({
-              id: userId,
-              plan: 'pro',
+              user_id: userId,
+              stripe_customer_id: subscription.customer as string,
+              stripe_subscription_id: subscription.id,
+              plan_type: planType,
+              price_id: priceId,
+              status: subscription.status,
+              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              cancel_at_period_end: subscription.cancel_at_period_end,
+              canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
+              is_beta_tester: subscription.discount?.coupon?.name === 'FAMTEST7',
               updated_at: new Date().toISOString(),
-            }, { onConflict: 'id' });
+            }, { onConflict: 'user_id' });
           
-          if (profileError) {
-            console.error('Error updating profile to pro:', profileError);
-          }
-
-          // Check for beta tester coupon
-          if (subscription.discount?.coupon?.name === 'FAMTEST7') {
-            await getSupabase()
-              .from('profiles')
-              .update({ beta_group: 'friends_family' })
-              .eq('id', userId);
-            console.log('Marked user as friends_family beta:', userId);
+          if (error) {
+            console.error('Error storing subscription:', error);
+          } else {
+            console.log('Subscription created for user:', userId);
           }
         }
         break;
@@ -136,12 +137,23 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
+        console.log('Subscription updated:', subscription.id, 'status:', subscription.status);
         
+        const priceId = subscription.items.data[0]?.price?.id;
+        let planType = 'weekly';
+        if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) planType = 'monthly';
+        if (priceId === process.env.STRIPE_PRICE_ID_ANNUAL) planType = 'annual';
+        
+        // Update subscription - Stripe is the ONLY writer
         const { error } = await getSupabase()
           .from('subscriptions')
           .update({
             status: subscription.status,
+            plan_type: planType,
+            price_id: priceId,
             current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            cancel_at_period_end: subscription.cancel_at_period_end,
+            canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
             updated_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
@@ -149,26 +161,19 @@ export async function POST(request: NextRequest) {
         if (error) {
           console.error('Failed to update subscription:', error);
         }
-        
-        // Also update profiles table based on status
-        if (subscription.status === 'active') {
-          const userId = subscription.metadata?.user_id;
-          if (userId) {
-            await getSupabase()
-              .from('profiles')
-              .upsert({ id: userId, plan: 'pro', updated_at: new Date().toISOString() }, { onConflict: 'id' });
-          }
-        }
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
+        console.log('Subscription deleted:', subscription.id);
         
+        // Update subscription status - Stripe is the ONLY writer
         const { error } = await getSupabase()
           .from('subscriptions')
           .update({
             status: 'canceled',
+            canceled_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
           .eq('stripe_subscription_id', subscription.id);
@@ -176,16 +181,7 @@ export async function POST(request: NextRequest) {
         if (error) {
           console.error('Failed to cancel subscription:', error);
         }
-        
-        // Downgrade profile plan to free
-        const userId = subscription.metadata?.user_id;
-        if (userId) {
-          await getSupabase()
-            .from('profiles')
-            .update({ plan: 'free', updated_at: new Date().toISOString() })
-            .eq('id', userId);
-          console.log('Downgraded user to free:', userId);
-        }
+        // NOTE: Do NOT update profiles.plan here - app reads subscriptions.status directly
         break;
       }
 

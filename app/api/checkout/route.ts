@@ -28,8 +28,18 @@ export async function POST(request: NextRequest) {
       cancel_url: `${origin}/app?canceled=true`,
       allow_promotion_codes: true,
       customer_email: userEmail || undefined,
+      // CRITICAL: These fields link the checkout to the Supabase user
+      client_reference_id: userId || undefined,
       metadata: {
         user_id: userId || '',
+        email: userEmail || '',
+      },
+      // Pass user_id to subscription metadata for webhook access
+      subscription_data: {
+        metadata: {
+          user_id: userId || '',
+          email: userEmail || '',
+        },
       },
     });
 
