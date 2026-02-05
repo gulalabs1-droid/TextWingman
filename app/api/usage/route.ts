@@ -18,7 +18,8 @@ function getSupabase() {
   return supabase;
 }
 
-const FREE_LIMIT = 20; // 20 free generations per day for testing
+const FREE_LIMIT = 3; // 3 free replies per day for regular users
+const BETA_LIMIT = 20; // 20 free replies per day for FAMTEST7 beta testers
 const RESET_HOURS = 24;
 
 // VPN/Abuse Detection - Moderate tolerance
@@ -55,18 +56,22 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await serverSupabase.auth.getUser();
     const userId = user?.id || null;
 
-    // Check if user has active Pro subscription
+    // Check if user has active Pro subscription or is beta tester
     let isPro = false;
+    let isBetaTester = false;
     if (userId) {
       const { data: subscription } = await getSupabase()
         .from('subscriptions')
-        .select('status, plan_type')
+        .select('status, plan_type, is_beta_tester')
         .eq('user_id', userId)
-        .eq('status', 'active')
         .single();
       
-      isPro = !!subscription;
+      isPro = subscription?.status === 'active';
+      isBetaTester = subscription?.is_beta_tester === true;
     }
+    
+    // Determine user's limit
+    const userLimit = isBetaTester ? BETA_LIMIT : FREE_LIMIT;
 
     // Pro users get unlimited - skip usage check
     if (isPro) {
@@ -104,16 +109,17 @@ export async function GET(request: NextRequest) {
     }
 
     const usageCount = count || 0;
-    const remaining = Math.max(0, FREE_LIMIT - usageCount);
-    const canGenerate = usageCount < FREE_LIMIT;
+    const remaining = Math.max(0, userLimit - usageCount);
+    const canGenerate = usageCount < userLimit;
 
     return NextResponse.json({
       usageCount,
       remaining,
-      limit: FREE_LIMIT,
+      limit: userLimit,
       canGenerate,
       resetHours: RESET_HOURS,
       isPro: false,
+      isBetaTester,
       userId: userId,
       userEmail: user?.email || null,
     });
@@ -135,6 +141,18 @@ export async function POST(request: NextRequest) {
     const serverSupabase = await createServerClient();
     const { data: { user } } = await serverSupabase.auth.getUser();
     const userId = user?.id || null;
+
+    // Check if user is beta tester
+    let isBetaTester = false;
+    if (userId) {
+      const { data: subscription } = await getSupabase()
+        .from('subscriptions')
+        .select('is_beta_tester')
+        .eq('user_id', userId)
+        .single();
+      isBetaTester = subscription?.is_beta_tester === true;
+    }
+    const userLimit = isBetaTester ? BETA_LIMIT : FREE_LIMIT;
 
     // VPN/Abuse check: Count unique IPs for this fingerprint in last hour (skip for logged-in users)
     if (!userId) {
@@ -184,12 +202,12 @@ export async function POST(request: NextRequest) {
 
     const usageCount = count || 0;
 
-    if (usageCount >= FREE_LIMIT) {
+    if (usageCount >= userLimit) {
       return NextResponse.json({
         error: 'Free limit reached',
         usageCount,
         remaining: 0,
-        limit: FREE_LIMIT,
+        limit: userLimit,
         canGenerate: false,
       }, { status: 429 });
     }
@@ -210,13 +228,13 @@ export async function POST(request: NextRequest) {
     }
 
     const newCount = usageCount + 1;
-    const remaining = Math.max(0, FREE_LIMIT - newCount);
+    const remaining = Math.max(0, userLimit - newCount);
 
     return NextResponse.json({
       usageCount: newCount,
       remaining,
-      limit: FREE_LIMIT,
-      canGenerate: newCount < FREE_LIMIT,
+      limit: userLimit,
+      canGenerate: newCount < userLimit,
     });
   } catch (error) {
     console.error('Usage POST API error:', error);
