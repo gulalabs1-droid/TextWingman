@@ -51,17 +51,23 @@ export async function POST(request: NextRequest) {
             : await generateReplies(message);
           
           // Save to reply history for Pro users
-          const { error: historyError } = await supabaseAdmin
-            .from('reply_history')
-            .insert({
-              user_id: userId,
-              their_message: message,
-              generated_replies: replies,
-              context: context || null,
-            });
-          
-          if (historyError) {
-            console.error('Failed to save reply history:', historyError);
+          try {
+            const { error: historyError } = await supabaseAdmin
+              .from('reply_history')
+              .insert({
+                user_id: userId,
+                their_message: message,
+                generated_replies: JSON.stringify(replies),
+                context: context || null,
+              });
+            
+            if (historyError) {
+              console.error('Failed to save reply history:', historyError.message, historyError.details);
+            } else {
+              console.log('Reply history saved for user:', userId);
+            }
+          } catch (insertErr) {
+            console.error('Reply history insert exception:', insertErr);
           }
           
           return NextResponse.json({ replies });
@@ -131,17 +137,21 @@ export async function POST(request: NextRequest) {
 
     // Save to reply history for logged-in users
     if (userId && supabase) {
-      const { error: historyError } = await supabase
-        .from('reply_history')
-        .insert({
-          user_id: userId,
-          their_message: message,
-          generated_replies: replies,
-          context: context || null,
-        });
-      
-      if (historyError) {
-        console.error('Failed to save reply history for free user:', historyError);
+      try {
+        const { error: historyError } = await supabase
+          .from('reply_history')
+          .insert({
+            user_id: userId,
+            their_message: message,
+            generated_replies: JSON.stringify(replies),
+            context: context || null,
+          });
+        
+        if (historyError) {
+          console.error('Failed to save reply history for free user:', historyError.message);
+        }
+      } catch (insertErr) {
+        console.error('Reply history insert exception (free):', insertErr);
       }
     }
 
