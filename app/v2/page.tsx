@@ -211,11 +211,11 @@ export default function V2TeaserPage() {
               How Dual-Check AI™ verifies your reply
             </h2>
             <p className="text-xl text-gray-300">
-              Four agents working together to get it right
+              3 agents working together to get it right
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {/* Draft Agent */}
             <motion.div variants={fadeIn}>
               <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-violet-500/50 h-full hover:border-violet-400 transition-all">
@@ -224,7 +224,7 @@ export default function V2TeaserPage() {
                     <Sparkles className="h-6 w-6 text-violet-400" />
                   </div>
                   <h3 className="text-xl font-bold mb-2 text-white">Draft Agent</h3>
-                  <p className="text-gray-300">A/B/C options fast.</p>
+                  <p className="text-gray-300">Generates A/B/C reply options instantly, adapting to your selected context.</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -236,21 +236,8 @@ export default function V2TeaserPage() {
                   <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-4">
                     <Shield className="h-6 w-6 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2 text-white">Rule-Check</h3>
-                  <p className="text-gray-300">≤ 18 words, no emojis, no double-text, respectful boundaries.</p>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Context Agent */}
-            <motion.div variants={fadeIn}>
-              <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border-purple-500/50 h-full hover:border-purple-400 transition-all">
-                <CardContent className="p-6">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center mb-4">
-                    <Target className="h-6 w-6 text-purple-400" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2 text-white">Context Agent</h3>
-                  <p className="text-gray-300">Adapts phrasing for Crush / New Match / Friend / Work / Family.</p>
+                  <h3 className="text-xl font-bold mb-2 text-white">Rule-Check Agent</h3>
+                  <p className="text-gray-300">Enforces ≤18 words, no emojis, no needy language. Auto-revises up to 2x.</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -262,8 +249,8 @@ export default function V2TeaserPage() {
                   <div className="w-12 h-12 rounded-2xl bg-green-500/20 flex items-center justify-center mb-4">
                     <CheckCircle2 className="h-6 w-6 text-green-400" />
                   </div>
-                  <h3 className="text-xl font-bold mb-2 text-white">Tone Verify</h3>
-                  <p className="text-gray-300">Confirms Shorter / Spicier / Softer actually matches length + assertiveness + warmth.</p>
+                  <h3 className="text-xl font-bold mb-2 text-white">Tone-Verify Agent</h3>
+                  <p className="text-gray-300">Confirms Shorter / Spicier / Softer matches intended length + vibe.</p>
                 </CardContent>
               </Card>
             </motion.div>
