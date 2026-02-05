@@ -93,7 +93,7 @@ export default async function DashboardPage() {
       {/* Header */}
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
               <MessageCircle className="h-5 w-5 text-white" />
             </div>
