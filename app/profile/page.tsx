@@ -8,11 +8,9 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Mail, Lock, Loader2, LogOut, Crown, Sparkles, Clock, MessageCircle } from 'lucide-react';
 import { Logo } from '@/components/Logo';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient();
 
 type User = {
   id: string;
@@ -69,10 +67,14 @@ export default function ProfilePage() {
         .from('subscriptions')
         .select('plan_type, status, current_period_end')
         .eq('user_id', userId)
-        .single();
+        .eq('status', 'active')
+        .maybeSingle();
 
       if (data && !error) {
+        console.log('Subscription found:', data);
         setSubscription(data);
+      } else if (error) {
+        console.error('Subscription fetch error:', error);
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);
