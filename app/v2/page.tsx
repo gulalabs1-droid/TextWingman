@@ -450,9 +450,9 @@ export default function V2TeaserPage() {
                 <>
                   <motion.div variants={fadeIn} className="text-center mb-8">
                     <Mail className="h-16 w-16 text-violet-600 mx-auto mb-6" />
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Be first on V2</h2>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Be first on V3</h2>
                     <p className="text-xl text-gray-700">
-                      Drop your email. We&apos;ll invite you to test Dual-Check AI™ early.
+                      Drop your email. Get early access to Personality Learning, Screenshot-to-Reply, and Voice Mode.
                     </p>
                   </motion.div>
 
@@ -506,7 +506,7 @@ export default function V2TeaserPage() {
                   </div>
                   <h3 className="text-3xl font-bold mb-3">You&apos;re in! 🎉</h3>
                   <p className="text-xl text-gray-400">
-                    We&apos;ll email you when V2 goes live.
+                    We&apos;ll email you when V3 drops.
                   </p>
                 </motion.div>
               )}
@@ -520,14 +520,14 @@ export default function V2TeaserPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-black/95 backdrop-blur border-t border-gray-800 p-4 md:hidden z-50">
           <div className="flex items-center justify-between gap-4">
             <span className="text-sm font-medium text-gray-300">
-              V2 is live for Pro
+              V3 Coming Soon
             </span>
             <Button 
               onClick={scrollToWaitlist}
               size="sm"
               className="bg-violet-600 hover:bg-violet-700 font-bold"
             >
-              Join
+              Join V3 Waitlist
             </Button>
           </div>
         </div>

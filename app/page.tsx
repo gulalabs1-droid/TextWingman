@@ -126,8 +126,12 @@ export default function HomePage() {
                 </div>
                 <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
                   <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                  <p className="text-green-200">&ldquo;depends. what u thinking? 👀&rdquo;</p>
-                  <p className="text-green-400 text-xs mt-2">✨ Short. Curious. Pull energy.</p>
+                  <p className="text-green-200">&ldquo;depends. what u thinking?&rdquo;</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-green-400 text-xs">✨ V2 Verified</span>
+                    <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">5 words</span>
+                    <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Tone ✓</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -166,7 +170,11 @@ export default function HomePage() {
                 <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
                   <p className="text-gray-400 text-sm mb-1">Your reply:</p>
                   <p className="text-green-200">&ldquo;say less, pull up&rdquo;</p>
-                  <p className="text-green-400 text-xs mt-2">✨ Short. Confident. Action.</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-green-400 text-xs">✨ V2 Verified</span>
+                    <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">4 words</span>
+                    <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Tone ✓</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -221,37 +229,41 @@ export default function HomePage() {
       {/* Why It Hits Harder Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-green-500/20 text-green-300 px-4 py-2 rounded-full text-sm font-medium border border-green-500/30 mb-4">
+            <Sparkles className="h-4 w-4" />
+            V2 Technology
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Why Text Wingman Hits Harder</h2>
-          <p className="text-white/70">Not just another AI — built specifically for texting</p>
+          <p className="text-white/70">3-agent verified replies — not just another AI</p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
           <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-purple-500/30 flex items-center justify-center">
               <Brain className="h-6 w-6 text-purple-300" />
             </div>
-            <h3 className="font-bold text-white mb-2">Detects Intent</h3>
-            <p className="text-white/80 text-sm">Reads tone + hidden meaning in their message</p>
+            <h3 className="font-bold text-white mb-2">Draft Agent</h3>
+            <p className="text-white/80 text-sm">Generates 3 tone-matched reply options instantly</p>
           </div>
           <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-pink-500/30 flex items-center justify-center">
-              <Target className="h-6 w-6 text-pink-300" />
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-green-500/30 flex items-center justify-center">
+              <Filter className="h-6 w-6 text-green-300" />
             </div>
-            <h3 className="font-bold text-white mb-2">Matches Your Style</h3>
-            <p className="text-white/80 text-sm">Short, confident, smooth — your vibe, amplified</p>
+            <h3 className="font-bold text-white mb-2">Rule-Check Agent</h3>
+            <p className="text-white/80 text-sm">Enforces ≤18 words, no emojis, no needy language</p>
           </div>
           <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-blue-500/30 flex items-center justify-center">
-              <Filter className="h-6 w-6 text-blue-300" />
+              <Target className="h-6 w-6 text-blue-300" />
             </div>
-            <h3 className="font-bold text-white mb-2">Filters Cringe</h3>
-            <p className="text-white/80 text-sm">No over-texting, no needy vibes, no L replies</p>
+            <h3 className="font-bold text-white mb-2">Tone-Verify Agent</h3>
+            <p className="text-white/80 text-sm">Confirms each reply matches its intended vibe</p>
           </div>
           <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-yellow-500/30 flex items-center justify-center">
               <Zap className="h-6 w-6 text-yellow-300" />
             </div>
-            <h3 className="font-bold text-white mb-2">3 Optimized Options</h3>
-            <p className="text-white/80 text-sm">Shorter, Spicier, Softer — pick your perfect reply</p>
+            <h3 className="font-bold text-white mb-2">Auto-Revise</h3>
+            <p className="text-white/80 text-sm">Fixes violations up to 2x before showing you</p>
           </div>
         </div>
       </section>
@@ -414,10 +426,10 @@ export default function HomePage() {
                   <span className="text-white font-medium">Share cards</span>
                 </li>
                 <li className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-purple-400/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Sparkles className="h-4 w-4 text-purple-200" />
+                  <div className="w-6 h-6 rounded-full bg-green-400/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Sparkles className="h-4 w-4 text-green-200" />
                   </div>
-                  <span className="text-purple-200 font-medium italic">Coming soon: Vibe memory, predictions</span>
+                  <span className="text-green-200 font-bold">V2 Verified Mode included</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-14 text-lg font-black rounded-xl bg-white text-purple-700 hover:bg-gray-100 shadow-2xl hover:shadow-purple-900/30 hover:scale-105 transition-all">
@@ -492,8 +504,8 @@ export default function HomePage() {
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="text-left p-4 text-white/80 font-medium">Feature</th>
-                  <th className="text-center p-4 text-white/80 font-medium">Free</th>
-                  <th className="text-center p-4 text-white font-bold bg-purple-600/30">Pro</th>
+                  <th className="text-center p-4 text-white/80 font-medium">Free (V1)</th>
+                  <th className="text-center p-4 text-white font-bold bg-purple-600/30">Pro (V2)</th>
                 </tr>
               </thead>
               <tbody className="text-white/90">
@@ -504,11 +516,21 @@ export default function HomePage() {
                 </tr>
                 <tr className="border-b border-white/10">
                   <td className="p-4">Tone options</td>
-                  <td className="text-center p-4">1</td>
-                  <td className="text-center p-4 bg-purple-600/10">All</td>
+                  <td className="text-center p-4">All 3</td>
+                  <td className="text-center p-4 bg-purple-600/10">All 3</td>
                 </tr>
                 <tr className="border-b border-white/10">
-                  <td className="p-4">Output options (A/B/C)</td>
+                  <td className="p-4">V2 Verified Mode</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
+                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-white/10">
+                  <td className="p-4">Rule-Check + Tone-Verify</td>
+                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
+                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
+                </tr>
+                <tr className="border-b border-white/10">
+                  <td className="p-4">Confidence scores</td>
                   <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
                   <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
                 </tr>
