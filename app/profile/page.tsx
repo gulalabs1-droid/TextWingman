@@ -162,12 +162,12 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Button asChild variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10 rounded-xl">
-            <Link href="/">
+            <Link href="/dashboard">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Link>
           </Button>
-          <Link href="/" className="transition-transform hover:scale-105">
+          <Link href="/dashboard" className="transition-transform hover:scale-105">
             <Logo size="sm" showText={true} />
           </Link>
           <div className="w-20" />
