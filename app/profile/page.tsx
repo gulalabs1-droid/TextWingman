@@ -39,7 +39,34 @@ export default function ProfilePage() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [suggestion, setSuggestion] = useState('');
+  const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
+  const [suggestionSubmitted, setSuggestionSubmitted] = useState(false);
   const { toast } = useToast();
+
+  const handleSuggestionSubmit = async () => {
+    if (!suggestion.trim()) return;
+    setSuggestionSubmitting(true);
+    try {
+      const res = await fetch('/api/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suggestion: suggestion.trim() }),
+      });
+      if (res.ok) {
+        setSuggestionSubmitted(true);
+        setSuggestion('');
+        toast({
+          title: 'Thanks for sharing!',
+          description: 'Your feedback helps shape what we build next.',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to submit suggestion:', error);
+    } finally {
+      setSuggestionSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     checkUser();
@@ -393,8 +420,44 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Report an Issue - Lightweight Support */}
+            {/* Help Shape What's Next - Suggestion Box */}
             <div className="pt-6 border-t border-white/10">
+              <h3 className="text-white font-medium text-center mb-2">Help shape what&apos;s next</h3>
+              <p className="text-white/50 text-xs text-center mb-3">You&apos;re early — your input matters</p>
+              {suggestionSubmitted ? (
+                <p className="text-green-400 text-sm text-center">✓ Thanks! We read every suggestion.</p>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    value={suggestion}
+                    onChange={(e) => setSuggestion(e.target.value)}
+                    placeholder="What would make this better?"
+                    className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-xl"
+                    maxLength={500}
+                  />
+                  <Button
+                    onClick={handleSuggestionSubmit}
+                    disabled={suggestionSubmitting || !suggestion.trim()}
+                    className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-4"
+                  >
+                    {suggestionSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Billing Link - for Pro users */}
+            {subscription?.status === 'active' && (
+              <Link 
+                href="/billing"
+                className="block pt-4 text-center text-purple-300 hover:text-white text-sm transition-colors"
+              >
+                View billing & receipts →
+              </Link>
+            )}
+
+            {/* Report an Issue - Lightweight Support */}
+            <div className="pt-4 border-t border-white/10 mt-4">
               <p className="text-white/50 text-sm text-center mb-3">
                 Something feel off? Tell us — we read everything.
               </p>
