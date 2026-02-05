@@ -21,12 +21,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Insert into waitlist table
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if email already exists
+    const { data: existing } = await supabase
+      .from('v2_waitlist')
+      .select('id, created_at')
+      .eq('email', normalizedEmail)
+      .single();
+
+    if (existing) {
+      // Already on waitlist - return success (don't send another email)
+      return NextResponse.json(
+        { 
+          success: true, 
+          alreadySubscribed: true,
+          message: "You're already on the list! We'll notify you when V3 launches." 
+        },
+        { status: 200 }
+      );
+    }
+
+    // Insert new signup
     const { data, error } = await supabase
       .from('v2_waitlist')
       .insert([
         {
-          email: email.toLowerCase().trim(),
+          email: normalizedEmail,
           referral_source: ref || null,
           created_at: new Date().toISOString(),
         },
@@ -34,11 +55,15 @@ export async function POST(req: NextRequest) {
       .select();
 
     if (error) {
-      // Check for duplicate email
+      // Handle race condition duplicate
       if (error.code === '23505') {
         return NextResponse.json(
-          { error: 'This email is already on the waitlist' },
-          { status: 409 }
+          { 
+            success: true, 
+            alreadySubscribed: true,
+            message: "You're already on the list!" 
+          },
+          { status: 200 }
         );
       }
 
@@ -50,7 +75,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: true, message: 'Successfully joined the waitlist' },
+      { success: true, newSignup: true, message: 'Successfully joined the waitlist' },
       { status: 201 }
     );
   } catch (error) {

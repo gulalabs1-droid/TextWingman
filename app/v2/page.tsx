@@ -70,17 +70,27 @@ export default function V2TeaserPage() {
       if (response.ok) {
         setIsSubmitted(true);
         setShowStickyBar(false);
-        toast({
-          title: "You're in! 🎉",
-          description: "We'll email you when V2 goes live.",
-        });
         
-        // Track event (optional)
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-          (window as any).gtag('event', 'v2_waitlist_submit', {
-            event_category: 'engagement',
-            event_label: 'v2_waitlist'
+        if (data.alreadySubscribed) {
+          // Already on waitlist - show friendly confirmation
+          toast({
+            title: "You're already on the list! ✅",
+            description: "We'll notify you when V3 launches.",
           });
+        } else {
+          // New signup
+          toast({
+            title: "You're in! 🎉",
+            description: "We'll email you when V3 goes live.",
+          });
+          
+          // Track event only for new signups
+          if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'v3_waitlist_submit', {
+              event_category: 'engagement',
+              event_label: 'v3_waitlist'
+            });
+          }
         }
       } else {
         toast({
