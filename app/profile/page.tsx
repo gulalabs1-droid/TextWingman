@@ -262,11 +262,21 @@ export default function ProfilePage() {
                           ? `Pro ${subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}` 
                           : 'Free Plan'}
                       </p>
-                      {subscription?.status === 'active' && subscription.current_period_end && (
-                        <p className="text-xs text-gray-400">
-                          Renews {new Date(subscription.current_period_end).toLocaleDateString()}
-                        </p>
-                      )}
+                      {subscription?.status === 'active' && subscription.current_period_end && (() => {
+                        const endDate = new Date(subscription.current_period_end);
+                        const now = new Date();
+                        const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                        const showCountdown = subscription.plan_type === 'weekly' || daysLeft <= 7;
+                        return showCountdown ? (
+                          <p className={`text-xs font-medium ${daysLeft <= 1 ? 'text-red-500' : daysLeft <= 3 ? 'text-orange-500' : 'text-purple-500'}`}>
+                            {daysLeft <= 0 ? 'Expires today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-400">
+                            Renews {endDate.toLocaleDateString()}
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
                   <Button

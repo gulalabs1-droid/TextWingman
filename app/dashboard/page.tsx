@@ -88,6 +88,20 @@ export default async function DashboardPage() {
   const usagePercentage = (userProfile.usage_count / userProfile.usage_limit) * 100
   const isAtLimit = userProfile.subscription_status === 'free' && userProfile.usage_count >= userProfile.usage_limit
 
+  // Calculate days left in subscription
+  let daysLeft: number | null = null
+  let showCountdown = false
+  if (isPro && subscription?.current_period_end) {
+    const endDate = new Date(subscription.current_period_end)
+    const now = new Date()
+    const diffTime = endDate.getTime() - now.getTime()
+    daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    // Show countdown for weekly plans always, or for annual/monthly when 7 days or less
+    if (subscription.plan_type === 'weekly' || daysLeft <= 7) {
+      showCountdown = true
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600">
       {/* Header */}
@@ -169,6 +183,16 @@ export default async function DashboardPage() {
                   <p className={`font-bold ${currentPlan.textColor}`}>{currentPlan.label}</p>
                 </div>
               </div>
+              {/* Subscription countdown */}
+              {showCountdown && daysLeft !== null && (
+                <div className={`mt-3 text-xs font-medium px-3 py-1.5 rounded-lg inline-block ${
+                  daysLeft <= 1 ? 'bg-red-500/20 text-red-400' : 
+                  daysLeft <= 3 ? 'bg-orange-500/20 text-orange-400' : 
+                  'bg-purple-500/20 text-purple-300'
+                }`}>
+                  {daysLeft <= 0 ? 'Expires today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+                </div>
+              )}
             </div>
 
             {/* Usage Stats */}

@@ -122,7 +122,20 @@ export default function AppPage() {
       }
     };
     fetchUsage();
-  }, []);
+    
+    // Check for successful payment redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      toast({
+        title: "🎉 Welcome to Pro!",
+        description: "You now have unlimited verified replies. Let's go!",
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/app');
+      // Refetch to get updated Pro status
+      setTimeout(fetchUsage, 1000);
+    }
+  }, [toast]);
 
   // Rotate taglines every 3 seconds
   useEffect(() => {
