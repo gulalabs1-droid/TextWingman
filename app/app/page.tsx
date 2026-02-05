@@ -276,8 +276,8 @@ export default function AppPage() {
       setTimeout(() => setShowCraftedMessage(false), 3000);
 
       toast({
-        title: "✨ Replies generated!",
-        description: "Pick your favorite and copy it",
+        title: v2Mode && isPro ? "✅ Verified replies ready!" : "✨ Replies generated!",
+        description: v2Mode && isPro ? "3-agent verified • Safe to send" : "Pick your favorite and copy it",
       });
     } catch (error) {
       console.error('Generation error:', error);
@@ -297,8 +297,8 @@ export default function AppPage() {
       await navigator.clipboard.writeText(text);
       setCopied(tone);
       toast({
-        title: "✓ Copied to clipboard!",
-        description: "Paste it into your chat app",
+        title: v2Mode && isPro ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
+        description: v2Mode && isPro ? "Safe to send — paste it now" : "Paste it into your chat app",
       });
       
       // Log which tone was copied (for personalization data)
@@ -522,23 +522,37 @@ export default function AppPage() {
           </Button>
         </div>
 
-        {/* Pro V2 Status Banner */}
-        {isPro && v2Mode && (
-          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border border-green-500/30 backdrop-blur">
+        {/* Pro Status Banner - Always visible for Pro users */}
+        {isPro && (
+          <div className={`mb-6 p-4 rounded-2xl backdrop-blur border transition-all duration-300 ${
+            v2Mode 
+              ? 'bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border-green-500/30' 
+              : 'bg-gradient-to-r from-purple-500/20 via-violet-500/20 to-indigo-500/20 border-purple-500/30'
+          }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-white" />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  v2Mode 
+                    ? 'bg-gradient-to-br from-green-500 to-emerald-600' 
+                    : 'bg-gradient-to-br from-purple-500 to-violet-600'
+                }`}>
+                  {v2Mode ? <Shield className="h-5 w-5 text-white" /> : <Sparkles className="h-5 w-5 text-white" />}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-green-100">V2 Verified Mode Active</p>
-                  <p className="text-xs text-green-300/80">3-agent pipeline: Draft → Rule-Check → Tone-Verify</p>
+                  <p className={`text-sm font-bold ${v2Mode ? 'text-green-100' : 'text-purple-100'}`}>
+                    {v2Mode ? '✓ You\'re using Verified Replies (V2)' : '⚡ Pro Member'}
+                  </p>
+                  <p className={`text-xs ${v2Mode ? 'text-green-300/80' : 'text-purple-300/80'}`}>
+                    {v2Mode ? '3-agent pipeline: Draft → Rule-Check → Tone-Verify' : 'Unlimited replies • Toggle V2 below for verified mode'}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs bg-green-500/30 text-green-200 px-2 py-1 rounded-full">≤18 words</span>
-                <span className="text-xs bg-blue-500/30 text-blue-200 px-2 py-1 rounded-full">No emojis</span>
-              </div>
+              {v2Mode && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-green-500/30 text-green-200 px-2 py-1 rounded-full">≤18 words</span>
+                  <span className="text-xs bg-blue-500/30 text-blue-200 px-2 py-1 rounded-full">No emojis</span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -781,12 +795,20 @@ export default function AppPage() {
           <div className="space-y-5 animate-in fade-in slide-in-from-bottom-5 duration-500">
             <div className="text-center space-y-2">
               {showCraftedMessage && (
-                <p className="text-purple-300 text-sm font-medium animate-in fade-in duration-300 mb-2">
-                  ✨ Crafted with care just for you 💬
+                <p className={`text-sm font-medium animate-in fade-in duration-300 mb-2 ${
+                  v2Mode && isPro ? 'text-green-300' : 'text-purple-300'
+                }`}>
+                  {v2Mode && isPro ? '✅ 3-agent verified • Safe to send' : '✨ Crafted with care just for you 💬'}
                 </p>
               )}
-              <h2 className="text-2xl font-bold text-white animate-in slide-in-from-top duration-300">Choose your reply</h2>
-              <p className="text-purple-200 text-sm animate-in fade-in duration-500 delay-100">Pick your favorite and copy it 👇</p>
+              <h2 className="text-2xl font-bold text-white animate-in slide-in-from-top duration-300">
+                {v2Mode && isPro ? 'Your verified replies' : 'Choose your reply'}
+              </h2>
+              <p className={`text-sm animate-in fade-in duration-500 delay-100 ${
+                v2Mode && isPro ? 'text-green-200' : 'text-purple-200'
+              }`}>
+                {v2Mode && isPro ? 'Each reply passed our 3-agent verification 🛡️' : 'Pick your favorite and copy it 👇'}
+              </p>
             </div>
             <div className="grid gap-4">
               {replies.map((reply, idx) => {
@@ -797,7 +819,11 @@ export default function AppPage() {
                   <Card 
                     key={reply.tone} 
                     style={{ animationDelay: `${idx * 150}ms` }}
-                    className="relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-500 hover:shadow-purple-500/40 hover:scale-[1.04] hover:-translate-y-2 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group"
+                    className={`relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-500 hover:scale-[1.04] hover:-translate-y-2 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group ${
+                      v2Mode && isPro 
+                        ? 'border-green-200 hover:shadow-green-500/40 hover:border-green-300' 
+                        : 'hover:shadow-purple-500/40'
+                    }`}
                   >
                     <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient} transition-all duration-300 group-hover:h-4`} />
                     <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${config.gradient} rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity duration-500`} />
