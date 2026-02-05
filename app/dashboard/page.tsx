@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import SignOutButton from './sign-out-button'
 import FeedbackSection from './feedback-section'
+import ManageSubscriptionButton from './manage-subscription-button'
 import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle, User, Shield } from 'lucide-react'
 import { isAdminEmail } from '@/lib/isAdmin'
 
@@ -369,22 +370,9 @@ export default async function DashboardPage() {
             </Link>
           )}
 
-          {/* Manage Subscription - for paying users */}
-          {userProfile.subscription_status !== 'free' && (
-            <Link 
-              href="/billing"
-              className="block bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-colors group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gray-600 rounded-xl flex items-center justify-center">
-                  <CreditCard className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-white/80 group-hover:text-white transition-colors">Manage Subscription</h3>
-                  <p className="text-sm text-white/50">View billing and plan details</p>
-                </div>
-              </div>
-            </Link>
+          {/* Manage Subscription - for paying users (Stripe Customer Portal) */}
+          {userProfile.subscription_status !== 'free' && !isAdmin && (
+            <ManageSubscriptionButton />
           )}
 
           {/* Recent Replies Section */}
