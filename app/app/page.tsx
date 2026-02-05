@@ -98,6 +98,8 @@ export default function AppPage() {
   const [isPro, setIsPro] = useState(false);
   const [v2Meta, setV2Meta] = useState<V2Meta>(null);
   const [v2Step, setV2Step] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -111,6 +113,9 @@ export default function AppPage() {
           const data = await res.json();
           setUsageCount(data.usageCount);
           setRemainingReplies(data.remaining);
+          // Store user info for checkout
+          if (data.userId) setUserId(data.userId);
+          if (data.userEmail) setUserEmail(data.userEmail);
           // Check if user is Pro (unlimited or has active subscription)
           if (data.isPro || data.remaining === 999) {
             setIsPro(true);
@@ -402,7 +407,7 @@ export default function AppPage() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, userId, userEmail }),
       });
       const data = await res.json();
       if (data.url) {

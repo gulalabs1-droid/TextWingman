@@ -77,6 +77,8 @@ export async function GET(request: NextRequest) {
         canGenerate: true,
         resetHours: RESET_HOURS,
         isPro: true,
+        userId: userId,
+        userEmail: user?.email || null,
       });
     }
 
@@ -112,6 +114,8 @@ export async function GET(request: NextRequest) {
       canGenerate,
       resetHours: RESET_HOURS,
       isPro: false,
+      userId: userId,
+      userEmail: user?.email || null,
     });
   } catch (error) {
     console.error('Usage API error:', error);
