@@ -37,9 +37,9 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-12 md:py-16 text-center">
         <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur text-white px-4 py-2 rounded-full text-sm font-medium border border-white/20">
+          <div className="inline-flex items-center gap-2 bg-green-500/20 backdrop-blur text-green-300 px-4 py-2 rounded-full text-sm font-medium border border-green-500/30">
             <Sparkles className="h-4 w-4" />
-            AI-Powered Text Replies
+            V2 Live — 3-Agent Verified Replies
           </div>
           
           <p className="text-lg md:text-xl text-purple-200 font-medium">
@@ -52,7 +52,7 @@ export default function HomePage() {
           </h1>
           
           <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto">
-            Paste any DM or message and instantly get 3 perfect replies. Choose your vibe: Shorter, Spicier, or Softer.
+            Paste any DM and get 3 verified replies. Our V2 pipeline drafts, rule-checks (≤18 words, no emojis, no needy text), and tone-verifies every response.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

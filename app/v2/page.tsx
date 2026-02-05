@@ -292,8 +292,8 @@ export default function V2TeaserPage() {
                 <CardContent className="p-8">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-2xl font-bold text-white">V1</h3>
-                    <span className="px-3 py-1 rounded-full bg-green-600/20 text-green-300 text-sm font-medium border border-green-500/30">
-                      Testing Now
+                    <span className="px-3 py-1 rounded-full bg-blue-600/20 text-blue-300 text-sm font-medium border border-blue-500/30">
+                      Live
                     </span>
                   </div>
                   <ul className="space-y-4">
@@ -418,7 +418,7 @@ export default function V2TeaserPage() {
               },
               {
                 q: 'Does V1 still work?',
-                a: 'Yes. V1 is live in testing — try it free and tell us what hits or misses.'
+                a: 'Yes! V1 is live and free to use. V2 adds the 3-agent verification pipeline for Pro users.'
               }
             ].map((item, idx) => (
               <motion.div key={idx} variants={fadeIn}>
