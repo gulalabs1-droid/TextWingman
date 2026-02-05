@@ -324,16 +324,22 @@ export default function AppPage() {
     try {
       const imageUrl = `/api/share/image?their=${encodeURIComponent(message.substring(0, 100))}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
       const res = await fetch(imageUrl);
+      if (!res.ok) throw new Error('Failed to generate image');
       const blob = await res.blob();
+      if (blob.size === 0) throw new Error('Empty image');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `textwingman-${reply.tone}.png`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
       toast({ title: "📥 Image downloaded!", description: "Share it anywhere" });
     } catch (err) {
-      toast({ title: "Failed to download", variant: "destructive" });
+      console.error('Download error:', err);
+      toast({ title: "Failed to download", description: "Please try again", variant: "destructive" });
     }
     setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
   };
@@ -344,10 +350,13 @@ export default function AppPage() {
     try {
       const imageUrl = `/api/share/image?their=${encodeURIComponent(message.substring(0, 100))}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
       const res = await fetch(imageUrl);
+      if (!res.ok) throw new Error('Failed to generate image');
       const blob = await res.blob();
+      if (blob.size === 0) throw new Error('Empty image');
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      toast({ title: "� Image copied!", description: "Paste it in any app" });
+      toast({ title: "📋 Image copied!", description: "Paste it in any app" });
     } catch (err) {
+      console.error('Copy image error:', err);
       toast({ title: "Failed to copy image", description: "Try downloading instead", variant: "destructive" });
     }
     setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);

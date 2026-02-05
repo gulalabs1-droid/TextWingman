@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import SignOutButton from './sign-out-button'
-import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle } from 'lucide-react'
+import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle, User } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -99,7 +99,16 @@ export default async function DashboardPage() {
             </div>
             <span className="text-xl font-bold text-white">Text Wingman</span>
           </Link>
-          <SignOutButton />
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/profile" 
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
+            >
+              <User className="h-4 w-4" />
+              Profile
+            </Link>
+            <SignOutButton />
+          </div>
         </div>
       </nav>
 
@@ -186,18 +195,18 @@ export default async function DashboardPage() {
               )}
             </div>
 
-            {/* Account */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gray-500 rounded-xl flex items-center justify-center">
-                  <Settings className="h-5 w-5 text-white" />
+            {/* Account - Links to Profile */}
+            <Link href="/profile" className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-colors block">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
+                  <User className="h-5 w-5 text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-white/60">Account</p>
                   <p className="font-medium text-white truncate">{userProfile.email}</p>
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Upgrade Card - Single strong placement for free users */}
