@@ -326,7 +326,7 @@ export default async function DashboardPage() {
           {/* Manage Subscription - for paying users */}
           {userProfile.subscription_status !== 'free' && (
             <Link 
-              href="/pricing"
+              href="/billing"
               className="block bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-colors group"
             >
               <div className="flex items-center gap-4">
