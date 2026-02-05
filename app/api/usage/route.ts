@@ -18,7 +18,7 @@ function getSupabase() {
   return supabase;
 }
 
-const FREE_LIMIT = 3; // Matches homepage pricing: 3 free replies per day
+const FREE_LIMIT = 20; // 20 free generations per day for testing
 const RESET_HOURS = 24;
 
 // VPN/Abuse Detection - Moderate tolerance

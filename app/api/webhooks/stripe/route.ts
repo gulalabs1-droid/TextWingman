@@ -101,6 +101,39 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case 'customer.subscription.created': {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log('Subscription created:', subscription.id);
+        
+        // Get user_id from subscription metadata
+        const userId = subscription.metadata?.user_id;
+        
+        if (userId) {
+          // Update profiles table to mark user as Pro
+          const { error: profileError } = await getSupabase()
+            .from('profiles')
+            .upsert({
+              id: userId,
+              plan: 'pro',
+              updated_at: new Date().toISOString(),
+            }, { onConflict: 'id' });
+          
+          if (profileError) {
+            console.error('Error updating profile to pro:', profileError);
+          }
+
+          // Check for beta tester coupon
+          if (subscription.discount?.coupon?.name === 'FAMTEST7') {
+            await getSupabase()
+              .from('profiles')
+              .update({ beta_group: 'friends_family' })
+              .eq('id', userId);
+            console.log('Marked user as friends_family beta:', userId);
+          }
+        }
+        break;
+      }
+
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         
@@ -115,6 +148,16 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Failed to update subscription:', error);
+        }
+        
+        // Also update profiles table based on status
+        if (subscription.status === 'active') {
+          const userId = subscription.metadata?.user_id;
+          if (userId) {
+            await getSupabase()
+              .from('profiles')
+              .upsert({ id: userId, plan: 'pro', updated_at: new Date().toISOString() }, { onConflict: 'id' });
+          }
         }
         break;
       }
@@ -132,6 +175,16 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Failed to cancel subscription:', error);
+        }
+        
+        // Downgrade profile plan to free
+        const userId = subscription.metadata?.user_id;
+        if (userId) {
+          await getSupabase()
+            .from('profiles')
+            .update({ plan: 'free', updated_at: new Date().toISOString() })
+            .eq('id', userId);
+          console.log('Downgraded user to free:', userId);
         }
         break;
       }
