@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import SignOutButton from './sign-out-button'
+import FeedbackSection from './feedback-section'
 import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle, User } from 'lucide-react'
 
 export default async function DashboardPage() {
@@ -409,6 +410,12 @@ export default async function DashboardPage() {
               </Link>
             </div>
           )}
+
+          {/* Feedback Section */}
+          <FeedbackSection 
+            userEmail={userProfile.email} 
+            planType={userProfile.subscription_status === 'free' ? 'Free' : `Pro ${userProfile.subscription_status}`} 
+          />
 
         </div>
       </div>
