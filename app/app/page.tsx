@@ -859,20 +859,9 @@ export default function AppPage() {
                           </span>
                           {/* Verified Reply Badge for Pro V2 */}
                           {isPro && v2Mode && (
-                            <span 
-                              className="flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-full shadow-md cursor-help group relative"
-                              title="✓ Verified Reply (V2)"
-                            >
+                            <span className="flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-full shadow-md">
                               <CheckCircle className="h-3 w-3" />
                               Verified
-                              {/* Tooltip */}
-                              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-gray-900 text-white text-xs rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
-                                <span className="font-bold block mb-1">✅ Safe to Send</span>
-                                <span className="block">• Under 18 words</span>
-                                <span className="block">• No needy language</span>
-                                <span className="block">• Tone: {config.label}</span>
-                                <span className="block">• No emojis</span>
-                              </span>
                             </span>
                           )}
                         </div>
@@ -892,19 +881,7 @@ export default function AppPage() {
                         )}
                       </div>
                       
-                      {/* Practice Mode Tease - V3 */}
-                      {isPro && (
-                        <div className="mt-2">
-                          <button 
-                            disabled
-                            className="w-full text-xs text-gray-400 bg-gray-50 border border-dashed border-gray-200 rounded-xl py-2 px-3 cursor-not-allowed flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
-                            title="See how this text might land — before you send it."
-                          >
-                            🧪 Practice Mode <span className="text-purple-400 font-medium">(Coming Soon)</span>
-                          </button>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-2 gap-3">
+                                            <div className="grid grid-cols-2 gap-3">
                         <Button
                           onClick={() => handleCopy(reply.text, reply.tone)}
                           className={`h-14 rounded-2xl font-bold text-base shadow-xl transition-all duration-300 active:scale-95 ${
