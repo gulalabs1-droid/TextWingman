@@ -503,7 +503,7 @@ export default function HomePage() {
                 </li>
               </ul>
               <Button asChild className="w-full h-14 text-lg font-black rounded-xl bg-white text-purple-700 hover:bg-gray-100 shadow-2xl hover:shadow-purple-900/30 hover:scale-105 transition-all">
-                <Link href="/app">Get Pro →</Link>
+                <Link href="/pricing">Get Pro →</Link>
               </Button>
               <p className="text-xs text-center text-purple-200">Cancel anytime</p>
             </CardContent>
@@ -559,7 +559,7 @@ export default function HomePage() {
                 </li>
               </ul>
               <Button asChild className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all">
-                <Link href="/app">Get Annual →</Link>
+                <Link href="/pricing">Get Annual →</Link>
               </Button>
               <p className="text-xs text-center text-gray-500">Billed once, in full. Cancel anytime.</p>
             </CardContent>
