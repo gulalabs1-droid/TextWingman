@@ -30,9 +30,15 @@ type Subscription = {
   current_period_end: string;
 } | null;
 
+type Entitlement = {
+  tier: 'free' | 'pro' | 'elite';
+  source: string;
+} | null;
+
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<Subscription>(null);
+  const [entitlement, setEntitlement] = useState<Entitlement>(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -80,6 +86,7 @@ export default function ProfilePage() {
         setUser({ id: user.id, email: user.email || '' });
         fetchHistory(user.id);
         fetchSubscription(user.id);
+        fetchEntitlement(user.id);
       }
     } catch (error) {
       console.error('Error checking user:', error);
@@ -105,6 +112,23 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);
+    }
+  };
+
+  const fetchEntitlement = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('entitlements')
+        .select('tier, source')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (data && !error) {
+        console.log('Entitlement found:', data);
+        setEntitlement(data);
+      }
+    } catch (error) {
+      console.error('Error fetching entitlement:', error);
     }
   };
 
@@ -274,9 +298,11 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                      subscription?.status === 'active' 
-                        ? 'bg-gradient-to-br from-green-500 to-emerald-500' 
-                        : 'bg-gradient-to-br from-purple-600 to-pink-600'
+                      entitlement?.tier === 'elite' || entitlement?.tier === 'pro'
+                        ? 'bg-gradient-to-br from-yellow-500 to-orange-500'
+                        : subscription?.status === 'active' 
+                          ? 'bg-gradient-to-br from-green-500 to-emerald-500' 
+                          : 'bg-gradient-to-br from-purple-600 to-pink-600'
                     }`}>
                       <span className="text-2xl text-white font-bold">
                         {user.email[0].toUpperCase()}
@@ -284,10 +310,20 @@ export default function ProfilePage() {
                     </div>
                     <div>
                       <p className="font-bold text-gray-900">{user.email}</p>
-                      <p className={`text-sm ${subscription?.status === 'active' ? 'text-green-600 font-semibold' : 'text-gray-500'}`}>
-                        {subscription?.status === 'active' 
-                          ? `Pro ${subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}` 
-                          : 'Free Plan'}
+                      <p className={`text-sm ${
+                        entitlement?.tier === 'elite' || entitlement?.tier === 'pro'
+                          ? 'text-orange-600 font-semibold'
+                          : subscription?.status === 'active' 
+                            ? 'text-green-600 font-semibold' 
+                            : 'text-gray-500'
+                      }`}>
+                        {entitlement?.tier === 'elite' 
+                          ? '👑 Owner Access'
+                          : entitlement?.tier === 'pro'
+                            ? '⭐ Pro (Entitlement)'
+                            : subscription?.status === 'active' 
+                              ? `Pro ${subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}` 
+                              : 'Free Plan'}
                       </p>
                       {subscription?.status === 'active' && subscription.current_period_end && (() => {
                         const endDate = new Date(subscription.current_period_end);
@@ -319,8 +355,36 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            {/* Upgrade CTA or Subscription Info */}
-            {subscription?.status === 'active' ? (
+            {/* Upgrade CTA or Subscription/Entitlement Info */}
+            {entitlement?.tier === 'elite' ? (
+              <Card className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-3xl overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Crown className="h-8 w-8" />
+                      <div>
+                        <p className="font-bold text-lg">👑 Owner Access</p>
+                        <p className="text-yellow-100 text-sm">Full access to all features</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : entitlement?.tier === 'pro' ? (
+              <Card className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-3xl overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Sparkles className="h-8 w-8" />
+                      <div>
+                        <p className="font-bold text-lg">⭐ Pro Access</p>
+                        <p className="text-blue-100 text-sm">Unlimited replies unlocked</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : subscription?.status === 'active' ? (
               <Card className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-3xl overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
