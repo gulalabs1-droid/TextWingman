@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { plan } = await request.json();
+    const { plan, trial } = await request.json();
 
     if (!plan || !['weekly', 'annual'].includes(plan)) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     // Create Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: Record<string, unknown> = {
       line_items: [
         {
           price: planConfig.priceId,
@@ -55,8 +55,16 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           email: userEmail,
         },
+        ...(trial ? { trial_period_days: 7 } : {}),
       },
-    });
+    };
+
+    // Free trial: skip payment method collection
+    if (trial) {
+      sessionParams.payment_method_collection = 'if_required';
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams as Parameters<typeof stripe.checkout.sessions.create>[0]);
 
     return NextResponse.json({ url: session.url });
   } catch (error) {

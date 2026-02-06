@@ -45,7 +45,7 @@ export default function PricingPage() {
     checkAuth()
   }, [supabase.auth, supabase])
 
-  const handleCheckout = async (plan: 'weekly' | 'annual') => {
+  const handleCheckout = async (plan: 'weekly' | 'annual', trial = false) => {
     // CRITICAL: User must be logged in before checkout
     if (!user) {
       toast({
@@ -57,12 +57,12 @@ export default function PricingPage() {
       return
     }
 
-    setLoading(plan)
+    setLoading(trial ? 'trial' : plan)
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, userId: user.id, userEmail: user.email }),
+        body: JSON.stringify({ plan, trial }),
       })
 
       const data = await res.json()
@@ -202,6 +202,28 @@ export default function PricingPage() {
             </div>
           )}
 
+          {/* Free Trial Banner */}
+          {!isPro && (
+            <div className="max-w-2xl mx-auto mb-8">
+              <div className="relative bg-gradient-to-r from-green-600 to-emerald-600 rounded-3xl p-8 shadow-2xl text-center">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-green-700 px-6 py-2 rounded-full text-sm font-black shadow-xl whitespace-nowrap">
+                  NO PAYMENT REQUIRED
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2 mt-2">7-Day Free Trial</h3>
+                <p className="text-green-100 mb-1">Full Pro access — no credit card needed</p>
+                <p className="text-green-200/70 text-sm mb-6">Try unlimited replies, all tones, and V2 Verified Mode free for 7 days</p>
+                <button
+                  onClick={() => handleCheckout('weekly', true)}
+                  disabled={loading === 'trial'}
+                  className="w-full max-w-sm mx-auto py-4 bg-white text-green-700 font-black text-lg rounded-2xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl disabled:opacity-50"
+                >
+                  {loading === 'trial' ? 'Loading...' : 'Start Free Trial →'}
+                </button>
+                <p className="text-xs text-green-200/60 mt-3">Automatically converts to $9.99/week after trial. Cancel anytime.</p>
+              </div>
+            </div>
+          )}
+
           {/* Pricing Cards - Only show for non-Pro users */}
           {!isPro && (
           <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
@@ -291,6 +313,7 @@ export default function PricingPage() {
             <span>✓ Secure payment</span>
             <span>✓ Cancel anytime</span>
             <span>✓ Instant access</span>
+            <span>✓ 7-day free trial</span>
           </div>
           )}
         </div>
