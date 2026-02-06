@@ -92,7 +92,7 @@ export default function AppPage() {
   const [usageCount, setUsageCount] = useState(0);
   const [remainingReplies, setRemainingReplies] = useState(3);
   const [showPaywall, setShowPaywall] = useState(false);
-  const usageLimit = 3; // Matches homepage pricing: 3 free replies per day
+  const [usageLimit, setUsageLimit] = useState(3);
   const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
   const [v2Mode, setV2Mode] = useState(false);
   const [isPro, setIsPro] = useState(false);
@@ -113,11 +113,12 @@ export default function AppPage() {
           const data = await res.json();
           setUsageCount(data.usageCount);
           setRemainingReplies(data.remaining);
+          if (data.limit) setUsageLimit(data.limit);
           // Store user info for checkout
           if (data.userId) setUserId(data.userId);
           if (data.userEmail) setUserEmail(data.userEmail);
           // Check if user is Pro (unlimited or has active subscription)
-          if (data.isPro || data.remaining === 999) {
+          if (data.isPro) {
             setIsPro(true);
             setV2Mode(true); // V2 is default for Pro users
           }
@@ -403,6 +404,15 @@ export default function AppPage() {
 
   // Handle Stripe checkout
   const handleCheckout = async (plan: 'weekly' | 'monthly' | 'annual') => {
+    // Require login before checkout
+    if (!userId) {
+      toast({
+        title: 'Account Required',
+        description: 'Please sign up or log in first to subscribe',
+      });
+      window.location.href = `/login?redirect=/pricing&plan=${plan}`;
+      return;
+    }
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',

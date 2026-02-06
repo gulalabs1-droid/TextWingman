@@ -50,7 +50,16 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     // If on login page, redirect based on onboarding status
+    // BUT preserve redirect/plan query params (for checkout flow)
     if (pathname === '/login') {
+      const redirectParam = request.nextUrl.searchParams.get('redirect')
+      if (redirectParam) {
+        // User came from pricing/checkout — send them where they wanted to go
+        const url = request.nextUrl.clone()
+        url.pathname = redirectParam
+        url.search = '' // clear query params after consuming
+        return NextResponse.redirect(url)
+      }
       const url = request.nextUrl.clone()
       url.pathname = profile?.onboarding_completed ? '/dashboard' : '/onboarding'
       return NextResponse.redirect(url)

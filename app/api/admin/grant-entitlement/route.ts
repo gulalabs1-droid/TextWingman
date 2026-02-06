@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Valid tier required (free, pro, elite)' }, { status: 400 });
     }
 
-    const source: Source = isAdminEmail(email) ? 'admin' : 'admin';
+    const source: Source = 'admin';
     const result = await grantEntitlement(userId, tier as Tier, source);
 
     if (!result.success) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateReplies, generateRepliesWithAgent } from '@/lib/openai';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 
 const FREE_USAGE_LIMIT = 3; // Matches homepage pricing: 3 free replies per day
 
@@ -33,24 +34,20 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await serverSupabase.auth.getUser();
     const userId = user?.id || null;
     
-    // Check if user has active subscription (skip limits for Pro users)
-    if (userId) {
-      const supabaseAdmin = getSupabaseAdmin();
-      if (supabaseAdmin) {
-        const { data: subscription } = await supabaseAdmin
-          .from('subscriptions')
-          .select('status')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .single();
+    // Check Pro access via entitlements (covers admin, beta, and Stripe users)
+    if (userId && user?.email) {
+      await ensureAdminAccess(userId, user.email);
+      const entitlement = await getUserTier(userId, user.email);
+      
+      if (hasPro(entitlement.tier)) {
+        // Pro/Elite user - generate without limits
+        const replies = process.env.TEXT_WINGMAN_AGENT_ID
+          ? await generateRepliesWithAgent(message, context)
+          : await generateReplies(message, context);
         
-        if (subscription) {
-          // Pro user - generate without limits
-          const replies = process.env.TEXT_WINGMAN_AGENT_ID
-            ? await generateRepliesWithAgent(message, context)
-            : await generateReplies(message, context);
-          
-          // Save to reply history for Pro users
+        // Save to reply history
+        const supabaseAdmin = getSupabaseAdmin();
+        if (supabaseAdmin) {
           try {
             const { error: historyError } = await supabaseAdmin
               .from('reply_history')
@@ -63,15 +60,13 @@ export async function POST(request: NextRequest) {
             
             if (historyError) {
               console.error('Failed to save reply history:', historyError.message, historyError.details);
-            } else {
-              console.log('Reply history saved for user:', userId);
             }
           } catch (insertErr) {
             console.error('Reply history insert exception:', insertErr);
           }
-          
-          return NextResponse.json({ replies });
         }
+        
+        return NextResponse.json({ replies });
       }
     }
     
@@ -113,19 +108,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Log usage BEFORE generating (prevents bypass)
-      const { error: insertError } = await supabase
-        .from('usage_logs')
-        .insert({
-          ip_address: ip,
-          user_id: userId,
-          user_agent: request.headers.get('user-agent') || 'unknown',
-          action: 'generate_reply',
-        });
-
-      if (insertError) {
-        console.error('Failed to log usage:', insertError);
-      }
+      // NOTE: Usage logging is handled by POST /api/usage (called by the client)
+      // Do NOT double-log here
     } else {
       console.warn('No Supabase admin client - usage not tracked');
     }

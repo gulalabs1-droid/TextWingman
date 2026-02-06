@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { validateAdminSecret } from '@/lib/isAdmin';
 
 // Stripe price mapping for MRR calculation
 const PRICE_MAP: Record<string, { amount: number; interval: 'week' | 'month' | 'year' }> = {
@@ -21,7 +22,12 @@ function getSupabaseAdmin() {
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth is handled by frontend password check
+    // Server-side admin auth
+    const adminSecret = request.headers.get('x-admin-secret');
+    if (!validateAdminSecret(adminSecret)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const adminSupabase = getSupabaseAdmin();
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();

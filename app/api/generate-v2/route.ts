@@ -4,6 +4,8 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { Agent, run } from "@openai/agents";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 
 const MAX_REVISE_ATTEMPTS = 2;
 
@@ -91,6 +93,21 @@ export async function POST(req: Request) {
   
   // Get user info from headers for logging
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+
+  // Server-side auth + Pro check — V2 is Pro-only
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  await ensureAdminAccess(user.id, user.email || '');
+  const entitlement = await getUserTier(user.id, user.email || '');
+  
+  if (!hasPro(entitlement.tier)) {
+    return NextResponse.json({ error: "V2 requires Pro access" }, { status: 403 });
+  }
   
   // Safety check
   if (containsHarmfulContent(message)) {

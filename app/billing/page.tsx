@@ -229,16 +229,26 @@ export default function BillingPage() {
               </CardContent>
             </Card>
 
-            {/* Cancel/Manage */}
-            <div className="text-center pt-4">
-              <a
-                href={`mailto:gulalabs1@gmail.com?subject=Cancel Subscription - ${user.email}&body=${encodeURIComponent(
-                  `Hi, I'd like to cancel my subscription.\n\nEmail: ${user.email}\nPlan: ${getPlanLabel(subscription.plan_type)}\n\nReason (optional): `
-                )}`}
-                className="text-white/40 hover:text-white/60 text-sm transition-colors"
+            {/* Manage via Stripe Portal */}
+            <div className="text-center pt-4 space-y-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/stripe/portal', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.url) {
+                      window.location.href = data.url;
+                    } else {
+                      toast({ title: 'Error', description: 'Could not open billing portal', variant: 'destructive' });
+                    }
+                  } catch {
+                    toast({ title: 'Error', description: 'Could not open billing portal', variant: 'destructive' });
+                  }
+                }}
+                className="text-purple-300 hover:text-white text-sm font-medium transition-colors"
               >
-                Need to cancel? Contact support
-              </a>
+                Manage subscription in Stripe →
+              </button>
             </div>
           </div>
         ) : (
