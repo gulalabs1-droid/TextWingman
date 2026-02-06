@@ -195,10 +195,19 @@ export default async function DashboardPage() {
           
           {/* Admin Badge - shows for owner/admin users */}
           {isAdmin && (
-            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
-              <Shield className="h-5 w-5 text-amber-400" />
-              <span className="text-amber-400 text-sm font-bold">Owner Access</span>
-              <span className="text-amber-400/60 text-xs">• Elite tier • No billing required</span>
+            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-amber-400" />
+                <span className="text-amber-400 text-sm font-bold">Owner Access</span>
+                <span className="text-amber-400/60 text-xs">• Elite tier • No billing required</span>
+              </div>
+              <Link
+                href="/admin"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-sm font-bold transition-colors"
+              >
+                <Settings className="h-4 w-4" />
+                Admin Dashboard
+              </Link>
             </div>
           )}
           
