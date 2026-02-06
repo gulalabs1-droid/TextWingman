@@ -105,9 +105,10 @@ export default async function DashboardPage() {
   
   // Admin or entitlement-based Pro access
   const hasEntitlementAccess = entitlement?.tier === 'pro' || entitlement?.tier === 'elite'
-  const isPro = subscription?.status === 'active' || hasEntitlementAccess || isAdmin
-  const tier = entitlement?.tier || (subscription?.status === 'active' ? 'pro' : 'free')
-  const accessSource = entitlement?.source || (subscription?.status === 'active' ? 'stripe' : null)
+  const isSubActive = subscription?.status === 'active' || subscription?.status === 'trialing'
+  const isPro = isSubActive || hasEntitlementAccess || isAdmin
+  const tier = entitlement?.tier || (isSubActive ? 'pro' : 'free')
+  const accessSource = entitlement?.source || (isSubActive ? 'stripe' : null)
   
   const userProfile = {
     email: profile?.email || user.email || 'user@example.com',

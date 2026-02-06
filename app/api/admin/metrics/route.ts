@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const { data: activeSubscriptions } = await adminSupabase
       .from('subscriptions')
       .select('*')
-      .eq('status', 'active');
+      .in('status', ['active', 'trialing']);
 
     const activePaidUsers = activeSubscriptions?.length || 0;
 

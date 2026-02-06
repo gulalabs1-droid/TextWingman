@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       .from('subscriptions')
       .select('plan_type, status')
       .eq('user_id', user.id)
-      .eq('status', 'active')
+      .in('status', ['active', 'trialing'])
       .single();
 
     const { error } = await supabase

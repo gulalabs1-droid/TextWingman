@@ -31,9 +31,9 @@ export default function PricingPage() {
         // Get plan type from subscription
         const { data: sub } = await supabase
           .from('subscriptions')
-          .select('plan_type')
+          .select('plan_type, status')
           .eq('user_id', user.id)
-          .eq('status', 'active')
+          .in('status', ['active', 'trialing'])
           .single()
         if (sub) {
           setPlanType(sub.plan_type)

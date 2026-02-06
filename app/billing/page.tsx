@@ -13,7 +13,7 @@ const supabase = createClient();
 
 type Subscription = {
   plan_type: 'weekly' | 'annual';
-  status: 'active' | 'canceled' | 'past_due';
+  status: 'active' | 'trialing' | 'canceled' | 'past_due';
   current_period_end: string;
   created_at: string;
   stripe_subscription_id?: string;
@@ -50,7 +50,7 @@ export default function BillingPage() {
         .from('subscriptions')
         .select('plan_type, status, current_period_end, created_at, stripe_subscription_id')
         .eq('user_id', userId)
-        .eq('status', 'active')
+        .in('status', ['active', 'trialing'])
         .maybeSingle();
 
       if (data && !error) {

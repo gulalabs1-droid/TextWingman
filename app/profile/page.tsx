@@ -26,7 +26,7 @@ type HistoryItem = {
 
 type Subscription = {
   plan_type: 'weekly' | 'monthly' | 'annual';
-  status: 'active' | 'canceled' | 'past_due';
+  status: 'active' | 'trialing' | 'canceled' | 'past_due';
   current_period_end: string;
 } | null;
 
@@ -101,7 +101,7 @@ export default function ProfilePage() {
         .from('subscriptions')
         .select('plan_type, status, current_period_end')
         .eq('user_id', userId)
-        .eq('status', 'active')
+        .in('status', ['active', 'trialing'])
         .maybeSingle();
 
       if (data && !error) {
@@ -300,7 +300,7 @@ export default function ProfilePage() {
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
                       entitlement?.tier === 'elite' || entitlement?.tier === 'pro'
                         ? 'bg-gradient-to-br from-yellow-500 to-orange-500'
-                        : subscription?.status === 'active' 
+                        : (subscription?.status === 'active' || subscription?.status === 'trialing')
                           ? 'bg-gradient-to-br from-green-500 to-emerald-500' 
                           : 'bg-gradient-to-br from-purple-600 to-pink-600'
                     }`}>
@@ -313,7 +313,7 @@ export default function ProfilePage() {
                       <p className={`text-sm ${
                         entitlement?.tier === 'elite' || entitlement?.tier === 'pro'
                           ? 'text-orange-600 font-semibold'
-                          : subscription?.status === 'active' 
+                          : (subscription?.status === 'active' || subscription?.status === 'trialing')
                             ? 'text-green-600 font-semibold' 
                             : 'text-gray-500'
                       }`}>
@@ -321,11 +321,11 @@ export default function ProfilePage() {
                           ? '👑 Owner Access'
                           : entitlement?.tier === 'pro'
                             ? '⭐ Pro (Entitlement)'
-                            : subscription?.status === 'active' 
-                              ? `Pro ${subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}` 
+                            : (subscription?.status === 'active' || subscription?.status === 'trialing')
+                              ? `${subscription?.status === 'trialing' ? 'Trial' : 'Pro'} ${subscription.plan_type.charAt(0).toUpperCase() + subscription.plan_type.slice(1)}` 
                               : 'Free Plan'}
                       </p>
-                      {subscription?.status === 'active' && subscription.current_period_end && (() => {
+                      {(subscription?.status === 'active' || subscription?.status === 'trialing') && subscription.current_period_end && (() => {
                         const endDate = new Date(subscription.current_period_end);
                         const now = new Date();
                         const daysLeft = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -384,7 +384,7 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
               </Card>
-            ) : subscription?.status === 'active' ? (
+            ) : (subscription?.status === 'active' || subscription?.status === 'trialing') ? (
               <Card className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-3xl overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -511,7 +511,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Billing Link - for Pro users */}
-            {subscription?.status === 'active' && (
+            {(subscription?.status === 'active' || subscription?.status === 'trialing') && (
               <Link 
                 href="/billing"
                 className="block pt-4 text-center text-purple-300 hover:text-white text-sm transition-colors"
@@ -527,7 +527,7 @@ export default function ProfilePage() {
               </p>
               <a
                 href={`mailto:gulalabs1@gmail.com?subject=Text Wingman Feedback&body=${encodeURIComponent(
-                  `\n\n---\nUser: ${user.email}\nPlan: ${subscription?.status === 'active' ? `Pro ${subscription.plan_type}` : 'Free'}\nBrowser: ${typeof window !== 'undefined' ? navigator.userAgent : 'Unknown'}`
+                  `\n\n---\nUser: ${user.email}\nPlan: ${(subscription?.status === 'active' || subscription?.status === 'trialing') ? `Pro ${subscription.plan_type}` : 'Free'}\nBrowser: ${typeof window !== 'undefined' ? navigator.userAgent : 'Unknown'}`
                 )}`}
                 className="flex items-center justify-center gap-2 text-purple-300 hover:text-white text-sm transition-colors"
               >

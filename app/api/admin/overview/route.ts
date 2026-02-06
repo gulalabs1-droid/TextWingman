@@ -41,7 +41,7 @@ export async function GET() {
     db.from('usage_logs').select('*', { count: 'exact', head: true }).gte('created_at', h24),
     db.from('usage_logs').select('*', { count: 'exact', head: true }).gte('created_at', d7),
     db.from('usage_logs').select('*', { count: 'exact', head: true }).gte('created_at', d30),
-    db.from('subscriptions').select('*').eq('status', 'active'),
+    db.from('subscriptions').select('*').in('status', ['active', 'trialing']),
     db.from('subscriptions').select('*').eq('cancel_at_period_end', true),
     db.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'canceled').gte('updated_at', d7),
     db.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'canceled').gte('updated_at', d30),

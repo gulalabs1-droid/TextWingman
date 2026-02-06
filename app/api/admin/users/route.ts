@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
     if (ent && ent.tier !== 'free') {
       planLabel = ent.tier;
       planSource = ent.source;
-    } else if (sub?.status === 'active') {
-      planLabel = 'pro';
+    } else if (sub?.status === 'active' || sub?.status === 'trialing') {
+      planLabel = sub?.status === 'trialing' ? 'trial' : 'pro';
       planSource = 'stripe';
     }
 

@@ -16,7 +16,7 @@ export async function GET() {
   ] = await Promise.all([
     db.from('subscriptions').select('*'),
     db.from('subscriptions').select('*, profiles!inner(email)').eq('cancel_at_period_end', true),
-    db.from('subscriptions').select('*, profiles!inner(email)').eq('status', 'active').lte('current_period_end', in7d).gte('current_period_end', now.toISOString()),
+    db.from('subscriptions').select('*, profiles!inner(email)').in('status', ['active', 'trialing']).lte('current_period_end', in7d).gte('current_period_end', now.toISOString()),
   ]);
 
   // Orphaned: active/trialing but missing stripe ids
@@ -26,7 +26,7 @@ export async function GET() {
   ) || [];
 
   // Mismatch: profile.plan doesn't match derived plan
-  const activeUserIds = new Set(allSubs?.filter(s => s.status === 'active').map(s => s.user_id));
+  const activeUserIds = new Set(allSubs?.filter(s => s.status === 'active' || s.status === 'trialing').map(s => s.user_id));
   const { data: profiles } = await db.from('profiles').select('id, plan, email');
   const mismatches = profiles?.filter(p => {
     const hasActiveSub = activeUserIds.has(p.id);
@@ -42,7 +42,7 @@ export async function GET() {
 
   return NextResponse.json({
     totalSubs: allSubs?.length || 0,
-    activeSubs: allSubs?.filter(s => s.status === 'active').length || 0,
+    activeSubs: allSubs?.filter(s => s.status === 'active' || s.status === 'trialing').length || 0,
     canceledSubs: allSubs?.filter(s => s.status === 'canceled').length || 0,
     orphaned,
     cancelingSubs: cancelingSubs || [],

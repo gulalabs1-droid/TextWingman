@@ -63,12 +63,12 @@ export async function getUserTier(userId: string, userEmail?: string): Promise<{
     };
   }
   
-  // Fall back to checking Stripe subscriptions
+  // Fall back to checking Stripe subscriptions (active or trialing)
   const { data: subscription } = await getSupabase()
     .from('subscriptions')
     .select('status, plan_type')
     .eq('user_id', userId)
-    .eq('status', 'active')
+    .in('status', ['active', 'trialing'])
     .single();
   
   if (subscription) {
