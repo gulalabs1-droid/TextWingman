@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
@@ -15,7 +15,12 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [mode, setMode] = useState<'signin' | 'signup'>('signup')
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+  
+  // Get redirect URL from query params (for checkout flow)
+  const redirectUrl = searchParams.get('redirect')
+  const selectedPlan = searchParams.get('plan')
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,13 +40,18 @@ export default function LoginPage() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', user.id)
-        .single()
-      
-      router.push(profile?.onboarding_completed ? '/dashboard' : '/onboarding')
+      // If there's a redirect URL (from checkout flow), go there
+      if (redirectUrl) {
+        router.push(redirectUrl)
+      } else {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single()
+        
+        router.push(profile?.onboarding_completed ? '/dashboard' : '/onboarding')
+      }
     } else {
       router.push('/dashboard')
     }
@@ -65,7 +75,12 @@ export default function LoginPage() {
       return
     }
 
-    setMessage('Check your email to confirm your account!')
+    // If redirecting to pricing, show helpful message
+    if (redirectUrl) {
+      setMessage(`Account created! Check your email to confirm, then you'll be redirected to complete your ${selectedPlan || ''} subscription.`)
+    } else {
+      setMessage('Check your email to confirm your account!')
+    }
     setIsLoading(false)
   }
 
@@ -77,12 +92,23 @@ export default function LoginPage() {
       </Link>
 
       <div className="w-full max-w-md p-8 space-y-6 bg-white/95 backdrop-blur rounded-3xl shadow-2xl">
+        {/* Show upgrade notice if coming from pricing */}
+        {redirectUrl && selectedPlan && (
+          <div className="p-3 bg-purple-50 border-2 border-purple-200 rounded-xl mb-4">
+            <p className="text-sm text-purple-700 font-medium text-center">
+              🎉 Create an account to get your <span className="font-bold capitalize">{selectedPlan}</span> Pro subscription
+            </p>
+          </div>
+        )}
+
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">
             {mode === 'signup' ? 'Create Account' : 'Welcome Back'}
           </h1>
           <p className="mt-2 text-gray-600">
-            {mode === 'signup' ? 'Start getting perfect replies today' : 'Sign in to continue'}
+            {mode === 'signup' 
+              ? (redirectUrl ? 'Sign up to continue with your subscription' : 'Start getting perfect replies today')
+              : 'Sign in to continue'}
           </p>
         </div>
 

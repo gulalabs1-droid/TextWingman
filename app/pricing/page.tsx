@@ -46,12 +46,23 @@ export default function PricingPage() {
   }, [supabase.auth, supabase])
 
   const handleCheckout = async (plan: 'weekly' | 'annual') => {
+    // CRITICAL: User must be logged in before checkout
+    if (!user) {
+      toast({
+        title: 'Account Required',
+        description: 'Please sign up or log in first to subscribe',
+      })
+      // Redirect to login with return URL to pricing page
+      window.location.href = `/login?redirect=/pricing&plan=${plan}`
+      return
+    }
+
     setLoading(plan)
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, userId: user?.id, userEmail: user?.email }),
+        body: JSON.stringify({ plan, userId: user.id, userEmail: user.email }),
       })
 
       const data = await res.json()
