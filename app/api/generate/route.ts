@@ -71,64 +71,76 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // FAIL-CLOSED: If we can't verify usage, deny the request
     const supabase = getSupabaseAdmin();
     
-    // Server-side usage check - always enforce limits
-    if (supabase) {
-      const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      
-      // Build query - for logged-in users, count BOTH user_id matches AND ip_address matches
-      // This ensures old logs (before user_id tracking) still count
-      let query = supabase
-        .from('usage_logs')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', cutoffTime);
-      
-      if (userId) {
-        // OR query: user_id matches OR ip_address matches (catches legacy logs)
-        query = query.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
-      } else {
-        // Anonymous user: check by IP
-        query = query.eq('ip_address', ip);
-      }
-      
-      const { count, error: fetchError } = await query;
+    if (!supabase) {
+      console.error('CRITICAL: No Supabase admin client — blocking free-tier generate');
+      return NextResponse.json(
+        { error: 'Service temporarily unavailable. Please try again.' },
+        { status: 503 }
+      );
+    }
 
-      if (fetchError) {
-        console.error('Supabase usage check error:', fetchError);
-      }
-
-      // Check if free tier limit reached
-      if (count !== null && count >= FREE_USAGE_LIMIT) {
-        return NextResponse.json(
-          { 
-            error: 'Usage limit reached',
-            message: `You've reached your daily limit of ${FREE_USAGE_LIMIT} free replies. Upgrade to Pro for unlimited!`,
-          },
-          { status: 429 }
-        );
-      }
-
-      // Log usage server-side (authoritative — cannot be bypassed by client)
-      const userAgent = request.headers.get('user-agent') || 'unknown';
-      const lang = request.headers.get('accept-language') || '';
-      const fingerprint = Buffer.from(`${userAgent}-${lang}`).toString('base64').substring(0, 32);
-      
-      const { error: insertError } = await supabase
-        .from('usage_logs')
-        .insert({
-          ip_address: ip,
-          user_id: userId,
-          user_agent: userAgent,
-          action: 'generate_reply',
-          fingerprint: fingerprint,
-        });
-      
-      if (insertError) {
-        console.error('Usage log insert error:', insertError);
-      }
+    const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    const lang = request.headers.get('accept-language') || '';
+    const fingerprint = Buffer.from(`${userAgent}-${lang}`).toString('base64').substring(0, 32);
+    
+    // Build count query
+    let query = supabase
+      .from('usage_logs')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', cutoffTime);
+    
+    if (userId) {
+      query = query.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
     } else {
-      console.warn('No Supabase admin client - usage not tracked');
+      // Anonymous: check by IP OR fingerprint (catches incognito/VPN)
+      query = query.or(`ip_address.eq.${ip},fingerprint.eq.${fingerprint}`);
+    }
+    
+    const { count, error: fetchError } = await query;
+
+    // FAIL-CLOSED: If count query fails, deny
+    if (fetchError) {
+      console.error('Usage check query failed — blocking request:', fetchError);
+      return NextResponse.json(
+        { error: 'Unable to verify usage. Please try again.' },
+        { status: 503 }
+      );
+    }
+
+    const usageCount = count ?? 0;
+
+    if (usageCount >= FREE_USAGE_LIMIT) {
+      return NextResponse.json(
+        { 
+          error: 'Usage limit reached',
+          message: `You've reached your daily limit of ${FREE_USAGE_LIMIT} free replies. Upgrade to Pro for unlimited!`,
+        },
+        { status: 429 }
+      );
+    }
+
+    // Log usage BEFORE generating (so we never generate without logging)
+    const { error: insertError } = await supabase
+      .from('usage_logs')
+      .insert({
+        ip_address: ip,
+        user_id: userId,
+        user_agent: userAgent,
+        action: 'generate_reply',
+        fingerprint: fingerprint,
+      });
+    
+    // FAIL-CLOSED: If we can't log usage, deny
+    if (insertError) {
+      console.error('Usage log insert failed — blocking request:', insertError);
+      return NextResponse.json(
+        { error: 'Unable to track usage. Please try again.' },
+        { status: 503 }
+      );
     }
 
     // Generate replies using OpenAI
