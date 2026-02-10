@@ -100,6 +100,7 @@ export default function AppPage() {
   const [v2Step, setV2Step] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -121,6 +122,9 @@ export default function AppPage() {
           if (data.isPro) {
             setIsPro(true);
             setV2Mode(true); // V2 is default for Pro users
+          }
+          if (data.trialDaysLeft !== undefined && data.trialDaysLeft !== null) {
+            setTrialDaysLeft(data.trialDaysLeft);
           }
         }
       } catch (error) {
@@ -531,6 +535,40 @@ export default function AppPage() {
             </Link>
           </Button>
         </div>
+
+        {/* Trial Banner - shows for invite/beta trial users */}
+        {isPro && trialDaysLeft !== null && (
+          <div className={`mb-4 p-4 rounded-2xl backdrop-blur border transition-all duration-300 flex items-center justify-between ${
+            trialDaysLeft <= 1 
+              ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30'
+              : trialDaysLeft <= 3
+                ? 'bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border-orange-500/30'
+                : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                trialDaysLeft <= 1 ? 'bg-red-500' : trialDaysLeft <= 3 ? 'bg-orange-500' : 'bg-purple-500'
+              }`}>
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm">
+                  {trialDaysLeft <= 0 
+                    ? 'Your free trial expires today!' 
+                    : trialDaysLeft === 1 
+                      ? '1 day left on your free trial' 
+                      : `${trialDaysLeft} days left on your free trial`}
+                </p>
+                <p className="text-white/50 text-xs">Unlimited V2 verified replies</p>
+              </div>
+            </div>
+            {trialDaysLeft <= 3 && (
+              <Button asChild size="sm" className="bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs">
+                <Link href="/pricing">Keep Pro</Link>
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Pro Status Banner - Always visible for Pro users */}
         {isPro && (

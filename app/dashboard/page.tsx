@@ -99,7 +99,7 @@ export default async function DashboardPage() {
   )
   const { data: entitlement } = await adminSupabase
     .from('entitlements')
-    .select('tier, source')
+    .select('tier, source, expires_at')
     .eq('user_id', user.id)
     .single()
   
@@ -148,24 +148,37 @@ export default async function DashboardPage() {
     },
   }
 
-  const currentPlan = subscriptionConfig[userProfile.subscription_status]
-  const PlanIcon = currentPlan.icon
-  const usagePercentage = (userProfile.usage_count / userProfile.usage_limit) * 100
-  const isAtLimit = userProfile.subscription_status === 'free' && userProfile.usage_count >= userProfile.usage_limit
-
-  // Calculate days left in subscription
+  // Calculate days left in subscription or trial entitlement
   let daysLeft: number | null = null
   let showCountdown = false
-  if (isPro && subscription?.current_period_end) {
+  let isTrialEntitlement = false
+  
+  // Check entitlement expiry (invite codes / beta access)
+  if (entitlement?.expires_at) {
+    const expiresAt = new Date(entitlement.expires_at)
+    const now = new Date()
+    const diffTime = expiresAt.getTime() - now.getTime()
+    daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    showCountdown = true
+    isTrialEntitlement = true
+  }
+  // Check Stripe subscription period end
+  else if (isPro && subscription?.current_period_end) {
     const endDate = new Date(subscription.current_period_end)
     const now = new Date()
     const diffTime = endDate.getTime() - now.getTime()
     daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    // Show countdown for weekly plans always, or for annual/monthly when 7 days or less
     if (subscription.plan_type === 'weekly' || daysLeft <= 7) {
       showCountdown = true
     }
   }
+
+  const currentPlan = isTrialEntitlement 
+    ? { label: 'Free Trial', color: 'bg-purple-500', textColor: 'text-purple-400', icon: Sparkles }
+    : subscriptionConfig[userProfile.subscription_status]
+  const PlanIcon = currentPlan.icon
+  const usagePercentage = (userProfile.usage_count / userProfile.usage_limit) * 100
+  const isAtLimit = userProfile.subscription_status === 'free' && userProfile.usage_count >= userProfile.usage_limit
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600">
@@ -212,8 +225,45 @@ export default async function DashboardPage() {
             </div>
           )}
           
-          {/* Pro V2 Banner - shows for Pro users (not admins, they see above) */}
-          {isPro && !isAdmin && (
+          {/* Trial Banner - shows for invite/beta trial users */}
+          {isTrialEntitlement && daysLeft !== null && !isAdmin && (
+            <div className={`rounded-2xl p-4 flex items-center justify-between ${
+              daysLeft <= 1 
+                ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30' 
+                : daysLeft <= 3 
+                  ? 'bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border border-orange-500/30'
+                  : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  daysLeft <= 1 ? 'bg-red-500' : daysLeft <= 3 ? 'bg-orange-500' : 'bg-purple-500'
+                }`}>
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-bold text-sm">
+                    {daysLeft <= 0 
+                      ? 'Your free trial expires today!' 
+                      : daysLeft === 1 
+                        ? '1 day left on your free Pro trial' 
+                        : `${daysLeft} days left on your free Pro trial`}
+                  </p>
+                  <p className="text-white/50 text-xs">Unlimited V2 verified replies included</p>
+                </div>
+              </div>
+              {daysLeft <= 3 && (
+                <Link 
+                  href="/pricing" 
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white text-sm font-bold transition-colors whitespace-nowrap"
+                >
+                  Keep Pro Access
+                </Link>
+              )}
+            </div>
+          )}
+
+          {/* Pro V2 Banner - shows for paid Pro users (not admins or trial) */}
+          {isPro && !isAdmin && !isTrialEntitlement && (
             <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
               <span className="text-green-400 text-sm font-medium">✨ You&apos;re using Verified Replies (V2)</span>
             </div>

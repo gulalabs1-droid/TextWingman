@@ -64,6 +64,8 @@ export async function GET(request: NextRequest) {
     let isAdmin = false;
     let tier = 'free';
     
+    let trialDaysLeft: number | null = null;
+    
     if (userId && user?.email) {
       // Auto-grant elite access for admin emails
       await ensureAdminAccess(userId, user.email);
@@ -73,6 +75,17 @@ export async function GET(request: NextRequest) {
       tier = entitlement.tier;
       isAdmin = entitlement.isAdmin;
       isPro = hasPro(entitlement.tier);
+      
+      // Check for trial entitlement expiry
+      const { data: ent } = await getSupabase()
+        .from('entitlements')
+        .select('expires_at')
+        .eq('user_id', userId)
+        .single();
+      if (ent?.expires_at) {
+        const diffMs = new Date(ent.expires_at).getTime() - Date.now();
+        trialDaysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      }
       
       // Check if beta tester (from subscriptions table for FAMTEST7 users)
       const { data: subscription } = await getSupabase()
@@ -99,6 +112,7 @@ export async function GET(request: NextRequest) {
         tier,
         userId: userId,
         userEmail: user?.email || null,
+        trialDaysLeft,
       });
     }
 
