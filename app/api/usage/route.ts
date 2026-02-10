@@ -43,8 +43,9 @@ function getClientIP(request: NextRequest): string {
 function getFingerprint(request: NextRequest): string {
   const ua = request.headers.get('user-agent') || '';
   const lang = request.headers.get('accept-language') || '';
-  // Create a simple fingerprint from stable headers
-  return Buffer.from(`${ua}-${lang}`).toString('base64').substring(0, 32);
+  // Create a simple fingerprint from stable headers (hex to avoid +/= breaking Supabase .or() filter)
+  const crypto = require('crypto');
+  return crypto.createHash('sha256').update(`${ua}-${lang}`).digest('hex').substring(0, 32);
 }
 
 export async function GET(request: NextRequest) {
@@ -113,9 +114,7 @@ export async function GET(request: NextRequest) {
       query = query.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
     } else {
       // Anonymous: check by IP OR fingerprint (catches incognito/VPN)
-      const ua = request.headers.get('user-agent') || '';
-      const lang = request.headers.get('accept-language') || '';
-      const fp = Buffer.from(`${ua}-${lang}`).toString('base64').substring(0, 32);
+      const fp = getFingerprint(request);
       query = query.or(`ip_address.eq.${ip},fingerprint.eq.${fp}`);
     }
 

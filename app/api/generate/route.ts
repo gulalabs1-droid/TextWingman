@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
     const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const userAgent = request.headers.get('user-agent') || 'unknown';
     const lang = request.headers.get('accept-language') || '';
-    const fingerprint = Buffer.from(`${userAgent}-${lang}`).toString('base64').substring(0, 32);
+    const crypto = require('crypto');
+    const fingerprint = crypto.createHash('sha256').update(`${userAgent}-${lang}`).digest('hex').substring(0, 32);
     
     // Build count query
     let query = supabase
