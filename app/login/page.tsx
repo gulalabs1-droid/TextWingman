@@ -70,10 +70,17 @@ export default function LoginPage() {
       ? `${siteUrl}/auth/confirm?next=${encodeURIComponent(redirectUrl)}`
       : `${siteUrl}/auth/confirm`;
 
+    // Extract invite code from redirect URL (e.g. /invite/FRIENDSV2 → FRIENDSV2)
+    const inviteMatch = redirectUrl?.match(/^\/invite\/(.+)$/i);
+    const pendingInviteCode = inviteMatch ? inviteMatch[1].toUpperCase() : undefined;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo },
+      options: {
+        emailRedirectTo,
+        data: pendingInviteCode ? { pending_invite_code: pendingInviteCode } : undefined,
+      },
     })
 
     if (error) {

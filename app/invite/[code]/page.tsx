@@ -20,11 +20,43 @@ export default function InvitePage() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      setUser(user ? { id: user.id, email: user.email || '' } : null);
+      if (user) {
+        setUser({ id: user.id, email: user.email || '' });
+        // Auto-redeem if user just confirmed their email (has pending_invite_code in metadata)
+        const pendingCode = user.user_metadata?.pending_invite_code;
+        if (pendingCode && pendingCode.toUpperCase() === code && !result) {
+          setCheckingAuth(false);
+          // Try to redeem automatically
+          setLoading(true);
+          try {
+            const res = await fetch('/api/invite/redeem', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+              setResult({ success: true, days: data.days });
+            } else if (data.alreadyPro) {
+              // Already redeemed server-side during email confirmation
+              setResult({ success: true, days: 7 });
+            } else {
+              setResult({ error: data.error, alreadyPro: data.alreadyPro });
+            }
+          } catch {
+            setResult({ error: 'Something went wrong. Please try again.' });
+          } finally {
+            setLoading(false);
+          }
+          return;
+        }
+      } else {
+        setUser(null);
+      }
       setCheckingAuth(false);
     };
     checkAuth();
-  }, [supabase.auth]);
+  }, [supabase.auth, code, result]);
 
   const handleRedeem = async () => {
     setLoading(true);
