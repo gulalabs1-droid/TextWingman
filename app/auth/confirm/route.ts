@@ -2,6 +2,21 @@ import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// Determine where to redirect after email confirmation
+async function getRedirect(next: string, userId: string, supabase: any, request: NextRequest): Promise<string> {
+  // If next is an invite or specific redirect, go there directly
+  if (next.startsWith('/invite/') || next.startsWith('/pricing')) {
+    return next;
+  }
+  // Otherwise check onboarding status
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('onboarding_completed')
+    .eq('id', userId)
+    .single();
+  return profile?.onboarding_completed ? '/dashboard' : '/onboarding';
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const token_hash = searchParams.get('token_hash')
@@ -15,15 +30,7 @@ export async function GET(request: NextRequest) {
     const { error, data } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error && data.user) {
-      // Check if user has completed onboarding
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', data.user.id)
-        .single()
-
-      const redirectTo = profile?.onboarding_completed ? '/dashboard' : '/onboarding'
-      return NextResponse.redirect(new URL(redirectTo, request.url))
+      return NextResponse.redirect(new URL(await getRedirect(next, data.user.id, supabase, request), request.url))
     }
   }
 
@@ -37,16 +44,7 @@ export async function GET(request: NextRequest) {
     })
     
     if (!error && data.user) {
-      // Check if user has completed onboarding
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', data.user.id)
-        .single()
-
-      // Redirect to onboarding if not completed, otherwise dashboard
-      const redirectTo = profile?.onboarding_completed ? '/dashboard' : '/onboarding'
-      return NextResponse.redirect(new URL(redirectTo, request.url))
+      return NextResponse.redirect(new URL(await getRedirect(next, data.user.id, supabase, request), request.url))
     }
   }
 

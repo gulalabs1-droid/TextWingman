@@ -64,9 +64,16 @@ export default function LoginPage() {
     setError(null)
     setMessage(null)
 
+    // Build the email redirect URL to preserve the invite/checkout redirect
+    const siteUrl = window.location.origin;
+    const emailRedirectTo = redirectUrl
+      ? `${siteUrl}/auth/confirm?next=${encodeURIComponent(redirectUrl)}`
+      : `${siteUrl}/auth/confirm`;
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: { emailRedirectTo },
     })
 
     if (error) {
@@ -75,8 +82,10 @@ export default function LoginPage() {
       return
     }
 
-    // If redirecting to pricing, show helpful message
-    if (redirectUrl) {
+    // Show helpful message based on redirect type
+    if (redirectUrl?.startsWith('/invite/')) {
+      setMessage(`Account created! Check your email to confirm, then you'll be redirected to activate your free Pro access.`)
+    } else if (redirectUrl) {
       setMessage(`Account created! Check your email to confirm, then you'll be redirected to complete your ${selectedPlan || ''} subscription.`)
     } else {
       setMessage('Check your email to confirm your account!')
