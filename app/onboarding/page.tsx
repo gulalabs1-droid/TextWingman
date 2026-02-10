@@ -41,7 +41,13 @@ export default function OnboardingPage() {
         return
       }
 
-      router.push('/dashboard')
+      // If user has a pending invite code, show invite success page
+      const pendingCode = user.user_metadata?.pending_invite_code;
+      if (pendingCode) {
+        router.push(`/invite/${pendingCode.toUpperCase()}`)
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     } catch (err) {
       setError('Something went wrong')
@@ -76,7 +82,13 @@ export default function OnboardingPage() {
         return
       }
 
-      router.push('/dashboard')
+      // If user has a pending invite code, show invite success page
+      const pendingCode = user.user_metadata?.pending_invite_code;
+      if (pendingCode) {
+        router.push(`/invite/${pendingCode.toUpperCase()}`)
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     } catch (err) {
       setError('Something went wrong')

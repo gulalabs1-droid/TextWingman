@@ -15,25 +15,29 @@ async function handlePostConfirmation(user: { id: string; user_metadata?: Record
     const result = await redeemInviteCode(user.id, pendingCode);
     if (result.success) {
       console.log(`Auto-redeemed invite code ${pendingCode} for user ${user.id}`);
-      // Redirect to invite page to show success
-      return `/invite/${pendingCode.toUpperCase()}`;
+    } else {
+      console.log(`Auto-redeem skipped for ${pendingCode}: ${result.error}`);
     }
-    // If already pro or failed, just continue to normal redirect
-    console.log(`Auto-redeem skipped for ${pendingCode}: ${result.error}`);
   }
 
-  // If next is an invite or specific redirect, go there directly
-  if (next.startsWith('/invite/') || next.startsWith('/pricing')) {
-    return next;
-  }
-
-  // Otherwise check onboarding status
+  // Check onboarding status — new users always go to onboarding first
   const { data: profile } = await supabase
     .from('profiles')
     .select('onboarding_completed')
     .eq('id', user.id)
     .single();
-  return profile?.onboarding_completed ? '/dashboard' : '/onboarding';
+
+  if (!profile?.onboarding_completed) {
+    // New user → onboarding first (invite success shown after)
+    return '/onboarding';
+  }
+
+  // Existing user: if there's an invite or specific redirect, go there
+  if (next.startsWith('/invite/') || next.startsWith('/pricing')) {
+    return next;
+  }
+
+  return '/dashboard';
 }
 
 export async function GET(request: NextRequest) {
