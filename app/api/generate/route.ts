@@ -95,7 +95,8 @@ export async function POST(request: NextRequest) {
       .gte('created_at', cutoffTime);
     
     if (userId) {
-      query = query.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
+      // Logged-in user: count only their own usage (not shared IP)
+      query = query.eq('user_id', userId);
     } else {
       // Anonymous: check by IP OR fingerprint (catches incognito/VPN)
       query = query.or(`ip_address.eq.${ip},fingerprint.eq.${fingerprint}`);
