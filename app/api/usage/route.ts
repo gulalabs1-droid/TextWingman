@@ -112,7 +112,11 @@ export async function GET(request: NextRequest) {
       // OR query: user_id matches OR ip_address matches (catches legacy logs)
       query = query.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
     } else {
-      query = query.eq('ip_address', ip);
+      // Anonymous: check by IP OR fingerprint (catches incognito/VPN)
+      const ua = request.headers.get('user-agent') || '';
+      const lang = request.headers.get('accept-language') || '';
+      const fp = Buffer.from(`${ua}-${lang}`).toString('base64').substring(0, 32);
+      query = query.or(`ip_address.eq.${ip},fingerprint.eq.${fp}`);
     }
 
     const { count, error } = await query;
@@ -224,7 +228,8 @@ export async function POST(request: NextRequest) {
       // OR query: user_id matches OR ip_address matches (catches legacy logs)
       countQuery = countQuery.or(`user_id.eq.${userId},ip_address.eq.${ip}`);
     } else {
-      countQuery = countQuery.eq('ip_address', ip);
+      // Anonymous: check by IP OR fingerprint (catches incognito/VPN)
+      countQuery = countQuery.or(`ip_address.eq.${ip},fingerprint.eq.${fingerprint}`);
     }
 
     const { count, error: countError } = await countQuery;
