@@ -51,16 +51,22 @@ export async function getUserTier(userId: string, userEmail?: string): Promise<{
   // First check entitlements table
   const { data: entitlement } = await getSupabase()
     .from('entitlements')
-    .select('tier, source')
+    .select('tier, source, expires_at')
     .eq('user_id', userId)
     .single();
   
   if (entitlement) {
-    return {
-      tier: entitlement.tier as Tier,
-      source: entitlement.source as Source,
-      isAdmin,
-    };
+    // Check if entitlement has expired
+    if (entitlement.expires_at && new Date(entitlement.expires_at) < new Date()) {
+      // Expired — delete it and fall through to subscription/free check
+      await getSupabase().from('entitlements').delete().eq('user_id', userId);
+    } else {
+      return {
+        tier: entitlement.tier as Tier,
+        source: entitlement.source as Source,
+        isAdmin,
+      };
+    }
   }
   
   // Fall back to checking Stripe subscriptions (active or trialing)
