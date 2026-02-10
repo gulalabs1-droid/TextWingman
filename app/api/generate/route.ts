@@ -25,9 +25,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get IP for anonymous users
+    // Get IP for anonymous users (must match usage route logic)
     const forwardedFor = request.headers.get('x-forwarded-for');
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'anonymous';
+    const realIP = request.headers.get('x-real-ip');
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : (realIP || '127.0.0.1');
     
     // Check if user is logged in
     const serverSupabase = await createServerClient();
@@ -108,8 +109,24 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // NOTE: Usage logging is handled by POST /api/usage (called by the client)
-      // Do NOT double-log here
+      // Log usage server-side (authoritative — cannot be bypassed by client)
+      const userAgent = request.headers.get('user-agent') || 'unknown';
+      const lang = request.headers.get('accept-language') || '';
+      const fingerprint = Buffer.from(`${userAgent}-${lang}`).toString('base64').substring(0, 32);
+      
+      const { error: insertError } = await supabase
+        .from('usage_logs')
+        .insert({
+          ip_address: ip,
+          user_id: userId,
+          user_agent: userAgent,
+          action: 'generate_reply',
+          fingerprint: fingerprint,
+        });
+      
+      if (insertError) {
+        console.error('Usage log insert error:', insertError);
+      }
     } else {
       console.warn('No Supabase admin client - usage not tracked');
     }
