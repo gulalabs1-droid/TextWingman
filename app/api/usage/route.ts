@@ -65,8 +65,16 @@ export async function GET(request: NextRequest) {
     let tier = 'free';
     
     let trialDaysLeft: number | null = null;
+    let userName: string | null = null;
     
     if (userId && user?.email) {
+      // Fetch profile name
+      const { data: profile } = await getSupabase()
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single();
+      userName = profile?.full_name || null;
       // Auto-grant elite access for admin emails
       await ensureAdminAccess(userId, user.email);
       
@@ -112,6 +120,7 @@ export async function GET(request: NextRequest) {
         tier,
         userId: userId,
         userEmail: user?.email || null,
+        userName,
         trialDaysLeft,
       });
     }
@@ -153,6 +162,7 @@ export async function GET(request: NextRequest) {
       isBetaTester,
       userId: userId,
       userEmail: user?.email || null,
+      userName,
     });
   } catch (error) {
     console.error('Usage API error:', error);

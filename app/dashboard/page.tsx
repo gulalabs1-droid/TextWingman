@@ -271,7 +271,12 @@ export default async function DashboardPage() {
 
           {/* Welcome Section */}
           <div className="text-center space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-white">Your next reply sets the tone.</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-white">
+              {profile?.full_name ? `Hey ${profile.full_name} 👋` : 'Your next reply sets the tone.'}
+            </h1>
+            {profile?.full_name && (
+              <p className="text-white/60 text-sm">Your next reply sets the tone.</p>
+            )}
           </div>
 
           {/* Main CTA - Changes based on limit status (admins never see upgrade prompts) */}

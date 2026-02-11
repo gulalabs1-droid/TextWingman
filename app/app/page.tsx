@@ -101,6 +101,7 @@ export default function AppPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -126,6 +127,7 @@ export default function AppPage() {
           if (data.trialDaysLeft !== undefined && data.trialDaysLeft !== null) {
             setTrialDaysLeft(data.trialDaysLeft);
           }
+          if (data.userName) setUserName(data.userName);
         }
       } catch (error) {
         console.error('Failed to fetch usage:', error);
@@ -653,6 +655,11 @@ export default function AppPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Greeting */}
+        {userName && (
+          <p className="text-white/80 text-center text-sm font-medium mb-2">Hey {userName} 👋</p>
         )}
 
         {/* Input Section */}
