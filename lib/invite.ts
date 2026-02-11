@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Valid invite codes and their config
 export const INVITE_CODES: Record<string, { days: number; tier: string; maxUses: number }> = {
@@ -7,11 +7,16 @@ export const INVITE_CODES: Record<string, { days: number; tier: string; maxUses:
   'BETAV2': { days: 14, tier: 'pro', maxUses: 100 },
 };
 
+let adminClient: SupabaseClient | null = null;
+
 function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
+  if (!adminClient) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return null;
+    adminClient = createClient(url, key);
+  }
+  return adminClient;
 }
 
 export type RedeemResult = {
@@ -89,6 +94,7 @@ export async function redeemInviteCode(userId: string, code: string): Promise<Re
         source: 'beta',
         expires_at: expiresAt.toISOString(),
         updated_at: new Date().toISOString(),
+        metadata: { invite_code: upperCode },
       }, { onConflict: 'user_id' });
 
     if (error) {

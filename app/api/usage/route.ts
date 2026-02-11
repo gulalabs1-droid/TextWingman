@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
+import crypto from 'crypto';
 
 let supabase: SupabaseClient | null = null;
 
@@ -44,7 +45,6 @@ function getFingerprint(request: NextRequest): string {
   const ua = request.headers.get('user-agent') || '';
   const lang = request.headers.get('accept-language') || '';
   // Create a simple fingerprint from stable headers (hex to avoid +/= breaking Supabase .or() filter)
-  const crypto = require('crypto');
   return crypto.createHash('sha256').update(`${ua}-${lang}`).digest('hex').substring(0, 32);
 }
 

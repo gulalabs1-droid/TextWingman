@@ -3,6 +3,7 @@ import { generateReplies, generateRepliesWithAgent } from '@/lib/openai';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
+import crypto from 'crypto';
 
 const FREE_USAGE_LIMIT = 3; // Matches homepage pricing: 3 free replies per day
 
@@ -85,7 +86,6 @@ export async function POST(request: NextRequest) {
     const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const userAgent = request.headers.get('user-agent') || 'unknown';
     const lang = request.headers.get('accept-language') || '';
-    const crypto = require('crypto');
     const fingerprint = crypto.createHash('sha256').update(`${userAgent}-${lang}`).digest('hex').substring(0, 32);
     
     // Build count query
