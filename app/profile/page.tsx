@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Mail, Lock, Loader2, LogOut, Crown, Sparkles, Clock, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, Loader2, LogOut, Crown, Sparkles, Clock, MessageCircle, Trash2, AlertTriangle } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
 
@@ -48,7 +48,37 @@ export default function ProfilePage() {
   const [suggestion, setSuggestion] = useState('');
   const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
   const [suggestionSubmitted, setSuggestionSubmitted] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/account/delete', { method: 'DELETE' });
+      if (res.ok) {
+        await supabase.auth.signOut();
+        window.location.href = '/';
+      } else {
+        const data = await res.json();
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to delete account',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleSuggestionSubmit = async () => {
     if (!suggestion.trim()) return;
@@ -534,6 +564,62 @@ export default function ProfilePage() {
                 <MessageCircle className="h-4 w-4" />
                 Report an issue
               </a>
+            </div>
+
+            {/* Delete Account */}
+            <div className="pt-4 border-t border-white/10 mt-4">
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center justify-center gap-2 text-red-400/60 hover:text-red-400 text-sm transition-colors w-full"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete my account
+                </button>
+              ) : (
+                <Card className="bg-red-500/10 border border-red-500/30 rounded-2xl overflow-hidden">
+                  <CardContent className="p-5 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="h-5 w-5 text-red-400 shrink-0" />
+                      <div>
+                        <p className="text-red-400 font-bold text-sm">This cannot be undone</p>
+                        <p className="text-white/50 text-xs mt-1">
+                          This will permanently delete your account, reply history, subscription, and all associated data.
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-white/60 text-xs block mb-1.5">
+                        Type <span className="font-bold text-red-400">DELETE</span> to confirm
+                      </label>
+                      <Input
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        placeholder="DELETE"
+                        className="bg-white/10 border-red-500/30 text-white placeholder:text-white/30 rounded-xl h-10"
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 rounded-xl border-white/20 text-white hover:bg-white/10"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleDeleteAccount}
+                        disabled={deleteConfirmText !== 'DELETE' || deleting}
+                        size="sm"
+                        className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 text-white disabled:opacity-40"
+                      >
+                        {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete Forever'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         )}
