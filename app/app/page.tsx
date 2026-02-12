@@ -518,7 +518,7 @@ export default function AppPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
-      <div className={`container mx-auto px-4 py-8 max-w-md md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
+      <div className={`container mx-auto px-4 py-8 pb-12 max-w-md md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Button asChild variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all">
@@ -540,7 +540,7 @@ export default function AppPage() {
 
         {/* Trial Banner - shows for invite/beta trial users */}
         {isPro && trialDaysLeft !== null && (
-          <div className={`mb-4 p-4 rounded-2xl backdrop-blur border transition-all duration-300 flex items-center justify-between ${
+          <div className={`mb-4 p-4 rounded-2xl backdrop-blur border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
             trialDaysLeft <= 1 
               ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30'
               : trialDaysLeft <= 3
@@ -659,7 +659,7 @@ export default function AppPage() {
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                 <span>🎯</span> Who is this?
               </label>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {CONTEXT_OPTIONS.map((context) => (
                   <button
                     key={context.value}
@@ -854,7 +854,7 @@ export default function AppPage() {
                   <Card 
                     key={reply.tone} 
                     style={{ animationDelay: `${idx * 150}ms` }}
-                    className={`relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-500 hover:scale-[1.04] hover:-translate-y-2 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group ${
+                    className={`relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group active:scale-[0.98] ${
                       v2Mode && isPro 
                         ? 'border-green-200 hover:shadow-green-500/40 hover:border-green-300' 
                         : 'hover:shadow-purple-500/40'

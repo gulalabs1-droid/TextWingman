@@ -195,15 +195,15 @@ export default async function DashboardPage() {
             <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
               <MessageCircle className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-white">Text Wingman</span>
+            <span className="text-xl font-bold text-white hidden sm:inline">Text Wingman</span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link 
               href="/profile" 
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
             >
               <User className="h-4 w-4" />
-              Profile
+              <span className="hidden sm:inline">Profile</span>
             </Link>
             <SignOutButton />
           </div>
@@ -215,15 +215,15 @@ export default async function DashboardPage() {
           
           {/* Admin Badge - shows for owner/admin users */}
           {isAdmin && (
-            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-amber-400" />
+                <Shield className="h-5 w-5 text-amber-400 shrink-0" />
                 <span className="text-amber-400 text-sm font-bold">Owner Access</span>
-                <span className="text-amber-400/60 text-xs">• Elite tier • No billing required</span>
+                <span className="text-amber-400/60 text-xs hidden sm:inline">• Elite tier • No billing required</span>
               </div>
               <Link
                 href="/admin"
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-sm font-bold transition-colors"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-sm font-bold transition-colors w-full sm:w-auto justify-center sm:justify-start"
               >
                 <Settings className="h-4 w-4" />
                 Admin Dashboard
@@ -233,7 +233,7 @@ export default async function DashboardPage() {
           
           {/* Trial Banner - shows for invite/beta trial users */}
           {isTrialEntitlement && daysLeft !== null && !isAdmin && (
-            <div className={`rounded-2xl p-4 flex items-center justify-between ${
+            <div className={`rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
               daysLeft <= 1 
                 ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30' 
                 : daysLeft <= 3 
@@ -241,7 +241,7 @@ export default async function DashboardPage() {
                   : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30'
             }`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                   daysLeft <= 1 ? 'bg-red-500' : daysLeft <= 3 ? 'bg-orange-500' : 'bg-purple-500'
                 }`}>
                   <Sparkles className="h-5 w-5 text-white" />
@@ -260,7 +260,7 @@ export default async function DashboardPage() {
               {daysLeft <= 3 && (
                 <Link 
                   href="/pricing" 
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white text-sm font-bold transition-colors whitespace-nowrap"
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white text-sm font-bold transition-colors whitespace-nowrap w-full sm:w-auto text-center"
                 >
                   Keep Pro Access
                 </Link>

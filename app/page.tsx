@@ -14,8 +14,8 @@ export default function HomePage() {
           <Link href="/" className="transition-transform hover:scale-105">
             <Logo size="md" showText={true} className="cursor-pointer" />
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
               <Link href="/v2">V2</Link>
             </Button>
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden md:flex">
@@ -24,7 +24,7 @@ export default function HomePage() {
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
               <Link href="#pricing">Pricing</Link>
             </Button>
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl text-sm">
               <Link href="/login">Login</Link>
             </Button>
             <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 rounded-xl font-semibold">
@@ -570,7 +570,7 @@ export default function HomePage() {
 
 
       {/* Footer */}
-      <footer className="border-t border-white/20">
+      <footer className="border-t border-white/20 pb-20 md:pb-0">
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col items-center space-y-6">
             <Logo size="lg" showText={true} />
