@@ -105,10 +105,26 @@ export default function AppPage() {
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
+  const [showFeatureSpotlight, setShowFeatureSpotlight] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
+
+  // Show one-time feature spotlight for screenshot upload
+  useEffect(() => {
+    const dismissed = localStorage.getItem('tw_spotlight_screenshot_v1');
+    if (!dismissed) {
+      // Small delay so the page renders first
+      const timer = setTimeout(() => setShowFeatureSpotlight(true), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const dismissSpotlight = () => {
+    setShowFeatureSpotlight(false);
+    localStorage.setItem('tw_spotlight_screenshot_v1', 'true');
+  };
 
   // Load usage and Pro status from server on mount
   useEffect(() => {
@@ -840,11 +856,42 @@ export default function AppPage() {
             )}
 
             {/* Upload Screenshot / Paste Divider */}
-            <div className="flex items-center gap-3">
+            <div className="relative flex items-center gap-3">
+              {/* Feature Spotlight — shows once per device */}
+              {showFeatureSpotlight && (
+                <div className="absolute -top-[88px] left-0 right-0 z-50 animate-in fade-in slide-in-from-bottom-3 duration-500">
+                  <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl p-4 shadow-2xl shadow-purple-500/30">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                        <Camera className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm">New: Screenshot Upload</p>
+                        <p className="text-xs text-white/80 mt-0.5">Take a screenshot of any convo and we&apos;ll read it for you. No more copy-pasting!</p>
+                      </div>
+                      <button 
+                        onClick={dismissSpotlight}
+                        className="text-white/60 hover:text-white text-lg leading-none shrink-0 -mt-1"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    {/* Arrow pointing down */}
+                    <div className="absolute -bottom-2 left-12 w-4 h-4 bg-gradient-to-br from-purple-600 to-pink-600 rotate-45" />
+                  </div>
+                </div>
+              )}
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  dismissSpotlight();
+                  fileInputRef.current?.click();
+                }}
                 disabled={extracting}
-                className="flex-1 p-3 rounded-xl border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-50 transition-all text-purple-700 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                className={`flex-1 p-3 rounded-xl border-2 border-dashed transition-all text-purple-700 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
+                  showFeatureSpotlight 
+                    ? 'border-purple-500 bg-purple-100 shadow-lg shadow-purple-500/20 animate-pulse' 
+                    : 'border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-50'
+                }`}
               >
                 {extracting ? (
                   <>
