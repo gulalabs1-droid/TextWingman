@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Lock } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Lock, Camera, X, ImageIcon } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
 type Reply = {
@@ -102,6 +102,10 @@ export default function AppPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -396,11 +400,101 @@ export default function AppPage() {
     setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
   };
 
+  // Screenshot upload & extraction
+  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please upload an image file (PNG, JPEG, WebP)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (4MB)
+    if (file.size > 4 * 1024 * 1024) {
+      toast({
+        title: 'Image too large',
+        description: 'Please upload an image under 4MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      setScreenshotPreview(base64);
+      setExtracting(true);
+      setExtractedPlatform(null);
+
+      try {
+        const res = await fetch('/api/extract-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64 }),
+        });
+
+        const data = await res.json();
+
+        if (data.error && !data.extracted_text) {
+          toast({
+            title: '📷 Could not read screenshot',
+            description: data.error || 'Try a clearer screenshot of the conversation',
+            variant: 'destructive',
+          });
+          setScreenshotPreview(null);
+          return;
+        }
+
+        if (data.extracted_text) {
+          setMessage(data.extracted_text);
+          setShowExamples(false);
+          setExtractedPlatform(data.platform);
+          toast({
+            title: '📷 Message extracted!',
+            description: data.confidence === 'high' 
+              ? `Got it from ${data.platform !== 'unknown' ? data.platform : 'your screenshot'}` 
+              : 'Check the text looks right, then hit Generate',
+          });
+        }
+      } catch (error) {
+        console.error('Screenshot extraction error:', error);
+        toast({
+          title: 'Extraction failed',
+          description: 'Something went wrong. Please try pasting the message instead.',
+          variant: 'destructive',
+        });
+        setScreenshotPreview(null);
+      } finally {
+        setExtracting(false);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // Reset file input so the same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const clearScreenshot = () => {
+    setScreenshotPreview(null);
+    setExtractedPlatform(null);
+  };
+
   const handleTryAgain = () => {
     setMessage('');
     setReplies([]);
     setCopied(null);
     setShowExamples(true);
+    setScreenshotPreview(null);
+    setExtractedPlatform(null);
   };
 
   const handleExampleClick = (example: string) => {
@@ -701,16 +795,79 @@ export default function AppPage() {
               </div>
             </div>
 
-            {/* Quick Examples Button */}
-            {!message && (
-              <button
-                onClick={() => setShowExamplesDrawer(!showExamplesDrawer)}
-                className="w-full p-3 rounded-xl border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-50 transition-all text-purple-700 font-medium text-sm flex items-center justify-center gap-2"
-              >
-                <Lightbulb className="h-4 w-4" />
-                {showExamplesDrawer ? 'Hide' : 'Show'} Quick Examples
-              </button>
+            {/* Screenshot Upload */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              onChange={handleScreenshotUpload}
+              className="hidden"
+              aria-label="Upload screenshot"
+            />
+            
+            {/* Screenshot Preview */}
+            {screenshotPreview && (
+              <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="relative rounded-2xl overflow-hidden border-2 border-purple-300 bg-purple-50">
+                  <img 
+                    src={screenshotPreview} 
+                    alt="Screenshot preview" 
+                    className="w-full max-h-48 object-cover opacity-90"
+                  />
+                  {extracting && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="flex items-center gap-3 bg-white/95 rounded-2xl px-5 py-3 shadow-xl">
+                        <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                        <span className="text-sm font-bold text-purple-800">Reading screenshot...</span>
+                      </div>
+                    </div>
+                  )}
+                  {!extracting && (
+                    <button
+                      onClick={clearScreenshot}
+                      className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </button>
+                  )}
+                  {!extracting && extractedPlatform && extractedPlatform !== 'unknown' && (
+                    <div className="absolute bottom-2 left-2 px-3 py-1 bg-black/60 rounded-full text-xs text-white font-medium capitalize">
+                      {extractedPlatform} detected
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
+
+            {/* Upload Screenshot / Paste Divider */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={extracting}
+                className="flex-1 p-3 rounded-xl border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-50 transition-all text-purple-700 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+              >
+                {extracting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Reading...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-4 w-4" />
+                    Upload Screenshot
+                  </>
+                )}
+              </button>
+              {!message && (
+                <button
+                  onClick={() => setShowExamplesDrawer(!showExamplesDrawer)}
+                  className="p-3 rounded-xl border-2 border-dashed border-gray-300 hover:border-purple-500 bg-gray-50/50 hover:bg-purple-50 transition-all text-gray-500 hover:text-purple-700 font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  Examples
+                </button>
+              )}
+            </div>
 
             {/* Examples Drawer */}
             {showExamplesDrawer && !message && (
