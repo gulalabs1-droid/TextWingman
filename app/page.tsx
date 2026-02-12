@@ -88,7 +88,7 @@ export default function HomePage() {
               <Check className="h-4 w-4 text-green-400" /> No credit card
             </span>
             <span className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /> Loved by 1,000+ texters
+              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /> Built for real conversations
             </span>
           </div>
         </div>
@@ -426,7 +426,7 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">1 default tone</span>
+                  <span className="text-gray-700 font-medium">All 3 tones</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -566,126 +566,8 @@ export default function HomePage() {
           </Card>
         </div>
 
-        {/* Comparison Table */}
-        <div className="max-w-2xl mx-auto mt-16 px-4">
-          <h3 className="text-2xl font-bold text-white text-center mb-8">Free vs Pro</h3>
-          <div className="bg-white/10 backdrop-blur rounded-2xl border border-white/20 overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/20">
-                  <th className="text-left p-4 text-white/80 font-medium">Feature</th>
-                  <th className="text-center p-4 text-white/80 font-medium">Free (V1)</th>
-                  <th className="text-center p-4 text-white font-bold bg-purple-600/30">Pro (V2)</th>
-                </tr>
-              </thead>
-              <tbody className="text-white/90">
-                <tr className="border-b border-white/10">
-                  <td className="p-4">Daily replies</td>
-                  <td className="text-center p-4">3</td>
-                  <td className="text-center p-4 bg-purple-600/10 font-bold">Unlimited</td>
-                </tr>
-                <tr className="border-b border-white/10">
-                  <td className="p-4">Tone options</td>
-                  <td className="text-center p-4">All 3</td>
-                  <td className="text-center p-4 bg-purple-600/10">All 3</td>
-                </tr>
-                <tr className="border-b border-white/10">
-                  <td className="p-4">V2 Verified Mode</td>
-                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
-                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
-                </tr>
-                <tr className="border-b border-white/10">
-                  <td className="p-4">Rule-Check + Tone-Verify</td>
-                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
-                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
-                </tr>
-                <tr className="border-b border-white/10">
-                  <td className="p-4">Confidence scores</td>
-                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
-                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
-                </tr>
-                <tr>
-                  <td className="p-4">Share cards</td>
-                  <td className="text-center p-4"><X className="h-5 w-5 text-red-400 mx-auto" /></td>
-                  <td className="text-center p-4 bg-purple-600/10"><Check className="h-5 w-5 text-green-400 mx-auto" /></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-4">Loved by Texters Everywhere</h2>
-          <p className="text-white/70">Join 1,000+ happy users crushing their conversations</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {/* Testimonial 1 */}
-          <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
-            <CardContent className="pt-6">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <p className="text-white/90 mb-4">
-                &ldquo;I used to overthink every text. Now I just paste and pick. My dating life has never been smoother 🔥&rdquo;
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">J</div>
-                <div>
-                  <p className="font-semibold">Jake M.</p>
-                  <p className="text-sm text-white/60">Pro user since 2024</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Testimonial 2 */}
-          <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
-            <CardContent className="pt-6">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <p className="text-white/90 mb-4">
-                &ldquo;The softer tone option saved my relationship. Seriously. Best investment I ever made.&rdquo;
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">S</div>
-                <div>
-                  <p className="font-semibold">Sarah K.</p>
-                  <p className="text-sm text-white/60">Annual subscriber</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Testimonial 3 */}
-          <Card className="bg-white/10 backdrop-blur border-white/20 text-white">
-            <CardContent className="pt-6">
-              <div className="flex gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <p className="text-white/90 mb-4">
-                &ldquo;Finally, an AI that actually gets texting culture. The spicier replies are *chef&apos;s kiss* 💯&rdquo;
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">M</div>
-                <div>
-                  <p className="font-semibold">Marcus T.</p>
-                  <p className="text-sm text-white/60">Power user</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="border-t border-white/20">
@@ -706,7 +588,7 @@ export default function HomePage() {
                 Contact
               </Link>
             </div>
-            <p className="text-xs text-white/40">&copy; 2025 Text Wingman. All rights reserved.</p>
+            <p className="text-xs text-white/40">&copy; {new Date().getFullYear()} Text Wingman. All rights reserved.</p>
             <p className="text-xs text-white/30 mt-2">Built with ❤️ by real people in DC — made for real conversations.</p>
           </div>
         </div>
