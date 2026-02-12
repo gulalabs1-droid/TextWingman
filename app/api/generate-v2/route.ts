@@ -198,6 +198,27 @@ export async function POST(req: Request) {
     allPassed,
   });
 
+  // Save to reply_history so it shows on the profile page
+  const supabaseAdmin = getSupabaseAdmin();
+  if (supabaseAdmin && user) {
+    const replies = [
+      { tone: 'shorter', text: fixed.shorter || '' },
+      { tone: 'spicier', text: fixed.spicier || '' },
+      { tone: 'softer', text: fixed.softer || '' },
+    ];
+    supabaseAdmin
+      .from('reply_history')
+      .insert({
+        user_id: user.id,
+        their_message: message,
+        generated_replies: JSON.stringify(replies),
+        context: context || null,
+      })
+      .then(({ error }) => {
+        if (error) console.error('V2 reply history save error:', error.message);
+      });
+  }
+
   return NextResponse.json(payload);
 }
 
