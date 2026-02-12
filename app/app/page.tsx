@@ -572,38 +572,23 @@ export default function AppPage() {
           </div>
         )}
 
-        {/* Pro Status Banner - Always visible for Pro users */}
+        {/* Pro Status Badge - Compact */}
         {isPro && (
-          <div className={`mb-6 p-4 rounded-2xl backdrop-blur border transition-all duration-300 ${
+          <div className={`mb-4 px-4 py-2.5 rounded-xl backdrop-blur border flex items-center justify-center gap-2 ${
             v2Mode 
-              ? 'bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 border-green-500/30' 
-              : 'bg-gradient-to-r from-purple-500/20 via-violet-500/20 to-indigo-500/20 border-purple-500/30'
+              ? 'bg-green-500/10 border-green-500/20' 
+              : 'bg-purple-500/10 border-purple-500/20'
           }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  v2Mode 
-                    ? 'bg-gradient-to-br from-green-500 to-emerald-600' 
-                    : 'bg-gradient-to-br from-purple-500 to-violet-600'
-                }`}>
-                  {v2Mode ? <Shield className="h-5 w-5 text-white" /> : <Sparkles className="h-5 w-5 text-white" />}
-                </div>
-                <div>
-                  <p className={`text-sm font-bold ${v2Mode ? 'text-green-100' : 'text-purple-100'}`}>
-                    {v2Mode ? '✓ You\'re using Verified Replies (V2)' : '⚡ Pro Member'}
-                  </p>
-                  <p className={`text-xs ${v2Mode ? 'text-green-300/80' : 'text-purple-300/80'}`}>
-                    {v2Mode ? '3-agent pipeline: Draft → Rule-Check → Tone-Verify' : 'Unlimited replies • Toggle V2 below for verified mode'}
-                  </p>
-                </div>
-              </div>
-              {v2Mode && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs bg-green-500/30 text-green-200 px-2 py-1 rounded-full">≤18 words</span>
-                  <span className="text-xs bg-blue-500/30 text-blue-200 px-2 py-1 rounded-full">No emojis</span>
-                </div>
-              )}
-            </div>
+            {v2Mode ? <Shield className="h-4 w-4 text-green-400" /> : <Sparkles className="h-4 w-4 text-purple-400" />}
+            <span className={`text-xs font-semibold ${v2Mode ? 'text-green-300' : 'text-purple-300'}`}>
+              {v2Mode ? 'V2 Verified Mode' : 'Pro Member'}
+            </span>
+            {v2Mode && (
+              <>
+                <span className="text-white/20">·</span>
+                <span className="text-xs text-green-400/70">≤18 words · No emojis</span>
+              </>
+            )}
           </div>
         )}
 
@@ -657,11 +642,6 @@ export default function AppPage() {
           </div>
         )}
 
-        {/* Greeting */}
-        {userName && (
-          <p className="text-white/80 text-center text-sm font-medium mb-2">Hey {userName} 👋</p>
-        )}
-
         {/* Input Section */}
         <Card className="mb-8 bg-white/95 backdrop-blur-xl border-0 shadow-2xl hover:shadow-purple-500/20 rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="pb-4 pt-6 bg-gradient-to-br from-purple-50 to-white">
@@ -679,7 +659,7 @@ export default function AppPage() {
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                 <span>🎯</span> Who is this?
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 {CONTEXT_OPTIONS.map((context) => (
                   <button
                     key={context.value}

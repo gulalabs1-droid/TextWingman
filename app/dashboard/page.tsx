@@ -51,6 +51,12 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(3)
 
+  // Get total reply count for stats
+  const { count: totalReplies } = await supabase
+    .from('reply_history')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+
   // Fetch style stats (tone preferences from copy_logs)
   const { data: copyLogs } = await supabase
     .from('copy_logs')
@@ -281,43 +287,46 @@ export default async function DashboardPage() {
 
           {/* Main CTA - Changes based on limit status (admins never see upgrade prompts) */}
           {isAtLimit && !isAdmin ? (
-            <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-3xl p-10 text-center shadow-2xl shadow-red-500/30">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <AlertCircle className="h-8 w-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2">You&apos;ve used all 3 free replies today</h2>
-              <p className="text-white/80 mb-6">Unlimited Verified Replies — never send a risky text again.</p>
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-2xl p-6 text-center shadow-xl shadow-red-500/20">
+              <h2 className="text-lg font-bold text-white mb-1">You&apos;ve used all 3 free replies today</h2>
+              <p className="text-white/70 text-sm mb-4">Go unlimited — never miss a perfect reply.</p>
               <Link 
                 href="/pricing"
-                className="inline-flex items-center gap-2 bg-white text-red-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl"
+                className="inline-flex items-center gap-2 bg-white text-red-600 px-8 py-3.5 rounded-2xl font-bold text-base hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-lg"
               >
-                <Crown className="h-6 w-6" />
-                Upgrade to Pro →
+                <Crown className="h-5 w-5" />
+                Upgrade to Pro
               </Link>
             </div>
           ) : (
-            <div className={`rounded-3xl p-10 text-center shadow-2xl ${
-              isAdmin 
-                ? 'bg-gradient-to-r from-amber-600 to-orange-600 shadow-amber-500/30' 
-                : 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-purple-500/30'
-            }`}>
-              <h2 className="text-2xl font-bold text-white mb-6">
-                {isAdmin 
-                  ? 'Owner Mode: Full Elite access enabled.' 
-                  : isPro 
-                    ? 'Get verified replies. Never overthink a text again.' 
-                    : 'Paste any message. Get 3 perfect replies.'}
-              </h2>
-              <Link 
-                href="/app"
-                className={`inline-flex items-center gap-2 bg-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-xl ${
-                  isAdmin ? 'text-amber-600' : 'text-purple-600'
-                }`}
-              >
-                <MessageCircle className="h-6 w-6" />
-                Start Texting
-              </Link>
-            </div>
+            <Link 
+              href="/app"
+              className={`block rounded-2xl p-6 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                isAdmin 
+                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 shadow-amber-500/20' 
+                  : 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-purple-500/20'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-left">
+                  <h2 className="text-lg font-bold text-white">
+                    {isAdmin 
+                      ? 'Owner Mode — Elite access' 
+                      : isPro 
+                        ? 'Verified replies. Never overthink a text.' 
+                        : 'Paste any message. Get 3 perfect replies.'}
+                  </h2>
+                  <p className="text-white/60 text-sm mt-1">
+                    {isAdmin ? 'Full access to all features' : isPro ? 'V2 pipeline: Draft → Rule-Check → Tone-Verify' : 'AI-powered, tone-matched replies'}
+                  </p>
+                </div>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                  isAdmin ? 'bg-white/20' : 'bg-white/20'
+                }`}>
+                  <MessageCircle className="h-6 w-6 text-white" />
+                </div>
+              </div>
+            </Link>
           )}
 
           {/* Stats Grid */}
@@ -333,14 +342,21 @@ export default async function DashboardPage() {
                   <p className={`font-bold ${currentPlan.textColor}`}>{currentPlan.label}</p>
                 </div>
               </div>
-              {/* Subscription countdown */}
+              {/* Subscription countdown + renewal CTA */}
               {showCountdown && daysLeft !== null && (
-                <div className={`mt-3 text-xs font-medium px-3 py-1.5 rounded-lg inline-block ${
-                  daysLeft <= 1 ? 'bg-red-500/20 text-red-400' : 
-                  daysLeft <= 3 ? 'bg-orange-500/20 text-orange-400' : 
-                  'bg-purple-500/20 text-purple-300'
-                }`}>
-                  {daysLeft <= 0 ? 'Expires today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  <span className={`text-xs font-medium px-3 py-1.5 rounded-lg inline-block ${
+                    daysLeft <= 1 ? 'bg-red-500/20 text-red-400' : 
+                    daysLeft <= 3 ? 'bg-orange-500/20 text-orange-400' : 
+                    'bg-purple-500/20 text-purple-300'
+                  }`}>
+                    {daysLeft <= 0 ? 'Expires today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
+                  </span>
+                  {daysLeft <= 3 && (
+                    <Link href="/pricing" className="text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors">
+                      Renew →
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
@@ -376,18 +392,21 @@ export default async function DashboardPage() {
               )}
             </div>
 
-            {/* Account - Links to Profile */}
-            <Link href="/profile" className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:bg-white/15 transition-colors block">
+            {/* Total Replies */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center">
-                  <User className="h-5 w-5 text-white" />
+                <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-white" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm text-white/60">Account</p>
-                  <p className="font-medium text-white truncate">{userProfile.email}</p>
+                <div>
+                  <p className="text-sm text-white/60">Total Replies</p>
+                  <p className="font-bold text-white">{totalReplies || 0}</p>
                 </div>
               </div>
-            </Link>
+              {(totalReplies || 0) > 0 && (
+                <p className="text-sm text-green-400 mt-3">Keep going!</p>
+              )}
+            </div>
           </div>
 
           {/* Style Snapshot - Show after 3+ copies */}
@@ -443,10 +462,15 @@ export default async function DashboardPage() {
           {/* Recent Replies Section */}
           {recentReplies && recentReplies.length > 0 && (
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-green-400" />
-                Your Recent Wins
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-white flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-green-400" />
+                  Your Recent Wins
+                </h3>
+                <Link href="/profile" className="text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors">
+                  View all →
+                </Link>
+              </div>
               <div className="space-y-3">
                 {recentReplies.map((reply) => {
                   // Parse generated_replies - could be JSON string or already parsed array
@@ -465,7 +489,7 @@ export default async function DashboardPage() {
                   return (
                     <div key={reply.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
                       <p className="text-white/60 text-xs mb-1 truncate">They said: &quot;{reply.their_message}&quot;</p>
-                      <p className="text-white font-medium">&quot;{firstReply}&quot;</p>
+                      <p className="text-white font-medium truncate">&quot;{firstReply}&quot;</p>
                     </div>
                   )
                 })}
