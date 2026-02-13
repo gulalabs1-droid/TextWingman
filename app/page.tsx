@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Zap, Check, X, Star, ArrowRight, Brain, Filter, Target, Heart, Briefcase, Users, Shield, CheckCircle2, Camera, Smartphone } from "lucide-react";
+import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { AnimatedShowcase } from "@/components/AnimatedShowcase";
 
 export default function HomePage() {
   return (
@@ -18,9 +17,6 @@ export default function HomePage() {
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
               <Link href="/features">Features</Link>
             </Button>
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden md:flex">
-              <Link href="/app">Try Free</Link>
-            </Button>
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
               <Link href="#pricing">Pricing</Link>
             </Button>
@@ -28,481 +24,210 @@ export default function HomePage() {
               <Link href="/login">Login</Link>
             </Button>
             <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 rounded-xl font-semibold">
-              <Link href="/login">Sign Up</Link>
+              <Link href="/app">Try Free</Link>
             </Button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-12 md:py-16 text-center">
+      {/* ═══════════════════════════════════════ */}
+      {/* 1. HERO — Action-Focused              */}
+      {/* ═══════════════════════════════════════ */}
+      <section className="container mx-auto px-4 pt-12 pb-20 md:pt-20 md:pb-28 text-center">
         <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-          <div className="inline-flex items-center gap-2 bg-green-500/20 backdrop-blur text-green-300 px-4 py-2 rounded-full text-sm font-medium border border-green-500/30">
-            <Sparkles className="h-4 w-4" />
-            V2 Live — 3-Agent Verified Replies
-          </div>
-          
-          <p className="text-lg md:text-xl text-purple-200 font-medium">
-            Replies that hit. Confidence that shows.
-          </p>
-          
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
             Never Text Alone
             <span className="block bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent mt-2">Again</span>
           </h1>
           
-          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto">
-            Paste any DM and get 3 verified replies. Our V2 pipeline drafts, rule-checks (≤18 words, no emojis, no needy text), and tone-verifies every response.
+          <p className="text-lg md:text-xl text-white/70 max-w-xl mx-auto">
+            Paste any message. Get 3 perfect replies. Every reply is verified before you see it.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg" className="text-lg px-8 h-14 bg-white text-black hover:bg-gray-100 shadow-2xl hover:shadow-white/30 rounded-2xl font-bold transition-all duration-300 active:scale-95 hover:scale-105">
-              <Link href="/app">
-                Try It Free
-                <MessageCircle className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" className="text-lg px-8 h-14 bg-purple-600 text-white hover:bg-purple-700 border-2 border-purple-400 rounded-2xl font-semibold transition-all duration-300 active:scale-95 hover:scale-105 shadow-lg hover:shadow-purple-400/40">
-              <Link href="#before-after" className="scroll-smooth">See It In Action</Link>
-            </Button>
-          </div>
-          
-          {/* V2 Verification Badges */}
-          <div className="flex flex-wrap justify-center gap-3 pt-2">
-            {['3-Agent Pipeline', '≤18 Words Enforced', 'Tone-Verified', 'No Emojis • No Needy Text'].map((badge, idx) => (
-              <div 
-                key={idx}
-                className="px-4 py-2 rounded-full border border-green-400/50 bg-green-500/15 text-green-200 text-sm font-medium"
-              >
-                {badge}
-              </div>
-            ))}
-          </div>
-          
-          {/* Trust Line */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-white/60">
-            <span className="flex items-center gap-1">
-              <Check className="h-4 w-4 text-green-400" /> Free forever
-            </span>
-            <span className="flex items-center gap-1">
-              <Check className="h-4 w-4 text-green-400" /> No credit card
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /> Built for real conversations
-            </span>
-          </div>
-        </div>
-
-        {/* Animated Showcase */}
-        <div className="mt-12 md:mt-16">
-          <AnimatedShowcase />
-        </div>
-      </section>
-
-      {/* Before & After Section */}
-      <section id="before-after" className="container mx-auto px-4 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">The Glow-Up Is Real</h2>
-          <p className="text-white/70">From dry to magnetic in one tap ✨</p>
-        </div>
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* Dating Example */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                <span className="text-red-300 font-semibold text-sm uppercase tracking-wide">Before</span>
-                <span className="ml-auto text-xs text-white/40">💕 Dating</span>
-              </div>
-              <div className="space-y-3">
-                <div className="bg-gray-800/50 rounded-xl p-4">
-                  <p className="text-gray-400 text-sm mb-1">They said:</p>
-                  <p className="text-white">&ldquo;wyd tonight?&rdquo;</p>
-                </div>
-                <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
-                  <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                  <p className="text-red-200">&ldquo;chillin, u?&rdquo;</p>
-                  <p className="text-red-400 text-xs mt-2">😬 Low effort. No energy. Dead end.</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white/5 backdrop-blur border border-purple-500/30 rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                <span className="text-green-300 font-semibold text-sm uppercase tracking-wide">After</span>
-              </div>
-              <div className="space-y-3">
-                <div className="bg-gray-800/50 rounded-xl p-4">
-                  <p className="text-gray-400 text-sm mb-1">They said:</p>
-                  <p className="text-white">&ldquo;wyd tonight?&rdquo;</p>
-                </div>
-                <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
-                  <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                  <p className="text-green-200">&ldquo;depends. what u thinking?&rdquo;</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-green-400 text-xs">✨ V2 Verified</span>
-                    <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">5 words</span>
-                    <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Tone ✓</span>
+          {/* Paste Box CTA */}
+          <div className="max-w-lg mx-auto pt-2">
+            <Link href="/app" className="block group">
+              <div className="bg-white/10 backdrop-blur border-2 border-white/20 hover:border-purple-400 rounded-2xl p-5 transition-all duration-300 hover:bg-white/15 group-hover:shadow-xl group-hover:shadow-purple-500/20">
+                <p className="text-white/40 text-left text-sm sm:text-base mb-4">Paste the last message they sent...</p>
+                <div className="flex justify-end">
+                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg group-hover:scale-105 transition-transform">
+                    Generate 3 Replies
+                    <Sparkles className="h-4 w-4" />
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Friends Example */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                <span className="text-red-300 font-semibold text-sm uppercase tracking-wide">Before</span>
-                <span className="ml-auto text-xs text-white/40">🤝 Friends</span>
-              </div>
-              <div className="space-y-3">
-                <div className="bg-gray-800/50 rounded-xl p-4">
-                  <p className="text-gray-400 text-sm mb-1">They said:</p>
-                  <p className="text-white">&ldquo;u tryna link up?&rdquo;</p>
-                </div>
-                <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4">
-                  <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                  <p className="text-red-200">&ldquo;idk bro maybe later&rdquo;</p>
-                  <p className="text-red-400 text-xs mt-2">😬 Flaky. Non-committal. Mid.</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white/5 backdrop-blur border border-purple-500/30 rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                <span className="text-green-300 font-semibold text-sm uppercase tracking-wide">After</span>
-              </div>
-              <div className="space-y-3">
-                <div className="bg-gray-800/50 rounded-xl p-4">
-                  <p className="text-gray-400 text-sm mb-1">They said:</p>
-                  <p className="text-white">&ldquo;u tryna link up?&rdquo;</p>
-                </div>
-                <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-4">
-                  <p className="text-gray-400 text-sm mb-1">Your reply:</p>
-                  <p className="text-green-200">&ldquo;say less, pull up&rdquo;</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-green-400 text-xs">✨ V2 Verified</span>
-                    <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">4 words</span>
-                    <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">Tone ✓</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* CTA */}
-          <div className="text-center pt-4">
-            <Link href="/app" className="text-purple-300 hover:text-white text-sm font-medium transition-colors">
-              Get replies that hit every time → <span className="underline">Try it free</span>
             </Link>
           </div>
-        </div>
-      </section>
 
-      {/* Screenshot Upload Feature Highlight */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600/30 via-pink-600/20 to-orange-500/20 border border-white/20 backdrop-blur-sm">
-            {/* NEW badge */}
-            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-orange-500/40 animate-pulse">
-                <Sparkles className="h-3 w-3" />
-                New Feature
-              </span>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8 md:gap-12 p-8 sm:p-10 md:p-12 pt-14 sm:pt-12">
-              {/* Left: Copy */}
-              <div className="flex flex-col justify-center space-y-5">
-                <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight">
-                  Screenshot It.<br />
-                  <span className="bg-gradient-to-r from-orange-300 to-pink-300 bg-clip-text text-transparent">We&apos;ll Read It.</span>
-                </h2>
-                <p className="text-white/80 text-lg">
-                  No more switching apps to copy-paste. Just screenshot any conversation and upload it — our AI reads the message and generates your replies instantly.
-                </p>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
-                      <Check className="h-4 w-4 text-green-400" />
-                    </div>
-                    <span className="text-white/90 text-sm font-medium">Works with iMessage, WhatsApp, Instagram, Tinder &amp; more</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
-                      <Check className="h-4 w-4 text-green-400" />
-                    </div>
-                    <span className="text-white/90 text-sm font-medium">AI detects who said what — extracts the last received message</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
-                      <Check className="h-4 w-4 text-green-400" />
-                    </div>
-                    <span className="text-white/90 text-sm font-medium">One tap from screenshot to perfect reply</span>
-                  </div>
-                </div>
-                <div className="pt-2">
-                  <Button asChild size="lg" className="text-base px-8 h-13 bg-white text-black hover:bg-gray-100 rounded-2xl font-bold transition-all duration-300 active:scale-95 hover:scale-105 shadow-xl">
-                    <Link href="/app">
-                      Try It Now
-                      <Camera className="ml-2 h-5 w-5" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-
-              {/* Right: Visual mockup */}
-              <div className="flex items-center justify-center">
-                <div className="relative w-full max-w-[280px]">
-                  {/* Phone frame */}
-                  <div className="bg-gray-900 rounded-[2rem] p-3 shadow-2xl shadow-purple-500/20 border border-white/10">
-                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-[1.5rem] overflow-hidden">
-                      {/* Status bar */}
-                      <div className="flex items-center justify-between px-5 py-2 text-white/50 text-[10px]">
-                        <span>9:41</span>
-                        <div className="flex items-center gap-1">
-                          <div className="w-4 h-2 border border-white/50 rounded-sm"><div className="w-2.5 h-full bg-green-400 rounded-sm" /></div>
-                        </div>
-                      </div>
-                      
-                      {/* Chat mockup */}
-                      <div className="px-4 py-3 space-y-3">
-                        {/* Their message */}
-                        <div className="flex justify-start">
-                          <div className="bg-gray-700 rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[75%]">
-                            <p className="text-white text-sm">&ldquo;hey, wanna hang out this weekend?&rdquo;</p>
-                          </div>
-                        </div>
-                        {/* Your old message */}
-                        <div className="flex justify-end">
-                          <div className="bg-blue-600 rounded-2xl rounded-br-md px-4 py-2.5 max-w-[75%]">
-                            <p className="text-white text-sm">&ldquo;yeah maybe idk&rdquo;</p>
-                          </div>
-                        </div>
-                        {/* Their latest */}
-                        <div className="flex justify-start">
-                          <div className="bg-gray-700 rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[75%] ring-2 ring-orange-400/60">
-                            <p className="text-white text-sm">&ldquo;lol ok well lmk&rdquo;</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Extraction arrow */}
-                      <div className="flex flex-col items-center py-3">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full text-white text-xs font-bold shadow-lg">
-                          <Camera className="h-3.5 w-3.5" />
-                          Screenshot uploaded
-                        </div>
-                        <div className="w-0.5 h-4 bg-gradient-to-b from-pink-500 to-green-400 my-1" />
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full text-white text-xs font-bold shadow-lg">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Message extracted
-                        </div>
-                      </div>
-
-                      {/* Bottom padding */}
-                      <div className="h-4" />
-                    </div>
-                  </div>
-                  {/* Glow effect */}
-                  <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/20 to-pink-500/20 rounded-[3rem] blur-2xl -z-10" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Works For Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-white mb-3">Works For Every Conversation</h2>
-          <p className="text-white/70">Pick your vibe, we handle the rest</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <Card className="bg-gradient-to-br from-pink-600 to-purple-700 border-0 text-white text-center hover:scale-105 transition-transform shadow-xl shadow-pink-500/20">
-            <CardContent className="pt-6 pb-6">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/20 flex items-center justify-center">
-                <Heart className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Dating</h3>
-              <p className="text-white/90 text-sm">Flirty, tension-building replies that keep them interested</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-blue-600 to-cyan-700 border-0 text-white text-center hover:scale-105 transition-transform shadow-xl shadow-blue-500/20">
-            <CardContent className="pt-6 pb-6">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/20 flex items-center justify-center">
-                <Users className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Friends</h3>
-              <p className="text-white/90 text-sm">Casual, witty responses with just the right humor</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-slate-600 to-gray-700 border-0 text-white text-center hover:scale-105 transition-transform shadow-xl shadow-gray-500/20">
-            <CardContent className="pt-6 pb-6">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/20 flex items-center justify-center">
-                <Briefcase className="h-7 w-7 text-white" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Work</h3>
-              <p className="text-white/90 text-sm">Professional, clean replies that sound polished</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* Why It Hits Harder Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-green-500/20 text-green-300 px-4 py-2 rounded-full text-sm font-medium border border-green-500/30 mb-4">
-            <Sparkles className="h-4 w-4" />
-            V2 Technology
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Why Text Wingman Hits Harder</h2>
-          <p className="text-white/70">3-agent verified replies — not just another AI</p>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-purple-500/30 flex items-center justify-center">
-              <Brain className="h-6 w-6 text-purple-300" />
-            </div>
-            <h3 className="font-bold text-white mb-2">Draft Agent</h3>
-            <p className="text-white/80 text-sm">Generates 3 tone-matched reply options instantly</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-green-500/30 flex items-center justify-center">
-              <Filter className="h-6 w-6 text-green-300" />
-            </div>
-            <h3 className="font-bold text-white mb-2">Rule-Check Agent</h3>
-            <p className="text-white/80 text-sm">Enforces ≤18 words, no emojis, no needy language</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-blue-500/30 flex items-center justify-center">
-              <Target className="h-6 w-6 text-blue-300" />
-            </div>
-            <h3 className="font-bold text-white mb-2">Tone-Verify Agent</h3>
-            <p className="text-white/80 text-sm">Confirms each reply matches its intended vibe</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-all">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-yellow-500/30 flex items-center justify-center">
-              <Zap className="h-6 w-6 text-yellow-300" />
-            </div>
-            <h3 className="font-bold text-white mb-2">Auto-Revise</h3>
-            <p className="text-white/80 text-sm">Fixes violations up to 2x before showing you</p>
-          </div>
-        </div>
-      </section>
-
-      {/* V2 Pipeline Visualization */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-violet-500/20 text-violet-300 px-4 py-2 rounded-full text-sm font-medium border border-violet-500/30 mb-4">
-            <Shield className="h-4 w-4" />
-            V2 Pipeline
-          </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">How V2 Verifies Every Reply</h2>
-          <p className="text-white/70">Four agents working together to get it right</p>
-        </div>
-        <div className="max-w-4xl mx-auto space-y-4">
-          <div className="flex gap-4 md:gap-6 items-start">
-            <div className="flex-shrink-0 w-20 md:w-24">
-              <div className="px-3 py-1.5 rounded-full bg-violet-500/20 text-violet-300 text-xs md:text-sm font-medium text-center border border-violet-500/30">
-                Step 1
-              </div>
-            </div>
-            <div className="flex-1 bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 md:p-5">
-              <h3 className="text-lg font-bold mb-1 text-white">Draft Agent</h3>
-              <p className="text-white/70 text-sm md:text-base">Generates 3 reply options: Shorter, Spicier, Softer</p>
-            </div>
-          </div>
-          <div className="flex gap-4 md:gap-6 items-start">
-            <div className="flex-shrink-0 w-20 md:w-24">
-              <div className="px-3 py-1.5 rounded-full bg-blue-500/20 text-blue-300 text-xs md:text-sm font-medium text-center border border-blue-500/30">
-                Step 2
-              </div>
-            </div>
-            <div className="flex-1 bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 md:p-5">
-              <h3 className="text-lg font-bold mb-1 text-white">Rule-Check Agent</h3>
-              <p className="text-white/70 text-sm md:text-base">Enforces ≤18 words, no emojis, no needy language. Auto-revises up to 2x.</p>
-            </div>
-          </div>
-          <div className="flex gap-4 md:gap-6 items-start">
-            <div className="flex-shrink-0 w-20 md:w-24">
-              <div className="px-3 py-1.5 rounded-full bg-green-500/20 text-green-300 text-xs md:text-sm font-medium text-center border border-green-500/30">
-                Step 3
-              </div>
-            </div>
-            <div className="flex-1 bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 md:p-5">
-              <h3 className="text-lg font-bold mb-1 text-white">Tone-Verify Agent</h3>
-              <p className="text-white/70 text-sm md:text-base">Confirms each reply matches its intended tone. Scores confidence 0-100.</p>
-            </div>
-          </div>
-          <div className="flex gap-4 md:gap-6 items-start">
-            <div className="flex-shrink-0 w-20 md:w-24">
-              <div className="px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs md:text-sm font-medium text-center border border-emerald-500/30">
-                Result
-              </div>
-            </div>
-            <div className="flex-1 bg-gradient-to-r from-green-500/10 to-emerald-500/10 backdrop-blur border border-green-500/30 rounded-xl p-4 md:p-5">
-              <h3 className="text-lg font-bold mb-1 text-white">Verified Replies</h3>
-              <p className="text-white/70 text-sm md:text-base">You see badges: ✅ Rule-Compliant • ✅ Tone Verified • Confidence %</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="container mx-auto px-4 py-20 mt-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4 text-white">How It Works</h2>
-          <p className="text-xl text-white/80">
-            Three simple steps to perfect replies
+          {/* One trust line */}
+          <p className="text-sm text-white/50 font-medium">
+            Free. No card. 3 replies per day.
           </p>
         </div>
+      </section>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-8">
-          <Card className="text-center">
-            <CardHeader>
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary">1</span>
+      {/* ═══════════════════════════════════════ */}
+      {/* 2. BEFORE / AFTER — Works For Every Vibe */}
+      {/* ═══════════════════════════════════════ */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Works For Every Vibe</h2>
+          <p className="text-white/60">From dry to magnetic in one tap</p>
+        </div>
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* Dating */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <span className="text-red-300 font-semibold text-xs uppercase tracking-wider">Before</span>
+                <span className="ml-auto text-xs text-white/40">💕 Dating</span>
               </div>
-              <CardTitle>Paste Message</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Copy any message you received and paste it into Text Wingman
-              </CardDescription>
-            </CardContent>
-          </Card>
+              <div className="bg-gray-800/50 rounded-xl p-3 mb-2">
+                <p className="text-white text-sm">&ldquo;wyd tonight?&rdquo;</p>
+              </div>
+              <div className="bg-red-900/20 border border-red-500/20 rounded-xl p-3">
+                <p className="text-red-200 text-sm">&ldquo;chillin, u?&rdquo;</p>
+                <p className="text-red-400/80 text-xs mt-1.5">Low effort. Dead end.</p>
+              </div>
+            </div>
+            <div className="bg-white/5 border border-green-500/20 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                <span className="text-green-300 font-semibold text-xs uppercase tracking-wider">After</span>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl p-3 mb-2">
+                <p className="text-white text-sm">&ldquo;wyd tonight?&rdquo;</p>
+              </div>
+              <div className="bg-green-900/20 border border-green-500/20 rounded-xl p-3">
+                <p className="text-green-200 text-sm">&ldquo;depends. what u thinking?&rdquo;</p>
+                <p className="text-green-400/80 text-xs mt-1.5">Short. Confident. Ball in their court.</p>
+              </div>
+            </div>
+          </div>
+          {/* Friends */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <span className="text-red-300 font-semibold text-xs uppercase tracking-wider">Before</span>
+                <span className="ml-auto text-xs text-white/40">🤝 Friends</span>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl p-3 mb-2">
+                <p className="text-white text-sm">&ldquo;u tryna link up?&rdquo;</p>
+              </div>
+              <div className="bg-red-900/20 border border-red-500/20 rounded-xl p-3">
+                <p className="text-red-200 text-sm">&ldquo;idk bro maybe later&rdquo;</p>
+                <p className="text-red-400/80 text-xs mt-1.5">Flaky. Non-committal.</p>
+              </div>
+            </div>
+            <div className="bg-white/5 border border-green-500/20 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                <span className="text-green-300 font-semibold text-xs uppercase tracking-wider">After</span>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl p-3 mb-2">
+                <p className="text-white text-sm">&ldquo;u tryna link up?&rdquo;</p>
+              </div>
+              <div className="bg-green-900/20 border border-green-500/20 rounded-xl p-3">
+                <p className="text-green-200 text-sm">&ldquo;say less, pull up&rdquo;</p>
+                <p className="text-green-400/80 text-xs mt-1.5">Decisive. High energy. No hesitation.</p>
+              </div>
+            </div>
+          </div>
+          {/* Work */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <span className="text-red-300 font-semibold text-xs uppercase tracking-wider">Before</span>
+                <span className="ml-auto text-xs text-white/40">💼 Work</span>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl p-3 mb-2">
+                <p className="text-white text-sm">&ldquo;can you get this done by end of day?&rdquo;</p>
+              </div>
+              <div className="bg-red-900/20 border border-red-500/20 rounded-xl p-3">
+                <p className="text-red-200 text-sm">&ldquo;yeah sure I guess&rdquo;</p>
+                <p className="text-red-400/80 text-xs mt-1.5">Passive. No confidence.</p>
+              </div>
+            </div>
+            <div className="bg-white/5 border border-green-500/20 rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                <span className="text-green-300 font-semibold text-xs uppercase tracking-wider">After</span>
+              </div>
+              <div className="bg-gray-800/50 rounded-xl p-3 mb-2">
+                <p className="text-white text-sm">&ldquo;can you get this done by end of day?&rdquo;</p>
+              </div>
+              <div className="bg-green-900/20 border border-green-500/20 rounded-xl p-3">
+                <p className="text-green-200 text-sm">&ldquo;on it, will have it over by 5&rdquo;</p>
+                <p className="text-green-400/80 text-xs mt-1.5">Clear. Professional. Committed.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <Card className="text-center">
-            <CardHeader>
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary">2</span>
+      {/* ═══════════════════════════════════════ */}
+      {/* 3. HOW IT WORKS — 3 Simple Steps       */}
+      {/* ═══════════════════════════════════════ */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">How It Works</h2>
+          <p className="text-white/60">Three steps. Ten seconds.</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+          {[
+            { step: '1', title: 'Paste', desc: 'Drop in the message you received — or upload a screenshot' },
+            { step: '2', title: 'Generate', desc: 'Pick the vibe and hit generate. Get 3 reply options instantly.' },
+            { step: '3', title: 'Send', desc: 'Copy your favorite reply and paste it into your chat. Done.' },
+          ].map((s) => (
+            <div key={s.step} className="text-center space-y-3">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center">
+                <span className="text-2xl font-black text-white">{s.step}</span>
               </div>
-              <CardTitle>V2 Verifies It</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                3 agents draft, rule-check, and tone-verify your reply options
-              </CardDescription>
-            </CardContent>
-          </Card>
+              <h3 className="text-lg font-bold text-white">{s.title}</h3>
+              <p className="text-white/60 text-sm leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-          <Card className="text-center">
-            <CardHeader>
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-2xl font-bold text-primary">3</span>
-              </div>
-              <CardTitle>Copy & Send</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription>
-                Choose your verified reply and send with confidence
-              </CardDescription>
-            </CardContent>
-          </Card>
+      {/* ═══════════════════════════════════════ */}
+      {/* 4. WHY IT'S DIFFERENT — 3 Pillars      */}
+      {/* ═══════════════════════════════════════ */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Why It Hits Different</h2>
+          <p className="text-white/60">Every reply is verified before you see it.</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.07] transition-all">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-purple-500/20 flex items-center justify-center">
+              <Shield className="h-6 w-6 text-purple-300" />
+            </div>
+            <h3 className="font-bold text-white mb-2">3-Agent Verified</h3>
+            <p className="text-white/60 text-sm">One AI drafts. Another checks the rules. A third verifies the tone. If it fails, it gets auto-revised.</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.07] transition-all">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-green-500/20 flex items-center justify-center">
+              <Zap className="h-6 w-6 text-green-300" />
+            </div>
+            <h3 className="font-bold text-white mb-2">≤18 Words. No Emojis.</h3>
+            <p className="text-white/60 text-sm">Short, confident, no desperate energy. Every reply is enforced against rules that make texts actually hit.</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center hover:bg-white/[0.07] transition-all">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <MessageCircle className="h-6 w-6 text-blue-300" />
+            </div>
+            <h3 className="font-bold text-white mb-2">Tone Confidence Scored</h3>
+            <p className="text-white/60 text-sm">Each reply gets a confidence score — so you know it matches the energy you asked for before you send it.</p>
+          </div>
+        </div>
+        <div className="text-center mt-8">
+          <Link href="/features" className="text-purple-300 hover:text-white text-sm font-medium transition-colors inline-flex items-center gap-1">
+            See all features <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </section>
 
