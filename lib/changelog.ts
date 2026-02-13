@@ -10,6 +10,19 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.5.0',
+    date: '2026-02-13',
+    title: 'Message Decoder, Opening Lines, Coach Tips & Saved Threads',
+    description: 'Four new features: decode what they really mean, generate opening lines, get coaching tips, and save conversation threads.',
+    type: 'feature',
+    highlights: [
+      '"What Do They Mean?" Decoder — analyzes subtext, intent, energy, and red/green flags',
+      'Opening Line Generator — first-message mode for dating apps, Instagram DMs, cold texts & more',
+      'Coach Tips — tactical advice on how to respond based on conversation dynamics',
+      'Saved Threads — name and save conversations, come back for context-aware replies',
+    ],
+  },
+  {
     version: '2.4.0',
     date: '2026-02-12',
     title: 'Screenshot Upload — Full Conversation Extraction',

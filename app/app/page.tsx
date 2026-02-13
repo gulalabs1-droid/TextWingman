@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Lock, Camera, X, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
@@ -67,6 +67,59 @@ const TAGLINES = [
   "Text like a pro, every time 🌟"
 ];
 
+type DecodeResult = {
+  intent: string;
+  subtext: string;
+  energy: string;
+  flags: { type: 'green' | 'red' | 'yellow'; text: string }[];
+  coach_tip: string;
+} | null;
+
+type Opener = {
+  tone: string;
+  text: string;
+  why: string;
+};
+
+type SavedThread = {
+  id: string;
+  name: string;
+  context: string | null;
+  platform: string | null;
+  updated_at: string;
+  message_count: number;
+  last_message: any;
+};
+
+type AppMode = 'reply' | 'opener';
+
+const OPENER_CONTEXTS = [
+  { value: 'dating-app', label: 'Dating App', emoji: '💘', description: 'Tinder, Hinge, Bumble' },
+  { value: 'instagram-dm', label: 'Instagram DM', emoji: '📸', description: 'Slide into DMs' },
+  { value: 'cold-text', label: 'Cold Text', emoji: '📱', description: 'Got their number' },
+  { value: 'reconnect', label: 'Reconnect', emoji: '👋', description: 'Haven\'t talked in a while' },
+  { value: 'networking', label: 'Networking', emoji: '💼', description: 'Professional intro' },
+] as const;
+
+const OPENER_TONE_CONFIG: Record<string, { label: string; emoji: string; gradient: string; lightBg: string }> = {
+  bold: { label: 'Bold', emoji: '🎯', gradient: 'from-red-500 to-orange-500', lightBg: 'bg-red-50' },
+  witty: { label: 'Witty', emoji: '⚡', gradient: 'from-purple-500 to-pink-500', lightBg: 'bg-purple-50' },
+  warm: { label: 'Warm', emoji: '💚', gradient: 'from-green-500 to-emerald-500', lightBg: 'bg-green-50' },
+};
+
+const ENERGY_CONFIG: Record<string, { emoji: string; color: string; bg: string }> = {
+  interested: { emoji: '💚', color: 'text-green-400', bg: 'bg-green-500/20' },
+  testing: { emoji: '🧪', color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+  neutral: { emoji: '😐', color: 'text-gray-400', bg: 'bg-gray-500/20' },
+  'pulling-away': { emoji: '🚪', color: 'text-red-400', bg: 'bg-red-500/20' },
+  flirty: { emoji: '😏', color: 'text-pink-400', bg: 'bg-pink-500/20' },
+  confrontational: { emoji: '⚡', color: 'text-orange-400', bg: 'bg-orange-500/20' },
+  anxious: { emoji: '😰', color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+  playful: { emoji: '😜', color: 'text-purple-400', bg: 'bg-purple-500/20' },
+  cold: { emoji: '🥶', color: 'text-blue-400', bg: 'bg-blue-500/20' },
+  warm: { emoji: '🤗', color: 'text-green-400', bg: 'bg-green-500/20' },
+};
+
 type ContextType = 'crush' | 'friend' | 'colleague' | 'family' | 'ex' | 'new_match' | null;
 
 const CONTEXT_OPTIONS = [
@@ -107,6 +160,18 @@ export default function AppPage() {
   const [extracting, setExtracting] = useState(false);
   const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
   const [showFeatureSpotlight, setShowFeatureSpotlight] = useState(false);
+  const [appMode, setAppMode] = useState<AppMode>('reply');
+  const [decodeResult, setDecodeResult] = useState<DecodeResult>(null);
+  const [decoding, setDecoding] = useState(false);
+  const [openers, setOpeners] = useState<Opener[]>([]);
+  const [openerContext, setOpenerContext] = useState<string>('dating-app');
+  const [openerDescription, setOpenerDescription] = useState('');
+  const [loadingOpeners, setLoadingOpeners] = useState(false);
+  const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
+  const [showThreads, setShowThreads] = useState(false);
+  const [savingThread, setSavingThread] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeThreadName, setActiveThreadName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
@@ -506,6 +571,134 @@ export default function AppPage() {
     setExtractedPlatform(null);
   };
 
+  // Decode message — "What Do They Mean?"
+  const handleDecode = async () => {
+    if (!message.trim()) {
+      toast({ title: 'No message to decode', description: 'Paste or type a message first', variant: 'destructive' });
+      return;
+    }
+    setDecoding(true);
+    setDecodeResult(null);
+    try {
+      const res = await fetch('/api/decode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message.trim(), context: selectedContext || 'crush' }),
+      });
+      const data = await res.json();
+      if (data.error && !data.intent) {
+        toast({ title: 'Decode failed', description: data.error, variant: 'destructive' });
+        return;
+      }
+      setDecodeResult(data);
+    } catch {
+      toast({ title: 'Decode failed', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setDecoding(false);
+    }
+  };
+
+  // Generate opening lines
+  const handleGenerateOpeners = async () => {
+    setLoadingOpeners(true);
+    setOpeners([]);
+    try {
+      const res = await fetch('/api/generate-opener', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context: openerContext,
+          description: openerDescription.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        toast({ title: 'Failed to generate openers', description: data.error, variant: 'destructive' });
+        return;
+      }
+      setOpeners(data.openers || []);
+      toast({ title: '✨ Openers ready!', description: 'Pick your favorite and send it' });
+    } catch {
+      toast({ title: 'Failed to generate openers', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setLoadingOpeners(false);
+    }
+  };
+
+  // Saved threads
+  const fetchThreads = async () => {
+    try {
+      const res = await fetch('/api/threads');
+      if (res.ok) {
+        const data = await res.json();
+        setSavedThreads(data.threads || []);
+      }
+    } catch {}
+  };
+
+  const handleSaveThread = async () => {
+    if (!message.trim()) return;
+    const name = activeThreadName || prompt('Name this conversation (e.g., "Sarah 🔥"):');
+    if (!name) return;
+    setSavingThread(true);
+    try {
+      const res = await fetch('/api/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeThreadId || undefined,
+          name,
+          messages: [{ role: 'conversation', text: message.trim(), timestamp: new Date().toISOString() }],
+          context: selectedContext,
+          platform: extractedPlatform,
+        }),
+      });
+      const data = await res.json();
+      if (data.thread) {
+        setActiveThreadId(data.thread.id);
+        setActiveThreadName(name);
+        toast({ title: '💾 Thread saved!', description: `"${name}" — come back anytime for context-aware replies` });
+        fetchThreads();
+      }
+    } catch {
+      toast({ title: 'Failed to save', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setSavingThread(false);
+    }
+  };
+
+  const handleLoadThread = async (thread: SavedThread) => {
+    try {
+      const res = await fetch('/api/threads');
+      if (res.ok) {
+        const data = await res.json();
+        const full = data.threads?.find((t: any) => t.id === thread.id);
+        if (full && full.last_message) {
+          setMessage(full.last_message.text || '');
+          setActiveThreadId(thread.id);
+          setActiveThreadName(thread.name);
+          if (thread.context) setSelectedContext(thread.context as ContextType);
+          setShowThreads(false);
+          setShowExamples(false);
+          toast({ title: `📂 Loaded "${thread.name}"`, description: 'Continue where you left off' });
+        }
+      }
+    } catch {
+      toast({ title: 'Failed to load thread', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteThread = async (id: string) => {
+    try {
+      await fetch(`/api/threads?id=${id}`, { method: 'DELETE' });
+      setSavedThreads(prev => prev.filter(t => t.id !== id));
+      if (activeThreadId === id) {
+        setActiveThreadId(null);
+        setActiveThreadName(null);
+      }
+    } catch {}
+  };
+
   const handleTryAgain = () => {
     setMessage('');
     setReplies([]);
@@ -513,6 +706,8 @@ export default function AppPage() {
     setShowExamples(true);
     setScreenshotPreview(null);
     setExtractedPlatform(null);
+    setDecodeResult(null);
+    setOpeners([]);
   };
 
   const handleExampleClick = (example: string) => {
@@ -762,15 +957,49 @@ export default function AppPage() {
         {/* Input Section */}
         <Card className="mb-8 bg-white/95 backdrop-blur-xl border-0 shadow-2xl hover:shadow-purple-500/20 rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="pb-4 pt-6 bg-gradient-to-br from-purple-50 to-white">
+            {/* Mode Toggle */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-3">
+              <button
+                onClick={() => { setAppMode('reply'); setOpeners([]); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-bold transition-all ${
+                  appMode === 'reply' ? 'bg-white text-purple-700 shadow-md' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <MessageCircle className="h-4 w-4" />
+                Reply Mode
+              </button>
+              <button
+                onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-bold transition-all ${
+                  appMode === 'opener' ? 'bg-white text-pink-700 shadow-md' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Send className="h-4 w-4" />
+                Opener Mode
+              </button>
+            </div>
             <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-purple-600 animate-bounce" />
-              What&apos;d they say? Drop it here 👇
+              {appMode === 'reply' ? (
+                <>
+                  <MessageCircle className="h-5 w-5 text-purple-600 animate-bounce" />
+                  What&apos;d they say? Drop it here 👇
+                </>
+              ) : (
+                <>
+                  <Send className="h-5 w-5 text-pink-600 animate-bounce" />
+                  Start the conversation 💬
+                </>
+              )}
             </CardTitle>
             <CardDescription className="text-sm text-gray-600 font-medium">
-              Wing it like a pro — paste the text and we&apos;ll handle the rest ✨
+              {appMode === 'reply' 
+                ? 'Wing it like a pro — paste the text and we\'ll handle the rest ✨'
+                : 'Generate the perfect opening line for any situation ✨'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-6 pb-6">
+            {/* ===== REPLY MODE ===== */}
+            {appMode === 'reply' && (<>
             {/* Context Selector */}
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -999,42 +1228,278 @@ export default function AppPage() {
               </button>
             </div>
 
-            <div className="space-y-2">
-              <Button
-                onClick={handleGenerate}
-                disabled={loading || !message.trim()}
-                className={`w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse hover:animate-none ${
-                  v2Mode && isPro
-                    ? 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
-                    : 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-700'
-                }`}
-                size="lg"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {v2Mode && isPro ? (
-                      v2Step === 'drafting' ? '✍️ Drafting replies...' :
-                      v2Step === 'rule-checking' ? '📋 Rule-checking...' :
-                      v2Step === 'tone-verifying' ? '🎯 Tone-verifying...' :
-                      'Finalizing...'
-                    ) : 'Crafting perfect replies...'}
-                  </>
-                ) : (
-                  <>
-                    {v2Mode && isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                    {v2Mode && isPro ? 'Generate V2 Replies' : 'Generate Replies'}
-                  </>
-                )}
-              </Button>
+            <div className="space-y-3">
+              <div className="grid grid-cols-4 gap-2">
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loading || !message.trim()}
+                  className={`col-span-2 h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    v2Mode && isPro
+                      ? 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
+                      : 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-700'
+                  }`}
+                  size="lg"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      {v2Mode && isPro ? (
+                        v2Step === 'drafting' ? 'Drafting...' :
+                        v2Step === 'rule-checking' ? 'Checking...' :
+                        v2Step === 'tone-verifying' ? 'Verifying...' :
+                        'Finalizing...'
+                      ) : 'Generating...'}
+                    </>
+                  ) : (
+                    <>
+                      {v2Mode && isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                      {v2Mode && isPro ? 'V2 Replies' : 'Generate'}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleDecode}
+                  disabled={decoding || !message.trim()}
+                  variant="outline"
+                  className="h-14 rounded-2xl font-bold border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 transition-all active:scale-95 disabled:opacity-50"
+                  size="lg"
+                >
+                  {decoding ? <Loader2 className="h-5 w-5 animate-spin" /> : <Brain className="h-5 w-5" />}
+                  <span className="hidden sm:inline ml-1">Decode</span>
+                </Button>
+                <Button
+                  onClick={() => { fetchThreads(); setShowThreads(!showThreads); }}
+                  variant="outline"
+                  className="h-14 rounded-2xl font-bold border-2 border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-800 transition-all active:scale-95"
+                  size="lg"
+                >
+                  <BookmarkPlus className="h-5 w-5" />
+                  <span className="hidden sm:inline ml-1">Save</span>
+                </Button>
+              </div>
+              {/* Active thread indicator */}
+              {activeThreadName && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-xs">
+                  <BookmarkCheck className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="text-blue-700 font-medium">Thread: {activeThreadName}</span>
+                  <button onClick={handleSaveThread} disabled={savingThread || !message.trim()} className="ml-auto text-blue-600 hover:text-blue-800 font-bold disabled:opacity-50">
+                    {savingThread ? 'Saving...' : 'Update'}
+                  </button>
+                </div>
+              )}
               {!loading && !replies.length && (
                 <p className="text-center text-xs text-gray-500 font-medium animate-fade-in transition-opacity duration-500">
                   {TAGLINES[currentTagline]}
                 </p>
               )}
             </div>
+
+            {/* Saved Threads Drawer */}
+            {showThreads && (
+              <div className="animate-in slide-in-from-top duration-300 bg-gradient-to-br from-blue-50 to-white p-4 rounded-2xl border-2 border-blue-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-blue-800 flex items-center gap-2">
+                    <BookmarkCheck className="h-4 w-4" />
+                    Saved Threads
+                  </h4>
+                  <button onClick={() => setShowThreads(false)} className="text-blue-400 hover:text-blue-600">✕</button>
+                </div>
+                {message.trim() && !activeThreadId && (
+                  <button
+                    onClick={handleSaveThread}
+                    disabled={savingThread}
+                    className="w-full p-3 rounded-xl border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/50 hover:bg-blue-100 transition-all text-blue-700 font-medium text-sm flex items-center justify-center gap-2"
+                  >
+                    <BookmarkPlus className="h-4 w-4" />
+                    {savingThread ? 'Saving...' : 'Save current conversation'}
+                  </button>
+                )}
+                {savedThreads.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">No saved threads yet. Start a conversation and save it!</p>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {savedThreads.map(thread => (
+                      <div key={thread.id} className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-white hover:bg-blue-50 transition-all group">
+                        <button onClick={() => handleLoadThread(thread)} className="flex-1 text-left min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">{thread.name}</p>
+                          <p className="text-xs text-gray-500">{thread.message_count} msgs · {new Date(thread.updated_at).toLocaleDateString()}</p>
+                        </button>
+                        <button onClick={() => handleDeleteThread(thread.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            </>)}
+
+            {/* ===== OPENER MODE ===== */}
+            {appMode === 'opener' && (<>
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <span>💌</span> What kind of opener?
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {OPENER_CONTEXTS.map((ctx) => (
+                  <button
+                    key={ctx.value}
+                    onClick={() => setOpenerContext(ctx.value)}
+                    className={`p-3 rounded-xl border-2 transition-all duration-200 text-left hover:scale-105 ${
+                      openerContext === ctx.value
+                        ? 'border-pink-500 bg-pink-50 shadow-md'
+                        : 'border-gray-200 bg-white hover:border-pink-300'
+                    }`}
+                  >
+                    <div className="text-xl mb-1">{ctx.emoji}</div>
+                    <div className="text-xs font-bold text-gray-900">{ctx.label}</div>
+                    <div className="text-[10px] text-gray-500">{ctx.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <textarea
+                value={openerDescription}
+                onChange={(e) => setOpenerDescription(e.target.value)}
+                placeholder="Optional: describe them (e.g., 'loves hiking, has a golden retriever, funny bio about pizza')"
+                className="w-full min-h-[80px] p-4 pb-6 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-300 transition-all shadow-sm text-sm"
+                maxLength={300}
+              />
+              <div className={`absolute bottom-2 right-3 text-xs ${openerDescription.length > 250 ? 'text-red-500' : 'text-gray-400'}`}>
+                {openerDescription.length}/300
+              </div>
+            </div>
+            <Button
+              onClick={handleGenerateOpeners}
+              disabled={loadingOpeners}
+              className="w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 hover:from-pink-600 hover:via-rose-600 hover:to-orange-600"
+              size="lg"
+            >
+              {loadingOpeners ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Crafting openers...</>
+              ) : (
+                <><Send className="mr-2 h-5 w-5" /> Generate Openers</>
+              )}
+            </Button>
+            </>)}
           </CardContent>
         </Card>
+
+        {/* Decode Results Panel */}
+        {decodeResult && (
+          <Card className="mb-6 bg-white/95 backdrop-blur-xl border-0 shadow-xl rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-500">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-amber-600" />
+                  Message Decoded
+                </h3>
+                <button onClick={() => setDecodeResult(null)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+              </div>
+              {/* Energy Badge */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).bg} ${(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).color} border`}>
+                  {(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).emoji} {decodeResult.energy.replace('-', ' ')}
+                </span>
+              </div>
+              {/* Intent */}
+              <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                <p className="text-xs font-bold text-amber-700 mb-1">What they actually mean:</p>
+                <p className="text-gray-900 font-medium">{decodeResult.intent}</p>
+              </div>
+              {/* Subtext */}
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <p className="text-xs font-bold text-gray-500 mb-1">Between the lines:</p>
+                <p className="text-gray-700 text-sm">{decodeResult.subtext}</p>
+              </div>
+              {/* Flags */}
+              {decodeResult.flags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {decodeResult.flags.map((flag, i) => (
+                    <span key={i} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+                      flag.type === 'green' ? 'bg-green-100 text-green-700 border border-green-200' :
+                      flag.type === 'red' ? 'bg-red-100 text-red-700 border border-red-200' :
+                      'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                    }`}>
+                      {flag.type === 'green' ? '🟢' : flag.type === 'red' ? '🔴' : '🟡'} {flag.text}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* Coach Tip */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+                <p className="text-xs font-bold text-purple-600 mb-1 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" /> Coach Tip
+                </p>
+                <p className="text-gray-800 text-sm font-medium">{decodeResult.coach_tip}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Opener Results */}
+        {openers.length > 0 && (
+          <div className="space-y-5 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-white">Your opening lines</h2>
+              <p className="text-sm text-pink-200">Pick your favorite and send it 💬</p>
+            </div>
+            <div className="grid gap-4">
+              {openers.map((opener, idx) => {
+                const config = OPENER_TONE_CONFIG[opener.tone] || OPENER_TONE_CONFIG.bold;
+                const label = ['A', 'B', 'C'][idx];
+                return (
+                  <Card key={idx} className="relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-300 group active:scale-[0.98]">
+                    <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient}`} />
+                    <div className="absolute top-6 right-6">
+                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white font-black text-lg shadow-xl`}>
+                        {label}
+                      </div>
+                    </div>
+                    <CardHeader className="pb-3 pt-8">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-2xl shadow-xl`}>
+                          {config.emoji}
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg font-bold text-gray-900">{config.label}</CardTitle>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-1 pb-5 space-y-3">
+                      <div className={`${config.lightBg} rounded-2xl p-4 border-2 border-gray-100`}>
+                        <p className="text-lg text-gray-900 leading-relaxed font-medium">{opener.text}</p>
+                      </div>
+                      <p className="text-xs text-gray-500 italic px-1">💡 {opener.why}</p>
+                      <Button
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(opener.text);
+                          setCopied(opener.tone);
+                          toast({ title: '✓ Copied!', description: 'Paste it and send' });
+                          setTimeout(() => setCopied(null), 2000);
+                        }}
+                        className={`w-full h-12 rounded-2xl font-bold shadow-lg transition-all active:scale-95 ${
+                          copied === opener.tone
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                            : `bg-gradient-to-r ${config.gradient} text-white hover:opacity-95`
+                        }`}
+                      >
+                        {copied === opener.tone ? '✓ Copied!' : <><Copy className="h-4 w-4 mr-2" /> Copy {label}</>}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+            <div className="text-center pt-4">
+              <Button onClick={() => setOpeners([])} variant="outline" className="bg-white/95 hover:bg-white text-pink-700 border-2 border-pink-300 rounded-2xl font-bold shadow-xl px-10 h-12">
+                <Sparkles className="h-4 w-4 mr-2" /> Try Again
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Replies Section */}
         {replies.length > 0 && (
