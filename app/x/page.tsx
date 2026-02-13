@@ -40,9 +40,9 @@ type DecodeResult = {
 
 // ── Constants ──────────────────────────────────────────────
 const TONE_CONFIG = {
-  shorter: { label: 'Shorter', description: 'Brief & casual', gradient: 'from-blue-500 to-cyan-500', lightBg: 'bg-blue-50', emoji: '⚡' },
-  spicier: { label: 'Spicier', description: 'Playful & flirty', gradient: 'from-rose-500 to-pink-500', lightBg: 'bg-rose-50', emoji: '🔥' },
-  softer:  { label: 'Softer', description: 'Warm & genuine', gradient: 'from-green-500 to-emerald-500', lightBg: 'bg-green-50', emoji: '💚' },
+  shorter: { label: 'Quick', description: 'Brief & casual', gradient: 'from-cyan-400 to-blue-500', glow: 'shadow-cyan-500/20', darkBg: 'bg-cyan-500/10 border-cyan-500/20', emoji: '⚡' },
+  spicier: { label: 'Spicy', description: 'Playful & flirty', gradient: 'from-rose-400 to-pink-500', glow: 'shadow-rose-500/20', darkBg: 'bg-rose-500/10 border-rose-500/20', emoji: '🔥' },
+  softer:  { label: 'Soft', description: 'Warm & genuine', gradient: 'from-emerald-400 to-green-500', glow: 'shadow-emerald-500/20', darkBg: 'bg-emerald-500/10 border-emerald-500/20', emoji: '💚' },
 };
 
 const CONTEXT_OPTIONS = [
@@ -374,142 +374,166 @@ export default function ExperimentalThreadPage() {
 
   // ── Render ─────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
-      <div className="container mx-auto px-4 py-6 pb-12 max-w-md md:max-w-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Button asChild variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10 rounded-xl">
-            <Link href="/dashboard"><ArrowLeft className="h-4 w-4 mr-2" /> Back</Link>
-          </Button>
-          <div className="flex items-center gap-2">
-            <Logo size="sm" showText={false} />
-            <span className="text-white font-bold text-sm">Thread Mode</span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">EXPERIMENTAL</span>
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Ambient background mesh */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/8 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/8 blur-[120px]" />
+        <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-5 pb-8 max-w-lg md:max-w-xl">
+
+        {/* ══════════ HEADER ══════════ */}
+        <div className="flex items-center justify-between mb-5">
+          <Link href="/dashboard" className="w-9 h-9 rounded-2xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-all active:scale-90">
+            <ArrowLeft className="h-4 w-4 text-white/60" />
+          </Link>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-white font-black text-sm tracking-tight leading-none">wingman</h1>
+              <p className="text-white/30 text-[10px] font-medium tracking-widest uppercase">thread</p>
+            </div>
           </div>
-          <Button variant="ghost" size="sm" className="text-white/60 hover:text-white hover:bg-white/10 rounded-xl" onClick={handleReset}>
-            <RotateCcw className="h-4 w-4" />
-          </Button>
+          <button onClick={handleReset} className="w-9 h-9 rounded-2xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-all active:scale-90">
+            <RotateCcw className="h-3.5 w-3.5 text-white/40" />
+          </button>
         </div>
 
-        {/* Active Thread Indicator + Recent button */}
-        <div className="flex items-center gap-2 mb-3">
+        {/* ══════════ TOP BAR: Recent / New / Active ══════════ */}
+        <div className="flex items-center gap-1.5 mb-4">
           <button
             onClick={() => setShowRecent(!showRecent)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/70 hover:text-white text-xs font-bold transition-all"
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-[11px] font-bold transition-all active:scale-95 ${
+              showRecent
+                ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                : 'bg-white/[0.05] text-white/40 border border-white/[0.06] hover:bg-white/[0.08] hover:text-white/60'
+            }`}
           >
-            <List className="h-3.5 w-3.5" />
-            Recent
-            {savedThreads.length > 0 && (
-              <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{savedThreads.length}</span>
-            )}
+            <Clock className="h-3 w-3" />
+            {savedThreads.length > 0 ? savedThreads.length : ''}
           </button>
           <button
             onClick={handleNewThread}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/70 hover:text-white text-xs font-bold transition-all"
+            className="flex items-center gap-1 px-3.5 py-2 rounded-2xl bg-white/[0.05] border border-white/[0.06] text-white/40 hover:bg-white/[0.08] hover:text-white/60 text-[11px] font-bold transition-all active:scale-95"
           >
-            <Plus className="h-3.5 w-3.5" /> New
+            <Plus className="h-3 w-3" />
           </button>
           {activeThreadName && (
-            <div className="flex-1 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-200 text-xs font-medium truncate">
-              <MessageCircle className="h-3 w-3 shrink-0" />
-              <span className="truncate">{activeThreadName}</span>
-              {saving && <Loader2 className="h-3 w-3 animate-spin shrink-0 ml-auto text-purple-300" />}
+            <div className="flex-1 flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 min-w-0">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shrink-0" />
+              <span className="text-violet-300 text-[11px] font-semibold truncate">{activeThreadName}</span>
+              {saving && <Loader2 className="h-3 w-3 animate-spin shrink-0 ml-auto text-violet-400" />}
             </div>
           )}
-          {!activeThreadName && thread.length > 0 && saving && (
-            <div className="flex items-center gap-1.5 text-purple-300 text-[10px] font-medium">
-              <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+          {!activeThreadName && saving && (
+            <div className="flex items-center gap-1.5 px-3 py-2 text-violet-400 text-[10px] font-medium">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" /> syncing
             </div>
           )}
         </div>
 
-        {/* Recent Conversations Drawer */}
+        {/* ══════════ RECENT DRAWER ══════════ */}
         {showRecent && (
-          <Card className="mb-4 bg-white/95 backdrop-blur border-0 shadow-xl rounded-3xl overflow-hidden animate-in slide-in-from-top duration-300">
-            <CardContent className="p-4 space-y-2">
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-purple-600" /> Recent Conversations
-                </h4>
-                <button onClick={() => setShowRecent(false)} className="text-gray-400 hover:text-gray-600 text-xs font-bold">✕</button>
+          <div className="mb-4 animate-in fade-in slide-in-from-top-3 duration-300">
+            <div className="rounded-3xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] p-4 space-y-2">
+              <div className="flex items-center justify-between px-1 mb-2">
+                <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Conversations</span>
+                <button onClick={() => setShowRecent(false)} className="text-white/20 hover:text-white/50 transition-colors">
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
               {savedThreads.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-6">No conversations yet. Start texting and they&apos;ll auto-save here.</p>
+                <div className="text-center py-8">
+                  <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
+                    <MessageCircle className="h-5 w-5 text-white/20" />
+                  </div>
+                  <p className="text-white/25 text-xs">Start a thread and it&apos;ll appear here</p>
+                </div>
               ) : (
-                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                <div className="space-y-1 max-h-60 overflow-y-auto">
                   {savedThreads.map(t => (
-                    <div key={t.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all group cursor-pointer ${
-                      activeThreadId === t.id
-                        ? 'border-purple-300 bg-purple-50'
-                        : 'border-gray-200 bg-white hover:bg-gray-50'
-                    }`}>
-                      <button onClick={() => handleLoadThread(t)} className="flex-1 text-left min-w-0">
-                        <p className="text-sm font-bold text-gray-900 truncate">{t.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-gray-500">{t.message_count} msgs</span>
-                          <span className="text-[10px] text-gray-400">{new Date(t.updated_at).toLocaleDateString()}</span>
-                          {t.last_message && (
-                            <span className="text-[10px] text-gray-400 truncate max-w-[120px]">
-                              {t.last_message.role === 'you' ? 'You: ' : 'Them: '}{t.last_message.text}
-                            </span>
-                          )}
-                        </div>
+                    <button
+                      key={t.id}
+                      onClick={() => handleLoadThread(t)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all group text-left active:scale-[0.98] ${
+                        activeThreadId === t.id
+                          ? 'bg-violet-500/15 border border-violet-500/20'
+                          : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        activeThreadId === t.id ? 'bg-violet-500/20' : 'bg-white/[0.05]'
+                      }`}>
+                        <MessageCircle className={`h-3.5 w-3.5 ${activeThreadId === t.id ? 'text-violet-400' : 'text-white/30'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white/80 text-sm font-semibold truncate">{t.name}</p>
+                        <p className="text-white/25 text-[10px] mt-0.5">
+                          {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all"
+                      >
+                        <Trash2 className="h-3 w-3 text-red-400" />
                       </button>
-                      <button onClick={() => handleDeleteThread(t.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        {/* Context Selector — compact */}
-        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+        {/* ══════════ CONTEXT SELECTOR ══════════ */}
+        <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1 scrollbar-hide">
           {CONTEXT_OPTIONS.map(ctx => (
             <button
               key={ctx.value}
               onClick={() => setSelectedContext(ctx.value)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              className={`shrink-0 px-4 py-2 rounded-2xl text-[11px] font-bold transition-all active:scale-95 ${
                 selectedContext === ctx.value
-                  ? 'bg-white/20 text-white border border-white/30'
-                  : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10'
+                  ? 'bg-white/[0.12] text-white border border-white/[0.15] shadow-lg shadow-white/5'
+                  : 'bg-white/[0.03] text-white/30 border border-white/[0.05] hover:bg-white/[0.06] hover:text-white/50'
               }`}
             >
-              {ctx.emoji} {ctx.label}
+              <span className="mr-1">{ctx.emoji}</span>{ctx.label}
             </button>
           ))}
         </div>
 
-        {/* ═══════════════════════════════════════════════ */}
-        {/* THREAD VIEW                                    */}
-        {/* ═══════════════════════════════════════════════ */}
+        {/* ══════════ THREAD VIEW ══════════ */}
         {thread.length > 0 && (
-          <Card className="mb-4 bg-white/95 backdrop-blur border-0 shadow-xl rounded-3xl overflow-hidden">
+          <div className="mb-4">
             <button
               onClick={() => setShowThread(!showThread)}
-              className="w-full px-5 py-3 flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] border-b-0 transition-colors hover:bg-white/[0.06]"
             >
               <div className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-purple-600" />
-                <span className="text-sm font-bold text-purple-800">
-                  Thread ({thread.length} message{thread.length !== 1 ? 's' : ''})
+                <div className="w-5 h-5 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                  <MessageCircle className="h-3 w-3 text-violet-400" />
+                </div>
+                <span className="text-white/60 text-xs font-bold">
+                  {thread.length} message{thread.length !== 1 ? 's' : ''}
                 </span>
               </div>
-              {showThread ? <ChevronUp className="h-4 w-4 text-purple-400" /> : <ChevronDown className="h-4 w-4 text-purple-400" />}
+              {showThread ? <ChevronUp className="h-3.5 w-3.5 text-white/25" /> : <ChevronDown className="h-3.5 w-3.5 text-white/25" />}
             </button>
 
             {showThread && (
-              <CardContent className="p-4 pt-2 max-h-64 overflow-y-auto">
-                <div className="space-y-2">
+              <div className="rounded-b-3xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto">
+                <div className="space-y-2.5">
                   {thread.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'you' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
+                      <div className={`max-w-[80%] px-4 py-2.5 text-[13px] leading-relaxed ${
                         msg.role === 'them'
-                          ? 'bg-gray-100 text-gray-900 rounded-bl-md'
-                          : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-br-md'
+                          ? 'bg-white/[0.07] text-white/80 rounded-2xl rounded-bl-lg border border-white/[0.06]'
+                          : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl rounded-br-lg shadow-lg shadow-violet-500/10'
                       }`}>
                         <p className="font-medium">{msg.text}</p>
                       </div>
@@ -517,257 +541,273 @@ export default function ExperimentalThreadPage() {
                   ))}
                   <div ref={threadEndRef} />
                 </div>
-              </CardContent>
+              </div>
             )}
-          </Card>
+          </div>
         )}
 
-        {/* "I SENT THIS" bar — shows after copying a reply */}
+        {/* ══════════ "I SENT THIS" CONFIRMATION ══════════ */}
         {pendingSent && (
-          <div className="mb-4 animate-in slide-in-from-bottom-3 duration-300">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl p-4 shadow-xl">
-              <p className="text-white/80 text-xs font-medium mb-2">Did you send this?</p>
-              <p className="text-white font-bold text-sm mb-3">&ldquo;{pendingSent.text}&rdquo;</p>
+          <div className="mb-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="rounded-3xl bg-emerald-500/10 backdrop-blur-xl border border-emerald-500/20 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-emerald-400 text-[11px] font-bold uppercase tracking-widest">Confirm send</span>
+              </div>
+              <p className="text-white/80 text-sm font-medium leading-relaxed pl-4 border-l-2 border-emerald-500/30">
+                {pendingSent.text}
+              </p>
               <div className="flex gap-2">
-                <Button
+                <button
                   onClick={() => handleMarkSent(pendingSent)}
-                  size="sm"
-                  className="flex-1 bg-white text-green-700 hover:bg-green-50 font-bold rounded-xl"
+                  className="flex-1 h-10 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 shadow-lg shadow-emerald-500/20"
                 >
-                  <Check className="h-4 w-4 mr-1" /> I sent this
-                </Button>
-                <Button
+                  <Check className="h-3.5 w-3.5" /> I sent this
+                </button>
+                <button
                   onClick={() => setPendingSent(null)}
-                  size="sm"
-                  variant="ghost"
-                  className="text-white/80 hover:text-white hover:bg-white/10 rounded-xl"
+                  className="h-10 px-4 rounded-2xl bg-white/[0.05] border border-white/[0.08] text-white/40 hover:text-white/60 font-bold text-xs transition-all active:scale-95"
                 >
-                  Not yet
-                </Button>
+                  Skip
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════ */}
-        {/* INPUT CARD                                     */}
-        {/* ═══════════════════════════════════════════════ */}
-        <Card className="mb-4 bg-white/95 backdrop-blur border-0 shadow-2xl rounded-3xl overflow-hidden">
-          <CardHeader className="pb-3 pt-5 px-5 bg-gradient-to-r from-purple-50 to-white">
-            <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-              {thread.length === 0 ? (
-                <><MessageCircle className="h-4 w-4 text-purple-600" /> Paste their first message</>
-              ) : (
-                <><MessageCircle className="h-4 w-4 text-purple-600" /> What did they say next?</>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-5 space-y-3">
-            <div className="relative">
-              <textarea
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder={thread.length === 0
-                  ? 'Drop their message here...'
-                  : 'Paste their reply...'
-                }
-                className="w-full min-h-[100px] p-4 pb-7 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all text-sm"
-                maxLength={2000}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
-                }}
-              />
-              <div className={`absolute bottom-2 right-3 text-xs ${input.length > 1800 ? 'text-red-500' : 'text-gray-400'}`}>
-                {input.length}/2000
+        {/* ══════════ INPUT AREA ══════════ */}
+        <div className="mb-5">
+          <div className="rounded-3xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] overflow-hidden">
+            <div className="p-4 pb-3">
+              <div className="relative">
+                <textarea
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  placeholder={thread.length === 0 ? 'what did they say...' : 'their reply...'}
+                  className="w-full min-h-[90px] p-0 bg-transparent text-white/90 placeholder-white/20 resize-none focus:outline-none text-sm font-medium leading-relaxed"
+                  maxLength={2000}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
+                  }}
+                />
               </div>
             </div>
 
-            {/* Screenshot */}
+            {/* Screenshot preview */}
             <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshot} className="hidden" />
             {screenshotPreview && (
-              <div className="relative rounded-2xl overflow-hidden border-2 border-purple-300">
-                <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-32 object-cover opacity-80" />
+              <div className="mx-4 mb-3 relative rounded-2xl overflow-hidden border border-white/10">
+                <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-28 object-cover opacity-60" />
                 {extracting && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <div className="flex items-center gap-2 bg-white/90 rounded-xl px-4 py-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                      <span className="text-xs font-bold text-purple-800">Reading...</span>
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-violet-400" />
+                      <span className="text-[11px] font-bold text-white/60">reading...</span>
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            <div className="flex gap-2">
+            {/* Action bar */}
+            <div className="flex items-center gap-2 px-4 pb-4">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2.5 rounded-xl border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-50 transition-all text-purple-600"
+                className="w-10 h-10 rounded-2xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center hover:bg-white/[0.08] transition-all active:scale-90 text-white/30 hover:text-white/50"
               >
                 <Camera className="h-4 w-4" />
               </button>
-
-              {/* Action buttons */}
-              <Button
+              <button
+                onClick={handleDecode}
+                disabled={decoding || (!input.trim() && thread.length === 0)}
+                className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center hover:bg-amber-500/20 transition-all active:scale-90 disabled:opacity-30 text-amber-400"
+              >
+                {decoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+              </button>
+              <button
                 onClick={handleGenerate}
                 disabled={loading || !input.trim()}
-                className={`flex-1 h-11 rounded-xl font-bold transition-all active:scale-95 disabled:opacity-50 ${
+                className={`flex-1 h-10 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-30 ${
                   isPro
-                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
-                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
+                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30'
+                    : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30'
                 }`}
               >
                 {loading ? (
-                  <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Generating...</>
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /></>
                 ) : (
-                  <>{isPro ? <Shield className="mr-1.5 h-4 w-4" /> : <Sparkles className="mr-1.5 h-4 w-4" />} {thread.length === 0 ? 'Generate' : 'Reply'}</>
+                  <>{isPro ? <Shield className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />} {thread.length === 0 ? 'generate' : 'reply'}</>
                 )}
-              </Button>
-
-              <Button
-                onClick={handleDecode}
-                disabled={decoding || (!input.trim() && thread.length === 0)}
-                className="h-11 px-4 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transition-all active:scale-95 disabled:opacity-50"
-              >
-                {decoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-              </Button>
+              </button>
             </div>
 
-            <p className="text-center text-[11px] text-gray-400">
-              {thread.length === 0 ? 'Paste a message to start the thread' : `⌘+Enter to generate · ${thread.length} messages in thread`}
-            </p>
-          </CardContent>
-        </Card>
+            {/* Subtle hint */}
+            <div className="px-4 pb-3 flex items-center justify-center">
+              <span className="text-white/15 text-[10px] font-medium">
+                {thread.length === 0 ? 'paste a message to start' : `⌘⏎ to send · ${thread.length} in thread`}
+              </span>
+            </div>
+          </div>
+        </div>
 
-        {/* ═══════════════════════════════════════════════ */}
-        {/* DECODE RESULTS                                 */}
-        {/* ═══════════════════════════════════════════════ */}
+        {/* ══════════ DECODE RESULTS ══════════ */}
         {decodeResult && (
-          <Card className="mb-4 bg-white/95 backdrop-blur border-0 shadow-xl rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <CardContent className="p-5 space-y-3">
+          <div className="mb-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="rounded-3xl bg-white/[0.04] backdrop-blur-xl border border-amber-500/15 p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
-                  <Brain className="h-4 w-4 text-amber-600" /> Decoded
-                </h3>
-                <button onClick={() => setDecodeResult(null)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                    <Brain className="h-3.5 w-3.5 text-amber-400" />
+                  </div>
+                  <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">decoded</span>
+                </div>
+                <button onClick={() => setDecodeResult(null)} className="w-7 h-7 rounded-xl bg-white/[0.05] flex items-center justify-center hover:bg-white/10 transition-all">
+                  <X className="h-3 w-3 text-white/30" />
+                </button>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).bg} ${(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).color} border`}>
+
+              <div className="inline-flex">
+                <span className={`px-3 py-1.5 rounded-xl text-[11px] font-bold ${
+                  (ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).bg.replace('bg-', 'bg-').replace('-100', '-500/15')
+                } ${(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).color.replace('text-', 'text-').replace('-700', '-400')} border border-white/[0.06]`}>
                   {(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).emoji} {decodeResult.energy.replace('-', ' ')}
                 </span>
               </div>
-              <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
-                <p className="text-xs font-bold text-amber-700 mb-1">What they mean:</p>
-                <p className="text-gray-900 text-sm font-medium">{decodeResult.intent}</p>
+
+              <div className="rounded-2xl bg-amber-500/5 border border-amber-500/10 p-4">
+                <p className="text-amber-400/60 text-[10px] font-bold uppercase tracking-widest mb-1.5">what they mean</p>
+                <p className="text-white/80 text-sm font-medium leading-relaxed">{decodeResult.intent}</p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
-                <p className="text-xs font-bold text-gray-500 mb-1">Between the lines:</p>
-                <p className="text-gray-700 text-xs">{decodeResult.subtext}</p>
+
+              <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
+                <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-1.5">between the lines</p>
+                <p className="text-white/60 text-xs leading-relaxed">{decodeResult.subtext}</p>
               </div>
+
               {decodeResult.flags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {decodeResult.flags.map((flag, i) => (
-                    <span key={i} className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                      flag.type === 'green' ? 'bg-green-100 text-green-700' :
-                      flag.type === 'red' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
+                    <span key={i} className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border ${
+                      flag.type === 'green' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                      flag.type === 'red' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     }`}>
-                      {flag.type === 'green' ? '🟢' : flag.type === 'red' ? '🔴' : '🟡'} {flag.text}
+                      {flag.text}
                     </span>
                   ))}
                 </div>
               )}
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-3 border border-purple-200">
-                <p className="text-xs font-bold text-purple-600 mb-1 flex items-center gap-1"><Sparkles className="h-3 w-3" /> Coach Tip</p>
-                <p className="text-gray-800 text-xs font-medium">{decodeResult.coach_tip}</p>
+
+              <div className="rounded-2xl bg-violet-500/5 border border-violet-500/10 p-4">
+                <p className="text-violet-400/60 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" /> coach tip
+                </p>
+                <p className="text-white/70 text-xs font-medium leading-relaxed">{decodeResult.coach_tip}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
-        {/* ═══════════════════════════════════════════════ */}
-        {/* REPLY CARDS                                    */}
-        {/* ═══════════════════════════════════════════════ */}
+        {/* ══════════ REPLY CARDS ══════════ */}
         {replies.length > 0 && (
           <div className="space-y-3 animate-in fade-in slide-in-from-bottom-5 duration-500">
-            <div className="text-center">
-              <h2 className="text-lg font-bold text-white">Pick a reply</h2>
-              <p className="text-xs text-purple-200">Copy one → mark it as sent → keep going</p>
+            <div className="text-center mb-4">
+              <p className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">pick your reply</p>
             </div>
             {replies.map((reply, idx) => {
               const config = TONE_CONFIG[reply.tone];
               const isCopied = copied === reply.tone;
-              const label = ['A', 'B', 'C'][idx];
               return (
-                <Card
+                <div
                   key={reply.tone}
-                  style={{ animationDelay: `${idx * 100}ms` }}
-                  className={`relative overflow-hidden bg-white border-2 shadow-xl rounded-2xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-3 group active:scale-[0.98] ${
-                    isPro ? 'border-green-200 hover:border-green-300' : 'hover:shadow-purple-500/30'
+                  style={{ animationDelay: `${idx * 80}ms` }}
+                  className={`animate-in fade-in slide-in-from-bottom-3 rounded-3xl overflow-hidden transition-all duration-300 active:scale-[0.98] group ${
+                    isCopied
+                      ? 'bg-emerald-500/10 border border-emerald-500/20 shadow-lg shadow-emerald-500/10'
+                      : `bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] hover:border-white/[0.12] hover:bg-white/[0.06] ${config.glow}`
                   }`}
                 >
-                  <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${config.gradient}`} />
+                  {/* Gradient accent line */}
+                  <div className={`h-[2px] bg-gradient-to-r ${config.gradient} opacity-60`} />
+
                   <div className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-7 h-7 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white font-bold text-xs`}>
-                          {label}
-                        </span>
-                        <span className="text-xs font-bold text-gray-500">{config.emoji} {config.label}</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg ${config.glow}`}>
+                          <span className="text-white text-xs font-black">{config.emoji}</span>
+                        </div>
+                        <div>
+                          <span className="text-white/70 text-xs font-bold">{config.label}</span>
+                          <span className="text-white/20 text-[10px] ml-2">{reply.text.split(' ').length}w</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] font-bold bg-gradient-to-r ${config.gradient} text-white px-2 py-0.5 rounded-full`}>
-                          {reply.text.split(' ').length}w
+                      {isPro && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400/60 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/15">
+                          <Shield className="h-2.5 w-2.5" /> v2
                         </span>
-                        {isPro && (
-                          <span className="flex items-center gap-0.5 text-[10px] font-bold bg-green-500 text-white px-2 py-0.5 rounded-full">
-                            <CheckCircle className="h-2.5 w-2.5" /> V2
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
-                    <div className={`${config.lightBg} rounded-xl p-3 mb-3`}>
-                      <p className="text-gray-900 text-sm font-medium leading-relaxed">{reply.text}</p>
+
+                    <div className={`rounded-2xl ${config.darkBg} border p-4 mb-3`}>
+                      <p className="text-white/85 text-[13px] font-medium leading-relaxed">{reply.text}</p>
                     </div>
-                    <Button
+
+                    <button
                       onClick={() => handleCopy(reply)}
-                      className={`w-full h-10 rounded-xl font-bold text-sm transition-all active:scale-95 ${
+                      className={`w-full h-10 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
                         isCopied
-                          ? 'bg-green-500 hover:bg-green-600 text-white'
-                          : `bg-gradient-to-r ${config.gradient} text-white hover:opacity-90`
+                          ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30'
+                          : 'bg-white/[0.06] border border-white/[0.08] text-white/50 hover:bg-white/[0.10] hover:text-white/70'
                       }`}
                     >
-                      {isCopied ? <><Check className="mr-1.5 h-3.5 w-3.5" /> Copied — Tap &ldquo;I sent this&rdquo; above</> : <><Copy className="mr-1.5 h-3.5 w-3.5" /> Copy</>}
-                    </Button>
+                      {isCopied ? <><Check className="h-3.5 w-3.5" /> copied</> : <><Copy className="h-3.5 w-3.5" /> copy</>}
+                    </button>
                   </div>
-                </Card>
+                </div>
               );
             })}
           </div>
         )}
 
-        {/* Empty state */}
+        {/* ══════════ EMPTY STATE ══════════ */}
         {thread.length === 0 && replies.length === 0 && !decodeResult && (
-          <div className="text-center py-12 space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-3xl bg-white/10 flex items-center justify-center">
-              <MessageCircle className="h-8 w-8 text-purple-300" />
+          <div className="text-center py-16 space-y-6">
+            {/* Animated orb */}
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 opacity-20 blur-xl animate-pulse" />
+              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 backdrop-blur-xl border border-white/10 flex items-center justify-center">
+                <MessageCircle className="h-8 w-8 text-white/40" />
+              </div>
             </div>
-            <div>
-              <h3 className="text-white font-bold text-lg">Start a conversation thread</h3>
-              <p className="text-white/50 text-sm mt-1 max-w-sm mx-auto">
-                Paste their message, get replies, mark what you sent — the AI remembers the full conversation for better replies every turn.
+
+            <div className="space-y-2">
+              <h3 className="text-white font-black text-xl tracking-tight">start a thread</h3>
+              <p className="text-white/25 text-sm max-w-[280px] mx-auto leading-relaxed">
+                paste what they said. get replies. mark what you sent. keep going.
               </p>
             </div>
-            <div className="flex items-center justify-center gap-2 text-white/30 text-xs">
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-400" /> They say</div>
-              <span>→</span>
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-400" /> You reply</div>
-              <span>→</span>
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-400" /> They respond</div>
-              <span>→</span>
-              <div className="flex items-center gap-1"><Sparkles className="h-3 w-3" /> Repeat</div>
+
+            {/* Flow visualization */}
+            <div className="flex items-center justify-center gap-3 text-[10px] font-bold">
+              <span className="flex items-center gap-1.5 text-white/20">
+                <span className="w-2 h-2 rounded-full bg-white/20" /> them
+              </span>
+              <span className="text-white/10">→</span>
+              <span className="flex items-center gap-1.5 text-violet-400/40">
+                <span className="w-2 h-2 rounded-full bg-violet-500/40" /> you
+              </span>
+              <span className="text-white/10">→</span>
+              <span className="flex items-center gap-1.5 text-white/20">
+                <span className="w-2 h-2 rounded-full bg-white/20" /> them
+              </span>
+              <span className="text-white/10">→</span>
+              <span className="flex items-center gap-1.5 text-fuchsia-400/40">
+                <Sparkles className="h-3 w-3" /> repeat
+              </span>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
