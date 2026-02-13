@@ -386,8 +386,8 @@ export default function ExperimentalThreadPage() {
 
         {/* ══════════ HEADER ══════════ */}
         <div className="flex items-center justify-between mb-6">
-          <Link href="/dashboard" className="w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-all active:scale-90">
-            <ArrowLeft className="h-5 w-5 text-white/60" />
+          <Link href="/dashboard" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            <ArrowLeft className="h-5 w-5 text-white/70" />
           </Link>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
@@ -395,11 +395,11 @@ export default function ExperimentalThreadPage() {
             </div>
             <div>
               <h1 className="text-white font-black text-base tracking-tight leading-none">wingman</h1>
-              <p className="text-white/35 text-[11px] font-medium tracking-widest uppercase">thread</p>
+              <p className="text-white/50 text-[11px] font-medium tracking-widest uppercase">thread</p>
             </div>
           </div>
-          <button onClick={handleReset} className="w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-all active:scale-90">
-            <RotateCcw className="h-4 w-4 text-white/50" />
+          <button onClick={handleReset} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            <RotateCcw className="h-4 w-4 text-white/60" />
           </button>
         </div>
 
@@ -409,8 +409,8 @@ export default function ExperimentalThreadPage() {
             onClick={() => setShowRecent(!showRecent)}
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all active:scale-95 ${
               showRecent
-                ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                : 'bg-white/[0.06] text-white/50 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/70'
+                ? 'bg-violet-500/25 text-violet-300 border border-violet-500/30'
+                : 'bg-white/[0.08] text-white/60 border border-white/[0.12] hover:bg-white/[0.14] hover:text-white/80'
             }`}
           >
             <Clock className="h-3.5 w-3.5" />
@@ -418,7 +418,7 @@ export default function ExperimentalThreadPage() {
           </button>
           <button
             onClick={handleNewThread}
-            className="flex items-center gap-1 px-4 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.08] text-white/50 hover:bg-white/[0.10] hover:text-white/70 text-xs font-bold transition-all active:scale-95"
+            className="flex items-center gap-1 px-4 py-2.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-white/60 hover:bg-white/[0.14] hover:text-white/80 text-xs font-bold transition-all active:scale-95"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -496,10 +496,10 @@ export default function ExperimentalThreadPage() {
             <button
               key={ctx.value}
               onClick={() => setSelectedContext(ctx.value)}
-              className={`shrink-0 px-4.5 py-2.5 rounded-2xl text-[13px] font-semibold transition-all active:scale-95 ${
+              className={`shrink-0 px-5 py-2.5 rounded-2xl text-[13px] font-semibold transition-all active:scale-95 ${
                 selectedContext === ctx.value
-                  ? 'bg-white/[0.14] text-white border border-white/[0.20] shadow-lg shadow-white/5'
-                  : 'bg-white/[0.05] text-white/50 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/70'
+                  ? 'bg-white/[0.16] text-white border border-white/[0.22] shadow-lg shadow-white/5'
+                  : 'bg-white/[0.07] text-white/60 border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/80'
               }`}
             >
               <span className="mr-1.5">{ctx.emoji}</span>{ctx.label}
@@ -577,12 +577,12 @@ export default function ExperimentalThreadPage() {
 
         {/* ══════════ INPUT AREA ══════════ */}
         <div className="mb-5">
-          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4 focus-within:border-violet-500/25 transition-colors">
+          <div className="rounded-2xl bg-white/[0.06] border border-white/[0.12] p-4 focus-within:border-violet-500/30 transition-colors">
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder={thread.length === 0 ? 'What did they say...' : 'Their reply...'}
-              className="w-full min-h-[100px] bg-transparent text-white placeholder-white/35 resize-none focus:outline-none text-base font-medium leading-relaxed"
+              className="w-full min-h-[100px] bg-transparent text-white placeholder-white/50 resize-none focus:outline-none text-base font-medium leading-relaxed"
               maxLength={2000}
               onKeyDown={e => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
@@ -607,24 +607,24 @@ export default function ExperimentalThreadPage() {
           <div className="flex items-center gap-2.5 mt-3">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/[0.10] transition-all active:scale-90 text-white/40 hover:text-white/60"
+              className="w-11 h-11 rounded-xl bg-white/[0.08] border border-white/[0.14] flex items-center justify-center hover:bg-white/[0.14] transition-all active:scale-90 text-white/60 hover:text-white/80"
             >
               <Camera className="h-5 w-5" />
             </button>
             <button
               onClick={handleDecode}
               disabled={decoding || (!input.trim() && thread.length === 0)}
-              className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center hover:bg-amber-500/20 transition-all active:scale-90 disabled:opacity-25 text-amber-400"
+              className="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center hover:bg-amber-500/25 transition-all active:scale-90 disabled:opacity-25 text-amber-400"
             >
               {decoding ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Brain className="h-4.5 w-4.5" />}
             </button>
             <button
               onClick={handleGenerate}
               disabled={loading || !input.trim()}
-              className={`flex-1 h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-25 ${
+              className={`flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-25 ${
                 isPro
-                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/20'
-                  : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/20'
+                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/25'
+                  : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25'
               }`}
             >
               {loading ? (
@@ -745,10 +745,10 @@ export default function ExperimentalThreadPage() {
         {/* ══════════ EMPTY STATE — inline ══════════ */}
         {thread.length === 0 && replies.length === 0 && !decodeResult && (
           <div className="text-center pt-10 pb-6 space-y-4">
-            <p className="text-white/30 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
+            <p className="text-white/40 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
               Paste what they said, get replies, mark what you sent, keep going.
             </p>
-            <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/15">
+            <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/25">
               <span>them</span>
               <span>→</span>
               <span className="text-violet-400/40">you</span>
