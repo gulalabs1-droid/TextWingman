@@ -382,7 +382,7 @@ export default function ExperimentalThreadPage() {
         <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 mx-auto px-5 py-6 pb-10 w-full max-w-md md:max-w-lg">
+      <div className="relative z-10 mx-auto px-5 py-6 pb-10 w-full max-w-lg md:max-w-2xl">
 
         {/* ══════════ HEADER ══════════ */}
         <div className="flex items-center justify-between mb-6">
@@ -614,23 +614,23 @@ export default function ExperimentalThreadPage() {
             <button
               onClick={handleDecode}
               disabled={decoding || (!input.trim() && thread.length === 0)}
-              className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center hover:bg-amber-500/30 transition-all active:scale-90 disabled:opacity-25 text-amber-400 shadow-md shadow-amber-500/10"
+              className="w-12 h-12 rounded-xl bg-amber-500/25 border border-amber-400/35 flex items-center justify-center hover:bg-amber-500/35 transition-all active:scale-90 disabled:opacity-25 text-amber-300 shadow-md shadow-amber-500/15"
             >
               {decoding ? <Loader2 className="h-5 w-5 animate-spin" /> : <Brain className="h-5 w-5" />}
             </button>
             <button
               onClick={handleGenerate}
               disabled={loading || !input.trim()}
-              className={`flex-1 h-12 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-25 ${
+              className={`flex-1 h-12 rounded-xl font-extrabold text-[15px] flex items-center justify-center gap-2.5 transition-all active:scale-[0.97] disabled:opacity-25 ${
                 isPro
                   ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/30'
-                  : 'bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-violet-500/40'
+                  : 'bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-violet-600/50'
               }`}
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <>{isPro ? <Shield className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />} {thread.length === 0 ? 'Generate' : 'Reply'}</>
+                <>{isPro ? <Shield className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />} {thread.length === 0 ? 'Generate' : 'Reply'}</>
               )}
             </button>
           </div>
