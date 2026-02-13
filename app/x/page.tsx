@@ -376,10 +376,14 @@ export default function ExperimentalThreadPage() {
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Ambient background mesh */}
-      <div className="fixed inset-0 pointer-events-none">
+      <div className="fixed inset-0 pointer-events-none hidden md:block">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/8 blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/8 blur-[120px]" />
         <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
+      </div>
+      <div className="fixed inset-0 pointer-events-none md:hidden">
+        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] rounded-full bg-violet-600/6 blur-[80px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
       </div>
 
       <div className="relative z-10 mx-auto px-5 py-6 pb-10 w-full max-w-lg md:max-w-2xl">
@@ -414,13 +418,13 @@ export default function ExperimentalThreadPage() {
             }`}
           >
             <Clock className="h-3.5 w-3.5" />
-            {savedThreads.length > 0 ? savedThreads.length : ''}
+            Recent{savedThreads.length > 0 ? ` (${savedThreads.length})` : ''}
           </button>
           <button
             onClick={handleNewThread}
-            className="flex items-center gap-1 px-4 py-2.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-white/60 hover:bg-white/[0.14] hover:text-white/80 text-xs font-bold transition-all active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-white/60 hover:bg-white/[0.14] hover:text-white/80 text-xs font-bold transition-all active:scale-95"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5" /> New
           </button>
           {activeThreadName && (
             <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 min-w-0">
@@ -439,7 +443,7 @@ export default function ExperimentalThreadPage() {
         {/* ══════════ RECENT DRAWER ══════════ */}
         {showRecent && (
           <div className="mb-4 animate-in fade-in slide-in-from-top-3 duration-300">
-            <div className="rounded-3xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] p-4 space-y-2">
+            <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 space-y-2">
               <div className="flex items-center justify-between px-1 mb-2">
                 <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Conversations</span>
                 <button onClick={() => setShowRecent(false)} className="text-white/20 hover:text-white/50 transition-colors">
@@ -512,7 +516,7 @@ export default function ExperimentalThreadPage() {
           <div className="mb-4">
             <button
               onClick={() => setShowThread(!showThread)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] border-b-0 transition-colors hover:bg-white/[0.06]"
+              className="w-full flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/[0.04] border border-white/[0.08] border-b-0 transition-colors hover:bg-white/[0.06]"
             >
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded-lg bg-violet-500/20 flex items-center justify-center">
@@ -526,7 +530,7 @@ export default function ExperimentalThreadPage() {
             </button>
 
             {showThread && (
-              <div className="rounded-b-3xl bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto">
+              <div className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto">
                 <div className="space-y-2.5">
                   {thread.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'you' ? 'justify-end' : 'justify-start'}`}>
@@ -549,7 +553,7 @@ export default function ExperimentalThreadPage() {
         {/* ══════════ "I SENT THIS" CONFIRMATION ══════════ */}
         {pendingSent && (
           <div className="mb-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="rounded-3xl bg-emerald-500/10 backdrop-blur-xl border border-emerald-500/20 p-4 space-y-3">
+            <div className="rounded-3xl bg-emerald-500/10 border border-emerald-500/20 p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-emerald-400 text-[11px] font-bold uppercase tracking-widest">Confirm send</span>
@@ -639,7 +643,7 @@ export default function ExperimentalThreadPage() {
         {/* ══════════ DECODE RESULTS ══════════ */}
         {decodeResult && (
           <div className="mb-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="rounded-3xl bg-white/[0.04] backdrop-blur-xl border border-amber-500/15 p-5 space-y-3">
+            <div className="rounded-3xl bg-white/[0.04] border border-amber-500/15 p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-xl bg-amber-500/15 flex items-center justify-center">
