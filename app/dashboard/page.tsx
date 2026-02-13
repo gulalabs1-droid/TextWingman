@@ -200,6 +200,13 @@ export default async function DashboardPage() {
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link 
+              href="/features" 
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors hidden sm:flex"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Features</span>
+            </Link>
+            <Link 
               href="/profile" 
               className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
             >

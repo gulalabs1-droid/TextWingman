@@ -16,7 +16,7 @@ export default function HomePage() {
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-3">
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden sm:flex">
-              <Link href="/v2">V2</Link>
+              <Link href="/features">Features</Link>
             </Button>
             <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl hidden md:flex">
               <Link href="/app">Try Free</Link>

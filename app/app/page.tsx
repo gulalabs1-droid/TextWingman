@@ -8,6 +8,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
+import FeatureTour from '@/components/FeatureTour';
+import ContextualHints from '@/components/ContextualHints';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -953,6 +955,22 @@ export default function AppPage() {
             </div>
           </div>
         )}
+
+        {/* Feature Tour — shows once on first visit */}
+        <FeatureTour />
+
+        {/* Contextual Discovery Hints */}
+        <ContextualHints
+          hasMessage={!!message.trim()}
+          hasReplies={replies.length > 0}
+          appMode={appMode}
+          onAction={(hintId) => {
+            if (hintId === 'decode') handleDecode();
+            if (hintId === 'opener') setAppMode('opener');
+            if (hintId === 'save') { fetchThreads(); setShowThreads(true); }
+            if (hintId === 'screenshot') fileInputRef.current?.click();
+          }}
+        />
 
         {/* Input Section */}
         <Card className="mb-8 bg-white/95 backdrop-blur-xl border-0 shadow-2xl hover:shadow-purple-500/20 rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1">
