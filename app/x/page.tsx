@@ -382,7 +382,7 @@ export default function ExperimentalThreadPage() {
         <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 container mx-auto px-4 py-5 pb-8 max-w-lg md:max-w-xl">
+      <div className="relative z-10 mx-auto px-5 py-5 pb-8 w-full max-w-md md:max-w-lg">
 
         {/* ══════════ HEADER ══════════ */}
         <div className="flex items-center justify-between mb-5">
@@ -498,8 +498,8 @@ export default function ExperimentalThreadPage() {
               onClick={() => setSelectedContext(ctx.value)}
               className={`shrink-0 px-4 py-2 rounded-2xl text-[11px] font-bold transition-all active:scale-95 ${
                 selectedContext === ctx.value
-                  ? 'bg-white/[0.12] text-white border border-white/[0.15] shadow-lg shadow-white/5'
-                  : 'bg-white/[0.03] text-white/30 border border-white/[0.05] hover:bg-white/[0.06] hover:text-white/50'
+                  ? 'bg-white/[0.14] text-white border border-white/[0.18] shadow-lg shadow-white/5'
+                  : 'bg-white/[0.04] text-white/40 border border-white/[0.07] hover:bg-white/[0.08] hover:text-white/60'
               }`}
             >
               <span className="mr-1">{ctx.emoji}</span>{ctx.label}
@@ -694,48 +694,49 @@ export default function ExperimentalThreadPage() {
 
         {/* ══════════ REPLY CARDS — modern ══════════ */}
         {replies.length > 0 && (
-          <div className="space-y-2.5 animate-in fade-in duration-400">
-            <p className="text-white/15 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">replies</p>
-            {replies.map((reply, idx) => {
-              const config = TONE_CONFIG[reply.tone];
-              const isCopied = copied === reply.tone;
-              return (
-                <button
-                  key={reply.tone}
-                  onClick={() => handleCopy(reply)}
-                  style={{ animationDelay: `${idx * 60}ms` }}
-                  className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative rounded-2xl transition-all duration-200 active:scale-[0.98] ${
-                    isCopied
-                      ? 'ring-1 ring-emerald-500/40'
-                      : 'hover:bg-white/[0.03]'
-                  }`}
-                >
-                  {/* Left gradient accent */}
-                  <div className="flex gap-3 p-3">
-                    <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
-                      isCopied ? 'opacity-100' : 'opacity-40 group-hover:opacity-70'
-                    } transition-opacity`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[11px] font-bold text-white/40">{config.emoji} {config.label}</span>
-                        <span className="text-white/15 text-[10px]">{reply.text.split(' ').length}w</span>
-                        {isPro && (
-                          <span className="text-[9px] font-bold text-emerald-500/50 bg-emerald-500/8 px-1.5 py-0.5 rounded ml-auto">
-                            v2
+          <div className="animate-in fade-in duration-400">
+            <p className="text-white/25 text-[10px] font-bold uppercase tracking-[0.2em] mb-3">replies</p>
+            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] divide-y divide-white/[0.05] overflow-hidden">
+              {replies.map((reply, idx) => {
+                const config = TONE_CONFIG[reply.tone];
+                const isCopied = copied === reply.tone;
+                return (
+                  <button
+                    key={reply.tone}
+                    onClick={() => handleCopy(reply)}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 active:scale-[0.99] ${
+                      isCopied
+                        ? 'bg-emerald-500/[0.06]'
+                        : 'hover:bg-white/[0.03]'
+                    }`}
+                  >
+                    <div className="flex gap-3.5 px-4 py-4">
+                      <div className={`w-[3px] shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-60 group-hover:opacity-90'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[11px] font-bold text-white/50">{config.emoji} {config.label}</span>
+                          <span className="text-white/20 text-[10px]">{reply.text.split(' ').length}w</span>
+                          {isPro && (
+                            <span className="text-[9px] font-bold text-emerald-500/50 bg-emerald-500/8 px-1.5 py-0.5 rounded">
+                              v2
+                            </span>
+                          )}
+                          <span className={`ml-auto text-[10px] font-bold flex items-center gap-1 transition-all ${
+                            isCopied ? 'text-emerald-400' : 'text-white/0 group-hover:text-white/30'
+                          }`}>
+                            {isCopied ? <><Check className="h-3 w-3" /> copied</> : <><Copy className="h-3 w-3" /> copy</>}
                           </span>
-                        )}
-                        <span className={`ml-auto text-[10px] font-bold flex items-center gap-1 transition-all ${
-                          isCopied ? 'text-emerald-400' : 'text-white/0 group-hover:text-white/30'
-                        }`}>
-                          {isCopied ? <><Check className="h-3 w-3" /> copied</> : <><Copy className="h-3 w-3" /> tap to copy</>}
-                        </span>
+                        </div>
+                        <p className="text-white/85 text-[13.5px] font-medium leading-relaxed">{reply.text}</p>
                       </div>
-                      <p className="text-white/80 text-[13px] font-medium leading-relaxed">{reply.text}</p>
                     </div>
-                  </div>
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
