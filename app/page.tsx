@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Zap, Check, X, Star, ArrowRight, Brain, Filter, Target, Heart, Briefcase, Users, Shield, CheckCircle2 } from "lucide-react";
+import { Sparkles, MessageCircle, Zap, Check, X, Star, ArrowRight, Brain, Filter, Target, Heart, Briefcase, Users, Shield, CheckCircle2, Camera, Smartphone } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { AnimatedShowcase } from "@/components/AnimatedShowcase";
 
@@ -197,6 +197,120 @@ export default function HomePage() {
             <Link href="/app" className="text-purple-300 hover:text-white text-sm font-medium transition-colors">
               Get replies that hit every time → <span className="underline">Try it free</span>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Screenshot Upload Feature Highlight */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600/30 via-pink-600/20 to-orange-500/20 border border-white/20 backdrop-blur-sm">
+            {/* NEW badge */}
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-orange-500/40 animate-pulse">
+                <Sparkles className="h-3 w-3" />
+                New Feature
+              </span>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 md:gap-12 p-8 sm:p-10 md:p-12 pt-14 sm:pt-12">
+              {/* Left: Copy */}
+              <div className="flex flex-col justify-center space-y-5">
+                <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                  Screenshot It.<br />
+                  <span className="bg-gradient-to-r from-orange-300 to-pink-300 bg-clip-text text-transparent">We&apos;ll Read It.</span>
+                </h2>
+                <p className="text-white/80 text-lg">
+                  No more switching apps to copy-paste. Just screenshot any conversation and upload it — our AI reads the message and generates your replies instantly.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
+                      <Check className="h-4 w-4 text-green-400" />
+                    </div>
+                    <span className="text-white/90 text-sm font-medium">Works with iMessage, WhatsApp, Instagram, Tinder &amp; more</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
+                      <Check className="h-4 w-4 text-green-400" />
+                    </div>
+                    <span className="text-white/90 text-sm font-medium">AI detects who said what — extracts the last received message</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
+                      <Check className="h-4 w-4 text-green-400" />
+                    </div>
+                    <span className="text-white/90 text-sm font-medium">One tap from screenshot to perfect reply</span>
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <Button asChild size="lg" className="text-base px-8 h-13 bg-white text-black hover:bg-gray-100 rounded-2xl font-bold transition-all duration-300 active:scale-95 hover:scale-105 shadow-xl">
+                    <Link href="/app">
+                      Try It Now
+                      <Camera className="ml-2 h-5 w-5" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right: Visual mockup */}
+              <div className="flex items-center justify-center">
+                <div className="relative w-full max-w-[280px]">
+                  {/* Phone frame */}
+                  <div className="bg-gray-900 rounded-[2rem] p-3 shadow-2xl shadow-purple-500/20 border border-white/10">
+                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-[1.5rem] overflow-hidden">
+                      {/* Status bar */}
+                      <div className="flex items-center justify-between px-5 py-2 text-white/50 text-[10px]">
+                        <span>9:41</span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-4 h-2 border border-white/50 rounded-sm"><div className="w-2.5 h-full bg-green-400 rounded-sm" /></div>
+                        </div>
+                      </div>
+                      
+                      {/* Chat mockup */}
+                      <div className="px-4 py-3 space-y-3">
+                        {/* Their message */}
+                        <div className="flex justify-start">
+                          <div className="bg-gray-700 rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[75%]">
+                            <p className="text-white text-sm">&ldquo;hey, wanna hang out this weekend?&rdquo;</p>
+                          </div>
+                        </div>
+                        {/* Your old message */}
+                        <div className="flex justify-end">
+                          <div className="bg-blue-600 rounded-2xl rounded-br-md px-4 py-2.5 max-w-[75%]">
+                            <p className="text-white text-sm">&ldquo;yeah maybe idk&rdquo;</p>
+                          </div>
+                        </div>
+                        {/* Their latest */}
+                        <div className="flex justify-start">
+                          <div className="bg-gray-700 rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[75%] ring-2 ring-orange-400/60">
+                            <p className="text-white text-sm">&ldquo;lol ok well lmk&rdquo;</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Extraction arrow */}
+                      <div className="flex flex-col items-center py-3">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full text-white text-xs font-bold shadow-lg">
+                          <Camera className="h-3.5 w-3.5" />
+                          Screenshot uploaded
+                        </div>
+                        <div className="w-0.5 h-4 bg-gradient-to-b from-pink-500 to-green-400 my-1" />
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full text-white text-xs font-bold shadow-lg">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Message extracted
+                        </div>
+                      </div>
+
+                      {/* Bottom padding */}
+                      <div className="h-4" />
+                    </div>
+                  </div>
+                  {/* Glow effect */}
+                  <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/20 to-pink-500/20 rounded-[3rem] blur-2xl -z-10" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
