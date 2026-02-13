@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   ArrowLeft, Copy, Sparkles, Loader2, Zap, Heart, MessageCircle,
   Shield, CheckCircle, Camera, X, Brain, Send, ChevronDown, ChevronUp,
-  RotateCcw, Trash2, Check,
+  RotateCcw, Trash2, Check, Clock, List, Plus,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
@@ -19,6 +19,15 @@ type ThreadMessage = {
   role: 'them' | 'you';
   text: string;
   timestamp: number;
+};
+
+type SavedThread = {
+  id: string;
+  name: string;
+  context: string | null;
+  updated_at: string;
+  message_count: number;
+  last_message: { role: string; text: string } | null;
 };
 
 type DecodeResult = {
@@ -73,16 +82,33 @@ export default function ExperimentalThreadPage() {
   const [decodeResult, setDecodeResult] = useState<DecodeResult>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeThreadName, setActiveThreadName] = useState<string | null>(null);
+  const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
+  const [showRecent, setShowRecent] = useState(false);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
-  // ── Load Pro status ────────────────────────────────────
+  // ── Load Pro status + recent threads ──────────────────
   useEffect(() => {
     fetch('/api/usage').then(r => r.json()).then(d => {
       if (d.isPro) setIsPro(true);
     }).catch(() => {});
+    fetchRecentThreads();
   }, []);
+
+  // ── Auto-save after 2+ messages ────────────────────────
+  useEffect(() => {
+    if (thread.length < 2) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      autoSaveThread();
+    }, 1500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [thread]);
 
   // ── Auto-scroll thread ────────────────────────────────
   useEffect(() => {
@@ -235,6 +261,105 @@ export default function ExperimentalThreadPage() {
     }
   };
 
+  // ── Fetch recent threads ────────────────────────────────
+  const fetchRecentThreads = async () => {
+    try {
+      const res = await fetch('/api/threads');
+      if (res.ok) {
+        const data = await res.json();
+        setSavedThreads(data.threads || []);
+      }
+    } catch {}
+  };
+
+  // ── Auto-save thread to DB ──────────────────────────────
+  const autoSaveThread = async () => {
+    if (thread.length < 2) return;
+    setSaving(true);
+    try {
+      const firstThem = thread.find(m => m.role === 'them');
+      const autoName = activeThreadName || (firstThem ? firstThem.text.slice(0, 40) + (firstThem.text.length > 40 ? '...' : '') : 'Conversation');
+
+      const res = await fetch('/api/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeThreadId || undefined,
+          name: autoName,
+          messages: thread.map(m => ({ role: m.role, text: m.text, timestamp: new Date(m.timestamp).toISOString() })),
+          context: selectedContext,
+        }),
+      });
+      const data = await res.json();
+      if (data.thread) {
+        if (!activeThreadId) {
+          setActiveThreadId(data.thread.id);
+          setActiveThreadName(autoName);
+        }
+        fetchRecentThreads();
+      }
+    } catch {} finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Load a saved thread ─────────────────────────────────
+  const handleLoadThread = async (saved: SavedThread) => {
+    try {
+      const res = await fetch(`/api/threads?id=${saved.id}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const fullThread = data.thread;
+
+      if (!fullThread?.messages) throw new Error();
+
+      // Reconstruct structured ThreadMessage array
+      const messages: ThreadMessage[] = (fullThread.messages as any[]).map((m: any) => ({
+        role: m.role === 'you' ? 'you' as const : 'them' as const,
+        text: m.text || '',
+        timestamp: m.timestamp ? new Date(m.timestamp).getTime() : Date.now(),
+      }));
+
+      setThread(messages);
+      setActiveThreadId(saved.id);
+      setActiveThreadName(saved.name);
+      if (saved.context) setSelectedContext(saved.context);
+      setReplies([]);
+      setDecodeResult(null);
+      setPendingSent(null);
+      setInput('');
+      setShowRecent(false);
+      toast({ title: 'Thread loaded', description: saved.name });
+    } catch {
+      toast({ title: 'Failed to load thread', variant: 'destructive' });
+    }
+  };
+
+  // ── Delete a thread ─────────────────────────────────────
+  const handleDeleteThread = async (id: string) => {
+    try {
+      await fetch(`/api/threads?id=${id}`, { method: 'DELETE' });
+      setSavedThreads(prev => prev.filter(t => t.id !== id));
+      if (activeThreadId === id) {
+        setActiveThreadId(null);
+        setActiveThreadName(null);
+      }
+      toast({ title: 'Thread deleted' });
+    } catch {}
+  };
+
+  // ── Start new thread ────────────────────────────────────
+  const handleNewThread = () => {
+    setThread([]);
+    setReplies([]);
+    setInput('');
+    setDecodeResult(null);
+    setPendingSent(null);
+    setActiveThreadId(null);
+    setActiveThreadName(null);
+    setShowRecent(false);
+  };
+
   // ── Reset thread ───────────────────────────────────────
   const handleReset = () => {
     setThread([]);
@@ -242,6 +367,8 @@ export default function ExperimentalThreadPage() {
     setInput('');
     setDecodeResult(null);
     setPendingSent(null);
+    setActiveThreadId(null);
+    setActiveThreadName(null);
     toast({ title: 'Thread cleared', description: 'Starting fresh' });
   };
 
@@ -263,6 +390,81 @@ export default function ExperimentalThreadPage() {
             <RotateCcw className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Active Thread Indicator + Recent button */}
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            onClick={() => setShowRecent(!showRecent)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/70 hover:text-white text-xs font-bold transition-all"
+          >
+            <List className="h-3.5 w-3.5" />
+            Recent
+            {savedThreads.length > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">{savedThreads.length}</span>
+            )}
+          </button>
+          <button
+            onClick={handleNewThread}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/70 hover:text-white text-xs font-bold transition-all"
+          >
+            <Plus className="h-3.5 w-3.5" /> New
+          </button>
+          {activeThreadName && (
+            <div className="flex-1 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-200 text-xs font-medium truncate">
+              <MessageCircle className="h-3 w-3 shrink-0" />
+              <span className="truncate">{activeThreadName}</span>
+              {saving && <Loader2 className="h-3 w-3 animate-spin shrink-0 ml-auto text-purple-300" />}
+            </div>
+          )}
+          {!activeThreadName && thread.length > 0 && saving && (
+            <div className="flex items-center gap-1.5 text-purple-300 text-[10px] font-medium">
+              <Loader2 className="h-3 w-3 animate-spin" /> Saving...
+            </div>
+          )}
+        </div>
+
+        {/* Recent Conversations Drawer */}
+        {showRecent && (
+          <Card className="mb-4 bg-white/95 backdrop-blur border-0 shadow-xl rounded-3xl overflow-hidden animate-in slide-in-from-top duration-300">
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
+                  <Clock className="h-4 w-4 text-purple-600" /> Recent Conversations
+                </h4>
+                <button onClick={() => setShowRecent(false)} className="text-gray-400 hover:text-gray-600 text-xs font-bold">✕</button>
+              </div>
+              {savedThreads.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-6">No conversations yet. Start texting and they&apos;ll auto-save here.</p>
+              ) : (
+                <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                  {savedThreads.map(t => (
+                    <div key={t.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all group cursor-pointer ${
+                      activeThreadId === t.id
+                        ? 'border-purple-300 bg-purple-50'
+                        : 'border-gray-200 bg-white hover:bg-gray-50'
+                    }`}>
+                      <button onClick={() => handleLoadThread(t)} className="flex-1 text-left min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{t.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-gray-500">{t.message_count} msgs</span>
+                          <span className="text-[10px] text-gray-400">{new Date(t.updated_at).toLocaleDateString()}</span>
+                          {t.last_message && (
+                            <span className="text-[10px] text-gray-400 truncate max-w-[120px]">
+                              {t.last_message.role === 'you' ? 'You: ' : 'Them: '}{t.last_message.text}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                      <button onClick={() => handleDeleteThread(t.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Context Selector — compact */}
         <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">

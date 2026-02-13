@@ -14,7 +14,7 @@ async function getUser() {
   return user;
 }
 
-// GET: List saved threads for current user
+// GET: List saved threads for current user, or fetch one by ?id=
 export async function GET(request: NextRequest) {
   try {
     const user = await getUser();
@@ -22,6 +22,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const threadId = searchParams.get('id');
+
+    // Single thread fetch — return full messages
+    if (threadId) {
+      const { data, error } = await adminSupabase
+        .from('saved_threads')
+        .select('id, name, context, platform, updated_at, messages')
+        .eq('id', threadId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      return NextResponse.json({ thread: data });
+    }
+
+    // List all threads — lightweight (no full messages)
     const { data, error } = await adminSupabase
       .from('saved_threads')
       .select('id, name, context, platform, updated_at, messages')
