@@ -382,56 +382,56 @@ export default function ExperimentalThreadPage() {
         <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 mx-auto px-5 py-5 pb-8 w-full max-w-md md:max-w-lg">
+      <div className="relative z-10 mx-auto px-5 py-6 pb-10 w-full max-w-md md:max-w-lg">
 
         {/* ══════════ HEADER ══════════ */}
-        <div className="flex items-center justify-between mb-5">
-          <Link href="/dashboard" className="w-9 h-9 rounded-2xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-all active:scale-90">
-            <ArrowLeft className="h-4 w-4 text-white/60" />
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/dashboard" className="w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-all active:scale-90">
+            <ArrowLeft className="h-5 w-5 text-white/60" />
           </Link>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-              <Sparkles className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
+              <Sparkles className="h-4.5 w-4.5 text-white" />
             </div>
             <div>
-              <h1 className="text-white font-black text-sm tracking-tight leading-none">wingman</h1>
-              <p className="text-white/30 text-[10px] font-medium tracking-widest uppercase">thread</p>
+              <h1 className="text-white font-black text-base tracking-tight leading-none">wingman</h1>
+              <p className="text-white/35 text-[11px] font-medium tracking-widest uppercase">thread</p>
             </div>
           </div>
-          <button onClick={handleReset} className="w-9 h-9 rounded-2xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-all active:scale-90">
-            <RotateCcw className="h-3.5 w-3.5 text-white/40" />
+          <button onClick={handleReset} className="w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-all active:scale-90">
+            <RotateCcw className="h-4 w-4 text-white/50" />
           </button>
         </div>
 
         {/* ══════════ TOP BAR: Recent / New / Active ══════════ */}
-        <div className="flex items-center gap-1.5 mb-4">
+        <div className="flex items-center gap-2 mb-5">
           <button
             onClick={() => setShowRecent(!showRecent)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-[11px] font-bold transition-all active:scale-95 ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all active:scale-95 ${
               showRecent
                 ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                : 'bg-white/[0.05] text-white/40 border border-white/[0.06] hover:bg-white/[0.08] hover:text-white/60'
+                : 'bg-white/[0.06] text-white/50 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/70'
             }`}
           >
-            <Clock className="h-3 w-3" />
+            <Clock className="h-3.5 w-3.5" />
             {savedThreads.length > 0 ? savedThreads.length : ''}
           </button>
           <button
             onClick={handleNewThread}
-            className="flex items-center gap-1 px-3.5 py-2 rounded-2xl bg-white/[0.05] border border-white/[0.06] text-white/40 hover:bg-white/[0.08] hover:text-white/60 text-[11px] font-bold transition-all active:scale-95"
+            className="flex items-center gap-1 px-4 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.08] text-white/50 hover:bg-white/[0.10] hover:text-white/70 text-xs font-bold transition-all active:scale-95"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-3.5 w-3.5" />
           </button>
           {activeThreadName && (
-            <div className="flex-1 flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 min-w-0">
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse shrink-0" />
-              <span className="text-violet-300 text-[11px] font-semibold truncate">{activeThreadName}</span>
-              {saving && <Loader2 className="h-3 w-3 animate-spin shrink-0 ml-auto text-violet-400" />}
+            <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shrink-0" />
+              <span className="text-violet-300 text-xs font-semibold truncate">{activeThreadName}</span>
+              {saving && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 ml-auto text-violet-400" />}
             </div>
           )}
           {!activeThreadName && saving && (
-            <div className="flex items-center gap-1.5 px-3 py-2 text-violet-400 text-[10px] font-medium">
-              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" /> syncing
+            <div className="flex items-center gap-1.5 px-3 py-2.5 text-violet-400 text-[11px] font-medium">
+              <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" /> syncing
             </div>
           )}
         </div>
@@ -491,18 +491,18 @@ export default function ExperimentalThreadPage() {
         )}
 
         {/* ══════════ CONTEXT SELECTOR ══════════ */}
-        <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 scrollbar-hide">
           {CONTEXT_OPTIONS.map(ctx => (
             <button
               key={ctx.value}
               onClick={() => setSelectedContext(ctx.value)}
-              className={`shrink-0 px-4 py-2 rounded-2xl text-[11px] font-bold transition-all active:scale-95 ${
+              className={`shrink-0 px-4.5 py-2.5 rounded-2xl text-[13px] font-semibold transition-all active:scale-95 ${
                 selectedContext === ctx.value
-                  ? 'bg-white/[0.14] text-white border border-white/[0.18] shadow-lg shadow-white/5'
-                  : 'bg-white/[0.04] text-white/40 border border-white/[0.07] hover:bg-white/[0.08] hover:text-white/60'
+                  ? 'bg-white/[0.14] text-white border border-white/[0.20] shadow-lg shadow-white/5'
+                  : 'bg-white/[0.05] text-white/50 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/70'
               }`}
             >
-              <span className="mr-1">{ctx.emoji}</span>{ctx.label}
+              <span className="mr-1.5">{ctx.emoji}</span>{ctx.label}
             </button>
           ))}
         </div>
@@ -575,60 +575,62 @@ export default function ExperimentalThreadPage() {
           </div>
         )}
 
-        {/* ══════════ INPUT AREA — borderless ══════════ */}
-        <div className="mb-4">
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder={thread.length === 0 ? 'what did they say...' : 'their reply...'}
-            className="w-full min-h-[80px] px-1 py-2 bg-transparent text-white/90 placeholder-white/20 resize-none focus:outline-none text-[15px] font-medium leading-relaxed border-b border-white/[0.06] focus:border-violet-500/30 transition-colors"
-            maxLength={2000}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
-            }}
-          />
+        {/* ══════════ INPUT AREA ══════════ */}
+        <div className="mb-5">
+          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4 focus-within:border-violet-500/25 transition-colors">
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder={thread.length === 0 ? 'What did they say...' : 'Their reply...'}
+              className="w-full min-h-[100px] bg-transparent text-white placeholder-white/35 resize-none focus:outline-none text-base font-medium leading-relaxed"
+              maxLength={2000}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
+              }}
+            />
 
-          {/* Screenshot preview */}
-          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshot} className="hidden" />
-          {screenshotPreview && (
-            <div className="mt-3 relative rounded-2xl overflow-hidden border border-white/10">
-              <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-28 object-cover opacity-60" />
-              {extracting && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <Loader2 className="h-4 w-4 animate-spin text-violet-400" />
-                </div>
-              )}
-            </div>
-          )}
+            {/* Screenshot preview */}
+            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshot} className="hidden" />
+            {screenshotPreview && (
+              <div className="mt-3 relative rounded-xl overflow-hidden border border-white/10">
+                <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-32 object-cover opacity-70" />
+                {extracting && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Action row */}
-          <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-2.5 mt-3">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center hover:bg-white/[0.08] transition-all active:scale-90 text-white/25 hover:text-white/50"
+              className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/[0.10] transition-all active:scale-90 text-white/40 hover:text-white/60"
             >
-              <Camera className="h-4 w-4" />
+              <Camera className="h-5 w-5" />
             </button>
             <button
               onClick={handleDecode}
               disabled={decoding || (!input.trim() && thread.length === 0)}
-              className="w-9 h-9 rounded-xl bg-amber-500/8 flex items-center justify-center hover:bg-amber-500/15 transition-all active:scale-90 disabled:opacity-20 text-amber-400/70"
+              className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center hover:bg-amber-500/20 transition-all active:scale-90 disabled:opacity-25 text-amber-400"
             >
-              {decoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
+              {decoding ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <Brain className="h-4.5 w-4.5" />}
             </button>
             <button
               onClick={handleGenerate}
               disabled={loading || !input.trim()}
-              className={`flex-1 h-9 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] disabled:opacity-20 ${
+              className={`flex-1 h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-25 ${
                 isPro
-                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/15'
-                  : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/15'
+                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/20'
+                  : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/20'
               }`}
             >
               {loading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>{isPro ? <Shield className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />} {thread.length === 0 ? 'generate' : 'reply'}</>
+                <>{isPro ? <Shield className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />} {thread.length === 0 ? 'Generate' : 'Reply'}</>
               )}
             </button>
           </div>
@@ -695,8 +697,8 @@ export default function ExperimentalThreadPage() {
         {/* ══════════ REPLY CARDS — modern ══════════ */}
         {replies.length > 0 && (
           <div className="animate-in fade-in duration-400">
-            <p className="text-white/25 text-[10px] font-bold uppercase tracking-[0.2em] mb-3">replies</p>
-            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] divide-y divide-white/[0.05] overflow-hidden">
+            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Pick your reply</p>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
               {replies.map((reply, idx) => {
                 const config = TONE_CONFIG[reply.tone];
                 const isCopied = copied === reply.tone;
@@ -707,30 +709,30 @@ export default function ExperimentalThreadPage() {
                     style={{ animationDelay: `${idx * 60}ms` }}
                     className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 active:scale-[0.99] ${
                       isCopied
-                        ? 'bg-emerald-500/[0.06]'
-                        : 'hover:bg-white/[0.03]'
+                        ? 'bg-emerald-500/[0.08]'
+                        : 'hover:bg-white/[0.04]'
                     }`}
                   >
-                    <div className="flex gap-3.5 px-4 py-4">
-                      <div className={`w-[3px] shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
-                        isCopied ? 'opacity-100' : 'opacity-60 group-hover:opacity-90'
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
                       } transition-opacity`} />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[11px] font-bold text-white/50">{config.emoji} {config.label}</span>
-                          <span className="text-white/20 text-[10px]">{reply.text.split(' ').length}w</span>
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                          <span className="text-white/25 text-[11px]">{reply.text.split(' ').length}w</span>
                           {isPro && (
-                            <span className="text-[9px] font-bold text-emerald-500/50 bg-emerald-500/8 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-bold text-emerald-500/60 bg-emerald-500/10 px-2 py-0.5 rounded">
                               v2
                             </span>
                           )}
-                          <span className={`ml-auto text-[10px] font-bold flex items-center gap-1 transition-all ${
-                            isCopied ? 'text-emerald-400' : 'text-white/0 group-hover:text-white/30'
+                          <span className={`ml-auto text-[11px] font-bold flex items-center gap-1.5 transition-all ${
+                            isCopied ? 'text-emerald-400' : 'text-white/0 group-hover:text-white/40'
                           }`}>
-                            {isCopied ? <><Check className="h-3 w-3" /> copied</> : <><Copy className="h-3 w-3" /> copy</>}
+                            {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
                           </span>
                         </div>
-                        <p className="text-white/85 text-[13.5px] font-medium leading-relaxed">{reply.text}</p>
+                        <p className="text-white/90 text-[15px] font-medium leading-relaxed">{reply.text}</p>
                       </div>
                     </div>
                   </button>
@@ -742,18 +744,18 @@ export default function ExperimentalThreadPage() {
 
         {/* ══════════ EMPTY STATE — inline ══════════ */}
         {thread.length === 0 && replies.length === 0 && !decodeResult && (
-          <div className="text-center pt-8 pb-4 space-y-3">
-            <p className="text-white/20 text-[11px] font-medium leading-relaxed max-w-[240px] mx-auto">
-              paste what they said, get replies, mark what you sent, keep going
+          <div className="text-center pt-10 pb-6 space-y-4">
+            <p className="text-white/30 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
+              Paste what they said, get replies, mark what you sent, keep going.
             </p>
-            <div className="flex items-center justify-center gap-2.5 text-[10px] font-bold text-white/10">
+            <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/15">
               <span>them</span>
               <span>→</span>
-              <span className="text-violet-400/30">you</span>
+              <span className="text-violet-400/40">you</span>
               <span>→</span>
               <span>them</span>
               <span>→</span>
-              <span className="text-fuchsia-400/30">repeat</span>
+              <span className="text-fuchsia-400/40">repeat</span>
             </div>
           </div>
         )}
