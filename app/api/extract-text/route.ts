@@ -42,29 +42,36 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: `You are a text extraction assistant for a messaging reply app. The user will upload a screenshot of a text/DM conversation.
+          content: `You are a conversation extraction assistant for a messaging reply app. The user will upload a screenshot of a text/DM conversation.
 
 Your job:
-1. Identify the LAST MESSAGE that was RECEIVED (not sent by the user).
-   - In iMessage: received messages are typically gray/on the left side.
-   - In WhatsApp: received messages are on the left.
-   - In Instagram DMs: received messages are on the left.
-   - In other apps: received messages are typically on the left or in a different color than sent messages.
-2. Extract ONLY the text of that last received message.
-3. If you can see multiple received messages, extract only the most recent one.
+1. Extract the FULL conversation visible in the screenshot — every message you can read, in order from oldest (top) to newest (bottom).
+2. Identify which messages were SENT by the user and which were RECEIVED from the other person.
+   - In iMessage: sent messages are blue/green bubbles on the right, received are gray on the left.
+   - In WhatsApp: sent messages are green/right, received are white/left.
+   - In Instagram DMs: sent messages are blue/right, received are gray/left.
+   - In Tinder/Bumble/Hinge: sent messages are typically on the right, received on the left.
+   - In other apps: sent messages are typically on the right, received on the left or a different color.
+3. Identify the LAST message that was RECEIVED (the one the user needs to reply to).
 4. If the image is not a conversation screenshot, say so.
+
+Format the full conversation as a readable thread using "Them:" and "You:" prefixes, one message per line. Keep the exact wording from the screenshot.
 
 Return ONLY a JSON object:
 {
-  "extracted_text": "the last received message text here",
+  "full_conversation": "Them: first message\\nYou: your reply\\nThem: their next message\\nYou: your reply\\nThem: latest message they need to reply to",
+  "last_received": "the last received message text only",
+  "message_count": 5,
   "confidence": "high" | "medium" | "low",
   "platform": "imessage" | "whatsapp" | "instagram" | "tinder" | "snapchat" | "twitter" | "other" | "unknown",
   "error": null
 }
 
-If you cannot extract a message:
+If you cannot extract messages:
 {
-  "extracted_text": null,
+  "full_conversation": null,
+  "last_received": null,
+  "message_count": 0,
   "confidence": "none",
   "platform": "unknown",
   "error": "Brief explanation of why extraction failed"
@@ -75,7 +82,7 @@ If you cannot extract a message:
           content: [
             {
               type: 'text',
-              text: 'Extract the last received message from this conversation screenshot.',
+              text: 'Extract the full conversation from this screenshot.',
             },
             {
               type: 'image_url',
@@ -88,7 +95,7 @@ If you cannot extract a message:
         },
       ],
       temperature: 0.1,
-      max_tokens: 500,
+      max_tokens: 1500,
       response_format: { type: 'json_object' },
     });
 
@@ -102,11 +109,14 @@ If you cannot extract a message:
 
     const parsed = JSON.parse(responseText);
 
-    if (parsed.error || !parsed.extracted_text) {
+    if (parsed.error || (!parsed.full_conversation && !parsed.last_received)) {
       return NextResponse.json(
         { 
-          error: parsed.error || 'Could not find a message in this image',
+          error: parsed.error || 'Could not find messages in this image',
+          full_conversation: null,
+          last_received: null,
           extracted_text: null,
+          message_count: 0,
           confidence: 'none',
           platform: parsed.platform || 'unknown',
         },
@@ -115,7 +125,10 @@ If you cannot extract a message:
     }
 
     return NextResponse.json({
-      extracted_text: parsed.extracted_text,
+      full_conversation: parsed.full_conversation || null,
+      last_received: parsed.last_received || null,
+      extracted_text: parsed.full_conversation || parsed.last_received || null,
+      message_count: parsed.message_count || 1,
       confidence: parsed.confidence || 'medium',
       platform: parsed.platform || 'unknown',
       error: null,

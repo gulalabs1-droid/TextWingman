@@ -472,10 +472,11 @@ export default function AppPage() {
           setMessage(data.extracted_text);
           setShowExamples(false);
           setExtractedPlatform(data.platform);
+          const msgCount = data.message_count || 1;
           toast({
-            title: '📷 Message extracted!',
+            title: `📷 ${msgCount > 1 ? `${msgCount} messages extracted!` : 'Message extracted!'}`,
             description: data.confidence === 'high' 
-              ? `Got it from ${data.platform !== 'unknown' ? data.platform : 'your screenshot'}` 
+              ? `Full convo from ${data.platform !== 'unknown' ? data.platform : 'your screenshot'}` 
               : 'Check the text looks right, then hit Generate',
           });
         }
@@ -799,15 +800,15 @@ export default function AppPage() {
                   setMessage(e.target.value);
                   if (e.target.value.trim()) setShowExamples(false);
                 }}
-                placeholder="Drop their message here... we got you 💬"
-                className="w-full min-h-[130px] p-5 pb-8 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all shadow-sm hover:shadow-md focus:shadow-lg"
-                maxLength={500}
+                placeholder="Drop their message here — or upload a screenshot of the whole convo 💬"
+                className={`w-full p-5 pb-8 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all shadow-sm hover:shadow-md focus:shadow-lg ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                maxLength={2000}
                 aria-label="Message input"
               />
               <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
-                charCount > 450 ? 'text-red-500 font-semibold' : 'text-gray-400'
+                charCount > 1800 ? 'text-red-500 font-semibold' : 'text-gray-400'
               }`}>
-                {charCount}/500
+                {charCount}/2000
               </div>
             </div>
 
