@@ -20,7 +20,9 @@ function getSupabase() {
   return supabase;
 }
 
-const FREE_LIMIT = 3; // 3 free replies per day for regular users
+const FREE_LIMIT = 5; // 5 free replies per day for regular users
+const FREE_DECODE_LIMIT = 1; // 1 free decode per day
+const FREE_OPENER_LIMIT = 1; // 1 free opener per day
 const BETA_LIMIT = 20; // 20 free replies per day for FAMTEST7 beta testers
 const RESET_HOURS = 24;
 
@@ -114,6 +116,10 @@ export async function GET(request: NextRequest) {
         remaining: 999,
         limit: FREE_LIMIT,
         canGenerate: true,
+        decodeUsed: 0,
+        decodeLimit: 999,
+        openerUsed: 0,
+        openerLimit: 999,
         resetHours: RESET_HOURS,
         isPro: true,
         isAdmin,
@@ -125,38 +131,49 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Build query - for logged-in users, count BOTH user_id matches AND ip_address matches
-    // This ensures old logs (before user_id tracking) still count
-    let query = getSupabase()
-      .from('usage_logs')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', cutoffTime);
-    
-    if (userId) {
-      // Logged-in user: count only their own usage (not shared IP)
-      query = query.eq('user_id', userId);
-    } else {
-      // Anonymous: check by IP OR fingerprint (catches incognito/VPN)
-      const fp = getFingerprint(request);
-      query = query.or(`ip_address.eq.${ip},fingerprint.eq.${fp}`);
-    }
+    // Helper to build user-scoped query
+    const fp = userId ? null : getFingerprint(request);
+    const buildQuery = (action?: string) => {
+      let q = getSupabase()
+        .from('usage_logs')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', cutoffTime);
+      if (action) q = q.eq('action', action);
+      if (userId) {
+        q = q.eq('user_id', userId);
+      } else {
+        q = q.or(`ip_address.eq.${ip},fingerprint.eq.${fp}`);
+      }
+      return q;
+    };
 
-    const { count, error } = await query;
+    // Count replies, decodes, and openers in parallel
+    const [replyRes, decodeRes, openerRes] = await Promise.all([
+      buildQuery('generate_reply'),
+      buildQuery('decode'),
+      buildQuery('generate_opener'),
+    ]);
 
-    if (error) {
-      console.error('Usage check error:', error);
+    if (replyRes.error || decodeRes.error || openerRes.error) {
+      console.error('Usage check error:', replyRes.error || decodeRes.error || openerRes.error);
       return NextResponse.json({ error: 'Failed to check usage' }, { status: 500 });
     }
 
-    const usageCount = count || 0;
+    const usageCount = replyRes.count || 0;
     const remaining = Math.max(0, userLimit - usageCount);
     const canGenerate = usageCount < userLimit;
+    const decodeUsed = decodeRes.count || 0;
+    const openerUsed = openerRes.count || 0;
 
     return NextResponse.json({
       usageCount,
       remaining,
       limit: userLimit,
       canGenerate,
+      decodeUsed,
+      decodeLimit: FREE_DECODE_LIMIT,
+      openerUsed,
+      openerLimit: FREE_OPENER_LIMIT,
       resetHours: RESET_HOURS,
       isPro: false,
       isBetaTester,

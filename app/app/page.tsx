@@ -146,11 +146,14 @@ export default function AppPage() {
   const [shareMenuOpen, setShareMenuOpen] = useState<string | null>(null);
   const [vpnBlocked, setVpnBlocked] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
-  const [remainingReplies, setRemainingReplies] = useState(3);
+  const [remainingReplies, setRemainingReplies] = useState(5);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [usageLimit, setUsageLimit] = useState(3);
+  const [usageLimit, setUsageLimit] = useState(5);
   const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
-  const [v2Mode, setV2Mode] = useState(false);
+  const [decodeUsed, setDecodeUsed] = useState(0);
+  const [decodeLimit, setDecodeLimit] = useState(1);
+  const [openerUsed, setOpenerUsed] = useState(0);
+  const [openerLimit, setOpenerLimit] = useState(1);
   const [isPro, setIsPro] = useState(false);
   const [v2Meta, setV2Meta] = useState<V2Meta>(null);
   const [v2Step, setV2Step] = useState<string | null>(null);
@@ -210,8 +213,11 @@ export default function AppPage() {
           // Check if user is Pro (unlimited or has active subscription)
           if (data.isPro) {
             setIsPro(true);
-            setV2Mode(true); // V2 is default for Pro users
           }
+          if (data.decodeUsed !== undefined) setDecodeUsed(data.decodeUsed);
+          if (data.decodeLimit !== undefined) setDecodeLimit(data.decodeLimit);
+          if (data.openerUsed !== undefined) setOpenerUsed(data.openerUsed);
+          if (data.openerLimit !== undefined) setOpenerLimit(data.openerLimit);
           if (data.trialDaysLeft !== undefined && data.trialDaysLeft !== null) {
             setTrialDaysLeft(data.trialDaysLeft);
           }
@@ -579,6 +585,11 @@ export default function AppPage() {
       toast({ title: 'No message to decode', description: 'Paste or type a message first', variant: 'destructive' });
       return;
     }
+    if (!isPro && decodeUsed >= decodeLimit) {
+      setShowPaywall(true);
+      toast({ title: '🔒 Daily decode used', description: 'Upgrade to Pro for unlimited decodes', variant: 'destructive' });
+      return;
+    }
     setDecoding(true);
     setDecodeResult(null);
     try {
@@ -588,11 +599,18 @@ export default function AppPage() {
         body: JSON.stringify({ message: message.trim(), context: selectedContext || 'crush' }),
       });
       const data = await res.json();
+      if (res.status === 429) {
+        setShowPaywall(true);
+        toast({ title: '🔒 Daily decode used', description: 'Upgrade to Pro for unlimited decodes', variant: 'destructive' });
+        setDecodeUsed(decodeLimit);
+        return;
+      }
       if (data.error && !data.intent) {
         toast({ title: 'Decode failed', description: data.error, variant: 'destructive' });
         return;
       }
       setDecodeResult(data);
+      setDecodeUsed(prev => prev + 1);
     } catch {
       toast({ title: 'Decode failed', description: 'Please try again', variant: 'destructive' });
     } finally {
@@ -602,6 +620,11 @@ export default function AppPage() {
 
   // Generate opening lines
   const handleGenerateOpeners = async () => {
+    if (!isPro && openerUsed >= openerLimit) {
+      setShowPaywall(true);
+      toast({ title: '🔒 Daily opener used', description: 'Upgrade to Pro for unlimited openers', variant: 'destructive' });
+      return;
+    }
     setLoadingOpeners(true);
     setOpeners([]);
     try {
@@ -614,11 +637,18 @@ export default function AppPage() {
         }),
       });
       const data = await res.json();
+      if (res.status === 429) {
+        setShowPaywall(true);
+        toast({ title: '🔒 Daily opener used', description: 'Upgrade to Pro for unlimited openers', variant: 'destructive' });
+        setOpenerUsed(openerLimit);
+        return;
+      }
       if (data.error) {
         toast({ title: 'Failed to generate openers', description: data.error, variant: 'destructive' });
         return;
       }
       setOpeners(data.openers || []);
+      setOpenerUsed(prev => prev + 1);
       toast({ title: '✨ Openers ready!', description: 'Pick your favorite and send it' });
     } catch {
       toast({ title: 'Failed to generate openers', description: 'Please try again', variant: 'destructive' });
@@ -1265,13 +1295,24 @@ export default function AppPage() {
                   )}
                 </Button>
                 <Button
-                  onClick={() => { fetchThreads(); setShowThreads(!showThreads); }}
+                  onClick={() => {
+                    if (!isPro) {
+                      setShowPaywall(true);
+                      toast({ title: '🔒 Saved Threads is Pro', description: 'Upgrade to save and revisit conversations' });
+                      return;
+                    }
+                    fetchThreads(); setShowThreads(!showThreads);
+                  }}
                   variant="outline"
-                  className="h-14 rounded-2xl font-bold border-2 border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-800 transition-all active:scale-95"
+                  className={`h-14 rounded-2xl font-bold border-2 transition-all active:scale-95 ${
+                    isPro
+                      ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-800'
+                      : 'border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-500'
+                  }`}
                   size="lg"
                 >
-                  <BookmarkPlus className="h-5 w-5" />
-                  <span className="hidden sm:inline ml-1">Save</span>
+                  {isPro ? <BookmarkPlus className="h-5 w-5" /> : <Lock className="h-4 w-4" />}
+                  <span className="hidden sm:inline ml-1">{isPro ? 'Save' : 'Pro'}</span>
                 </Button>
               </div>
               {/* Active thread indicator */}
@@ -1393,16 +1434,27 @@ export default function AppPage() {
 
             <Button
               onClick={handleDecode}
-              disabled={decoding || !message.trim()}
-              className="w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700"
+              disabled={decoding || !message.trim() || (!isPro && decodeUsed >= decodeLimit)}
+              className={`w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 ${
+                !isPro && decodeUsed >= decodeLimit
+                  ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                  : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700'
+              }`}
               size="lg"
             >
               {decoding ? (
                 <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Decoding...</>
+              ) : !isPro && decodeUsed >= decodeLimit ? (
+                <><Lock className="mr-2 h-5 w-5" /> Decode Used — Upgrade</>
               ) : (
                 <><Brain className="mr-2 h-5 w-5" /> Decode Message</>
               )}
             </Button>
+            {!isPro && (
+              <p className="text-center text-xs text-gray-500 font-medium">
+                {decodeUsed >= decodeLimit ? '0' : `${decodeLimit - decodeUsed}`}/{decodeLimit} free decode{decodeLimit === 1 ? '' : 's'} remaining today
+              </p>
+            )}
             </>)}
 
             {/* ===== OPENER MODE ===== */}
@@ -1443,16 +1495,27 @@ export default function AppPage() {
             </div>
             <Button
               onClick={handleGenerateOpeners}
-              disabled={loadingOpeners}
-              className="w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 hover:from-pink-600 hover:via-rose-600 hover:to-orange-600"
+              disabled={loadingOpeners || (!isPro && openerUsed >= openerLimit)}
+              className={`w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 ${
+                !isPro && openerUsed >= openerLimit
+                  ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                  : 'bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 hover:from-pink-600 hover:via-rose-600 hover:to-orange-600'
+              }`}
               size="lg"
             >
               {loadingOpeners ? (
                 <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Crafting openers...</>
+              ) : !isPro && openerUsed >= openerLimit ? (
+                <><Lock className="mr-2 h-5 w-5" /> Opener Used — Upgrade</>
               ) : (
                 <><Send className="mr-2 h-5 w-5" /> Generate Openers</>
               )}
             </Button>
+            {!isPro && (
+              <p className="text-center text-xs text-gray-500 font-medium">
+                {openerUsed >= openerLimit ? '0' : `${openerLimit - openerUsed}`}/{openerLimit} free opener{openerLimit === 1 ? '' : 's'} remaining today
+              </p>
+            )}
             </>)}
           </CardContent>
         </Card>

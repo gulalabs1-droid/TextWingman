@@ -1,9 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
+import crypto from 'crypto';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+const FREE_DECODE_LIMIT = 1;
+const RESET_HOURS = 24;
+
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+function getClientIP(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) return forwardedFor.split(',')[0].trim();
+  return request.headers.get('x-real-ip') || '127.0.0.1';
+}
+
+function getFingerprint(request: NextRequest): string {
+  const ua = request.headers.get('user-agent') || '';
+  const lang = request.headers.get('accept-language') || '';
+  return crypto.createHash('sha256').update(`${ua}-${lang}`).digest('hex').substring(0, 32);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +40,44 @@ export async function POST(request: NextRequest) {
         { error: 'A message is required' },
         { status: 400 }
       );
+    }
+
+    // --- Usage gating ---
+    const ip = getClientIP(request);
+    const fingerprint = getFingerprint(request);
+    const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
+    const serverSupabase = await createServerClient();
+    const { data: { user } } = await serverSupabase.auth.getUser();
+    const userId = user?.id || null;
+    let isPro = false;
+
+    if (userId && user?.email) {
+      await ensureAdminAccess(userId, user.email);
+      const entitlement = await getUserTier(userId, user.email);
+      isPro = hasPro(entitlement.tier);
+    }
+
+    const admin = getSupabaseAdmin();
+    if (!isPro && admin) {
+      let countQuery = admin
+        .from('usage_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('action', 'decode')
+        .gte('created_at', cutoffTime);
+
+      if (userId) {
+        countQuery = countQuery.eq('user_id', userId);
+      } else {
+        countQuery = countQuery.or(`ip_address.eq.${ip},fingerprint.eq.${fingerprint}`);
+      }
+
+      const { count } = await countQuery;
+      if ((count || 0) >= FREE_DECODE_LIMIT) {
+        return NextResponse.json(
+          { error: 'decode_limit_reached', message: 'Free decode limit reached. Upgrade to Pro for unlimited decodes.' },
+          { status: 429 }
+        );
+      }
     }
 
     const contextLabel = context || 'general';
@@ -66,6 +130,17 @@ Rules:
     }
 
     const parsed = JSON.parse(responseText);
+
+    // Log usage after successful decode
+    if (admin) {
+      await admin.from('usage_logs').insert({
+        ip_address: ip,
+        user_id: userId,
+        user_agent: request.headers.get('user-agent') || 'unknown',
+        action: 'decode',
+        fingerprint,
+      });
+    }
 
     return NextResponse.json({
       intent: parsed.intent || 'Could not determine intent',

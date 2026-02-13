@@ -5,7 +5,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 import crypto from 'crypto';
 
-const FREE_USAGE_LIMIT = 3; // Matches homepage pricing: 3 free replies per day
+const FREE_USAGE_LIMIT = 5; // 5 free replies per day
 
 // Use service role key to bypass RLS for usage tracking
 function getSupabaseAdmin() {

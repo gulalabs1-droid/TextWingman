@@ -45,7 +45,7 @@ export default function HomePage() {
               Stop overthinking. Start sending. Paste a message or screenshot — get verified replies in seconds.
             </p>
             <p className="text-sm text-white/40 font-medium">
-              Free. No card. 3 replies per day.
+              Free. No card. 5 replies + decode + opener every day.
             </p>
           </div>
 
@@ -296,7 +296,7 @@ export default function HomePage() {
             <CardHeader className="pb-8 pt-8 bg-gradient-to-br from-gray-50 to-white">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-gray-900">Free</CardTitle>
-                <CardDescription className="text-base text-gray-600">Try it out</CardDescription>
+                <CardDescription className="text-base text-gray-600">Get a real taste</CardDescription>
               </div>
               <div className="mt-6 mb-2">
                 <span className="text-5xl font-black text-gray-900">$0</span>
@@ -308,31 +308,37 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">3 replies per day</span>
+                  <span className="text-gray-700 font-medium">5 replies per day</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">All 3 tones</span>
+                  <span className="text-gray-700 font-medium">1 message decode per day</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-green-600" />
                   </div>
-                  <span className="text-gray-700 font-medium">Basic context selection</span>
+                  <span className="text-gray-700 font-medium">1 opener per day</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Check className="h-4 w-4 text-green-600" />
+                  </div>
+                  <span className="text-gray-700 font-medium">Screenshot upload</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <X className="h-4 w-4 text-gray-400" />
                   </div>
-                  <span className="text-gray-400 font-medium">All tone modes</span>
+                  <span className="text-gray-400 font-medium">V2 Verified replies</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <X className="h-4 w-4 text-gray-400" />
                   </div>
-                  <span className="text-gray-400 font-medium">Share cards</span>
+                  <span className="text-gray-400 font-medium">Saved threads</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-12 text-base font-bold rounded-xl shadow-lg hover:shadow-xl transition-all" variant="outline">
@@ -342,7 +348,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Pro Monthly - Highlighted */}
+          {/* Pro Weekly - Highlighted */}
           <Card className="relative overflow-visible bg-gradient-to-br from-purple-600 to-indigo-600 border-0 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 rounded-3xl">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-purple-700 px-6 py-2 rounded-full text-sm font-black shadow-xl whitespace-nowrap">
               MOST POPULAR
@@ -350,7 +356,7 @@ export default function HomePage() {
             <CardHeader className="pb-8 pt-12">
               <div className="space-y-2">
                 <CardTitle className="text-2xl font-bold text-white">Pro Weekly</CardTitle>
-                <CardDescription className="text-base text-purple-100">Unlimited replies, all features</CardDescription>
+                <CardDescription className="text-base text-purple-100">Unlimited everything</CardDescription>
               </div>
               <div className="mt-6 mb-2 flex items-end gap-2">
                 <span className="text-5xl font-black text-white">$9.99</span>
@@ -369,25 +375,25 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">All tone modes</span>
+                  <span className="text-white font-bold">Unlimited decodes</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">Best output formatting (A/B/C)</span>
+                  <span className="text-white font-bold">Unlimited openers</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-white font-medium">Share cards</span>
+                  <span className="text-white font-medium">Saved threads</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-green-400/30 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Sparkles className="h-4 w-4 text-green-200" />
                   </div>
-                  <span className="text-green-200 font-bold">V2 Verified Mode included</span>
+                  <span className="text-green-200 font-bold">V2 Verified — always on</span>
                 </li>
               </ul>
               <Button asChild className="w-full h-14 text-lg font-black rounded-xl bg-white text-purple-700 hover:bg-gray-100 shadow-2xl hover:shadow-purple-900/30 hover:scale-105 transition-all">

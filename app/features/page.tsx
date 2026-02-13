@@ -8,13 +8,13 @@ import { CURRENT_VERSION } from '@/lib/changelog';
 const FEATURES = [
   {
     id: 'reply-generator',
-    badge: 'Core',
+    badge: 'Free',
     badgeColor: 'bg-purple-500',
     icon: MessageCircle,
     iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
     title: 'Reply Generator',
     tagline: 'Paste their message. Get 3 perfect replies.',
-    description: 'Drop any text message into Text Wingman and instantly get three reply options — Shorter (brief & casual), Spicier (playful & flirty), and Softer (warm & genuine). Each reply is crafted to match the context and vibe of the conversation.',
+    description: 'Drop any text message into Text Wingman and instantly get three reply options — Shorter (brief & casual), Spicier (playful & flirty), and Softer (warm & genuine). Free users get 5 replies per day. Pro users get unlimited.',
     howItWorks: [
       'Paste the message you received',
       'Pick the context (crush, friend, work, etc.)',
@@ -32,13 +32,13 @@ const FEATURES = [
   },
   {
     id: 'decoder',
-    badge: 'New',
+    badge: 'Free',
     badgeColor: 'bg-amber-500',
     icon: Brain,
     iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
     title: 'Message Decoder',
     tagline: '"What do they actually mean?"',
-    description: 'Ever stare at a text wondering what they really mean? The Decoder analyzes the subtext, intent, and emotional energy behind any message. It catches things you might miss — like whether they\'re testing you, pulling away, or genuinely interested.',
+    description: 'Ever stare at a text wondering what they really mean? The Decoder analyzes the subtext, intent, and emotional energy behind any message. Free users get 1 decode per day. Pro users get unlimited.',
     howItWorks: [
       'Paste a message (or full conversation thread)',
       'Hit the 🧠 Decode button',
@@ -56,13 +56,13 @@ const FEATURES = [
   },
   {
     id: 'opener',
-    badge: 'New',
+    badge: 'Free',
     badgeColor: 'bg-pink-500',
     icon: Send,
     iconBg: 'bg-gradient-to-br from-pink-500 to-rose-600',
     title: 'Opening Line Generator',
     tagline: 'Start conversations that actually go somewhere.',
-    description: 'Don\'t know what to say first? Switch to Opener Mode and get three conversation starters tailored to the situation — whether it\'s a dating app match, an Instagram DM, or someone you just met. Each opener has a different energy: Bold, Witty, or Warm.',
+    description: 'Don\'t know what to say first? Switch to Opener Mode and get three conversation starters tailored to the situation. Free users get 1 opener per day. Pro users get unlimited.',
     howItWorks: [
       'Switch to Opener Mode at the top',
       'Pick the situation (Dating App, Instagram, Cold Text, etc.)',
@@ -80,13 +80,13 @@ const FEATURES = [
   },
   {
     id: 'saved-threads',
-    badge: 'New',
+    badge: 'Pro',
     badgeColor: 'bg-blue-500',
     icon: BookmarkCheck,
     iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-600',
     title: 'Saved Threads',
     tagline: 'Never lose context. Pick up where you left off.',
-    description: 'Name and save ongoing conversations so you can come back anytime. When you load a saved thread, the AI remembers the full context — so your replies stay consistent and natural across the whole conversation arc.',
+    description: 'Name and save ongoing conversations so you can come back anytime. When you load a saved thread, the AI remembers the full context — so your replies stay consistent and natural across the whole conversation arc. Pro feature.',
     howItWorks: [
       'Paste or upload a conversation',
       'Hit the 📑 Save button and name it (e.g., "Sarah 🔥")',
@@ -97,13 +97,13 @@ const FEATURES = [
   },
   {
     id: 'screenshot',
-    badge: 'New',
+    badge: 'Free',
     badgeColor: 'bg-green-500',
     icon: Camera,
     iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
     title: 'Screenshot Upload',
     tagline: 'Screenshot it. We\'ll read it.',
-    description: 'Take a screenshot of any conversation — iMessage, WhatsApp, Instagram, Tinder, Bumble, Hinge — and upload it. Our AI reads the entire thread, identifies who said what, and fills it in automatically. No copy-pasting between apps.',
+    description: 'Take a screenshot of any conversation — iMessage, WhatsApp, Instagram, Tinder, Bumble, Hinge — and upload it. Our AI reads the entire thread, identifies who said what, and fills it in automatically. Free for everyone.',
     howItWorks: [
       'Screenshot any conversation on your phone',
       'Tap Upload Screenshot in the app',
@@ -122,7 +122,7 @@ const FEATURES = [
     tagline: '3-agent pipeline. Every reply verified before you see it.',
     description: 'V2 Mode runs every reply through a 3-step AI pipeline: Draft → Rule-Check (≤18 words, no emojis, no needy text) → Tone-Verify. If a reply fails any check, it gets auto-revised up to 2 times. You only see replies that passed all checks.',
     howItWorks: [
-      'Toggle V2 Verified Mode on (Pro feature)',
+      'Always on for Pro users (no toggle needed)',
       'Agent 1 drafts three replies',
       'Agent 2 checks rules: word count, no emojis, no desperate language',
       'Agent 3 verifies each reply matches the selected tone',
