@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Lock, Camera, X, ImageIcon } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { CURRENT_VERSION } from '@/lib/changelog';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -638,9 +639,14 @@ export default function AppPage() {
               Back
             </Link>
           </Button>
-          <Link href="/" className="transition-transform hover:scale-105">
-            <Logo size="sm" showText={true} />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="transition-transform hover:scale-105">
+              <Logo size="sm" showText={true} />
+            </Link>
+            <Link href="/changelog" className="px-1.5 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-[10px] font-bold text-white/60 hover:text-white/90 transition-all">
+              v{CURRENT_VERSION}
+            </Link>
+          </div>
           <Button asChild variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all">
             <Link href="/profile">
               <Crown className="h-4 w-4 mr-2" />

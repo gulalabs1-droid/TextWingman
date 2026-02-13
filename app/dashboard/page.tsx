@@ -5,7 +5,8 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import SignOutButton from './sign-out-button'
 import FeedbackSection from './feedback-section'
 import ManageSubscriptionButton from './manage-subscription-button'
-import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle, User, Shield } from 'lucide-react'
+import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, CreditCard, Lock, AlertCircle, User, Shield, Megaphone } from 'lucide-react'
+import { LATEST_UPDATE, CURRENT_VERSION, TYPE_CONFIG } from '@/lib/changelog'
 import { isAdminEmail } from '@/lib/isAdmin'
 
 export default async function DashboardPage() {
@@ -496,6 +497,27 @@ export default async function DashboardPage() {
               </div>
             </div>
           )}
+
+          {/* What's New Widget */}
+          <Link 
+            href="/changelog"
+            className="block bg-gradient-to-r from-orange-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl border border-orange-500/20 p-5 hover:bg-white/10 transition-all group"
+          >
+            <div className="flex items-start gap-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${TYPE_CONFIG[LATEST_UPDATE.type].bg} border ${TYPE_CONFIG[LATEST_UPDATE.type].border}`}>
+                <Megaphone className="h-5 w-5 text-orange-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-xs font-bold text-orange-400">v{CURRENT_VERSION}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white">NEW</span>
+                </div>
+                <h3 className="font-bold text-white text-sm group-hover:text-orange-300 transition-colors truncate">{LATEST_UPDATE.title}</h3>
+                <p className="text-xs text-white/50 mt-0.5 line-clamp-1">{LATEST_UPDATE.description}</p>
+              </div>
+              <span className="text-white/30 group-hover:text-white/60 text-sm shrink-0 mt-1 transition-colors">View all →</span>
+            </div>
+          </Link>
 
           {/* Locked Features Teaser - for free users */}
           {userProfile.subscription_status === 'free' && (
