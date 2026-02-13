@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap } from "lucide-react";
+import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, ChevronRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export default function HomePage() {
@@ -31,38 +31,87 @@ export default function HomePage() {
       </nav>
 
       {/* ═══════════════════════════════════════ */}
-      {/* 1. HERO — Action-Focused              */}
+      {/* 1. HERO — Outcome-Focused             */}
       {/* ═══════════════════════════════════════ */}
-      <section className="container mx-auto px-4 pt-12 pb-20 md:pt-20 md:pb-28 text-center">
-        <div className="max-w-3xl mx-auto space-y-6 md:space-y-8">
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
-            Never Text Alone
-            <span className="block bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent mt-2">Again</span>
-          </h1>
-          
-          <p className="text-lg md:text-xl text-white/70 max-w-xl mx-auto">
-            Paste any message. Get 3 perfect replies. Every reply is verified before you see it.
-          </p>
-          
-          {/* Paste Box CTA */}
-          <div className="max-w-lg mx-auto pt-2">
+      <section className="container mx-auto px-4 pt-12 pb-16 md:pt-20 md:pb-24">
+        <div className="max-w-4xl mx-auto">
+          {/* Headline + Sub */}
+          <div className="text-center space-y-5 mb-12 md:mb-16">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
+              Win Every
+              <span className="block bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent mt-1">Text.</span>
+            </h1>
+            <p className="text-lg md:text-xl text-white/60 max-w-lg mx-auto">
+              Stop overthinking. Start sending. Paste a message or screenshot — get verified replies in seconds.
+            </p>
+            <p className="text-sm text-white/40 font-medium">
+              Free. No card. 3 replies per day.
+            </p>
+          </div>
+
+          {/* Live Demo Flow Visual */}
+          <div className="max-w-3xl mx-auto">
             <Link href="/app" className="block group">
-              <div className="bg-white/10 backdrop-blur border-2 border-white/20 hover:border-purple-400 rounded-2xl p-5 transition-all duration-300 hover:bg-white/15 group-hover:shadow-xl group-hover:shadow-purple-500/20">
-                <p className="text-white/40 text-left text-sm sm:text-base mb-4">Paste the last message they sent...</p>
-                <div className="flex justify-end">
-                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg group-hover:scale-105 transition-transform">
-                    Generate 3 Replies
-                    <Sparkles className="h-4 w-4" />
+              <div className="bg-white/[0.06] backdrop-blur border border-white/10 rounded-3xl p-5 sm:p-8 hover:bg-white/[0.09] transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-purple-500/10 group-hover:border-white/20">
+                {/* Step Flow */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-3 mb-6">
+                  {/* Step 1: Input */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                        <Camera className="h-3.5 w-3.5 text-purple-300" />
+                      </div>
+                      <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider">Input</span>
+                    </div>
+                    <div className="bg-gray-800/60 rounded-xl p-3">
+                      <p className="text-white/80 text-sm">&ldquo;lol ok well lmk&rdquo;</p>
+                    </div>
+                  </div>
+                  {/* Step 2: Decode */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2.5 relative">
+                    <div className="absolute -left-2 top-1/2 -translate-y-1/2 hidden md:block">
+                      <ChevronRight className="h-4 w-4 text-white/20" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                        <Brain className="h-3.5 w-3.5 text-amber-300" />
+                      </div>
+                      <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider">Decode</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-amber-200/80 text-xs">They&apos;re pulling away.</p>
+                      <p className="text-white/50 text-xs">Fading interest — last chance energy.</p>
+                    </div>
+                  </div>
+                  {/* Step 3: Replies */}
+                  <div className="bg-white/5 border border-green-500/10 rounded-2xl p-4 space-y-2.5 relative">
+                    <div className="absolute -left-2 top-1/2 -translate-y-1/2 hidden md:block">
+                      <ChevronRight className="h-4 w-4 text-white/20" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-green-500/20 flex items-center justify-center">
+                        <Shield className="h-3.5 w-3.5 text-green-300" />
+                      </div>
+                      <span className="text-[11px] font-bold text-white/40 uppercase tracking-wider">Verified</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-green-200/90 text-xs">&ldquo;let&apos;s do friday, 8pm&rdquo;</p>
+                      <p className="text-green-200/90 text-xs">&ldquo;i got something better in mind&rdquo;</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA Row */}
+                <div className="flex items-center justify-between">
+                  <p className="text-white/30 text-xs sm:text-sm">Paste a message, upload a screenshot, or type a situation</p>
+                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg group-hover:scale-105 transition-transform shrink-0 ml-4">
+                    Try Free
+                    <ArrowRight className="h-4 w-4" />
                   </div>
                 </div>
               </div>
             </Link>
           </div>
-
-          {/* One trust line */}
-          <p className="text-sm text-white/50 font-medium">
-            Free. No card. 3 replies per day.
-          </p>
         </div>
       </section>
 

@@ -93,7 +93,7 @@ type SavedThread = {
   last_message: any;
 };
 
-type AppMode = 'reply' | 'opener';
+type AppMode = 'reply' | 'decode' | 'opener';
 
 const OPENER_CONTEXTS = [
   { value: 'dating-app', label: 'Dating App', emoji: '💘', description: 'Tinder, Hinge, Bumble' },
@@ -296,10 +296,10 @@ export default function AppPage() {
     
     try {
       // Use V2 API if enabled (Pro-only)
-      const endpoint = v2Mode && isPro ? '/api/generate-v2' : '/api/generate';
+      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
       
       // Show progress steps for V2
-      if (v2Mode && isPro) {
+      if (isPro) {
         setV2Step('drafting');
         await new Promise(r => setTimeout(r, 800));
         setV2Step('rule-checking');
@@ -333,7 +333,7 @@ export default function AppPage() {
       }
       
       // Handle V2 response format
-      if (v2Mode && isPro && data.shorter && data.spicier && data.softer) {
+      if (isPro && data.shorter && data.spicier && data.softer) {
         const v2Replies: Reply[] = [
           { tone: 'shorter', text: data.shorter },
           { tone: 'spicier', text: data.spicier },
@@ -371,8 +371,8 @@ export default function AppPage() {
       setTimeout(() => setShowCraftedMessage(false), 3000);
 
       toast({
-        title: v2Mode && isPro ? "✅ Verified replies ready!" : "✨ Replies generated!",
-        description: v2Mode && isPro ? "3-agent verified • Safe to send" : "Pick your favorite and copy it",
+        title: isPro ? "✅ Verified replies ready!" : "✨ Replies generated!",
+        description: isPro ? "3-agent verified • Safe to send" : "Pick your favorite and copy it",
       });
     } catch (error) {
       console.error('Generation error:', error);
@@ -392,15 +392,15 @@ export default function AppPage() {
       await navigator.clipboard.writeText(text);
       setCopied(tone);
       toast({
-        title: v2Mode && isPro ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
-        description: v2Mode && isPro ? "Safe to send — paste it now" : "Paste it into your chat app",
+        title: isPro ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
+        description: isPro ? "Safe to send — paste it now" : "Paste it into your chat app",
       });
       
       // Log which tone was copied (for personalization data)
       fetch('/api/log-copy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tone, isV2: v2Mode && isPro }),
+        body: JSON.stringify({ tone, isV2: isPro }),
       }).catch(() => {}); // Fire and forget
       
       setTimeout(() => setCopied(null), 2000);
@@ -888,21 +888,11 @@ export default function AppPage() {
 
         {/* Pro Status Badge - Compact */}
         {isPro && (
-          <div className={`mb-4 px-4 py-2.5 rounded-xl backdrop-blur border flex items-center justify-center gap-2 ${
-            v2Mode 
-              ? 'bg-green-500/10 border-green-500/20' 
-              : 'bg-purple-500/10 border-purple-500/20'
-          }`}>
-            {v2Mode ? <Shield className="h-4 w-4 text-green-400" /> : <Sparkles className="h-4 w-4 text-purple-400" />}
-            <span className={`text-xs font-semibold ${v2Mode ? 'text-green-300' : 'text-purple-300'}`}>
-              {v2Mode ? 'V2 Verified Mode' : 'Pro Member'}
-            </span>
-            {v2Mode && (
-              <>
-                <span className="text-white/20">·</span>
-                <span className="text-xs text-green-400/70">≤18 words · No emojis</span>
-              </>
-            )}
+          <div className="mb-4 px-4 py-2.5 rounded-xl backdrop-blur border flex items-center justify-center gap-2 bg-green-500/10 border-green-500/20">
+            <Shield className="h-4 w-4 text-green-400" />
+            <span className="text-xs font-semibold text-green-300">V2 Verified</span>
+            <span className="text-white/20">·</span>
+            <span className="text-xs text-green-400/70">≤18 words · No emojis · Tone-checked</span>
           </div>
         )}
 
@@ -975,7 +965,7 @@ export default function AppPage() {
         {/* Input Section */}
         <Card className="mb-8 bg-white/95 backdrop-blur-xl border-0 shadow-2xl hover:shadow-purple-500/20 rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1">
           <CardHeader className="pb-4 pt-6 bg-gradient-to-br from-purple-50 to-white">
-            {/* Mode Toggle */}
+            {/* Mode Tabs */}
             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-3">
               <button
                 onClick={() => { setAppMode('reply'); setOpeners([]); }}
@@ -983,8 +973,17 @@ export default function AppPage() {
                   appMode === 'reply' ? 'bg-white text-purple-700 shadow-md' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <MessageCircle className="h-4 w-4" />
-                Reply Mode
+                <MessageCircle className="h-3.5 w-3.5" />
+                Reply
+              </button>
+              <button
+                onClick={() => { setAppMode('decode'); setReplies([]); setOpeners([]); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-bold transition-all ${
+                  appMode === 'decode' ? 'bg-white text-amber-700 shadow-md' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Brain className="h-3.5 w-3.5" />
+                Decode
               </button>
               <button
                 onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); }}
@@ -992,17 +991,24 @@ export default function AppPage() {
                   appMode === 'opener' ? 'bg-white text-pink-700 shadow-md' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <Send className="h-4 w-4" />
-                Opener Mode
+                <Send className="h-3.5 w-3.5" />
+                Opener
               </button>
             </div>
             <CardTitle className="text-xl font-bold flex items-center gap-2">
-              {appMode === 'reply' ? (
+              {appMode === 'reply' && (
                 <>
                   <MessageCircle className="h-5 w-5 text-purple-600 animate-bounce" />
                   What&apos;d they say? Drop it here 👇
                 </>
-              ) : (
+              )}
+              {appMode === 'decode' && (
+                <>
+                  <Brain className="h-5 w-5 text-amber-600 animate-bounce" />
+                  What do they really mean? 🧠
+                </>
+              )}
+              {appMode === 'opener' && (
                 <>
                   <Send className="h-5 w-5 text-pink-600 animate-bounce" />
                   Start the conversation 💬
@@ -1010,9 +1016,9 @@ export default function AppPage() {
               )}
             </CardTitle>
             <CardDescription className="text-sm text-gray-600 font-medium">
-              {appMode === 'reply' 
-                ? 'Wing it like a pro — paste the text and we\'ll handle the rest ✨'
-                : 'Generate the perfect opening line for any situation ✨'}
+              {appMode === 'reply' && 'Paste the text and we\'ll handle the rest ✨'}
+              {appMode === 'decode' && 'Paste any message — we\'ll reveal the intent, subtext, and flags 🔍'}
+              {appMode === 'opener' && 'Generate the perfect opening line for any situation ✨'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-6 pb-6">
@@ -1200,59 +1206,42 @@ export default function AppPage() {
               </div>
             )}
 
-            {/* V2 Toggle - Show to all users */}
-            <div className={`flex items-center justify-between p-3 rounded-xl border-2 ${
-              isPro 
-                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' 
-                : 'bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200'
-            }`}>
-              <div className="flex items-center gap-2">
-                <Shield className={`h-5 w-5 ${isPro ? 'text-green-600' : 'text-purple-600'}`} />
-                <div>
-                  <p className={`text-sm font-bold ${isPro ? 'text-green-800' : 'text-purple-800'}`}>
-                    V2 Verified Mode {!isPro && <span className="text-xs font-normal text-purple-500">(Pro)</span>}
-                  </p>
-                  <p className={`text-xs ${isPro ? 'text-green-600' : 'text-purple-500'}`}>
-                    3-agent pipeline • ≤18 words • No emojis • Tone-verified
-                  </p>
+            {/* V2 Verified Badge — always on for Pro, upgrade prompt for free */}
+            {isPro ? (
+              <div className="flex items-center gap-2 p-3 rounded-xl border-2 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                <Shield className="h-5 w-5 text-green-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-green-800">V2 Verified — Always On</p>
+                  <p className="text-xs text-green-600">≤18 words • No emojis • Tone-verified</p>
                 </div>
+                <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full">Active</span>
               </div>
+            ) : (
               <button
                 onClick={() => {
-                  if (isPro) {
-                    setV2Mode(!v2Mode);
-                  } else {
-                    setShowPaywall(true);
-                    toast({
-                      title: "🔒 V2 is Pro-only",
-                      description: "Upgrade to unlock 3-agent verified replies",
-                    });
-                  }
+                  setShowPaywall(true);
+                  toast({ title: "🔒 V2 is Pro-only", description: "Upgrade to unlock 3-agent verified replies" });
                 }}
-                className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
-                  v2Mode && isPro ? 'bg-green-500' : isPro ? 'bg-gray-300' : 'bg-purple-300'
-                }`}
+                className="flex items-center gap-2 p-3 rounded-xl border-2 bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200 w-full text-left hover:border-purple-300 transition-colors"
               >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
-                    v2Mode && isPro ? 'translate-x-6' : 'translate-x-0'
-                  }`}
-                />
-                {!isPro && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
-                    <Lock className="h-2.5 w-2.5 text-white" />
-                  </span>
-                )}
+                <Shield className="h-5 w-5 text-purple-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-purple-800">V2 Verified Mode <span className="text-xs font-normal text-purple-500">(Pro)</span></p>
+                  <p className="text-xs text-purple-500">3-agent pipeline • ≤18 words • Tone-verified</p>
+                </div>
+                <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <Lock className="h-3 w-3" /> Upgrade
+                </span>
               </button>
-            </div>
+            )}
 
             <div className="space-y-3">
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   onClick={handleGenerate}
                   disabled={loading || !message.trim()}
                   className={`col-span-2 h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    v2Mode && isPro
+                    isPro
                       ? 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
                       : 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-700'
                   }`}
@@ -1261,7 +1250,7 @@ export default function AppPage() {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      {v2Mode && isPro ? (
+                      {isPro ? (
                         v2Step === 'drafting' ? 'Drafting...' :
                         v2Step === 'rule-checking' ? 'Checking...' :
                         v2Step === 'tone-verifying' ? 'Verifying...' :
@@ -1270,20 +1259,10 @@ export default function AppPage() {
                     </>
                   ) : (
                     <>
-                      {v2Mode && isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                      {v2Mode && isPro ? 'V2 Replies' : 'Generate'}
+                      {isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                      {isPro ? 'Generate Verified' : 'Generate'}
                     </>
                   )}
-                </Button>
-                <Button
-                  onClick={handleDecode}
-                  disabled={decoding || !message.trim()}
-                  variant="outline"
-                  className="h-14 rounded-2xl font-bold border-2 border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 transition-all active:scale-95 disabled:opacity-50"
-                  size="lg"
-                >
-                  {decoding ? <Loader2 className="h-5 w-5 animate-spin" /> : <Brain className="h-5 w-5" />}
-                  <span className="hidden sm:inline ml-1">Decode</span>
                 </Button>
                 <Button
                   onClick={() => { fetchThreads(); setShowThreads(!showThreads); }}
@@ -1351,6 +1330,79 @@ export default function AppPage() {
                 )}
               </div>
             )}
+            </>)}
+
+            {/* ===== DECODE MODE ===== */}
+            {appMode === 'decode' && (<>
+            <div className="relative">
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Paste their message here — what did they really mean? 🧠"
+                className={`w-full p-5 pb-8 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-300 transition-all shadow-sm hover:shadow-md focus:shadow-lg ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                maxLength={2000}
+                aria-label="Message to decode"
+              />
+              <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
+                charCount > 1800 ? 'text-red-500 font-semibold' : 'text-gray-400'
+              }`}>
+                {charCount}/2000
+              </div>
+            </div>
+
+            {/* Screenshot Upload for Decode */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              onChange={handleScreenshotUpload}
+              className="hidden"
+              aria-label="Upload screenshot"
+            />
+            {screenshotPreview && (
+              <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="relative rounded-2xl overflow-hidden border-2 border-amber-300 bg-amber-50">
+                  <img src={screenshotPreview} alt="Screenshot preview" className="w-full max-h-48 object-cover opacity-90" />
+                  {extracting && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="flex items-center gap-3 bg-white/95 rounded-2xl px-5 py-3 shadow-xl">
+                        <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                        <span className="text-sm font-bold text-amber-800">Reading screenshot...</span>
+                      </div>
+                    </div>
+                  )}
+                  {!extracting && (
+                    <button onClick={clearScreenshot} className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors">
+                      <X className="h-4 w-4 text-white" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={extracting}
+                className="flex-1 p-3 rounded-xl border-2 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/50 hover:bg-amber-50 transition-all text-amber-700 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+              >
+                <Camera className="h-4 w-4" />
+                Upload Screenshot
+              </button>
+            </div>
+
+            <Button
+              onClick={handleDecode}
+              disabled={decoding || !message.trim()}
+              className="w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700"
+              size="lg"
+            >
+              {decoding ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Decoding...</>
+              ) : (
+                <><Brain className="mr-2 h-5 w-5" /> Decode Message</>
+              )}
+            </Button>
             </>)}
 
             {/* ===== OPENER MODE ===== */}
@@ -1525,18 +1577,18 @@ export default function AppPage() {
             <div className="text-center space-y-2">
               {showCraftedMessage && (
                 <p className={`text-sm font-medium animate-in fade-in duration-300 mb-2 ${
-                  v2Mode && isPro ? 'text-green-300' : 'text-purple-300'
+                  isPro ? 'text-green-300' : 'text-purple-300'
                 }`}>
-                  {v2Mode && isPro ? '✅ 3-agent verified • Safe to send' : '✨ Crafted with care just for you 💬'}
+                  {isPro ? '✅ 3-agent verified • Safe to send' : '✨ Crafted with care just for you 💬'}
                 </p>
               )}
               <h2 className="text-2xl font-bold text-white animate-in slide-in-from-top duration-300">
-                {v2Mode && isPro ? 'Your verified replies' : 'Choose your reply'}
+                {isPro ? 'Your verified replies' : 'Choose your reply'}
               </h2>
               <p className={`text-sm animate-in fade-in duration-500 delay-100 ${
-                v2Mode && isPro ? 'text-green-200' : 'text-purple-200'
+                isPro ? 'text-green-200' : 'text-purple-200'
               }`}>
-                {v2Mode && isPro ? 'Each reply passed our 3-agent verification 🛡️' : 'Pick your favorite and copy it 👇'}
+                {isPro ? 'Each reply passed our 3-agent verification 🛡️' : 'Pick your favorite and copy it 👇'}
               </p>
             </div>
             <div className="grid gap-4">
@@ -1549,7 +1601,7 @@ export default function AppPage() {
                     key={reply.tone} 
                     style={{ animationDelay: `${idx * 150}ms` }}
                     className={`relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group active:scale-[0.98] ${
-                      v2Mode && isPro 
+                      isPro 
                         ? 'border-green-200 hover:shadow-green-500/40 hover:border-green-300' 
                         : 'hover:shadow-purple-500/40'
                     }`}
@@ -1587,7 +1639,7 @@ export default function AppPage() {
                             {reply.text ? reply.text.split(' ').length : 0} words
                           </span>
                           {/* Verified Reply Badge for Pro V2 */}
-                          {isPro && v2Mode && (
+                          {isPro && (
                             <span className="flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-full shadow-md">
                               <CheckCircle className="h-3 w-3" />
                               Verified
