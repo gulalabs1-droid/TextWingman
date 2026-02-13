@@ -253,7 +253,7 @@ export default function FeaturesPage() {
                         <feature.icon className="h-10 w-10 text-white" />
                       </div>
                       <p className="text-white/50 text-sm max-w-[240px]">{feature.tagline}</p>
-                      <Button asChild variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-xl text-sm">
+                      <Button asChild className="bg-white/10 border border-white/20 text-white hover:bg-white/20 rounded-xl text-sm">
                         <Link href="/app">See it in action →</Link>
                       </Button>
                     </div>
@@ -274,7 +274,7 @@ export default function FeaturesPage() {
             <Button asChild size="lg" className="bg-white text-black hover:bg-gray-100 rounded-xl font-bold text-lg h-14 px-8">
               <Link href="/app">Start for Free</Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 rounded-xl font-bold text-lg h-14 px-8">
+            <Button asChild size="lg" className="bg-white/10 border border-white/30 text-white hover:bg-white/20 rounded-xl font-bold text-lg h-14 px-8">
               <Link href="/#pricing">See Pricing</Link>
             </Button>
           </div>
