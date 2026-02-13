@@ -575,78 +575,62 @@ export default function ExperimentalThreadPage() {
           </div>
         )}
 
-        {/* ══════════ INPUT AREA ══════════ */}
-        <div className="mb-5">
-          <div className="rounded-3xl bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] overflow-hidden">
-            <div className="p-4 pb-3">
-              <div className="relative">
-                <textarea
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  placeholder={thread.length === 0 ? 'what did they say...' : 'their reply...'}
-                  className="w-full min-h-[90px] p-0 bg-transparent text-white/90 placeholder-white/20 resize-none focus:outline-none text-sm font-medium leading-relaxed"
-                  maxLength={2000}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
-                  }}
-                />
-              </div>
-            </div>
+        {/* ══════════ INPUT AREA — borderless ══════════ */}
+        <div className="mb-4">
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder={thread.length === 0 ? 'what did they say...' : 'their reply...'}
+            className="w-full min-h-[80px] px-1 py-2 bg-transparent text-white/90 placeholder-white/20 resize-none focus:outline-none text-[15px] font-medium leading-relaxed border-b border-white/[0.06] focus:border-violet-500/30 transition-colors"
+            maxLength={2000}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
+            }}
+          />
 
-            {/* Screenshot preview */}
-            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshot} className="hidden" />
-            {screenshotPreview && (
-              <div className="mx-4 mb-3 relative rounded-2xl overflow-hidden border border-white/10">
-                <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-28 object-cover opacity-60" />
-                {extracting && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-violet-400" />
-                      <span className="text-[11px] font-bold text-white/60">reading...</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Action bar */}
-            <div className="flex items-center gap-2 px-4 pb-4">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-10 h-10 rounded-2xl bg-white/[0.05] border border-white/[0.06] flex items-center justify-center hover:bg-white/[0.08] transition-all active:scale-90 text-white/30 hover:text-white/50"
-              >
-                <Camera className="h-4 w-4" />
-              </button>
-              <button
-                onClick={handleDecode}
-                disabled={decoding || (!input.trim() && thread.length === 0)}
-                className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center hover:bg-amber-500/20 transition-all active:scale-90 disabled:opacity-30 text-amber-400"
-              >
-                {decoding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-              </button>
-              <button
-                onClick={handleGenerate}
-                disabled={loading || !input.trim()}
-                className={`flex-1 h-10 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-30 ${
-                  isPro
-                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30'
-                    : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30'
-                }`}
-              >
-                {loading ? (
-                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /></>
-                ) : (
-                  <>{isPro ? <Shield className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />} {thread.length === 0 ? 'generate' : 'reply'}</>
-                )}
-              </button>
+          {/* Screenshot preview */}
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshot} className="hidden" />
+          {screenshotPreview && (
+            <div className="mt-3 relative rounded-2xl overflow-hidden border border-white/10">
+              <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-28 object-cover opacity-60" />
+              {extracting && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-violet-400" />
+                </div>
+              )}
             </div>
+          )}
 
-            {/* Subtle hint */}
-            <div className="px-4 pb-3 flex items-center justify-center">
-              <span className="text-white/15 text-[10px] font-medium">
-                {thread.length === 0 ? 'paste a message to start' : `⌘⏎ to send · ${thread.length} in thread`}
-              </span>
-            </div>
+          {/* Action row */}
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center hover:bg-white/[0.08] transition-all active:scale-90 text-white/25 hover:text-white/50"
+            >
+              <Camera className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleDecode}
+              disabled={decoding || (!input.trim() && thread.length === 0)}
+              className="w-9 h-9 rounded-xl bg-amber-500/8 flex items-center justify-center hover:bg-amber-500/15 transition-all active:scale-90 disabled:opacity-20 text-amber-400/70"
+            >
+              {decoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
+            </button>
+            <button
+              onClick={handleGenerate}
+              disabled={loading || !input.trim()}
+              className={`flex-1 h-9 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] disabled:opacity-20 ${
+                isPro
+                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/15'
+                  : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/15'
+              }`}
+            >
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>{isPro ? <Shield className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />} {thread.length === 0 ? 'generate' : 'reply'}</>
+              )}
+            </button>
           </div>
         </div>
 
@@ -708,102 +692,67 @@ export default function ExperimentalThreadPage() {
           </div>
         )}
 
-        {/* ══════════ REPLY CARDS ══════════ */}
+        {/* ══════════ REPLY CARDS — modern ══════════ */}
         {replies.length > 0 && (
-          <div className="space-y-3 animate-in fade-in slide-in-from-bottom-5 duration-500">
-            <div className="text-center mb-4">
-              <p className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">pick your reply</p>
-            </div>
+          <div className="space-y-2.5 animate-in fade-in duration-400">
+            <p className="text-white/15 text-[10px] font-bold uppercase tracking-[0.2em] mb-1">replies</p>
             {replies.map((reply, idx) => {
               const config = TONE_CONFIG[reply.tone];
               const isCopied = copied === reply.tone;
               return (
-                <div
+                <button
                   key={reply.tone}
-                  style={{ animationDelay: `${idx * 80}ms` }}
-                  className={`animate-in fade-in slide-in-from-bottom-3 rounded-3xl overflow-hidden transition-all duration-300 active:scale-[0.98] group ${
+                  onClick={() => handleCopy(reply)}
+                  style={{ animationDelay: `${idx * 60}ms` }}
+                  className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative rounded-2xl transition-all duration-200 active:scale-[0.98] ${
                     isCopied
-                      ? 'bg-emerald-500/10 border border-emerald-500/20 shadow-lg shadow-emerald-500/10'
-                      : `bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] hover:border-white/[0.12] hover:bg-white/[0.06] ${config.glow}`
+                      ? 'ring-1 ring-emerald-500/40'
+                      : 'hover:bg-white/[0.03]'
                   }`}
                 >
-                  {/* Gradient accent line */}
-                  <div className={`h-[2px] bg-gradient-to-r ${config.gradient} opacity-60`} />
-
-                  <div className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shadow-lg ${config.glow}`}>
-                          <span className="text-white text-xs font-black">{config.emoji}</span>
-                        </div>
-                        <div>
-                          <span className="text-white/70 text-xs font-bold">{config.label}</span>
-                          <span className="text-white/20 text-[10px] ml-2">{reply.text.split(' ').length}w</span>
-                        </div>
-                      </div>
-                      {isPro && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400/60 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/15">
-                          <Shield className="h-2.5 w-2.5" /> v2
+                  {/* Left gradient accent */}
+                  <div className="flex gap-3 p-3">
+                    <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                      isCopied ? 'opacity-100' : 'opacity-40 group-hover:opacity-70'
+                    } transition-opacity`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[11px] font-bold text-white/40">{config.emoji} {config.label}</span>
+                        <span className="text-white/15 text-[10px]">{reply.text.split(' ').length}w</span>
+                        {isPro && (
+                          <span className="text-[9px] font-bold text-emerald-500/50 bg-emerald-500/8 px-1.5 py-0.5 rounded ml-auto">
+                            v2
+                          </span>
+                        )}
+                        <span className={`ml-auto text-[10px] font-bold flex items-center gap-1 transition-all ${
+                          isCopied ? 'text-emerald-400' : 'text-white/0 group-hover:text-white/30'
+                        }`}>
+                          {isCopied ? <><Check className="h-3 w-3" /> copied</> : <><Copy className="h-3 w-3" /> tap to copy</>}
                         </span>
-                      )}
+                      </div>
+                      <p className="text-white/80 text-[13px] font-medium leading-relaxed">{reply.text}</p>
                     </div>
-
-                    <div className={`rounded-2xl ${config.darkBg} border p-4 mb-3`}>
-                      <p className="text-white/85 text-[13px] font-medium leading-relaxed">{reply.text}</p>
-                    </div>
-
-                    <button
-                      onClick={() => handleCopy(reply)}
-                      className={`w-full h-10 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
-                        isCopied
-                          ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/30'
-                          : 'bg-white/[0.06] border border-white/[0.08] text-white/50 hover:bg-white/[0.10] hover:text-white/70'
-                      }`}
-                    >
-                      {isCopied ? <><Check className="h-3.5 w-3.5" /> copied</> : <><Copy className="h-3.5 w-3.5" /> copy</>}
-                    </button>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         )}
 
-        {/* ══════════ EMPTY STATE ══════════ */}
+        {/* ══════════ EMPTY STATE — inline ══════════ */}
         {thread.length === 0 && replies.length === 0 && !decodeResult && (
-          <div className="text-center py-16 space-y-6">
-            {/* Animated orb */}
-            <div className="relative w-24 h-24 mx-auto">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 opacity-20 blur-xl animate-pulse" />
-              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 backdrop-blur-xl border border-white/10 flex items-center justify-center">
-                <MessageCircle className="h-8 w-8 text-white/40" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-white font-black text-xl tracking-tight">start a thread</h3>
-              <p className="text-white/25 text-sm max-w-[280px] mx-auto leading-relaxed">
-                paste what they said. get replies. mark what you sent. keep going.
-              </p>
-            </div>
-
-            {/* Flow visualization */}
-            <div className="flex items-center justify-center gap-3 text-[10px] font-bold">
-              <span className="flex items-center gap-1.5 text-white/20">
-                <span className="w-2 h-2 rounded-full bg-white/20" /> them
-              </span>
-              <span className="text-white/10">→</span>
-              <span className="flex items-center gap-1.5 text-violet-400/40">
-                <span className="w-2 h-2 rounded-full bg-violet-500/40" /> you
-              </span>
-              <span className="text-white/10">→</span>
-              <span className="flex items-center gap-1.5 text-white/20">
-                <span className="w-2 h-2 rounded-full bg-white/20" /> them
-              </span>
-              <span className="text-white/10">→</span>
-              <span className="flex items-center gap-1.5 text-fuchsia-400/40">
-                <Sparkles className="h-3 w-3" /> repeat
-              </span>
+          <div className="text-center pt-8 pb-4 space-y-3">
+            <p className="text-white/20 text-[11px] font-medium leading-relaxed max-w-[240px] mx-auto">
+              paste what they said, get replies, mark what you sent, keep going
+            </p>
+            <div className="flex items-center justify-center gap-2.5 text-[10px] font-bold text-white/10">
+              <span>them</span>
+              <span>→</span>
+              <span className="text-violet-400/30">you</span>
+              <span>→</span>
+              <span>them</span>
+              <span>→</span>
+              <span className="text-fuchsia-400/30">repeat</span>
             </div>
           </div>
         )}
