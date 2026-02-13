@@ -856,27 +856,27 @@ export default function AppPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
-      <div className={`container mx-auto px-4 py-8 pb-12 max-w-md md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950/80 to-indigo-950">
+      <div className={`mx-auto px-5 py-8 pb-14 max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Button asChild variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+          <Button asChild variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 rounded-2xl transition-colors">
             <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4 mr-1.5" />
               Back
             </Link>
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Link href="/" className="transition-transform hover:scale-105">
               <Logo size="sm" showText={true} />
             </Link>
-            <Link href="/changelog" className="px-1.5 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-[10px] font-bold text-white/60 hover:text-white/90 transition-all">
+            <Link href="/changelog" className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/15 text-[10px] font-bold text-white/50 hover:text-white/80 transition-colors">
               v{CURRENT_VERSION}
             </Link>
           </div>
-          <Button asChild variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10 rounded-xl transition-all">
+          <Button asChild variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 rounded-2xl transition-colors">
             <Link href="/profile">
-              <Crown className="h-4 w-4 mr-2" />
+              <Crown className="h-4 w-4 mr-1.5" />
               Profile
             </Link>
           </Button>
@@ -918,45 +918,43 @@ export default function AppPage() {
 
         {/* Pro Status Badge - Compact */}
         {isPro && (
-          <div className="mb-4 px-4 py-2.5 rounded-xl backdrop-blur border flex items-center justify-center gap-2 bg-green-500/10 border-green-500/20">
-            <Shield className="h-4 w-4 text-green-400" />
-            <span className="text-xs font-semibold text-green-300">V2 Verified</span>
-            <span className="text-white/20">·</span>
-            <span className="text-xs text-green-400/70">≤18 words · No emojis · Tone-checked</span>
+          <div className="mb-5 px-4 py-3 rounded-2xl border flex items-center justify-center gap-2.5 bg-emerald-500/10 border-emerald-500/20">
+            <Shield className="h-4 w-4 text-emerald-400" />
+            <span className="text-xs font-bold text-emerald-300">V2 Verified</span>
+            <span className="text-white/15">·</span>
+            <span className="text-xs text-emerald-400/60">≤18 words · No emojis · Tone-checked</span>
           </div>
         )}
 
         {/* Usage Bar - Hidden for Pro users */}
         {usageCount > 0 && !isPro && (
-          <div className={`fixed top-0 left-0 right-0 z-50 text-white shadow-lg animate-in slide-in-from-top duration-300 ${
+          <div className={`fixed top-0 left-0 right-0 z-50 text-white animate-in slide-in-from-top duration-300 ${
             usageCount >= usageLimit 
-              ? 'bg-gradient-to-r from-red-600 via-red-700 to-orange-600' 
-              : 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600'
+              ? 'bg-red-600/95 backdrop-blur-sm' 
+              : 'bg-purple-600/90 backdrop-blur-sm'
           }`}>
-            <div className="container mx-auto px-4 py-3">
+            <div className="mx-auto px-5 py-2.5">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{usageCount >= usageLimit ? '🚫' : '⚡'}</span>
-                    <div>
-                      <p className="text-sm font-bold">
-                        {usageCount >= usageLimit 
-                          ? 'Free limit reached' 
-                          : `${remainingReplies} free ${remainingReplies === 1 ? 'reply' : 'replies'} left today`}
-                      </p>
-                      <p className="text-xs text-white/70">
-                        {Math.min(usageCount, usageLimit)}/{usageLimit} used
-                      </p>
-                    </div>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">{usageCount >= usageLimit ? '🚫' : '⚡'}</span>
+                  <div>
+                    <p className="text-sm font-bold">
+                      {usageCount >= usageLimit 
+                        ? 'Free limit reached' 
+                        : `${remainingReplies} free ${remainingReplies === 1 ? 'reply' : 'replies'} left today`}
+                    </p>
+                    <p className="text-xs text-white/60">
+                      {Math.min(usageCount, usageLimit)}/{usageLimit} used
+                    </p>
                   </div>
                 </div>
                 {usageCount >= usageLimit - 1 && (
                   <Button 
                     asChild
                     size="sm" 
-                    className="bg-white text-purple-700 hover:bg-gray-100 font-bold rounded-xl shadow-lg"
+                    className="bg-white text-purple-700 hover:bg-gray-100 font-bold rounded-xl shadow-md text-xs h-8"
                   >
-                    <Link href="/#pricing">Upgrade →</Link>
+                    <Link href="/#pricing">Upgrade</Link>
                   </Button>
                 )}
                 {usageCount < usageLimit - 1 && (
@@ -964,8 +962,8 @@ export default function AppPage() {
                     {Array.from({ length: usageLimit }).map((_, i) => (
                       <div
                         key={i}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          i < usageCount ? 'bg-purple-300' : 'bg-white/30'
+                        className={`w-1.5 h-1.5 rounded-full transition-all ${
+                          i < usageCount ? 'bg-white/80' : 'bg-white/25'
                         }`}
                       />
                     ))}
@@ -993,14 +991,14 @@ export default function AppPage() {
         />
 
         {/* Input Section */}
-        <Card className="mb-8 bg-white/95 backdrop-blur-xl border-0 shadow-2xl hover:shadow-purple-500/20 rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1">
-          <CardHeader className="pb-4 pt-6 bg-gradient-to-br from-purple-50 to-white">
+        <Card className="mb-8 bg-white/95 backdrop-blur border-0 shadow-xl rounded-3xl overflow-hidden transition-shadow duration-300">
+          <CardHeader className="pb-4 pt-6">
             {/* Mode Tabs */}
-            <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-3">
+            <div className="flex items-center gap-1 bg-gray-100/80 rounded-2xl p-1 mb-4">
               <button
                 onClick={() => { setAppMode('reply'); setOpeners([]); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-bold transition-all ${
-                  appMode === 'reply' ? 'bg-white text-purple-700 shadow-md' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+                  appMode === 'reply' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <MessageCircle className="h-3.5 w-3.5" />
@@ -1008,8 +1006,8 @@ export default function AppPage() {
               </button>
               <button
                 onClick={() => { setAppMode('decode'); setReplies([]); setOpeners([]); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-bold transition-all ${
-                  appMode === 'decode' ? 'bg-white text-amber-700 shadow-md' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+                  appMode === 'decode' ? 'bg-white text-amber-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <Brain className="h-3.5 w-3.5" />
@@ -1017,8 +1015,8 @@ export default function AppPage() {
               </button>
               <button
                 onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-bold transition-all ${
-                  appMode === 'opener' ? 'bg-white text-pink-700 shadow-md' : 'text-gray-500 hover:text-gray-700'
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+                  appMode === 'opener' ? 'bg-white text-pink-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
                 <Send className="h-3.5 w-3.5" />
@@ -1028,27 +1026,27 @@ export default function AppPage() {
             <CardTitle className="text-xl font-bold flex items-center gap-2">
               {appMode === 'reply' && (
                 <>
-                  <MessageCircle className="h-5 w-5 text-purple-600 animate-bounce" />
-                  What&apos;d they say? Drop it here 👇
+                  <MessageCircle className="h-5 w-5 text-purple-600" />
+                  What&apos;d they say?
                 </>
               )}
               {appMode === 'decode' && (
                 <>
-                  <Brain className="h-5 w-5 text-amber-600 animate-bounce" />
-                  What do they really mean? 🧠
+                  <Brain className="h-5 w-5 text-amber-600" />
+                  What do they really mean?
                 </>
               )}
               {appMode === 'opener' && (
                 <>
-                  <Send className="h-5 w-5 text-pink-600 animate-bounce" />
-                  Start the conversation 💬
+                  <Send className="h-5 w-5 text-pink-600" />
+                  Start the conversation
                 </>
               )}
             </CardTitle>
-            <CardDescription className="text-sm text-gray-600 font-medium">
-              {appMode === 'reply' && 'Paste the text and we\'ll handle the rest ✨'}
-              {appMode === 'decode' && 'Paste any message — we\'ll reveal the intent, subtext, and flags 🔍'}
-              {appMode === 'opener' && 'Generate the perfect opening line for any situation ✨'}
+            <CardDescription className="text-sm text-gray-500 font-medium">
+              {appMode === 'reply' && 'Paste the text and we\'ll handle the rest'}
+              {appMode === 'decode' && 'Paste any message \u2014 we\'ll reveal the intent, subtext, and flags'}
+              {appMode === 'opener' && 'Generate the perfect opening line for any situation'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 px-6 pb-6">
@@ -1056,23 +1054,23 @@ export default function AppPage() {
             {appMode === 'reply' && (<>
             {/* Context Selector */}
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <span>🎯</span> Who is this?
+              <label className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
+                Who is this?
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {CONTEXT_OPTIONS.map((context) => (
                   <button
                     key={context.value}
                     onClick={() => setSelectedContext(selectedContext === context.value ? null : context.value as ContextType)}
-                    className={`p-3 rounded-xl border-2 transition-all duration-200 text-left hover:scale-105 ${
+                    className={`p-3 rounded-2xl border transition-all duration-200 text-left ${
                       selectedContext === context.value
-                        ? 'border-purple-500 bg-purple-50 shadow-md'
-                        : 'border-gray-200 bg-white hover:border-purple-300'
+                        ? 'border-purple-400 bg-purple-50 shadow-sm ring-1 ring-purple-400/30'
+                        : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-purple-50/50'
                     }`}
                   >
-                    <div className="text-xl mb-1">{context.emoji}</div>
+                    <div className="text-lg mb-1">{context.emoji}</div>
                     <div className="text-xs font-bold text-gray-900">{context.label}</div>
-                    <div className="text-[10px] text-gray-500">{context.description}</div>
+                    <div className="text-[10px] text-gray-400">{context.description}</div>
                   </button>
                 ))}
               </div>
@@ -1089,8 +1087,8 @@ export default function AppPage() {
                   setMessage(e.target.value);
                   if (e.target.value.trim()) setShowExamples(false);
                 }}
-                placeholder="Drop their message here — or upload a screenshot of the whole convo 💬"
-                className={`w-full p-5 pb-8 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-300 transition-all shadow-sm hover:shadow-md focus:shadow-lg ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                placeholder="Drop their message here — or upload a screenshot"
+                className={`w-full p-5 pb-8 rounded-2xl border border-gray-200 bg-gray-50/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-400/40 focus:border-purple-300 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
                 aria-label="Message input"
               />
@@ -1114,7 +1112,7 @@ export default function AppPage() {
             {/* Screenshot Preview */}
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative rounded-2xl overflow-hidden border-2 border-purple-300 bg-purple-50">
+                <div className="relative rounded-2xl overflow-hidden border border-purple-200 bg-purple-50/50">
                   <img 
                     src={screenshotPreview} 
                     alt="Screenshot preview" 
@@ -1177,10 +1175,10 @@ export default function AppPage() {
                   fileInputRef.current?.click();
                 }}
                 disabled={extracting}
-                className={`flex-1 p-3 rounded-xl border-2 border-dashed transition-all text-purple-700 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
+                className={`flex-1 p-3 rounded-xl border border-dashed transition-all text-purple-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
                   showFeatureSpotlight 
-                    ? 'border-purple-500 bg-purple-100 shadow-lg shadow-purple-500/20 animate-pulse' 
-                    : 'border-purple-300 hover:border-purple-500 bg-purple-50/50 hover:bg-purple-50'
+                    ? 'border-purple-400 bg-purple-50 shadow-md shadow-purple-500/10' 
+                    : 'border-gray-300 hover:border-purple-400 bg-gray-50/50 hover:bg-purple-50/50'
                 }`}
               >
                 {extracting ? (
@@ -1198,7 +1196,7 @@ export default function AppPage() {
               {!message && (
                 <button
                   onClick={() => setShowExamplesDrawer(!showExamplesDrawer)}
-                  className="p-3 rounded-xl border-2 border-dashed border-gray-300 hover:border-purple-500 bg-gray-50/50 hover:bg-purple-50 transition-all text-gray-500 hover:text-purple-700 font-medium text-sm flex items-center justify-center gap-2"
+                  className="p-3 rounded-xl border border-dashed border-gray-300 hover:border-purple-400 bg-gray-50/50 hover:bg-purple-50/50 transition-all text-gray-400 hover:text-purple-600 font-medium text-sm flex items-center justify-center gap-2"
                 >
                   <Lightbulb className="h-4 w-4" />
                   Examples
@@ -1208,7 +1206,7 @@ export default function AppPage() {
 
             {/* Examples Drawer */}
             {showExamplesDrawer && !message && (
-              <div className="space-y-2 animate-in slide-in-from-top duration-300 bg-gradient-to-br from-purple-50 to-white p-4 rounded-2xl border-2 border-purple-200">
+              <div className="space-y-2 animate-in slide-in-from-top duration-300 bg-purple-50/50 p-4 rounded-2xl border border-purple-200">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-sm font-semibold text-purple-700">
                     <Sparkles className="h-4 w-4" />
@@ -1226,7 +1224,7 @@ export default function AppPage() {
                     <button
                       key={idx}
                       onClick={() => handleExampleClick(example)}
-                      className="text-left text-sm p-3 rounded-xl border-2 border-purple-200 hover:border-purple-400 bg-white hover:bg-purple-50 transition-all text-gray-700 font-medium"
+                      className="text-left text-sm p-3 rounded-xl border border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 transition-all text-gray-700 font-medium"
                     >
                       <span className="text-purple-500 font-bold mr-2">{idx + 1}.</span>
                       &ldquo;{example}&rdquo;
@@ -1238,13 +1236,13 @@ export default function AppPage() {
 
             {/* V2 Verified Badge — always on for Pro, upgrade prompt for free */}
             {isPro ? (
-              <div className="flex items-center gap-2 p-3 rounded-xl border-2 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-                <Shield className="h-5 w-5 text-green-600" />
+              <div className="flex items-center gap-2.5 p-3.5 rounded-2xl border bg-emerald-50/80 border-emerald-200">
+                <Shield className="h-5 w-5 text-emerald-600" />
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-green-800">V2 Verified — Always On</p>
-                  <p className="text-xs text-green-600">≤18 words • No emojis • Tone-verified</p>
+                  <p className="text-sm font-bold text-emerald-800">V2 Verified</p>
+                  <p className="text-xs text-emerald-600">≤18 words • No emojis • Tone-verified</p>
                 </div>
-                <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full">Active</span>
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full">Active</span>
               </div>
             ) : (
               <button
@@ -1252,7 +1250,7 @@ export default function AppPage() {
                   setShowPaywall(true);
                   toast({ title: "🔒 V2 is Pro-only", description: "Upgrade to unlock 3-agent verified replies" });
                 }}
-                className="flex items-center gap-2 p-3 rounded-xl border-2 bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200 w-full text-left hover:border-purple-300 transition-colors"
+                className="flex items-center gap-2.5 p-3.5 rounded-2xl border bg-purple-50/60 border-purple-200 w-full text-left hover:border-purple-300 transition-colors"
               >
                 <Shield className="h-5 w-5 text-purple-600" />
                 <div className="flex-1">
@@ -1270,10 +1268,10 @@ export default function AppPage() {
                 <Button
                   onClick={handleGenerate}
                   disabled={loading || !message.trim()}
-                  className={`col-span-2 h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`col-span-2 h-14 text-base shadow-lg rounded-2xl font-bold transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${
                     isPro
-                      ? 'bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700'
-                      : 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-600 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-700'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/20'
+                      : 'bg-gradient-to-r from-purple-600 via-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/20'
                   }`}
                   size="lg"
                 >
@@ -1304,10 +1302,10 @@ export default function AppPage() {
                     fetchThreads(); setShowThreads(!showThreads);
                   }}
                   variant="outline"
-                  className={`h-14 rounded-2xl font-bold border-2 transition-all active:scale-95 ${
+                  className={`h-14 rounded-2xl font-bold border transition-all active:scale-95 ${
                     isPro
-                      ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-800'
-                      : 'border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-500'
+                      ? 'border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700'
+                      : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-400'
                   }`}
                   size="lg"
                 >
@@ -1334,19 +1332,19 @@ export default function AppPage() {
 
             {/* Saved Threads Drawer */}
             {showThreads && (
-              <div className="animate-in slide-in-from-top duration-300 bg-gradient-to-br from-blue-50 to-white p-4 rounded-2xl border-2 border-blue-200 space-y-3">
+              <div className="animate-in slide-in-from-top duration-300 bg-purple-50/50 p-4 rounded-2xl border border-purple-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-blue-800 flex items-center gap-2">
-                    <BookmarkCheck className="h-4 w-4" />
+                  <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                    <BookmarkCheck className="h-4 w-4 text-purple-600" />
                     Saved Threads
                   </h4>
-                  <button onClick={() => setShowThreads(false)} className="text-blue-400 hover:text-blue-600">✕</button>
+                  <button onClick={() => setShowThreads(false)} className="text-gray-400 hover:text-gray-600">✕</button>
                 </div>
                 {message.trim() && !activeThreadId && (
                   <button
                     onClick={handleSaveThread}
                     disabled={savingThread}
-                    className="w-full p-3 rounded-xl border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/50 hover:bg-blue-100 transition-all text-blue-700 font-medium text-sm flex items-center justify-center gap-2"
+                    className="w-full p-3 rounded-xl border border-dashed border-purple-300 hover:border-purple-400 bg-purple-50/30 hover:bg-purple-50 transition-all text-purple-600 font-medium text-sm flex items-center justify-center gap-2"
                   >
                     <BookmarkPlus className="h-4 w-4" />
                     {savingThread ? 'Saving...' : 'Save current conversation'}
@@ -1357,7 +1355,7 @@ export default function AppPage() {
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {savedThreads.map(thread => (
-                      <div key={thread.id} className="flex items-center gap-3 p-3 rounded-xl border border-blue-200 bg-white hover:bg-blue-50 transition-all group">
+                      <div key={thread.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50/50 transition-all group">
                         <button onClick={() => handleLoadThread(thread)} className="flex-1 text-left min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{thread.name}</p>
                           <p className="text-xs text-gray-500">{thread.message_count} msgs · {new Date(thread.updated_at).toLocaleDateString()}</p>
@@ -1379,8 +1377,8 @@ export default function AppPage() {
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Paste their message here — what did they really mean? 🧠"
-                className={`w-full p-5 pb-8 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-300 transition-all shadow-sm hover:shadow-md focus:shadow-lg ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                placeholder="Paste their message here — what did they really mean?"
+                className={`w-full p-5 pb-8 rounded-2xl border border-gray-200 bg-gray-50/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-300 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
                 aria-label="Message to decode"
               />
@@ -1402,7 +1400,7 @@ export default function AppPage() {
             />
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative rounded-2xl overflow-hidden border-2 border-amber-300 bg-amber-50">
+                <div className="relative rounded-2xl overflow-hidden border border-amber-200 bg-amber-50/50">
                   <img src={screenshotPreview} alt="Screenshot preview" className="w-full max-h-48 object-cover opacity-90" />
                   {extracting && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -1425,7 +1423,7 @@ export default function AppPage() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={extracting}
-                className="flex-1 p-3 rounded-xl border-2 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/50 hover:bg-amber-50 transition-all text-amber-700 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                className="flex-1 p-3 rounded-xl border border-dashed border-gray-300 hover:border-amber-400 bg-gray-50/50 hover:bg-amber-50/50 transition-all text-amber-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
               >
                 <Camera className="h-4 w-4" />
                 Upload Screenshot
@@ -1435,10 +1433,10 @@ export default function AppPage() {
             <Button
               onClick={handleDecode}
               disabled={decoding || !message.trim() || (!isPro && decodeUsed >= decodeLimit)}
-              className={`w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 ${
+              className={`w-full h-14 text-base shadow-lg rounded-2xl font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${
                 !isPro && decodeUsed >= decodeLimit
-                  ? 'bg-gradient-to-r from-gray-400 to-gray-500'
-                  : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700'
+                  ? 'bg-gray-400'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/20'
               }`}
               size="lg"
             >
@@ -1460,23 +1458,23 @@ export default function AppPage() {
             {/* ===== OPENER MODE ===== */}
             {appMode === 'opener' && (<>
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <span>💌</span> What kind of opener?
+              <label className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
+                What kind of opener?
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {OPENER_CONTEXTS.map((ctx) => (
                   <button
                     key={ctx.value}
                     onClick={() => setOpenerContext(ctx.value)}
-                    className={`p-3 rounded-xl border-2 transition-all duration-200 text-left hover:scale-105 ${
+                    className={`p-3 rounded-2xl border transition-all duration-200 text-left ${
                       openerContext === ctx.value
-                        ? 'border-pink-500 bg-pink-50 shadow-md'
-                        : 'border-gray-200 bg-white hover:border-pink-300'
+                        ? 'border-pink-400 bg-pink-50 shadow-sm ring-1 ring-pink-400/30'
+                        : 'border-gray-200 bg-white hover:border-pink-300 hover:bg-pink-50/50'
                     }`}
                   >
-                    <div className="text-xl mb-1">{ctx.emoji}</div>
+                    <div className="text-lg mb-1">{ctx.emoji}</div>
                     <div className="text-xs font-bold text-gray-900">{ctx.label}</div>
-                    <div className="text-[10px] text-gray-500">{ctx.description}</div>
+                    <div className="text-[10px] text-gray-400">{ctx.description}</div>
                   </button>
                 ))}
               </div>
@@ -1486,7 +1484,7 @@ export default function AppPage() {
                 value={openerDescription}
                 onChange={(e) => setOpenerDescription(e.target.value)}
                 placeholder="Optional: describe them (e.g., 'loves hiking, has a golden retriever, funny bio about pizza')"
-                className="w-full min-h-[80px] p-4 pb-6 rounded-2xl border-2 border-gray-200 bg-white/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-300 transition-all shadow-sm text-sm"
+                className="w-full min-h-[80px] p-4 pb-6 rounded-2xl border border-gray-200 bg-gray-50/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-pink-400/40 focus:border-pink-300 transition-all text-sm"
                 maxLength={300}
               />
               <div className={`absolute bottom-2 right-3 text-xs ${openerDescription.length > 250 ? 'text-red-500' : 'text-gray-400'}`}>
@@ -1496,10 +1494,10 @@ export default function AppPage() {
             <Button
               onClick={handleGenerateOpeners}
               disabled={loadingOpeners || (!isPro && openerUsed >= openerLimit)}
-              className={`w-full h-14 text-base shadow-xl hover:shadow-2xl rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 ${
+              className={`w-full h-14 text-base shadow-lg rounded-2xl font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${
                 !isPro && openerUsed >= openerLimit
-                  ? 'bg-gradient-to-r from-gray-400 to-gray-500'
-                  : 'bg-gradient-to-r from-pink-500 via-rose-500 to-orange-500 hover:from-pink-600 hover:via-rose-600 hover:to-orange-600'
+                  ? 'bg-gray-400'
+                  : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 shadow-pink-500/20'
               }`}
               size="lg"
             >
@@ -1522,7 +1520,7 @@ export default function AppPage() {
 
         {/* Decode Results Panel */}
         {decodeResult && (
-          <Card className="mb-6 bg-white/95 backdrop-blur-xl border-0 shadow-xl rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-500">
+          <Card className="mb-6 bg-white/95 backdrop-blur border-0 shadow-lg rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-500">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
@@ -1562,7 +1560,7 @@ export default function AppPage() {
                 </div>
               )}
               {/* Coach Tip */}
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+              <div className="bg-purple-50/60 rounded-xl p-4 border border-purple-200">
                 <p className="text-xs font-bold text-purple-600 mb-1 flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> Coach Tip
                 </p>
@@ -1577,14 +1575,14 @@ export default function AppPage() {
           <div className="space-y-5 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
             <div className="text-center space-y-2">
               <h2 className="text-2xl font-bold text-white">Your opening lines</h2>
-              <p className="text-sm text-pink-200">Pick your favorite and send it 💬</p>
+              <p className="text-sm text-pink-200/80">Pick your favorite and send it</p>
             </div>
             <div className="grid gap-4">
               {openers.map((opener, idx) => {
                 const config = OPENER_TONE_CONFIG[opener.tone] || OPENER_TONE_CONFIG.bold;
                 const label = ['A', 'B', 'C'][idx];
                 return (
-                  <Card key={idx} className="relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-300 group active:scale-[0.98]">
+                  <Card key={idx} className="relative overflow-hidden bg-white border shadow-lg rounded-3xl transition-all duration-300 group active:scale-[0.98] hover:shadow-xl">
                     <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient}`} />
                     <div className="absolute top-6 right-6">
                       <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white font-black text-lg shadow-xl`}>
@@ -1602,10 +1600,10 @@ export default function AppPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-1 pb-5 space-y-3">
-                      <div className={`${config.lightBg} rounded-2xl p-4 border-2 border-gray-100`}>
+                      <div className={`${config.lightBg} rounded-2xl p-4 border border-gray-100`}>
                         <p className="text-lg text-gray-900 leading-relaxed font-medium">{opener.text}</p>
                       </div>
-                      <p className="text-xs text-gray-500 italic px-1">💡 {opener.why}</p>
+                      <p className="text-xs text-gray-500 italic px-1">{opener.why}</p>
                       <Button
                         onClick={async () => {
                           await navigator.clipboard.writeText(opener.text);
@@ -1627,7 +1625,7 @@ export default function AppPage() {
               })}
             </div>
             <div className="text-center pt-4">
-              <Button onClick={() => setOpeners([])} variant="outline" className="bg-white/95 hover:bg-white text-pink-700 border-2 border-pink-300 rounded-2xl font-bold shadow-xl px-10 h-12">
+              <Button onClick={() => setOpeners([])} variant="outline" className="bg-white/95 hover:bg-white text-pink-600 border border-pink-300 rounded-2xl font-bold shadow-md px-10 h-12">
                 <Sparkles className="h-4 w-4 mr-2" /> Try Again
               </Button>
             </div>
@@ -1642,7 +1640,7 @@ export default function AppPage() {
                 <p className={`text-sm font-medium animate-in fade-in duration-300 mb-2 ${
                   isPro ? 'text-green-300' : 'text-purple-300'
                 }`}>
-                  {isPro ? '✅ 3-agent verified • Safe to send' : '✨ Crafted with care just for you 💬'}
+                  {isPro ? '✅ 3-agent verified • Safe to send' : 'Crafted with care just for you'}
                 </p>
               )}
               <h2 className="text-2xl font-bold text-white animate-in slide-in-from-top duration-300">
@@ -1651,7 +1649,7 @@ export default function AppPage() {
               <p className={`text-sm animate-in fade-in duration-500 delay-100 ${
                 isPro ? 'text-green-200' : 'text-purple-200'
               }`}>
-                {isPro ? 'Each reply passed our 3-agent verification 🛡️' : 'Pick your favorite and copy it 👇'}
+                {isPro ? 'Each reply passed our 3-agent verification' : 'Pick your favorite and copy it'}
               </p>
             </div>
             <div className="grid gap-4">
@@ -1663,14 +1661,13 @@ export default function AppPage() {
                   <Card 
                     key={reply.tone} 
                     style={{ animationDelay: `${idx * 150}ms` }}
-                    className={`relative overflow-hidden bg-white border-2 shadow-2xl rounded-3xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group active:scale-[0.98] ${
+                    className={`relative overflow-hidden bg-white border shadow-lg rounded-3xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group active:scale-[0.98] ${
                       isPro 
-                        ? 'border-green-200 hover:shadow-green-500/40 hover:border-green-300' 
-                        : 'hover:shadow-purple-500/40'
+                        ? 'border-emerald-200 hover:shadow-xl hover:border-emerald-300' 
+                        : 'border-gray-200 hover:shadow-xl'
                     }`}
                   >
-                    <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient} transition-all duration-300 group-hover:h-4`} />
-                    <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${config.gradient} rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity duration-500`} />
+                    <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${config.gradient}`} />
                     
                     {/* A/B/C Label */}
                     <div className="absolute top-6 right-6 z-10">
@@ -1682,7 +1679,7 @@ export default function AppPage() {
                     <CardHeader className="pb-4 pt-8">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-3xl shadow-xl transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
+                          <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-2xl shadow-md`}>
                             {config.emoji}
                           </div>
                           <div>
@@ -1693,17 +1690,17 @@ export default function AppPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-2 space-y-5 pb-6">
-                      <div className={`${config.lightBg} rounded-2xl p-5 border-2 border-gray-100`}>
-                        <p className="text-lg text-gray-900 leading-relaxed font-medium">{reply.text}</p>
+                      <div className={`${config.lightBg} rounded-2xl p-5 border border-gray-100`}>
+                        <p className="text-base text-gray-900 leading-relaxed font-medium">{reply.text}</p>
                       </div>
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2">
-                          <span className={`text-xs font-bold bg-gradient-to-r ${config.gradient} text-white px-4 py-2 rounded-full shadow-md`}>
+                          <span className={`text-xs font-bold bg-gradient-to-r ${config.gradient} text-white px-3 py-1.5 rounded-full`}>
                             {reply.text ? reply.text.split(' ').length : 0} words
                           </span>
                           {/* Verified Reply Badge for Pro V2 */}
                           {isPro && (
-                            <span className="flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-2 rounded-full shadow-md">
+                            <span className="flex items-center gap-1 text-xs font-bold bg-emerald-500 text-white px-3 py-1.5 rounded-full">
                               <CheckCircle className="h-3 w-3" />
                               Verified
                             </span>
@@ -1728,10 +1725,10 @@ export default function AppPage() {
                                             <div className="grid grid-cols-2 gap-3">
                         <Button
                           onClick={() => handleCopy(reply.text, reply.tone)}
-                          className={`h-14 rounded-2xl font-bold text-base shadow-xl transition-all duration-300 active:scale-95 ${
+                          className={`h-12 rounded-2xl font-bold text-sm shadow-md transition-all duration-200 active:scale-95 ${
                             isCopied 
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-500/50 scale-105' 
-                              : `bg-gradient-to-r ${config.gradient} hover:opacity-95 text-white hover:shadow-2xl hover:-translate-y-1`
+                              ? 'bg-emerald-500 text-white' 
+                              : `bg-gradient-to-r ${config.gradient} text-white hover:opacity-95`
                           }`}
                           size="lg"
                         >
@@ -1751,10 +1748,10 @@ export default function AppPage() {
                           <Button
                             onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
                             variant="outline"
-                            className={`h-14 rounded-2xl font-bold text-base border-2 shadow-lg transition-all duration-300 active:scale-95 hover:shadow-xl hover:-translate-y-1 ${
+                            className={`h-12 rounded-2xl font-bold text-sm border shadow-sm transition-all duration-200 active:scale-95 ${
                               sharing === reply.tone
-                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                : 'border-gray-300 hover:border-purple-400 bg-white text-gray-700'
+                                ? 'border-purple-400 bg-purple-50 text-purple-700'
+                                : 'border-gray-200 hover:border-purple-300 bg-white text-gray-600'
                             }`}
                             size="lg"
                           >
@@ -1768,7 +1765,7 @@ export default function AppPage() {
                             )}
                           </Button>
                           {shareMenuOpen === reply.tone && (
-                            <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-xl shadow-2xl border-2 border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                            <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                               <button
                                 onClick={() => handleShareLink(reply)}
                                 className="w-full px-4 py-3 text-left text-sm font-medium hover:bg-purple-50 flex items-center gap-2 border-b border-gray-100"
@@ -1802,9 +1799,9 @@ export default function AppPage() {
               <Button
                 onClick={handleTryAgain}
                 variant="outline"
-                className="bg-white/95 hover:bg-white text-purple-700 border-2 border-purple-300 hover:border-purple-500 rounded-2xl font-bold shadow-xl hover:shadow-2xl px-10 h-12 transition-all duration-300 hover:scale-105 animate-pulse hover:animate-none"
+                className="bg-white/95 hover:bg-white text-purple-600 border border-purple-300 hover:border-purple-400 rounded-2xl font-bold shadow-md px-10 h-12 transition-all duration-200"
               >
-                <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                <Sparkles className="h-4 w-4 mr-2" />
                 Try Another Message
               </Button>
             </div>
@@ -1815,25 +1812,25 @@ export default function AppPage() {
         {loading && (
           <div className="space-y-4 animate-in fade-in duration-300">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="relative overflow-hidden bg-white border-2 border-gray-100 shadow-2xl rounded-3xl">
-                <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-purple-400 to-indigo-400 animate-pulse" />
+              <Card key={i} className="relative overflow-hidden bg-white border border-gray-100 shadow-lg rounded-3xl">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-400 to-indigo-400 animate-pulse" />
                 <CardHeader className="pb-4 pt-8">
                   <div className="flex items-center gap-4">
-                    <div className="h-14 w-14 bg-gray-200 rounded-2xl animate-pulse" />
+                    <div className="h-12 w-12 bg-gray-100 rounded-2xl animate-pulse" />
                     <div className="space-y-2">
-                      <div className="h-6 w-28 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-4 w-36 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-5 w-28 bg-gray-100 rounded-lg animate-pulse" />
+                      <div className="h-4 w-36 bg-gray-50 rounded-lg animate-pulse" />
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-5 pb-6">
-                  <div className="bg-gray-50 rounded-2xl p-5 border-2 border-gray-100">
+                  <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
                     <div className="space-y-2">
-                      <div className="h-5 w-full bg-gray-200 rounded animate-pulse" />
-                      <div className="h-5 w-4/5 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-4 w-full bg-gray-100 rounded-lg animate-pulse" />
+                      <div className="h-4 w-4/5 bg-gray-100 rounded-lg animate-pulse" />
                     </div>
                   </div>
-                  <div className="h-14 w-full bg-gradient-to-r from-purple-200 to-indigo-200 rounded-2xl animate-pulse" />
+                  <div className="h-12 w-full bg-purple-100 rounded-2xl animate-pulse" />
                 </CardContent>
               </Card>
             ))}
@@ -1842,12 +1839,12 @@ export default function AppPage() {
 
         {/* Empty State */}
         {!loading && replies.length === 0 && message === '' && (
-          <div className="text-center py-16 text-white/80 animate-in fade-in duration-500">
-            <div className="inline-block p-6 bg-white/10 backdrop-blur rounded-3xl mb-6">
-              <Sparkles className="h-20 w-20 mx-auto text-purple-300 animate-pulse" />
+          <div className="text-center py-16 text-white/70 animate-in fade-in duration-500">
+            <div className="inline-block p-5 bg-white/5 rounded-3xl mb-5">
+              <Sparkles className="h-12 w-12 mx-auto text-purple-400/60" />
             </div>
-            <p className="text-xl font-bold mb-2">Ready to craft the perfect reply?</p>
-            <p className="text-base text-purple-200">Paste a message above and let AI do the magic ✨</p>
+            <p className="text-lg font-bold text-white/80 mb-1.5">Ready to craft the perfect reply?</p>
+            <p className="text-sm text-purple-300/60">Paste a message above and let AI do the magic</p>
           </div>
         )}
       </div>
