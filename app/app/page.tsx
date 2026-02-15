@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
@@ -93,6 +93,12 @@ type SavedThread = {
   last_message: any;
 };
 
+type ThreadMessage = {
+  role: 'them' | 'you';
+  text: string;
+  timestamp: number;
+};
+
 type AppMode = 'reply' | 'decode' | 'opener';
 
 const OPENER_CONTEXTS = [
@@ -177,7 +183,13 @@ export default function AppPage() {
   const [savingThread, setSavingThread] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [activeThreadName, setActiveThreadName] = useState<string | null>(null);
+  const [thread, setThread] = useState<ThreadMessage[]>([]);
+  const [showThread, setShowThread] = useState(true);
+  const [pendingSent, setPendingSent] = useState<Reply | null>(null);
+  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const threadEndRef = useRef<HTMLDivElement>(null);
+  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -228,6 +240,7 @@ export default function AppPage() {
       }
     };
     fetchUsage();
+    fetchThreads();
     
     // Check for successful payment redirect
     const urlParams = new URLSearchParams(window.location.search);
@@ -250,6 +263,22 @@ export default function AppPage() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-scroll thread view
+  useEffect(() => {
+    threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [thread]);
+
+  // Auto-save thread after 2+ messages (1.5s debounce)
+  useEffect(() => {
+    if (thread.length < 2) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      autoSaveThread();
+    }, 1500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thread]);
 
   // Log usage to server
   const incrementUsage = async () => {
@@ -295,14 +324,21 @@ export default function AppPage() {
       return;
     }
 
+    // Add their message to thread
+    addToThread('them', message.trim());
+
     setLoading(true);
     setReplies([]); // Clear previous replies
     setV2Meta(null); // Clear previous V2 meta
     setV2Step(null);
+    setPendingSent(null);
     
     try {
       // Use V2 API if enabled (Pro-only)
       const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+      
+      // Build full conversation context for smarter replies
+      const fullContext = buildThreadContext(message.trim());
       
       // Show progress steps for V2
       if (isPro) {
@@ -317,7 +353,7 @@ export default function AppPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          message: message.trim(),
+          message: thread.length > 0 ? fullContext : message.trim(),
           context: selectedContext || 'crush'
         }),
       });
@@ -372,13 +408,17 @@ export default function AppPage() {
         setRemainingReplies(usageData.remaining);
       }
 
+      // Clear input (it's now in the thread)
+      setMessage('');
+      setShowExamples(false);
+
       // Show "crafted with care" message
       setShowCraftedMessage(true);
       setTimeout(() => setShowCraftedMessage(false), 3000);
 
       toast({
         title: isPro ? "✅ Verified replies ready!" : "✨ Replies generated!",
-        description: isPro ? "3-agent verified • Safe to send" : "Pick your favorite and copy it",
+        description: "Copy one and tap 'I sent this' to keep the thread going",
       });
     } catch (error) {
       console.error('Generation error:', error);
@@ -397,9 +437,10 @@ export default function AppPage() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(tone);
+      setPendingSent({ tone: tone as Reply['tone'], text });
       toast({
         title: isPro ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
-        description: isPro ? "Safe to send — paste it now" : "Paste it into your chat app",
+        description: "Tap 'I sent this' to continue the thread",
       });
       
       // Log which tone was copied (for personalization data)
@@ -657,7 +698,28 @@ export default function AppPage() {
     }
   };
 
-  // Saved threads
+  // ── Thread helpers ──────────────────────────────────────
+  const buildThreadContext = (extraMessage?: string) => {
+    const lines = thread.map(m => `${m.role === 'them' ? 'Them' : 'You'}: ${m.text}`);
+    if (extraMessage) lines.push(`Them: ${extraMessage}`);
+    return lines.join('\n');
+  };
+
+  const addToThread = (role: 'them' | 'you', text: string) => {
+    setThread(prev => [...prev, { role, text, timestamp: Date.now() }]);
+  };
+
+  const handleMarkSent = (reply: Reply) => {
+    addToThread('you', reply.text);
+    setPendingSent(null);
+    setReplies([]);
+    setDecodeResult(null);
+    setMessage('');
+    setShowExamples(false);
+    toast({ title: '✓ Marked as sent', description: 'Paste their next reply to keep going' });
+  };
+
+  // ── Saved threads ─────────────────────────────────────
   const fetchThreads = async () => {
     try {
       const res = await fetch('/api/threads');
@@ -668,53 +730,63 @@ export default function AppPage() {
     } catch {}
   };
 
-  const handleSaveThread = async () => {
-    if (!message.trim()) return;
-    const name = activeThreadName || prompt('Name this conversation (e.g., "Sarah 🔥"):');
-    if (!name) return;
-    setSavingThread(true);
+  const autoSaveThread = async () => {
+    if (thread.length < 2) return;
+    setSaving(true);
     try {
+      const firstThem = thread.find(m => m.role === 'them');
+      const autoName = activeThreadName || (firstThem ? firstThem.text.slice(0, 40) + (firstThem.text.length > 40 ? '...' : '') : 'Conversation');
+
       const res = await fetch('/api/threads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: activeThreadId || undefined,
-          name,
-          messages: [{ role: 'conversation', text: message.trim(), timestamp: new Date().toISOString() }],
+          name: autoName,
+          messages: thread.map(m => ({ role: m.role, text: m.text, timestamp: new Date(m.timestamp).toISOString() })),
           context: selectedContext,
           platform: extractedPlatform,
         }),
       });
       const data = await res.json();
       if (data.thread) {
-        setActiveThreadId(data.thread.id);
-        setActiveThreadName(name);
-        toast({ title: '💾 Thread saved!', description: `"${name}" — come back anytime for context-aware replies` });
+        if (!activeThreadId) {
+          setActiveThreadId(data.thread.id);
+          setActiveThreadName(autoName);
+        }
         fetchThreads();
       }
-    } catch {
-      toast({ title: 'Failed to save', description: 'Please try again', variant: 'destructive' });
-    } finally {
-      setSavingThread(false);
+    } catch {} finally {
+      setSaving(false);
     }
   };
 
-  const handleLoadThread = async (thread: SavedThread) => {
+  const handleLoadThread = async (saved: SavedThread) => {
     try {
-      const res = await fetch('/api/threads');
-      if (res.ok) {
-        const data = await res.json();
-        const full = data.threads?.find((t: any) => t.id === thread.id);
-        if (full && full.last_message) {
-          setMessage(full.last_message.text || '');
-          setActiveThreadId(thread.id);
-          setActiveThreadName(thread.name);
-          if (thread.context) setSelectedContext(thread.context as ContextType);
-          setShowThreads(false);
-          setShowExamples(false);
-          toast({ title: `📂 Loaded "${thread.name}"`, description: 'Continue where you left off' });
-        }
+      const res = await fetch(`/api/threads?id=${saved.id}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const fullThread = data.thread;
+
+      if (fullThread?.messages) {
+        const messages: ThreadMessage[] = (fullThread.messages as any[]).map((m: any) => ({
+          role: m.role === 'you' ? 'you' as const : 'them' as const,
+          text: m.text || '',
+          timestamp: m.timestamp ? new Date(m.timestamp).getTime() : Date.now(),
+        }));
+        setThread(messages);
       }
+
+      setActiveThreadId(saved.id);
+      setActiveThreadName(saved.name);
+      if (saved.context) setSelectedContext(saved.context as ContextType);
+      setReplies([]);
+      setDecodeResult(null);
+      setPendingSent(null);
+      setMessage('');
+      setShowThreads(false);
+      setShowExamples(false);
+      toast({ title: 'Thread loaded', description: saved.name });
     } catch {
       toast({ title: 'Failed to load thread', variant: 'destructive' });
     }
@@ -727,8 +799,21 @@ export default function AppPage() {
       if (activeThreadId === id) {
         setActiveThreadId(null);
         setActiveThreadName(null);
+        setThread([]);
       }
     } catch {}
+  };
+
+  const handleNewThread = () => {
+    setThread([]);
+    setReplies([]);
+    setMessage('');
+    setDecodeResult(null);
+    setPendingSent(null);
+    setActiveThreadId(null);
+    setActiveThreadName(null);
+    setShowThreads(false);
+    setShowExamples(true);
   };
 
   const handleTryAgain = () => {
@@ -1083,6 +1168,46 @@ export default function AppPage() {
                 </p>
               )}
             </div>
+
+            {/* ══════════ THREAD VIEW ══════════ */}
+            {thread.length > 0 && (
+              <div className="mb-1">
+                <button
+                  onClick={() => setShowThread(!showThread)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/[0.04] border border-white/[0.08] border-b-0 transition-colors hover:bg-white/[0.06]"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                      <MessageCircle className="h-3 w-3 text-violet-400" />
+                    </div>
+                    <span className="text-white/60 text-xs font-bold">
+                      {thread.length} message{thread.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {showThread ? <ChevronUp className="h-3.5 w-3.5 text-white/25" /> : <ChevronDown className="h-3.5 w-3.5 text-white/25" />}
+                </button>
+
+                {showThread && (
+                  <div className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto">
+                    <div className="space-y-2.5">
+                      {thread.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.role === 'you' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] px-4 py-2.5 text-[13px] leading-relaxed ${
+                            msg.role === 'them'
+                              ? 'bg-white/[0.07] text-white/80 rounded-2xl rounded-bl-lg border border-white/[0.06]'
+                              : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl rounded-br-lg shadow-lg shadow-violet-500/10'
+                          }`}>
+                            <p className="font-medium">{msg.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                      <div ref={threadEndRef} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="relative">
               <textarea
                 value={message}
@@ -1090,7 +1215,7 @@ export default function AppPage() {
                   setMessage(e.target.value);
                   if (e.target.value.trim()) setShowExamples(false);
                 }}
-                placeholder="Drop their message here — or upload a screenshot"
+                placeholder={thread.length > 0 ? "Paste their next reply..." : "Drop their message here — or upload a screenshot"}
                 className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-violet-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
                 aria-label="Message input"
@@ -1267,117 +1392,125 @@ export default function AppPage() {
             )}
 
             <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  onClick={handleGenerate}
-                  disabled={loading || !message.trim()}
-                  className={`col-span-2 h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed ${
-                    isPro
-                      ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/30'
-                      : 'bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-violet-600/50'
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !message.trim()}
+                className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed ${
+                  isPro
+                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/30'
+                    : 'bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-violet-600/50'
+                }`}
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {isPro ? (
+                      v2Step === 'drafting' ? 'Drafting...' :
+                      v2Step === 'rule-checking' ? 'Checking...' :
+                      v2Step === 'tone-verifying' ? 'Verifying...' :
+                      'Finalizing...'
+                    ) : 'Generating...'}
+                  </>
+                ) : (
+                  <>
+                    {isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                    {isPro ? 'Generate Verified' : 'Generate'}
+                  </>
+                )}
+              </Button>
+
+              {/* Thread bar: Recent / New / Active indicator */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => { fetchThreads(); setShowThreads(!showThreads); }}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all active:scale-95 ${
+                    showThreads
+                      ? 'bg-violet-500/25 text-violet-300 border border-violet-500/30'
+                      : 'bg-white/[0.08] text-white/60 border border-white/[0.12] hover:bg-white/[0.14] hover:text-white/80'
                   }`}
-                  size="lg"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      {isPro ? (
-                        v2Step === 'drafting' ? 'Drafting...' :
-                        v2Step === 'rule-checking' ? 'Checking...' :
-                        v2Step === 'tone-verifying' ? 'Verifying...' :
-                        'Finalizing...'
-                      ) : 'Generating...'}
-                    </>
-                  ) : (
-                    <>
-                      {isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                      {isPro ? 'Generate Verified' : 'Generate'}
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (!isPro) {
-                      setShowPaywall(true);
-                      toast({ title: '🔒 Saved Threads is Pro', description: 'Upgrade to save and revisit conversations' });
-                      return;
-                    }
-                    fetchThreads(); setShowThreads(!showThreads);
-                  }}
-                  variant="outline"
-                  className={`h-14 rounded-2xl font-bold transition-all active:scale-95 ${
-                    isPro
-                      ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30'
-                      : 'bg-white/[0.06] border border-white/[0.12] text-white/40 hover:bg-white/[0.12]'
-                  }`}
-                  size="lg"
+                  <Clock className="h-3.5 w-3.5" />
+                  Recent{savedThreads.length > 0 ? ` (${savedThreads.length})` : ''}
+                </button>
+                <button
+                  onClick={handleNewThread}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-white/60 hover:bg-white/[0.14] hover:text-white/80 text-xs font-bold transition-all active:scale-95"
                 >
-                  {isPro ? <BookmarkPlus className="h-5 w-5" /> : <Lock className="h-4 w-4" />}
-                  <span className="hidden sm:inline ml-1">{isPro ? 'Save' : 'Pro'}</span>
-                </Button>
+                  <Plus className="h-3.5 w-3.5" /> New
+                </button>
+                {activeThreadName && (
+                  <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 min-w-0">
+                    <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shrink-0" />
+                    <span className="text-violet-300 text-xs font-semibold truncate">{activeThreadName}</span>
+                    {saving && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 ml-auto text-violet-400" />}
+                  </div>
+                )}
+                {!activeThreadName && saving && (
+                  <div className="flex items-center gap-1.5 px-3 py-2.5 text-violet-400 text-[11px] font-medium">
+                    <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" /> syncing
+                  </div>
+                )}
               </div>
-              {/* Active thread indicator */}
-              {activeThreadName && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-xs">
-                  <BookmarkCheck className="h-3.5 w-3.5 text-violet-400" />
-                  <span className="text-violet-300 font-medium">Thread: {activeThreadName}</span>
-                  <button onClick={handleSaveThread} disabled={savingThread || !message.trim()} className="ml-auto text-violet-400 hover:text-violet-300 font-bold disabled:opacity-50">
-                    {savingThread ? 'Saving...' : 'Update'}
-                  </button>
-                </div>
-              )}
-              {!loading && !replies.length && (
+
+              {!loading && !replies.length && !thread.length && (
                 <p className="text-center text-xs text-white/30 font-medium animate-fade-in transition-opacity duration-500">
                   {TAGLINES[currentTagline]}
                 </p>
               )}
             </div>
 
-            {/* Saved Threads Drawer */}
+            {/* Recent Threads Drawer */}
             {showThreads && (
-              <div className="animate-in slide-in-from-top duration-300 rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 space-y-3">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Saved Threads</span>
-                  <button onClick={() => setShowThreads(false)} className="text-white/20 hover:text-white/50 transition-colors">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                {message.trim() && !activeThreadId && (
-                  <button
-                    onClick={handleSaveThread}
-                    disabled={savingThread}
-                    className="w-full p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 transition-all text-violet-300 font-medium text-sm flex items-center justify-center gap-2"
-                  >
-                    <BookmarkPlus className="h-4 w-4" />
-                    {savingThread ? 'Saving...' : 'Save current conversation'}
-                  </button>
-                )}
-                {savedThreads.length === 0 ? (
-                  <div className="text-center py-6">
-                    <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
-                      <BookmarkCheck className="h-5 w-5 text-white/20" />
-                    </div>
-                    <p className="text-white/25 text-xs">No saved threads yet</p>
+              <div className="animate-in fade-in slide-in-from-top-3 duration-300">
+                <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 space-y-2">
+                  <div className="flex items-center justify-between px-1 mb-2">
+                    <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Conversations</span>
+                    <button onClick={() => setShowThreads(false)} className="text-white/20 hover:text-white/50 transition-colors">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
-                ) : (
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {savedThreads.map(thread => (
-                      <div key={thread.id} className={`flex items-center gap-3 p-3 rounded-2xl transition-all group text-left active:scale-[0.98] ${
-                        activeThreadId === thread.id
-                          ? 'bg-violet-500/15 border border-violet-500/20'
-                          : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
-                      }`}>
-                        <button onClick={() => handleLoadThread(thread)} className="flex-1 text-left min-w-0">
-                          <p className="text-sm font-semibold text-white/80 truncate">{thread.name}</p>
-                          <p className="text-[10px] text-white/25 mt-0.5">{thread.message_count} msgs · {new Date(thread.updated_at).toLocaleDateString()}</p>
-                        </button>
-                        <button onClick={() => handleDeleteThread(thread.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all">
-                          <Trash2 className="h-3 w-3 text-red-400" />
-                        </button>
+                  {savedThreads.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
+                        <MessageCircle className="h-5 w-5 text-white/20" />
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <p className="text-white/25 text-xs">Start a thread and it&apos;ll appear here</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1 max-h-60 overflow-y-auto">
+                      {savedThreads.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => handleLoadThread(t)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all group text-left active:scale-[0.98] ${
+                            activeThreadId === t.id
+                              ? 'bg-violet-500/15 border border-violet-500/20'
+                              : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                            activeThreadId === t.id ? 'bg-violet-500/20' : 'bg-white/[0.05]'
+                          }`}>
+                            <MessageCircle className={`h-3.5 w-3.5 ${activeThreadId === t.id ? 'text-violet-400' : 'text-white/30'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white/80 text-sm font-semibold truncate">{t.name}</p>
+                            <p className="text-white/25 text-[10px] mt-0.5">
+                              {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all"
+                          >
+                            <Trash2 className="h-3 w-3 text-red-400" />
+                          </button>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             </>)}
@@ -1698,7 +1831,7 @@ export default function AppPage() {
                         <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
                         
                         {/* Action buttons */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <button
                             onClick={() => handleCopy(reply.text, reply.tone)}
                             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
@@ -1709,6 +1842,14 @@ export default function AppPage() {
                           >
                             {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
                           </button>
+                          {pendingSent?.tone === reply.tone && (
+                            <button
+                              onClick={() => handleMarkSent(reply)}
+                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 animate-in fade-in duration-200"
+                            >
+                              <Send className="h-3.5 w-3.5" /> I sent this
+                            </button>
+                          )}
                           <div className="relative">
                             <button
                               onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
