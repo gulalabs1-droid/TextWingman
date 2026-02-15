@@ -116,6 +116,16 @@ type StrategyData = {
   latencyMs: number;
 } | null;
 
+type ScanResult = {
+  platform: string;
+  messageCount: number;
+  confidence: string;
+  fullConversation: string;
+  lastReceived: string;
+  strategy: StrategyData;
+  replies: Reply[];
+} | null;
+
 type AppMode = 'reply' | 'decode' | 'opener';
 
 const OPENER_CONTEXTS = [
@@ -206,6 +216,7 @@ export default function AppPage() {
   const [customSent, setCustomSent] = useState('');
   const [showCustomSent, setShowCustomSent] = useState(false);
   const [strategyData, setStrategyData] = useState<StrategyData>(null);
+  const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
@@ -580,6 +591,7 @@ export default function AppPage() {
       setExtractedPlatform(null);
 
       try {
+        // Step 1: Extract conversation from screenshot
         const res = await fetch('/api/extract-text', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -599,22 +611,86 @@ export default function AppPage() {
         }
 
         if (data.extracted_text) {
-          setMessage(data.extracted_text);
-          setShowExamples(false);
           setExtractedPlatform(data.platform);
           const msgCount = data.message_count || 1;
+
           toast({
-            title: `📷 ${msgCount > 1 ? `${msgCount} messages extracted!` : 'Message extracted!'}`,
-            description: data.confidence === 'high' 
-              ? `Full convo from ${data.platform !== 'unknown' ? data.platform : 'your screenshot'}` 
-              : 'Check the text looks right, then hit Generate',
+            title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'} — generating replies...`,
+            description: data.platform !== 'unknown' ? `From ${data.platform}` : 'Reading your conversation',
           });
+
+          // Step 2: Auto-generate replies using the extracted conversation
+          const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+          const genRes = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message: data.extracted_text,
+              context: selectedContext || 'crush',
+            }),
+          });
+
+          const genData = await genRes.json();
+
+          if (!genRes.ok) {
+            throw new Error(genData.error || 'Generation failed');
+          }
+
+          // Parse replies from response
+          let scanReplies: Reply[] = [];
+          let scanStrategy: StrategyData = null;
+
+          if (isPro && genData.shorter && genData.spicier && genData.softer) {
+            scanReplies = [
+              { tone: 'shorter', text: genData.shorter },
+              { tone: 'spicier', text: genData.spicier },
+              { tone: 'softer', text: genData.softer },
+            ];
+            if (genData.strategy) {
+              scanStrategy = genData.strategy;
+            }
+          } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
+            scanReplies = genData.replies.filter((r: any) => r && r.tone && r.text);
+          }
+
+          if (scanReplies.length > 0) {
+            setScanResult({
+              platform: data.platform || 'unknown',
+              messageCount: msgCount,
+              confidence: data.confidence || 'medium',
+              fullConversation: data.full_conversation || data.extracted_text,
+              lastReceived: data.last_received || '',
+              strategy: scanStrategy,
+              replies: scanReplies,
+            });
+            setShowExamples(false);
+
+            // Track usage
+            const usageRes = await fetch('/api/usage');
+            if (usageRes.ok) {
+              const usageData = await usageRes.json();
+              setUsageCount(usageData.usageCount);
+              setRemainingReplies(usageData.remaining);
+            }
+
+            toast({
+              title: '📷 Briefing ready',
+              description: `${msgCount} messages scanned — your move is below`,
+            });
+          } else {
+            // Fallback: put text in textarea like before
+            setMessage(data.extracted_text);
+            toast({
+              title: `📷 ${msgCount > 1 ? `${msgCount} messages extracted` : 'Message extracted'}`,
+              description: 'Hit Generate to get replies',
+            });
+          }
         }
       } catch (error) {
         console.error('Screenshot extraction error:', error);
         toast({
-          title: 'Extraction failed',
-          description: 'Something went wrong. Please try pasting the message instead.',
+          title: 'Scan failed',
+          description: 'Something went wrong. Try pasting the message instead.',
           variant: 'destructive',
         });
         setScreenshotPreview(null);
@@ -633,6 +709,25 @@ export default function AppPage() {
   const clearScreenshot = () => {
     setScreenshotPreview(null);
     setExtractedPlatform(null);
+  };
+
+  // Continue in Thread from a scan result — hydrate thread with extracted messages
+  const handleContinueInThread = () => {
+    if (!scanResult) return;
+    const lines = scanResult.fullConversation.split('\n').filter(l => l.trim());
+    const newThread: ThreadMessage[] = lines.map(line => ({
+      role: line.startsWith('You:') ? 'you' as const : 'them' as const,
+      text: line.replace(/^(Them|You):\s*/, ''),
+      timestamp: Date.now(),
+    }));
+    setThread(newThread);
+    setReplies(scanResult.replies);
+    setStrategyData(scanResult.strategy);
+    setScanResult(null);
+    setScreenshotPreview(null);
+    setShowThread(true);
+    setShowExamples(false);
+    toast({ title: '✓ Loaded into thread', description: 'Pick a reply or keep the conversation going' });
   };
 
   // Decode message — "What Do They Mean?"
@@ -866,6 +961,7 @@ export default function AppPage() {
     setThread([]);
     setReplies([]);
     setStrategyData(null);
+    setScanResult(null);
     setMessage('');
     setDecodeResult(null);
     setPendingSent(null);
@@ -1876,6 +1972,143 @@ export default function AppPage() {
             <div className="text-center pt-5">
               <button onClick={() => setOpeners([])} className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95">
                 <Sparkles className="h-3.5 w-3.5 inline mr-1.5" /> Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════ SCREENSHOT BRIEFING CARD ══════════ */}
+        {scanResult && (
+          <div className="animate-in fade-in slide-in-from-bottom-3 duration-400 mb-8">
+            {/* Context header */}
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <Camera className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-white/80 text-sm font-bold">Screenshot Briefing</p>
+                <p className="text-white/35 text-[11px]">
+                  {scanResult.messageCount} message{scanResult.messageCount !== 1 ? 's' : ''} from {scanResult.platform !== 'unknown' ? scanResult.platform : 'conversation'}
+                  {scanResult.confidence === 'high' && ' • high confidence'}
+                </p>
+              </div>
+              <button
+                onClick={() => { setScanResult(null); setScreenshotPreview(null); }}
+                className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white/30 hover:text-white/60 hover:bg-white/[0.10] transition-all"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Strategy card (Pro only) */}
+            {scanResult.strategy && (
+              <div className="mb-4 rounded-2xl bg-gradient-to-r from-emerald-500/[0.08] to-cyan-500/[0.08] border border-emerald-500/20 p-4">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <Target className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="text-emerald-300 text-[11px] font-bold uppercase tracking-widest">Your sharp friend says</span>
+                  {scanResult.strategy.move.risk !== 'low' && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      scanResult.strategy.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
+                    }`}>
+                      {scanResult.strategy.move.risk} risk
+                    </span>
+                  )}
+                </div>
+                <p className="text-white/90 text-sm font-semibold leading-relaxed mb-3">
+                  {scanResult.strategy.move.one_liner}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    scanResult.strategy.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
+                    scanResult.strategy.momentum === 'Declining' || scanResult.strategy.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
+                    'bg-white/[0.08] text-white/50'
+                  }`}>
+                    {scanResult.strategy.momentum === 'Rising' ? <TrendingUp className="h-3 w-3" /> :
+                     scanResult.strategy.momentum === 'Declining' || scanResult.strategy.momentum === 'Stalling' ? <TrendingDown className="h-3 w-3" /> :
+                     <Minus className="h-3 w-3" />}
+                    {scanResult.strategy.momentum}
+                  </span>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">
+                    {scanResult.strategy.balance}
+                  </span>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    scanResult.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
+                    scanResult.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
+                    'bg-violet-500/15 text-violet-300'
+                  }`}>
+                    {scanResult.strategy.move.energy.replace('_', ' ')}
+                  </span>
+                  {scanResult.strategy.move.constraints.keep_short && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">keep short</span>
+                  )}
+                  {scanResult.strategy.move.constraints.no_questions && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">no questions</span>
+                  )}
+                  {scanResult.strategy.move.constraints.add_tease && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">add tease</span>
+                  )}
+                  {scanResult.strategy.move.constraints.push_meetup && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">push meetup</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Reply options */}
+            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your replies</p>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden mb-4">
+              {scanResult.replies.map((reply, idx) => {
+                const config = TONE_CONFIG[reply.tone];
+                const isCopied = copied === reply.tone;
+                const label = ['A', 'B', 'C'][idx];
+                return (
+                  <div
+                    key={reply.tone}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
+                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                          <span className="text-white/25 text-[11px]">{reply.text.split(' ').length}w</span>
+                        </div>
+                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
+                        <button
+                          onClick={() => handleCopy(reply.text, reply.tone)}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                            isCopied
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                          }`}
+                        >
+                          {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleContinueInThread}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-violet-500/15 border border-violet-500/25 text-violet-300 hover:bg-violet-500/25 text-xs font-bold transition-all active:scale-95"
+              >
+                <MessageCircle className="h-3.5 w-3.5" /> Continue in Thread
+              </button>
+              <button
+                onClick={() => { setScanResult(null); setScreenshotPreview(null); }}
+                className="px-4 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.10] text-xs font-bold transition-all active:scale-95"
+              >
+                Done
               </button>
             </div>
           </div>
