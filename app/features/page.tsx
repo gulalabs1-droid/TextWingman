@@ -2,24 +2,72 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FEATURES = [
   {
+    id: 'thread-mode',
+    badge: 'New',
+    badgeColor: 'bg-emerald-500',
+    icon: MessageCircle,
+    iconBg: 'bg-gradient-to-br from-violet-500 to-fuchsia-600',
+    title: 'Thread Mode',
+    tagline: 'Not just replies. Full conversations.',
+    description: 'Text Wingman now tracks your entire conversation — their messages and yours. The AI reads the full thread and generates replies that actually fit the flow, not just the last message. Double-texts, custom replies, auto-save — it all works like a real texting coach by your side.',
+    howItWorks: [
+      'Paste what they sent you and hit Generate',
+      'Pick a reply and tap "I sent this" — or type what you actually said',
+      'Paste their next message and generate again — the AI sees everything',
+      'Your thread auto-saves so you can come back anytime',
+    ],
+    example: {
+      input: 'Them: "hey how you doing"\nYou: "nothing much, what about you?"\nThem: "nothing lol"',
+      outputs: [
+        { tone: 'Shorter', text: 'Sounds boring, come do something fun', emoji: '⚡' },
+        { tone: 'Spicier', text: 'Nothing? That\'s a crime on a Friday', emoji: '🔥' },
+        { tone: 'Softer', text: 'Same here — we should change that', emoji: '💚' },
+      ],
+    },
+  },
+  {
+    id: 'strategy-mode',
+    badge: 'Pro',
+    badgeColor: 'bg-emerald-600',
+    icon: Target,
+    iconBg: 'bg-gradient-to-br from-emerald-500 to-cyan-600',
+    title: 'Strategy Mode',
+    tagline: 'AI coaching for every conversation.',
+    description: 'StrategyAgent analyzes your full thread and gives you a tactical coaching card before you reply. See the conversation momentum, who\'s investing more, and get a recommended move — all in under 2 seconds. The strategy also shapes your generated replies automatically.',
+    howItWorks: [
+      'Build a thread with 4+ messages back and forth',
+      'Hit Generate — StrategyAgent runs alongside reply generation',
+      'See your coaching card: momentum, balance, energy, and constraints',
+      'Your replies are automatically shaped by the strategy recommendation',
+    ],
+    example: {
+      input: '6-message thread with declining energy',
+      outputs: [
+        { tone: 'Momentum', text: 'Declining — their messages are getting shorter', emoji: '📉' },
+        { tone: 'Balance', text: 'You leading — you\'re investing more right now', emoji: '⚖️' },
+        { tone: 'Coach', text: 'Pull back. Keep it short. Let them come to you.', emoji: '🎯' },
+      ],
+    },
+  },
+  {
     id: 'reply-generator',
     badge: 'Free',
     badgeColor: 'bg-purple-500',
-    icon: MessageCircle,
+    icon: Sparkles,
     iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
     title: 'Reply Generator',
     tagline: 'Paste their message. Get 3 perfect replies.',
-    description: 'Drop any text message into Text Wingman and instantly get three reply options — Shorter (brief & casual), Spicier (playful & flirty), and Softer (warm & genuine). Free users get 5 replies per day. Pro users get unlimited.',
+    description: 'Drop any text message into Text Wingman and instantly get three reply options — Shorter (brief & casual), Spicier (playful & flirty), and Softer (warm & genuine). With Thread Mode, every reply is aware of the full conversation. Free users get 5 replies per day. Pro users get unlimited.',
     howItWorks: [
       'Paste the message you received',
       'Pick the context (crush, friend, work, etc.)',
       'Hit Generate and get 3 replies instantly',
-      'Copy your favorite and paste it into your chat',
+      'Copy your favorite and tap "I sent this" to continue the thread',
     ],
     example: {
       input: '"Hey, what are you doing this weekend?"',
@@ -80,18 +128,18 @@ const FEATURES = [
   },
   {
     id: 'saved-threads',
-    badge: 'Pro',
+    badge: 'Free',
     badgeColor: 'bg-blue-500',
     icon: BookmarkCheck,
     iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-600',
-    title: 'Saved Threads',
+    title: 'Auto-Save Threads',
     tagline: 'Never lose context. Pick up where you left off.',
-    description: 'Name and save ongoing conversations so you can come back anytime. When you load a saved thread, the AI remembers the full context — so your replies stay consistent and natural across the whole conversation arc. Pro feature.',
+    description: 'Every conversation with 2+ messages auto-saves in the background. Come back anytime, load a thread, and the AI picks up right where you left off with full context. No manual saving needed.',
     howItWorks: [
-      'Paste or upload a conversation',
-      'Hit the 📑 Save button and name it (e.g., "Sarah 🔥")',
-      'Come back later and load the thread',
-      'Generate replies with full conversation context',
+      'Start a conversation — it auto-saves after 2 messages',
+      'Tap "Recent" to see all your saved conversations',
+      'Load any thread and keep generating with full context',
+      'Start fresh anytime with the "New" button',
     ],
     example: null,
   },
@@ -156,16 +204,16 @@ export default function FeaturesPage() {
 
       {/* Hero */}
       <section className="container mx-auto px-4 pt-8 pb-16 text-center">
-        <div className="inline-flex items-center gap-2 bg-purple-500/20 text-purple-300 px-4 py-2 rounded-full text-sm font-medium border border-purple-500/30 mb-6">
+        <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30 mb-6">
           <Sparkles className="h-4 w-4" />
-          v{CURRENT_VERSION} — {FEATURES.filter(f => f.badge === 'New').length} new features
+          v{CURRENT_VERSION} — Thread Mode + Strategy Coaching
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-          Everything Text Wingman
-          <span className="block bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent mt-1">Can Do</span>
+          Not just replies.
+          <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">Conversations.</span>
         </h1>
         <p className="text-lg text-white/60 max-w-2xl mx-auto mb-8">
-          Reply generation is just the start. Decode messages, craft opening lines, save threads, and never fumble a text again.
+          Text Wingman tracks the full conversation, coaches you on the right move, and generates replies that fit the flow. Your AI texting companion.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           {FEATURES.map(f => (

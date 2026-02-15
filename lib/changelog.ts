@@ -10,6 +10,21 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '3.0.0',
+    date: '2026-02-15',
+    title: 'V3 — Conversational Intelligence',
+    description: 'The biggest update yet. Text Wingman is no longer just a reply generator — it\'s a full conversational AI companion with strategy coaching.',
+    type: 'milestone',
+    highlights: [
+      'Thread Mode — full back-and-forth conversation loop with "I sent this" and custom replies',
+      'StrategyAgent — AI coaching card showing momentum, balance, and recommended move (Pro)',
+      'Thread-Aware AI — every reply is generated with full conversation context, not just the last message',
+      'Dark glass UI overhaul — adopted across dashboard and app page for a modern, premium feel',
+      'Double-text support — add multiple messages from either side without forced alternation',
+      'Auto-save threads — conversations sync in the background after 2+ messages',
+    ],
+  },
+  {
     version: '2.5.0',
     date: '2026-02-13',
     title: 'Message Decoder, Opening Lines, Coach Tips & Saved Threads',

@@ -168,11 +168,15 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-center gap-3 text-white">
                     <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0" />
-                    All tone styles
+                    Strategy Mode — AI coaching every reply
                   </li>
                   <li className="flex items-center gap-3 text-white">
                     <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0" />
-                    Priority support
+                    Thread-aware AI conversations
+                  </li>
+                  <li className="flex items-center gap-3 text-white">
+                    <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0" />
+                    Unlimited decodes &amp; openers
                   </li>
                 </ul>
                 <p className="text-white/60 text-sm mb-4">
@@ -211,7 +215,7 @@ export default function PricingPage() {
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2 mt-2">7-Day Free Trial</h3>
                 <p className="text-green-100 mb-1">Full Pro access — no credit card needed</p>
-                <p className="text-green-200/70 text-sm mb-6">Try unlimited replies, all tones, and V2 Verified Mode free for 7 days</p>
+                <p className="text-green-200/70 text-sm mb-6">Try unlimited replies, Strategy Mode, and V2 Verified free for 7 days</p>
                 <button
                   onClick={() => handleCheckout('weekly', true)}
                   disabled={loading === 'trial'}
@@ -247,11 +251,15 @@ export default function PricingPage() {
                 </li>
                 <li className="flex items-center gap-3 text-gray-700">
                   <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  All tone styles
+                  Strategy Mode — AI coaching
                 </li>
                 <li className="flex items-center gap-3 text-gray-700">
                   <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  Priority support
+                  V2 Verified (3-agent pipeline)
+                </li>
+                <li className="flex items-center gap-3 text-gray-700">
+                  <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  Unlimited decodes & openers
                 </li>
                 <li className="flex items-center gap-3 text-gray-700">
                   <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
@@ -284,11 +292,11 @@ export default function PricingPage() {
                 </li>
                 <li className="flex items-center gap-3 text-white/80">
                   <Check className="h-5 w-5 text-purple-400 flex-shrink-0" />
-                  All tone styles
+                  Strategy Mode — AI coaching
                 </li>
                 <li className="flex items-center gap-3 text-white/80">
                   <Check className="h-5 w-5 text-purple-400 flex-shrink-0" />
-                  Priority support
+                  V2 Verified (3-agent pipeline)
                 </li>
                 <li className="flex items-center gap-3 text-white/80">
                   <Check className="h-5 w-5 text-purple-400 flex-shrink-0" />
