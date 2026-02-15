@@ -186,6 +186,8 @@ export default function AppPage() {
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [showThread, setShowThread] = useState(true);
   const [pendingSent, setPendingSent] = useState<Reply | null>(null);
+  const [customSent, setCustomSent] = useState('');
+  const [showCustomSent, setShowCustomSent] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
@@ -704,13 +706,31 @@ export default function AppPage() {
   const handleMarkSent = (reply: Reply) => {
     addToThread('you', reply.text);
     setPendingSent(null);
+    setCustomSent('');
+    setShowCustomSent(false);
     setReplies([]);
     setDecodeResult(null);
     setMessage('');
     setShowExamples(false);
     setShowThread(true);
-    toast({ title: '✓ Added to thread', description: 'Now paste their next reply to keep going' });
-    // Scroll back to input so user knows to paste next message
+    toast({ title: '✓ Added to thread', description: 'Now paste what they said back' });
+    setTimeout(() => {
+      inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  };
+
+  const handleCustomSentSubmit = () => {
+    if (!customSent.trim()) return;
+    addToThread('you', customSent.trim());
+    setPendingSent(null);
+    setCustomSent('');
+    setShowCustomSent(false);
+    setReplies([]);
+    setDecodeResult(null);
+    setMessage('');
+    setShowExamples(false);
+    setShowThread(true);
+    toast({ title: '✓ Added to thread', description: 'Now paste what they said back' });
     setTimeout(() => {
       inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 150);
@@ -1782,30 +1802,6 @@ export default function AppPage() {
         {/* Replies Section */}
         {replies.length > 0 && (
           <div className="animate-in fade-in duration-400">
-            {/* ══════════ "I SENT THIS" BANNER ══════════ */}
-            {pendingSent && (
-              <button
-                onClick={() => handleMarkSent(pendingSent)}
-                className="w-full mb-4 p-4 rounded-2xl bg-violet-500/15 border border-violet-500/30 hover:bg-violet-500/25 transition-all active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2 duration-300 group"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-violet-500/25 flex items-center justify-center">
-                      <Send className="h-4 w-4 text-violet-300" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-violet-200 text-sm font-bold">I sent this</p>
-                      <p className="text-violet-400/60 text-[11px]">Tap to add to thread &amp; get their next reply</p>
-                    </div>
-                  </div>
-                  <div className="px-4 py-2 rounded-xl bg-violet-500/25 text-violet-200 text-xs font-bold group-hover:bg-violet-500/35 transition-colors">
-                    Continue →
-                  </div>
-                </div>
-                <p className="text-violet-300/50 text-xs mt-2 truncate text-left">&ldquo;{pendingSent.text}&rdquo;</p>
-              </button>
-            )}
-
             <div className="mb-4">
               {showCraftedMessage && (
                 <p className={`text-[11px] font-bold uppercase tracking-widest mb-2 ${
@@ -1866,18 +1862,12 @@ export default function AppPage() {
                           >
                             {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
                           </button>
-                          {pendingSent && (
-                            <button
-                              onClick={() => handleMarkSent(reply)}
-                              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 animate-in fade-in duration-200 ${
-                                pendingSent.tone === reply.tone
-                                  ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30'
-                                  : 'bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/70 hover:bg-white/[0.10]'
-                              }`}
-                            >
-                              <Send className="h-3.5 w-3.5" /> I sent this
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleMarkSent(reply)}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-violet-500/15 border border-violet-500/25 text-violet-300 hover:bg-violet-500/25 transition-all active:scale-95"
+                          >
+                            <Send className="h-3.5 w-3.5" /> I sent this
+                          </button>
                           <div className="relative">
                             <button
                               onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
@@ -1920,8 +1910,48 @@ export default function AppPage() {
               })}
             </div>
 
+            {/* "I said something else" custom input */}
+            <div className="pt-3 space-y-2">
+              {!showCustomSent ? (
+                <button
+                  onClick={() => setShowCustomSent(true)}
+                  className="w-full p-3.5 rounded-2xl bg-white/[0.04] border border-dashed border-white/[0.12] hover:bg-white/[0.08] hover:border-white/[0.18] transition-all text-white/40 hover:text-white/60 text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  I said something else...
+                </button>
+              ) : (
+                <div className="rounded-2xl bg-white/[0.04] border border-violet-500/20 p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <p className="text-violet-300 text-xs font-bold">What did you actually send?</p>
+                  <textarea
+                    value={customSent}
+                    onChange={(e) => setCustomSent(e.target.value)}
+                    placeholder="Type what you sent them..."
+                    className="w-full p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/30 transition-all min-h-[60px] text-sm"
+                    maxLength={500}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCustomSentSubmit}
+                      disabled={!customSent.trim()}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                    >
+                      <Send className="h-3.5 w-3.5" /> Add to thread
+                    </button>
+                    <button
+                      onClick={() => { setShowCustomSent(false); setCustomSent(''); }}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 transition-all active:scale-95"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Try Again Button */}
-            <div className="text-center pt-6 animate-in fade-in duration-500 delay-300">
+            <div className="text-center pt-4 animate-in fade-in duration-500 delay-300">
               <button
                 onClick={handleTryAgain}
                 className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95"

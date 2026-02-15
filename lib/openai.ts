@@ -37,6 +37,17 @@ IMPORTANT CONTEXT:
 - Example: If they paste "hello bob", the user IS Bob receiving a greeting. Generate replies for Bob to respond, like "Hey! What's up?" NOT "Hey Bob!" (that would be greeting yourself)
 ${contextHint}
 
+CONVERSATION THREADS:
+- The message may contain a full conversation history in this format:
+  Them: [what they said]
+  You: [what the user replied]
+  Them: [their next message]
+- When you see this format, READ THE ENTIRE CONVERSATION to understand the flow, tone, and dynamic
+- Generate replies that make sense as the NEXT message in that specific conversation
+- Reference earlier parts of the convo naturally (callbacks, inside jokes, building on topics)
+- The LAST "Them:" line is what you're replying to — but use the full context to craft smarter replies
+- If there's only a single message with no Them:/You: format, treat it as the first message in a new conversation
+
 Generate 3 options:
 - Option A (Shorter): Brief, casual, low-effort response
 - Option B (Spicier): Playful, flirty, confident response
