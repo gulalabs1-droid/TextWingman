@@ -736,6 +736,24 @@ export default function AppPage() {
     }, 150);
   };
 
+  // Add "them" message to thread WITHOUT generating (for double texts)
+  const handleAddTheirMessage = () => {
+    if (!message.trim()) return;
+    addToThread('them', message.trim());
+    setMessage('');
+    setShowThread(true);
+    toast({ title: '✓ Added to thread', description: 'Add more or hit Generate when ready' });
+  };
+
+  // Add "you" message to thread directly (for when you sent something not from suggestions)
+  const handleAddMyMessage = () => {
+    if (!message.trim()) return;
+    addToThread('you', message.trim());
+    setMessage('');
+    setShowThread(true);
+    toast({ title: '✓ Your message added', description: 'Now paste what they said back' });
+  };
+
   // ── Saved threads ─────────────────────────────────────
   const fetchThreads = async () => {
     try {
@@ -1209,18 +1227,34 @@ export default function AppPage() {
 
                 {showThread && (
                   <div className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto">
-                    <div className="space-y-2.5">
-                      {thread.map((msg, i) => (
-                        <div key={i} className={`flex ${msg.role === 'you' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] px-4 py-2.5 text-[13px] leading-relaxed ${
-                            msg.role === 'them'
-                              ? 'bg-white/[0.07] text-white/80 rounded-2xl rounded-bl-lg border border-white/[0.06]'
-                              : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-2xl rounded-br-lg shadow-lg shadow-violet-500/10'
-                          }`}>
-                            <p className="font-medium">{msg.text}</p>
+                    <div className="space-y-1">
+                      {thread.map((msg, i) => {
+                        const prevRole = i > 0 ? thread[i - 1].role : null;
+                        const nextRole = i < thread.length - 1 ? thread[i + 1].role : null;
+                        const isGroupStart = prevRole !== msg.role;
+                        const isGroupEnd = nextRole !== msg.role;
+                        return (
+                          <div key={i} className={`flex ${msg.role === 'you' ? 'justify-end' : 'justify-start'} ${isGroupStart && i > 0 ? 'mt-3' : ''}`}>
+                            <div className={`max-w-[80%] px-4 py-2 text-[13px] leading-relaxed ${
+                              msg.role === 'them'
+                                ? `bg-white/[0.07] text-white/80 border border-white/[0.06] ${
+                                    isGroupStart && isGroupEnd ? 'rounded-2xl rounded-bl-lg' :
+                                    isGroupStart ? 'rounded-2xl rounded-bl-md' :
+                                    isGroupEnd ? 'rounded-2xl rounded-tl-md rounded-bl-lg' :
+                                    'rounded-xl rounded-l-md'
+                                  }`
+                                : `bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/10 ${
+                                    isGroupStart && isGroupEnd ? 'rounded-2xl rounded-br-lg' :
+                                    isGroupStart ? 'rounded-2xl rounded-br-md' :
+                                    isGroupEnd ? 'rounded-2xl rounded-tr-md rounded-br-lg' :
+                                    'rounded-xl rounded-r-md'
+                                  }`
+                            }`}>
+                              <p className="font-medium">{msg.text}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                       <div ref={threadEndRef} />
                     </div>
                   </div>
@@ -1235,7 +1269,13 @@ export default function AppPage() {
                   setMessage(e.target.value);
                   if (e.target.value.trim()) setShowExamples(false);
                 }}
-                placeholder={thread.length > 0 ? "What did they say back?" : "What did they send you?"}
+                placeholder={
+                  thread.length === 0
+                    ? "What did they send you?"
+                    : thread[thread.length - 1]?.role === 'you'
+                      ? "What did they say back?"
+                      : "They said more? Add it, or generate a reply"
+                }
                 className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-violet-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
                 aria-label="Message input"
@@ -1246,6 +1286,24 @@ export default function AppPage() {
                 {charCount}/2000
               </div>
             </div>
+
+            {/* Quick add to thread buttons (for double texts / non-generated messages) */}
+            {thread.length > 0 && message.trim() && (
+              <div className="flex gap-2 animate-in fade-in duration-200">
+                <button
+                  onClick={handleAddTheirMessage}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/40 hover:bg-white/[0.08] hover:text-white/60 text-xs font-bold transition-all active:scale-95"
+                >
+                  <Plus className="h-3 w-3" /> Add as their message
+                </button>
+                <button
+                  onClick={handleAddMyMessage}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300/60 hover:bg-violet-500/15 hover:text-violet-300 text-xs font-bold transition-all active:scale-95"
+                >
+                  <Plus className="h-3 w-3" /> Add as my message
+                </button>
+              </div>
+            )}
 
             {/* Screenshot Upload */}
             <input
