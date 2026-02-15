@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
@@ -856,30 +856,35 @@ export default function AppPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950/80 to-indigo-950">
-      <div className={`mx-auto px-5 py-8 pb-14 max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Ambient background mesh */}
+      <div className="fixed inset-0 pointer-events-none hidden md:block">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/8 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/8 blur-[120px]" />
+        <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
+      </div>
+      <div className="fixed inset-0 pointer-events-none md:hidden">
+        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] rounded-full bg-violet-600/6 blur-[80px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
+      </div>
+
+      <div className={`relative z-10 mx-auto px-5 py-6 pb-14 max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <Button asChild variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 rounded-2xl transition-colors">
-            <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Back
-            </Link>
-          </Button>
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/dashboard" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            <ArrowLeft className="h-5 w-5 text-white/70" />
+          </Link>
+          <div className="flex items-center gap-3">
             <Link href="/" className="transition-transform hover:scale-105">
               <Logo size="sm" showText={true} />
             </Link>
-            <Link href="/changelog" className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/15 text-[10px] font-bold text-white/50 hover:text-white/80 transition-colors">
+            <Link href="/changelog" className="px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[10px] font-bold text-white/50 hover:text-white/80 transition-colors">
               v{CURRENT_VERSION}
             </Link>
           </div>
-          <Button asChild variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10 rounded-2xl transition-colors">
-            <Link href="/profile">
-              <Crown className="h-4 w-4 mr-1.5" />
-              Profile
-            </Link>
-          </Button>
+          <Link href="/profile" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            <Crown className="h-5 w-5 text-white/70" />
+          </Link>
         </div>
 
         {/* Trial Banner - shows for invite/beta trial users */}
@@ -918,7 +923,7 @@ export default function AppPage() {
 
         {/* Pro Status Badge - Compact */}
         {isPro && (
-          <div className="mb-5 px-4 py-3 rounded-2xl border flex items-center justify-center gap-2.5 bg-emerald-500/10 border-emerald-500/20">
+          <div className="mb-5 px-4 py-3 rounded-2xl flex items-center justify-center gap-2.5 bg-emerald-500/10 border border-emerald-500/20">
             <Shield className="h-4 w-4 text-emerald-400" />
             <span className="text-xs font-bold text-emerald-300">V2 Verified</span>
             <span className="text-white/15">·</span>
@@ -930,8 +935,8 @@ export default function AppPage() {
         {usageCount > 0 && !isPro && (
           <div className={`fixed top-0 left-0 right-0 z-50 text-white animate-in slide-in-from-top duration-300 ${
             usageCount >= usageLimit 
-              ? 'bg-red-600/95 backdrop-blur-sm' 
-              : 'bg-purple-600/90 backdrop-blur-sm'
+              ? 'bg-red-500/20 border-b border-red-500/30 backdrop-blur-md' 
+              : 'bg-violet-500/15 border-b border-violet-500/20 backdrop-blur-md'
           }`}>
             <div className="mx-auto px-5 py-2.5">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
@@ -952,7 +957,7 @@ export default function AppPage() {
                   <Button 
                     asChild
                     size="sm" 
-                    className="bg-white text-purple-700 hover:bg-gray-100 font-bold rounded-xl shadow-md text-xs h-8"
+                    className="bg-white/10 border border-white/20 text-white hover:bg-white/20 font-bold rounded-xl text-xs h-8"
                   >
                     <Link href="/#pricing">Upgrade</Link>
                   </Button>
@@ -991,14 +996,14 @@ export default function AppPage() {
         />
 
         {/* Input Section */}
-        <Card className="mb-8 bg-white/95 backdrop-blur border-0 shadow-xl rounded-3xl overflow-hidden transition-shadow duration-300">
-          <CardHeader className="pb-4 pt-6">
+        <div className="mb-8 rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+          <div className="pb-4 pt-6 px-6">
             {/* Mode Tabs */}
-            <div className="flex items-center gap-1 bg-gray-100/80 rounded-2xl p-1 mb-4">
+            <div className="flex items-center gap-1 bg-white/[0.06] rounded-2xl p-1 mb-4 border border-white/[0.08]">
               <button
                 onClick={() => { setAppMode('reply'); setOpeners([]); }}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
-                  appMode === 'reply' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  appMode === 'reply' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
               >
                 <MessageCircle className="h-3.5 w-3.5" />
@@ -1007,7 +1012,7 @@ export default function AppPage() {
               <button
                 onClick={() => { setAppMode('decode'); setReplies([]); setOpeners([]); }}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
-                  appMode === 'decode' ? 'bg-white text-amber-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  appMode === 'decode' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
               >
                 <Brain className="h-3.5 w-3.5" />
@@ -1016,67 +1021,65 @@ export default function AppPage() {
               <button
                 onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); }}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
-                  appMode === 'opener' ? 'bg-white text-pink-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  appMode === 'opener' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
               >
                 <Send className="h-3.5 w-3.5" />
                 Opener
               </button>
             </div>
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
               {appMode === 'reply' && (
                 <>
-                  <MessageCircle className="h-5 w-5 text-purple-600" />
+                  <MessageCircle className="h-5 w-5 text-violet-400" />
                   What&apos;d they say?
                 </>
               )}
               {appMode === 'decode' && (
                 <>
-                  <Brain className="h-5 w-5 text-amber-600" />
+                  <Brain className="h-5 w-5 text-amber-400" />
                   What do they really mean?
                 </>
               )}
               {appMode === 'opener' && (
                 <>
-                  <Send className="h-5 w-5 text-pink-600" />
+                  <Send className="h-5 w-5 text-pink-400" />
                   Start the conversation
                 </>
               )}
-            </CardTitle>
-            <CardDescription className="text-sm text-gray-500 font-medium">
+            </h2>
+            <p className="text-sm text-white/40 font-medium">
               {appMode === 'reply' && 'Paste the text and we\'ll handle the rest'}
               {appMode === 'decode' && 'Paste any message \u2014 we\'ll reveal the intent, subtext, and flags'}
               {appMode === 'opener' && 'Generate the perfect opening line for any situation'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 px-6 pb-6">
+            </p>
+          </div>
+          <div className="space-y-4 px-6 pb-6">
             {/* ===== REPLY MODE ===== */}
             {appMode === 'reply' && (<>
             {/* Context Selector */}
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
                 Who is this?
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {CONTEXT_OPTIONS.map((context) => (
                   <button
                     key={context.value}
                     onClick={() => setSelectedContext(selectedContext === context.value ? null : context.value as ContextType)}
-                    className={`p-3 rounded-2xl border transition-all duration-200 text-left ${
+                    className={`px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all active:scale-95 ${
                       selectedContext === context.value
-                        ? 'border-purple-400 bg-purple-50 shadow-sm ring-1 ring-purple-400/30'
-                        : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-purple-50/50'
+                        ? 'bg-white/[0.16] text-white border border-white/[0.22] shadow-lg shadow-white/5'
+                        : 'bg-white/[0.07] text-white/60 border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/80'
                     }`}
                   >
-                    <div className="text-lg mb-1">{context.emoji}</div>
-                    <div className="text-xs font-bold text-gray-900">{context.label}</div>
-                    <div className="text-[10px] text-gray-400">{context.description}</div>
+                    <span className="mr-1.5">{context.emoji}</span>{context.label}
                   </button>
                 ))}
               </div>
               {selectedContext && (
-                <p className="text-xs text-purple-600 font-medium animate-in fade-in duration-200">
-                  ✨ Replies will be optimized for {CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label}
+                <p className="text-xs text-violet-400/80 font-medium animate-in fade-in duration-200">
+                  Replies will be optimized for {CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label}
                 </p>
               )}
             </div>
@@ -1088,12 +1091,12 @@ export default function AppPage() {
                   if (e.target.value.trim()) setShowExamples(false);
                 }}
                 placeholder="Drop their message here — or upload a screenshot"
-                className={`w-full p-5 pb-8 rounded-2xl border border-gray-200 bg-gray-50/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-purple-400/40 focus:border-purple-300 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-violet-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
                 aria-label="Message input"
               />
               <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
-                charCount > 1800 ? 'text-red-500 font-semibold' : 'text-gray-400'
+                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/30'
               }`}>
                 {charCount}/2000
               </div>
@@ -1112,17 +1115,17 @@ export default function AppPage() {
             {/* Screenshot Preview */}
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative rounded-2xl overflow-hidden border border-purple-200 bg-purple-50/50">
+                <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
                   <img 
                     src={screenshotPreview} 
                     alt="Screenshot preview" 
                     className="w-full max-h-48 object-cover opacity-90"
                   />
                   {extracting && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <div className="flex items-center gap-3 bg-white/95 rounded-2xl px-5 py-3 shadow-xl">
-                        <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
-                        <span className="text-sm font-bold text-purple-800">Reading screenshot...</span>
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                        <span className="text-sm font-bold text-white/80">Reading screenshot...</span>
                       </div>
                     </div>
                   )}
@@ -1175,10 +1178,10 @@ export default function AppPage() {
                   fileInputRef.current?.click();
                 }}
                 disabled={extracting}
-                className={`flex-1 p-3 rounded-xl border border-dashed transition-all text-purple-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
+                className={`flex-1 p-3 rounded-xl transition-all text-white/60 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
                   showFeatureSpotlight 
-                    ? 'border-purple-400 bg-purple-50 shadow-md shadow-purple-500/10' 
-                    : 'border-gray-300 hover:border-purple-400 bg-gray-50/50 hover:bg-purple-50/50'
+                    ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300' 
+                    : 'bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/80'
                 }`}
               >
                 {extracting ? (
@@ -1196,7 +1199,7 @@ export default function AppPage() {
               {!message && (
                 <button
                   onClick={() => setShowExamplesDrawer(!showExamplesDrawer)}
-                  className="p-3 rounded-xl border border-dashed border-gray-300 hover:border-purple-400 bg-gray-50/50 hover:bg-purple-50/50 transition-all text-gray-400 hover:text-purple-600 font-medium text-sm flex items-center justify-center gap-2"
+                  className="p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] transition-all text-white/40 hover:text-white/70 font-medium text-sm flex items-center justify-center gap-2"
                 >
                   <Lightbulb className="h-4 w-4" />
                   Examples
@@ -1206,17 +1209,17 @@ export default function AppPage() {
 
             {/* Examples Drawer */}
             {showExamplesDrawer && !message && (
-              <div className="space-y-2 animate-in slide-in-from-top duration-300 bg-purple-50/50 p-4 rounded-2xl border border-purple-200">
+              <div className="space-y-2 animate-in slide-in-from-top duration-300 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-purple-700">
-                    <Sparkles className="h-4 w-4" />
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white/60">
+                    <Sparkles className="h-4 w-4 text-violet-400" />
                     <span>Try these examples:</span>
                   </div>
                   <button 
                     onClick={() => setShowExamplesDrawer(false)}
-                    className="text-purple-400 hover:text-purple-600"
+                    className="text-white/20 hover:text-white/50 transition-colors"
                   >
-                    ✕
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
@@ -1224,9 +1227,9 @@ export default function AppPage() {
                     <button
                       key={idx}
                       onClick={() => handleExampleClick(example)}
-                      className="text-left text-sm p-3 rounded-xl border border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 transition-all text-gray-700 font-medium"
+                      className="text-left text-sm p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all text-white/70 font-medium"
                     >
-                      <span className="text-purple-500 font-bold mr-2">{idx + 1}.</span>
+                      <span className="text-violet-400 font-bold mr-2">{idx + 1}.</span>
                       &ldquo;{example}&rdquo;
                     </button>
                   ))}
@@ -1236,13 +1239,13 @@ export default function AppPage() {
 
             {/* V2 Verified Badge — always on for Pro, upgrade prompt for free */}
             {isPro ? (
-              <div className="flex items-center gap-2.5 p-3.5 rounded-2xl border bg-emerald-50/80 border-emerald-200">
-                <Shield className="h-5 w-5 text-emerald-600" />
+              <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                <Shield className="h-5 w-5 text-emerald-400" />
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-emerald-800">V2 Verified</p>
-                  <p className="text-xs text-emerald-600">≤18 words • No emojis • Tone-verified</p>
+                  <p className="text-sm font-bold text-emerald-300">V2 Verified</p>
+                  <p className="text-xs text-emerald-400/60">≤18 words • No emojis • Tone-verified</p>
                 </div>
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-100 px-2.5 py-1 rounded-full">Active</span>
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/15 px-2.5 py-1 rounded-full">Active</span>
               </div>
             ) : (
               <button
@@ -1250,14 +1253,14 @@ export default function AppPage() {
                   setShowPaywall(true);
                   toast({ title: "🔒 V2 is Pro-only", description: "Upgrade to unlock 3-agent verified replies" });
                 }}
-                className="flex items-center gap-2.5 p-3.5 rounded-2xl border bg-purple-50/60 border-purple-200 w-full text-left hover:border-purple-300 transition-colors"
+                className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 w-full text-left hover:border-violet-500/30 transition-colors"
               >
-                <Shield className="h-5 w-5 text-purple-600" />
+                <Shield className="h-5 w-5 text-violet-400" />
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-purple-800">V2 Verified Mode <span className="text-xs font-normal text-purple-500">(Pro)</span></p>
-                  <p className="text-xs text-purple-500">3-agent pipeline • ≤18 words • Tone-verified</p>
+                  <p className="text-sm font-bold text-white/80">V2 Verified Mode <span className="text-xs font-normal text-white/40">(Pro)</span></p>
+                  <p className="text-xs text-white/40">3-agent pipeline • ≤18 words • Tone-verified</p>
                 </div>
-                <span className="text-xs font-bold text-purple-600 bg-purple-100 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <span className="text-xs font-bold text-violet-300 bg-violet-500/15 px-2.5 py-1 rounded-full flex items-center gap-1">
                   <Lock className="h-3 w-3" /> Upgrade
                 </span>
               </button>
@@ -1268,10 +1271,10 @@ export default function AppPage() {
                 <Button
                   onClick={handleGenerate}
                   disabled={loading || !message.trim()}
-                  className={`col-span-2 h-14 text-base shadow-lg rounded-2xl font-bold transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`col-span-2 h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed ${
                     isPro
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/20'
-                      : 'bg-gradient-to-r from-purple-600 via-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-purple-500/20'
+                      ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/30'
+                      : 'bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-violet-600/50'
                   }`}
                   size="lg"
                 >
@@ -1302,10 +1305,10 @@ export default function AppPage() {
                     fetchThreads(); setShowThreads(!showThreads);
                   }}
                   variant="outline"
-                  className={`h-14 rounded-2xl font-bold border transition-all active:scale-95 ${
+                  className={`h-14 rounded-2xl font-bold transition-all active:scale-95 ${
                     isPro
-                      ? 'border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700'
-                      : 'border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-400'
+                      ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30'
+                      : 'bg-white/[0.06] border border-white/[0.12] text-white/40 hover:bg-white/[0.12]'
                   }`}
                   size="lg"
                 >
@@ -1315,16 +1318,16 @@ export default function AppPage() {
               </div>
               {/* Active thread indicator */}
               {activeThreadName && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-xl text-xs">
-                  <BookmarkCheck className="h-3.5 w-3.5 text-blue-600" />
-                  <span className="text-blue-700 font-medium">Thread: {activeThreadName}</span>
-                  <button onClick={handleSaveThread} disabled={savingThread || !message.trim()} className="ml-auto text-blue-600 hover:text-blue-800 font-bold disabled:opacity-50">
+                <div className="flex items-center gap-2 px-3 py-2 bg-violet-500/10 border border-violet-500/20 rounded-xl text-xs">
+                  <BookmarkCheck className="h-3.5 w-3.5 text-violet-400" />
+                  <span className="text-violet-300 font-medium">Thread: {activeThreadName}</span>
+                  <button onClick={handleSaveThread} disabled={savingThread || !message.trim()} className="ml-auto text-violet-400 hover:text-violet-300 font-bold disabled:opacity-50">
                     {savingThread ? 'Saving...' : 'Update'}
                   </button>
                 </div>
               )}
               {!loading && !replies.length && (
-                <p className="text-center text-xs text-gray-500 font-medium animate-fade-in transition-opacity duration-500">
+                <p className="text-center text-xs text-white/30 font-medium animate-fade-in transition-opacity duration-500">
                   {TAGLINES[currentTagline]}
                 </p>
               )}
@@ -1332,36 +1335,44 @@ export default function AppPage() {
 
             {/* Saved Threads Drawer */}
             {showThreads && (
-              <div className="animate-in slide-in-from-top duration-300 bg-purple-50/50 p-4 rounded-2xl border border-purple-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                    <BookmarkCheck className="h-4 w-4 text-purple-600" />
-                    Saved Threads
-                  </h4>
-                  <button onClick={() => setShowThreads(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              <div className="animate-in slide-in-from-top duration-300 rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Saved Threads</span>
+                  <button onClick={() => setShowThreads(false)} className="text-white/20 hover:text-white/50 transition-colors">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
                 </div>
                 {message.trim() && !activeThreadId && (
                   <button
                     onClick={handleSaveThread}
                     disabled={savingThread}
-                    className="w-full p-3 rounded-xl border border-dashed border-purple-300 hover:border-purple-400 bg-purple-50/30 hover:bg-purple-50 transition-all text-purple-600 font-medium text-sm flex items-center justify-center gap-2"
+                    className="w-full p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 transition-all text-violet-300 font-medium text-sm flex items-center justify-center gap-2"
                   >
                     <BookmarkPlus className="h-4 w-4" />
                     {savingThread ? 'Saving...' : 'Save current conversation'}
                   </button>
                 )}
                 {savedThreads.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">No saved threads yet. Start a conversation and save it!</p>
+                  <div className="text-center py-6">
+                    <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
+                      <BookmarkCheck className="h-5 w-5 text-white/20" />
+                    </div>
+                    <p className="text-white/25 text-xs">No saved threads yet</p>
+                  </div>
                 ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
                     {savedThreads.map(thread => (
-                      <div key={thread.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:bg-purple-50/50 transition-all group">
+                      <div key={thread.id} className={`flex items-center gap-3 p-3 rounded-2xl transition-all group text-left active:scale-[0.98] ${
+                        activeThreadId === thread.id
+                          ? 'bg-violet-500/15 border border-violet-500/20'
+                          : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
+                      }`}>
                         <button onClick={() => handleLoadThread(thread)} className="flex-1 text-left min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate">{thread.name}</p>
-                          <p className="text-xs text-gray-500">{thread.message_count} msgs · {new Date(thread.updated_at).toLocaleDateString()}</p>
+                          <p className="text-sm font-semibold text-white/80 truncate">{thread.name}</p>
+                          <p className="text-[10px] text-white/25 mt-0.5">{thread.message_count} msgs · {new Date(thread.updated_at).toLocaleDateString()}</p>
                         </button>
-                        <button onClick={() => handleDeleteThread(thread.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all p-1">
-                          <Trash2 className="h-3.5 w-3.5" />
+                        <button onClick={() => handleDeleteThread(thread.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all">
+                          <Trash2 className="h-3 w-3 text-red-400" />
                         </button>
                       </div>
                     ))}
@@ -1378,12 +1389,12 @@ export default function AppPage() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Paste their message here — what did they really mean?"
-                className={`w-full p-5 pb-8 rounded-2xl border border-gray-200 bg-gray-50/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-300 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-amber-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
                 aria-label="Message to decode"
               />
               <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
-                charCount > 1800 ? 'text-red-500 font-semibold' : 'text-gray-400'
+                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/30'
               }`}>
                 {charCount}/2000
               </div>
@@ -1400,13 +1411,13 @@ export default function AppPage() {
             />
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative rounded-2xl overflow-hidden border border-amber-200 bg-amber-50/50">
+                <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
                   <img src={screenshotPreview} alt="Screenshot preview" className="w-full max-h-48 object-cover opacity-90" />
                   {extracting && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <div className="flex items-center gap-3 bg-white/95 rounded-2xl px-5 py-3 shadow-xl">
-                        <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
-                        <span className="text-sm font-bold text-amber-800">Reading screenshot...</span>
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-amber-400" />
+                        <span className="text-sm font-bold text-white/80">Reading screenshot...</span>
                       </div>
                     </div>
                   )}
@@ -1423,7 +1434,7 @@ export default function AppPage() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={extracting}
-                className="flex-1 p-3 rounded-xl border border-dashed border-gray-300 hover:border-amber-400 bg-gray-50/50 hover:bg-amber-50/50 transition-all text-amber-600 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                className="flex-1 p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] transition-all text-white/60 hover:text-white/80 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
               >
                 <Camera className="h-4 w-4" />
                 Upload Screenshot
@@ -1433,10 +1444,10 @@ export default function AppPage() {
             <Button
               onClick={handleDecode}
               disabled={decoding || !message.trim() || (!isPro && decodeUsed >= decodeLimit)}
-              className={`w-full h-14 text-base shadow-lg rounded-2xl font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${
+              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
                 !isPro && decodeUsed >= decodeLimit
-                  ? 'bg-gray-400'
-                  : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/20'
+                  ? 'bg-white/[0.08] text-white/30'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/30'
               }`}
               size="lg"
             >
@@ -1449,7 +1460,7 @@ export default function AppPage() {
               )}
             </Button>
             {!isPro && (
-              <p className="text-center text-xs text-gray-500 font-medium">
+              <p className="text-center text-xs text-white/30 font-medium">
                 {decodeUsed >= decodeLimit ? '0' : `${decodeLimit - decodeUsed}`}/{decodeLimit} free decode{decodeLimit === 1 ? '' : 's'} remaining today
               </p>
             )}
@@ -1458,7 +1469,7 @@ export default function AppPage() {
             {/* ===== OPENER MODE ===== */}
             {appMode === 'opener' && (<>
             <div className="space-y-3">
-              <label className="text-sm font-semibold text-gray-600 flex items-center gap-1.5">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
                 What kind of opener?
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -1468,13 +1479,13 @@ export default function AppPage() {
                     onClick={() => setOpenerContext(ctx.value)}
                     className={`p-3 rounded-2xl border transition-all duration-200 text-left ${
                       openerContext === ctx.value
-                        ? 'border-pink-400 bg-pink-50 shadow-sm ring-1 ring-pink-400/30'
-                        : 'border-gray-200 bg-white hover:border-pink-300 hover:bg-pink-50/50'
+                        ? 'bg-pink-500/15 border-pink-500/30 text-pink-300'
+                        : 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12]'
                     }`}
                   >
                     <div className="text-lg mb-1">{ctx.emoji}</div>
-                    <div className="text-xs font-bold text-gray-900">{ctx.label}</div>
-                    <div className="text-[10px] text-gray-400">{ctx.description}</div>
+                    <div className="text-xs font-bold text-white/80">{ctx.label}</div>
+                    <div className="text-[10px] text-white/30">{ctx.description}</div>
                   </button>
                 ))}
               </div>
@@ -1484,20 +1495,20 @@ export default function AppPage() {
                 value={openerDescription}
                 onChange={(e) => setOpenerDescription(e.target.value)}
                 placeholder="Optional: describe them (e.g., 'loves hiking, has a golden retriever, funny bio about pizza')"
-                className="w-full min-h-[80px] p-4 pb-6 rounded-2xl border border-gray-200 bg-gray-50/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-pink-400/40 focus:border-pink-300 transition-all text-sm"
+                className="w-full min-h-[80px] p-4 pb-6 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-pink-500/30 transition-all text-sm"
                 maxLength={300}
               />
-              <div className={`absolute bottom-2 right-3 text-xs ${openerDescription.length > 250 ? 'text-red-500' : 'text-gray-400'}`}>
+              <div className={`absolute bottom-2 right-3 text-xs ${openerDescription.length > 250 ? 'text-red-400' : 'text-white/30'}`}>
                 {openerDescription.length}/300
               </div>
             </div>
             <Button
               onClick={handleGenerateOpeners}
               disabled={loadingOpeners || (!isPro && openerUsed >= openerLimit)}
-              className={`w-full h-14 text-base shadow-lg rounded-2xl font-bold transition-all active:scale-[0.97] disabled:opacity-50 ${
+              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
                 !isPro && openerUsed >= openerLimit
-                  ? 'bg-gray-400'
-                  : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 shadow-pink-500/20'
+                  ? 'bg-white/[0.08] text-white/30'
+                  : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30'
               }`}
               size="lg"
             >
@@ -1510,341 +1521,284 @@ export default function AppPage() {
               )}
             </Button>
             {!isPro && (
-              <p className="text-center text-xs text-gray-500 font-medium">
+              <p className="text-center text-xs text-white/30 font-medium">
                 {openerUsed >= openerLimit ? '0' : `${openerLimit - openerUsed}`}/{openerLimit} free opener{openerLimit === 1 ? '' : 's'} remaining today
               </p>
             )}
             </>)}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Decode Results Panel */}
         {decodeResult && (
-          <Card className="mb-6 bg-white/95 backdrop-blur border-0 shadow-lg rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <CardContent className="p-6 space-y-4">
+          <div className="mb-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="rounded-3xl bg-white/[0.04] border border-amber-500/15 p-5 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-amber-600" />
-                  Message Decoded
-                </h3>
-                <button onClick={() => setDecodeResult(null)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                    <Brain className="h-3.5 w-3.5 text-amber-400" />
+                  </div>
+                  <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">decoded</span>
+                </div>
+                <button onClick={() => setDecodeResult(null)} className="w-7 h-7 rounded-xl bg-white/[0.05] flex items-center justify-center hover:bg-white/10 transition-all">
+                  <X className="h-3 w-3 text-white/30" />
+                </button>
               </div>
               {/* Energy Badge */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`px-3 py-1.5 rounded-full text-sm font-bold ${(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).bg} ${(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).color} border`}>
+              <div className="inline-flex">
+                <span className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border border-white/[0.06] ${
+                  decodeResult.energy === 'positive' ? 'bg-emerald-500/15 text-emerald-400' :
+                  decodeResult.energy === 'negative' ? 'bg-red-500/15 text-red-400' :
+                  decodeResult.energy === 'mixed' ? 'bg-yellow-500/15 text-yellow-400' :
+                  'bg-white/[0.06] text-white/50'
+                }`}>
                   {(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).emoji} {decodeResult.energy.replace('-', ' ')}
                 </span>
               </div>
               {/* Intent */}
-              <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-                <p className="text-xs font-bold text-amber-700 mb-1">What they actually mean:</p>
-                <p className="text-gray-900 font-medium">{decodeResult.intent}</p>
+              <div className="rounded-2xl bg-amber-500/5 border border-amber-500/10 p-4">
+                <p className="text-amber-400/60 text-[10px] font-bold uppercase tracking-widest mb-1.5">what they mean</p>
+                <p className="text-white/80 text-sm font-medium leading-relaxed">{decodeResult.intent}</p>
               </div>
               {/* Subtext */}
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <p className="text-xs font-bold text-gray-500 mb-1">Between the lines:</p>
-                <p className="text-gray-700 text-sm">{decodeResult.subtext}</p>
+              <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
+                <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-1.5">between the lines</p>
+                <p className="text-white/60 text-xs leading-relaxed">{decodeResult.subtext}</p>
               </div>
               {/* Flags */}
               {decodeResult.flags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {decodeResult.flags.map((flag, i) => (
-                    <span key={i} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
-                      flag.type === 'green' ? 'bg-green-100 text-green-700 border border-green-200' :
-                      flag.type === 'red' ? 'bg-red-100 text-red-700 border border-red-200' :
-                      'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                    <span key={i} className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border ${
+                      flag.type === 'green' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                      flag.type === 'red' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     }`}>
-                      {flag.type === 'green' ? '🟢' : flag.type === 'red' ? '🔴' : '🟡'} {flag.text}
+                      {flag.text}
                     </span>
                   ))}
                 </div>
               )}
               {/* Coach Tip */}
-              <div className="bg-purple-50/60 rounded-xl p-4 border border-purple-200">
-                <p className="text-xs font-bold text-purple-600 mb-1 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" /> Coach Tip
+              <div className="rounded-2xl bg-violet-500/5 border border-violet-500/10 p-4">
+                <p className="text-violet-400/60 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" /> coach tip
                 </p>
-                <p className="text-gray-800 text-sm font-medium">{decodeResult.coach_tip}</p>
+                <p className="text-white/70 text-xs font-medium leading-relaxed">{decodeResult.coach_tip}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Opener Results */}
         {openers.length > 0 && (
-          <div className="space-y-5 mb-8 animate-in fade-in slide-in-from-bottom-5 duration-500">
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold text-white">Your opening lines</h2>
-              <p className="text-sm text-pink-200/80">Pick your favorite and send it</p>
-            </div>
-            <div className="grid gap-4">
+          <div className="animate-in fade-in duration-400 mb-8">
+            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your opening lines</p>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
               {openers.map((opener, idx) => {
                 const config = OPENER_TONE_CONFIG[opener.tone] || OPENER_TONE_CONFIG.bold;
                 const label = ['A', 'B', 'C'][idx];
+                const isCopied = copied === opener.tone;
                 return (
-                  <Card key={idx} className="relative overflow-hidden bg-white border shadow-lg rounded-3xl transition-all duration-300 group active:scale-[0.98] hover:shadow-xl">
-                    <div className={`absolute top-0 left-0 right-0 h-3 bg-gradient-to-r ${config.gradient}`} />
-                    <div className="absolute top-6 right-6">
-                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white font-black text-lg shadow-xl`}>
-                        {label}
+                  <div
+                    key={idx}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
+                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                        </div>
+                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-2">{opener.text}</p>
+                        <p className="text-white/30 text-xs italic mb-3">{opener.why}</p>
+                        <button
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(opener.text);
+                            setCopied(opener.tone);
+                            toast({ title: '✓ Copied!', description: 'Paste it and send' });
+                            setTimeout(() => setCopied(null), 2000);
+                          }}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                            isCopied
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                          }`}
+                        >
+                          {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                        </button>
                       </div>
                     </div>
-                    <CardHeader className="pb-3 pt-8">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-2xl shadow-xl`}>
-                          {config.emoji}
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg font-bold text-gray-900">{config.label}</CardTitle>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-1 pb-5 space-y-3">
-                      <div className={`${config.lightBg} rounded-2xl p-4 border border-gray-100`}>
-                        <p className="text-lg text-gray-900 leading-relaxed font-medium">{opener.text}</p>
-                      </div>
-                      <p className="text-xs text-gray-500 italic px-1">{opener.why}</p>
-                      <Button
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(opener.text);
-                          setCopied(opener.tone);
-                          toast({ title: '✓ Copied!', description: 'Paste it and send' });
-                          setTimeout(() => setCopied(null), 2000);
-                        }}
-                        className={`w-full h-12 rounded-2xl font-bold shadow-lg transition-all active:scale-95 ${
-                          copied === opener.tone
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                            : `bg-gradient-to-r ${config.gradient} text-white hover:opacity-95`
-                        }`}
-                      >
-                        {copied === opener.tone ? '✓ Copied!' : <><Copy className="h-4 w-4 mr-2" /> Copy {label}</>}
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  </div>
                 );
               })}
             </div>
-            <div className="text-center pt-4">
-              <Button onClick={() => setOpeners([])} variant="outline" className="bg-white/95 hover:bg-white text-pink-600 border border-pink-300 rounded-2xl font-bold shadow-md px-10 h-12">
-                <Sparkles className="h-4 w-4 mr-2" /> Try Again
-              </Button>
+            <div className="text-center pt-5">
+              <button onClick={() => setOpeners([])} className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95">
+                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" /> Try Again
+              </button>
             </div>
           </div>
         )}
 
         {/* Replies Section */}
         {replies.length > 0 && (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-5 duration-500">
-            <div className="text-center space-y-2">
+          <div className="animate-in fade-in duration-400">
+            <div className="mb-4">
               {showCraftedMessage && (
-                <p className={`text-sm font-medium animate-in fade-in duration-300 mb-2 ${
-                  isPro ? 'text-green-300' : 'text-purple-300'
+                <p className={`text-[11px] font-bold uppercase tracking-widest mb-2 ${
+                  isPro ? 'text-emerald-400/60' : 'text-violet-400/60'
                 }`}>
-                  {isPro ? '✅ 3-agent verified • Safe to send' : 'Crafted with care just for you'}
+                  {isPro ? '✅ 3-agent verified • Safe to send' : 'Crafted with care'}
                 </p>
               )}
-              <h2 className="text-2xl font-bold text-white animate-in slide-in-from-top duration-300">
-                {isPro ? 'Your verified replies' : 'Choose your reply'}
-              </h2>
-              <p className={`text-sm animate-in fade-in duration-500 delay-100 ${
-                isPro ? 'text-green-200' : 'text-purple-200'
-              }`}>
-                {isPro ? 'Each reply passed our 3-agent verification' : 'Pick your favorite and copy it'}
+              <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em]">
+                {isPro ? 'Your verified replies' : 'Pick your reply'}
               </p>
             </div>
-            <div className="grid gap-4">
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
               {replies.map((reply, idx) => {
                 const config = TONE_CONFIG[reply.tone];
                 const isCopied = copied === reply.tone;
                 const label = ['A', 'B', 'C'][idx];
                 return (
-                  <Card 
-                    key={reply.tone} 
-                    style={{ animationDelay: `${idx * 150}ms` }}
-                    className={`relative overflow-hidden bg-white border shadow-lg rounded-3xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-5 cursor-pointer group active:scale-[0.98] ${
-                      isPro 
-                        ? 'border-emerald-200 hover:shadow-xl hover:border-emerald-300' 
-                        : 'border-gray-200 hover:shadow-xl'
+                  <div
+                    key={reply.tone}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
+                      isCopied
+                        ? 'bg-emerald-500/[0.08]'
+                        : 'hover:bg-white/[0.04]'
                     }`}
                   >
-                    <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${config.gradient}`} />
-                    
-                    {/* A/B/C Label */}
-                    <div className="absolute top-6 right-6 z-10">
-                      <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${config.gradient} flex items-center justify-center text-white font-black text-lg shadow-xl`}>
-                        {label}
-                      </div>
-                    </div>
-
-                    <CardHeader className="pb-4 pt-8">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center text-2xl shadow-md`}>
-                            {config.emoji}
-                          </div>
-                          <div>
-                            <CardTitle className="text-xl font-bold text-gray-900">{config.label}</CardTitle>
-                            <CardDescription className="text-sm text-gray-600 font-semibold">{config.description}</CardDescription>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-2 space-y-5 pb-6">
-                      <div className={`${config.lightBg} rounded-2xl p-5 border border-gray-100`}>
-                        <p className="text-base text-gray-900 leading-relaxed font-medium">{reply.text}</p>
-                      </div>
-                      <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-bold bg-gradient-to-r ${config.gradient} text-white px-3 py-1.5 rounded-full`}>
-                            {reply.text ? reply.text.split(' ').length : 0} words
-                          </span>
-                          {/* Verified Reply Badge for Pro V2 */}
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                          <span className="text-white/25 text-[11px]">{reply.text ? reply.text.split(' ').length : 0}w</span>
                           {isPro && (
-                            <span className="flex items-center gap-1 text-xs font-bold bg-emerald-500 text-white px-3 py-1.5 rounded-full">
-                              <CheckCircle className="h-3 w-3" />
-                              Verified
+                            <span className="text-[10px] font-bold text-emerald-500/60 bg-emerald-500/10 px-2 py-0.5 rounded">
+                              v2
+                            </span>
+                          )}
+                          {v2Meta && v2Meta.toneChecks[reply.tone] && (
+                            <span className="text-[10px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded">
+                              tone ✓
                             </span>
                           )}
                         </div>
-                        {/* V2 Meta Badges */}
-                        {v2Meta && (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {v2Meta.toneChecks[reply.tone] && (
-                              <span 
-                                className="flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full cursor-help"
-                                title={`Matches ${reply.tone} tone`}
-                              >
-                                <CheckCircle className="h-3 w-3" />
-                                Tone Match
-                              </span>
+                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
+                        
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleCopy(reply.text, reply.tone)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                              isCopied 
+                                ? 'bg-emerald-500/20 text-emerald-400' 
+                                : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                            }`}
+                          >
+                            {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                          </button>
+                          <div className="relative">
+                            <button
+                              onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                                sharing === reply.tone
+                                  ? 'bg-violet-500/20 text-violet-400'
+                                  : 'bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/70 hover:bg-white/[0.10]'
+                              }`}
+                            >
+                              {sharing === reply.tone ? '✓ Shared' : <><Sparkles className="h-3.5 w-3.5" /> Share</>}
+                            </button>
+                            {shareMenuOpen === reply.tone && (
+                              <div className="absolute bottom-full mb-2 left-0 right-0 min-w-[180px] rounded-xl bg-white/[0.06] border border-white/[0.12] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 backdrop-blur-md">
+                                <button
+                                  onClick={() => handleShareLink(reply)}
+                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2 border-b border-white/[0.06]"
+                                >
+                                  🔗 Copy Share Link
+                                </button>
+                                <button
+                                  onClick={() => handleDownloadImage(reply)}
+                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2 border-b border-white/[0.06]"
+                                >
+                                  📥 Download Image
+                                </button>
+                                <button
+                                  onClick={() => handleCopyImage(reply)}
+                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2"
+                                >
+                                  📋 Copy Image
+                                </button>
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                      
-                                            <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          onClick={() => handleCopy(reply.text, reply.tone)}
-                          className={`h-12 rounded-2xl font-bold text-sm shadow-md transition-all duration-200 active:scale-95 ${
-                            isCopied 
-                              ? 'bg-emerald-500 text-white' 
-                              : `bg-gradient-to-r ${config.gradient} text-white hover:opacity-95`
-                          }`}
-                          size="lg"
-                        >
-                          {isCopied ? (
-                            <>
-                              <span className="text-2xl mr-2">✓</span>
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-4 w-4 mr-2" />
-                              Copy {label}
-                            </>
-                          )}
-                        </Button>
-                        <div className="relative">
-                          <Button
-                            onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
-                            variant="outline"
-                            className={`h-12 rounded-2xl font-bold text-sm border shadow-sm transition-all duration-200 active:scale-95 ${
-                              sharing === reply.tone
-                                ? 'border-purple-400 bg-purple-50 text-purple-700'
-                                : 'border-gray-200 hover:border-purple-300 bg-white text-gray-600'
-                            }`}
-                            size="lg"
-                          >
-                            {sharing === reply.tone ? (
-                              <>✓ Shared!</>
-                            ) : (
-                              <>
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                Share
-                              </>
-                            )}
-                          </Button>
-                          {shareMenuOpen === reply.tone && (
-                            <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                              <button
-                                onClick={() => handleShareLink(reply)}
-                                className="w-full px-4 py-3 text-left text-sm font-medium hover:bg-purple-50 flex items-center gap-2 border-b border-gray-100"
-                              >
-                                🔗 Copy Share Link
-                              </button>
-                              <button
-                                onClick={() => handleDownloadImage(reply)}
-                                className="w-full px-4 py-3 text-left text-sm font-medium hover:bg-purple-50 flex items-center gap-2 border-b border-gray-100"
-                              >
-                                📥 Download Image
-                              </button>
-                              <button
-                                onClick={() => handleCopyImage(reply)}
-                                className="w-full px-4 py-3 text-left text-sm font-medium hover:bg-purple-50 flex items-center gap-2"
-                              >
-                                📋 Copy Image
-                              </button>
-                            </div>
-                          )}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 );
               })}
             </div>
 
             {/* Try Again Button */}
             <div className="text-center pt-6 animate-in fade-in duration-500 delay-300">
-              <Button
+              <button
                 onClick={handleTryAgain}
-                variant="outline"
-                className="bg-white/95 hover:bg-white text-purple-600 border border-purple-300 hover:border-purple-400 rounded-2xl font-bold shadow-md px-10 h-12 transition-all duration-200"
+                className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95"
               >
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" />
                 Try Another Message
-              </Button>
+              </button>
             </div>
           </div>
         )}
 
         {/* Loading State */}
         {loading && (
-          <div className="space-y-4 animate-in fade-in duration-300">
+          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden animate-in fade-in duration-300">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="relative overflow-hidden bg-white border border-gray-100 shadow-lg rounded-3xl">
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-purple-400 to-indigo-400 animate-pulse" />
-                <CardHeader className="pb-4 pt-8">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 bg-gray-100 rounded-2xl animate-pulse" />
-                    <div className="space-y-2">
-                      <div className="h-5 w-28 bg-gray-100 rounded-lg animate-pulse" />
-                      <div className="h-4 w-36 bg-gray-50 rounded-lg animate-pulse" />
-                    </div>
+              <div key={i} className="flex gap-4 px-5 py-5">
+                <div className="w-1 shrink-0 self-stretch rounded-full bg-violet-500/20 animate-pulse" />
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-4 w-20 bg-white/[0.06] rounded-lg animate-pulse" />
+                    <div className="h-3 w-8 bg-white/[0.04] rounded animate-pulse" />
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-5 pb-6">
-                  <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                    <div className="space-y-2">
-                      <div className="h-4 w-full bg-gray-100 rounded-lg animate-pulse" />
-                      <div className="h-4 w-4/5 bg-gray-100 rounded-lg animate-pulse" />
-                    </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-white/[0.06] rounded-lg animate-pulse" />
+                    <div className="h-4 w-4/5 bg-white/[0.04] rounded-lg animate-pulse" />
                   </div>
-                  <div className="h-12 w-full bg-purple-100 rounded-2xl animate-pulse" />
-                </CardContent>
-              </Card>
+                  <div className="h-8 w-20 bg-white/[0.04] rounded-xl animate-pulse" />
+                </div>
+              </div>
             ))}
           </div>
         )}
 
         {/* Empty State */}
         {!loading && replies.length === 0 && message === '' && (
-          <div className="text-center py-16 text-white/70 animate-in fade-in duration-500">
-            <div className="inline-block p-5 bg-white/5 rounded-3xl mb-5">
-              <Sparkles className="h-12 w-12 mx-auto text-purple-400/60" />
+          <div className="text-center pt-10 pb-6 space-y-4 animate-in fade-in duration-500">
+            <p className="text-white/40 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
+              Paste what they said above and we&apos;ll craft the perfect reply.
+            </p>
+            <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/25">
+              <span>them</span>
+              <span>→</span>
+              <span className="text-violet-400/40">you</span>
+              <span>→</span>
+              <span>send</span>
             </div>
-            <p className="text-lg font-bold text-white/80 mb-1.5">Ready to craft the perfect reply?</p>
-            <p className="text-sm text-purple-300/60">Paste a message above and let AI do the magic</p>
           </div>
         )}
       </div>
