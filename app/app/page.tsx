@@ -189,6 +189,7 @@ export default function AppPage() {
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const inputAreaRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   
@@ -716,7 +717,12 @@ export default function AppPage() {
     setDecodeResult(null);
     setMessage('');
     setShowExamples(false);
-    toast({ title: '✓ Marked as sent', description: 'Paste their next reply to keep going' });
+    setShowThread(true);
+    toast({ title: '✓ Added to thread', description: 'Now paste their next reply to keep going' });
+    // Scroll back to input so user knows to paste next message
+    setTimeout(() => {
+      inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
   };
 
   // ── Saved threads ─────────────────────────────────────
@@ -1168,6 +1174,9 @@ export default function AppPage() {
                 </p>
               )}
             </div>
+
+            {/* Scroll target for after "I sent this" */}
+            <div ref={inputAreaRef} />
 
             {/* ══════════ THREAD VIEW ══════════ */}
             {thread.length > 0 && (
@@ -1782,6 +1791,30 @@ export default function AppPage() {
         {/* Replies Section */}
         {replies.length > 0 && (
           <div className="animate-in fade-in duration-400">
+            {/* ══════════ "I SENT THIS" BANNER ══════════ */}
+            {pendingSent && (
+              <button
+                onClick={() => handleMarkSent(pendingSent)}
+                className="w-full mb-4 p-4 rounded-2xl bg-violet-500/15 border border-violet-500/30 hover:bg-violet-500/25 transition-all active:scale-[0.98] animate-in fade-in slide-in-from-bottom-2 duration-300 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-violet-500/25 flex items-center justify-center">
+                      <Send className="h-4 w-4 text-violet-300" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-violet-200 text-sm font-bold">I sent this</p>
+                      <p className="text-violet-400/60 text-[11px]">Tap to add to thread &amp; get their next reply</p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-2 rounded-xl bg-violet-500/25 text-violet-200 text-xs font-bold group-hover:bg-violet-500/35 transition-colors">
+                    Continue →
+                  </div>
+                </div>
+                <p className="text-violet-300/50 text-xs mt-2 truncate text-left">&ldquo;{pendingSent.text}&rdquo;</p>
+              </button>
+            )}
+
             <div className="mb-4">
               {showCraftedMessage && (
                 <p className={`text-[11px] font-bold uppercase tracking-widest mb-2 ${
