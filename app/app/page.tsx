@@ -316,15 +316,6 @@ export default function AppPage() {
       return;
     }
 
-    if (message.trim().length < 3) {
-      toast({
-        title: "Message too short",
-        description: "Please enter a longer message for better results",
-        variant: "destructive",
-      });
-      return;
-    }
-
     // Add their message to thread
     addToThread('them', message.trim());
 
@@ -1224,7 +1215,7 @@ export default function AppPage() {
                   setMessage(e.target.value);
                   if (e.target.value.trim()) setShowExamples(false);
                 }}
-                placeholder={thread.length > 0 ? "Paste their next reply..." : "Drop their message here — or upload a screenshot"}
+                placeholder={thread.length > 0 ? "What did they say back?" : "What did they send you?"}
                 className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-violet-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
                 aria-label="Message input"
@@ -1875,10 +1866,14 @@ export default function AppPage() {
                           >
                             {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
                           </button>
-                          {pendingSent?.tone === reply.tone && (
+                          {pendingSent && (
                             <button
                               onClick={() => handleMarkSent(reply)}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 animate-in fade-in duration-200"
+                              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 animate-in fade-in duration-200 ${
+                                pendingSent.tone === reply.tone
+                                  ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30'
+                                  : 'bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/70 hover:bg-white/[0.10]'
+                              }`}
                             >
                               <Send className="h-3.5 w-3.5" /> I sent this
                             </button>
