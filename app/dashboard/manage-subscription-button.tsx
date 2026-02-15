@@ -33,21 +33,21 @@ export default function ManageSubscriptionButton() {
     <button
       onClick={handleManageSubscription}
       disabled={loading}
-      className="w-full block bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 hover:bg-white/10 transition-colors group text-left disabled:opacity-50"
+      className="w-full block rounded-2xl bg-white/[0.04] border border-white/[0.08] p-5 hover:bg-white/[0.06] transition-all group text-left disabled:opacity-50"
     >
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-gray-600 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-white/[0.06] rounded-xl flex items-center justify-center">
           {loading ? (
-            <Loader2 className="h-6 w-6 text-white animate-spin" />
+            <Loader2 className="h-5 w-5 text-white/50 animate-spin" />
           ) : (
-            <CreditCard className="h-6 w-6 text-white" />
+            <CreditCard className="h-5 w-5 text-white/40" />
           )}
         </div>
         <div>
-          <h3 className="font-medium text-white/80 group-hover:text-white transition-colors">
+          <h3 className="font-bold text-sm text-white/60 group-hover:text-white/80 transition-colors">
             {loading ? 'Opening Portal...' : 'Manage Subscription'}
           </h3>
-          <p className="text-sm text-white/50">View billing and plan details</p>
+          <p className="text-xs text-white/25">View billing and plan details</p>
         </div>
       </div>
     </button>

@@ -188,29 +188,40 @@ export default async function DashboardPage() {
   const isAtLimit = userProfile.subscription_status === 'free' && userProfile.usage_count >= userProfile.usage_limit
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600">
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Ambient background mesh */}
+      <div className="fixed inset-0 pointer-events-none hidden md:block">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/8 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/8 blur-[120px]" />
+        <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
+      </div>
+      <div className="fixed inset-0 pointer-events-none md:hidden">
+        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] rounded-full bg-violet-600/6 blur-[80px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
+      </div>
+
       {/* Header */}
-      <nav className="container mx-auto px-4 py-6">
+      <nav className="relative z-10 mx-auto max-w-4xl px-5 py-6">
         <div className="flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-white" />
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="w-10 h-10 bg-white/[0.08] border border-white/[0.12] rounded-2xl flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-white/70" />
             </div>
-            <span className="text-xl font-bold text-white hidden sm:inline">Text Wingman</span>
+            <span className="text-lg font-bold text-white/90 hidden sm:inline">Text Wingman</span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <Link 
               href="/features" 
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors hidden sm:flex"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/[0.06] border border-white/[0.10] hover:bg-white/[0.12] text-white/50 hover:text-white/80 text-xs font-bold transition-all hidden sm:flex"
             >
-              <Sparkles className="h-4 w-4" />
-              <span>Features</span>
+              <Sparkles className="h-3.5 w-3.5" />
+              Features
             </Link>
             <Link 
               href="/profile" 
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/[0.06] border border-white/[0.10] hover:bg-white/[0.12] text-white/50 hover:text-white/80 text-xs font-bold transition-all"
             >
-              <User className="h-4 w-4" />
+              <User className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Profile</span>
             </Link>
             <SignOutButton />
@@ -218,22 +229,24 @@ export default async function DashboardPage() {
         </div>
       </nav>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-8">
+      <div className="relative z-10 mx-auto max-w-4xl px-5 pb-12">
+        <div className="space-y-6">
           
           {/* Admin Badge - shows for owner/admin users */}
           {isAdmin && (
-            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="rounded-2xl bg-amber-500/8 border border-amber-500/20 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-amber-400 shrink-0" />
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-amber-400" />
+                </div>
                 <span className="text-amber-400 text-sm font-bold">Owner Access</span>
-                <span className="text-amber-400/60 text-xs hidden sm:inline">• Elite tier • No billing required</span>
+                <span className="text-amber-400/40 text-xs hidden sm:inline">• Elite tier • No billing required</span>
               </div>
               <Link
                 href="/admin"
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-sm font-bold transition-colors w-full sm:w-auto justify-center sm:justify-start"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/25 hover:bg-amber-500/25 text-amber-400 text-xs font-bold transition-all w-full sm:w-auto justify-center sm:justify-start"
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-3.5 w-3.5" />
                 Admin Dashboard
               </Link>
             </div>
@@ -243,32 +256,34 @@ export default async function DashboardPage() {
           {isTrialEntitlement && daysLeft !== null && !isAdmin && (
             <div className={`rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
               daysLeft <= 1 
-                ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30' 
+                ? 'bg-red-500/8 border border-red-500/20' 
                 : daysLeft <= 3 
-                  ? 'bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border border-orange-500/30'
-                  : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30'
+                  ? 'bg-orange-500/8 border border-orange-500/20'
+                  : 'bg-violet-500/8 border border-violet-500/20'
             }`}>
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                  daysLeft <= 1 ? 'bg-red-500' : daysLeft <= 3 ? 'bg-orange-500' : 'bg-purple-500'
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  daysLeft <= 1 ? 'bg-red-500/20' : daysLeft <= 3 ? 'bg-orange-500/20' : 'bg-violet-500/20'
                 }`}>
-                  <Sparkles className="h-5 w-5 text-white" />
+                  <Sparkles className={`h-4 w-4 ${
+                    daysLeft <= 1 ? 'text-red-400' : daysLeft <= 3 ? 'text-orange-400' : 'text-violet-400'
+                  }`} />
                 </div>
                 <div>
-                  <p className="text-white font-bold text-sm">
+                  <p className="text-white/90 font-bold text-sm">
                     {daysLeft <= 0 
                       ? 'Your free trial expires today!' 
                       : daysLeft === 1 
                         ? '1 day left on your free Pro trial' 
                         : `${daysLeft} days left on your free Pro trial`}
                   </p>
-                  <p className="text-white/50 text-xs">Unlimited V2 verified replies included</p>
+                  <p className="text-white/30 text-xs">Unlimited V2 verified replies included</p>
                 </div>
               </div>
               {daysLeft <= 3 && (
                 <Link 
                   href="/pricing" 
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-white text-sm font-bold transition-colors whitespace-nowrap w-full sm:w-auto text-center"
+                  className="px-4 py-2 bg-white/[0.08] border border-white/[0.15] hover:bg-white/[0.14] rounded-xl text-white/80 text-xs font-bold transition-all whitespace-nowrap w-full sm:w-auto text-center"
                 >
                   Keep Pro Access
                 </Link>
@@ -278,29 +293,30 @@ export default async function DashboardPage() {
 
           {/* Pro V2 Banner - shows for paid Pro users (not admins or trial) */}
           {isPro && !isAdmin && !isTrialEntitlement && (
-            <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-4 flex items-center justify-center gap-3">
-              <span className="text-green-400 text-sm font-medium">✨ You&apos;re using Verified Replies (V2)</span>
+            <div className="rounded-2xl bg-emerald-500/8 border border-emerald-500/20 p-3.5 flex items-center justify-center gap-2.5">
+              <Shield className="h-4 w-4 text-emerald-400" />
+              <span className="text-emerald-400/80 text-xs font-bold">V2 Verified Replies Active</span>
             </div>
           )}
 
           {/* Welcome Section */}
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-2 py-2">
             <h1 className="text-3xl md:text-4xl font-bold text-white">
               {profile?.full_name ? `Hey ${profile.full_name} 👋` : 'Your next reply sets the tone.'}
             </h1>
             {profile?.full_name && (
-              <p className="text-white/60 text-sm">Your next reply sets the tone.</p>
+              <p className="text-white/40 text-sm font-medium">Your next reply sets the tone.</p>
             )}
           </div>
 
           {/* Main CTA - Changes based on limit status (admins never see upgrade prompts) */}
           {isAtLimit && !isAdmin ? (
-            <div className="bg-gradient-to-r from-red-600 to-orange-600 rounded-2xl p-6 text-center shadow-xl shadow-red-500/20">
-              <h2 className="text-lg font-bold text-white mb-1">You&apos;ve used all 3 free replies today</h2>
-              <p className="text-white/70 text-sm mb-4">Go unlimited — never miss a perfect reply.</p>
+            <div className="rounded-3xl bg-red-500/8 border border-red-500/20 p-6 text-center">
+              <h2 className="text-lg font-bold text-white/90 mb-1">You&apos;ve used all 3 free replies today</h2>
+              <p className="text-white/40 text-sm mb-5">Go unlimited — never miss a perfect reply.</p>
               <Link 
                 href="/pricing"
-                className="inline-flex items-center gap-2 bg-white text-red-600 px-8 py-3.5 rounded-2xl font-bold text-base hover:bg-gray-100 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white px-8 py-3 rounded-2xl font-extrabold text-sm hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-violet-600/30"
               >
                 <Crown className="h-5 w-5" />
                 Upgrade to Pro
@@ -309,59 +325,66 @@ export default async function DashboardPage() {
           ) : (
             <Link 
               href="/app"
-              className={`block rounded-2xl p-6 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] ${
+              className={`block rounded-3xl p-6 transition-all hover:scale-[1.01] active:scale-[0.98] border ${
                 isAdmin 
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 shadow-amber-500/20' 
-                  : 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-purple-500/20'
+                  ? 'bg-amber-500/8 border-amber-500/20 hover:bg-amber-500/12' 
+                  : isPro
+                    ? 'bg-emerald-500/8 border-emerald-500/20 hover:bg-emerald-500/12'
+                    : 'bg-violet-500/8 border-violet-500/20 hover:bg-violet-500/12'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="text-left">
-                  <h2 className="text-lg font-bold text-white">
+                  <h2 className="text-lg font-bold text-white/90">
                     {isAdmin 
                       ? 'Owner Mode — Elite access' 
                       : isPro 
                         ? 'Verified replies. Never overthink a text.' 
                         : 'Paste any message. Get 3 perfect replies.'}
                   </h2>
-                  <p className="text-white/60 text-sm mt-1">
+                  <p className="text-white/40 text-sm mt-1 font-medium">
                     {isAdmin ? 'Full access to all features' : isPro ? 'V2 pipeline: Draft → Rule-Check → Tone-Verify' : 'AI-powered, tone-matched replies'}
                   </p>
                 </div>
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                  isAdmin ? 'bg-white/20' : 'bg-white/20'
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                  isAdmin ? 'bg-amber-500/15' : isPro ? 'bg-emerald-500/15' : 'bg-violet-500/15'
                 }`}>
-                  <MessageCircle className="h-6 w-6 text-white" />
+                  <MessageCircle className={`h-6 w-6 ${
+                    isAdmin ? 'text-amber-400' : isPro ? 'text-emerald-400' : 'text-violet-400'
+                  }`} />
                 </div>
               </div>
             </Link>
           )}
 
           {/* Stats Grid */}
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-3">
             {/* Subscription Status */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-5">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 ${currentPlan.color} rounded-xl flex items-center justify-center`}>
-                  <PlanIcon className="h-5 w-5 text-white" />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                  isPro ? 'bg-violet-500/15' : 'bg-white/[0.06]'
+                }`}>
+                  <PlanIcon className={`h-4 w-4 ${
+                    isPro ? 'text-violet-400' : 'text-white/40'
+                  }`} />
                 </div>
                 <div>
-                  <p className="text-sm text-white/60">Current Plan</p>
-                  <p className={`font-bold ${currentPlan.textColor}`}>{currentPlan.label}</p>
+                  <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Plan</p>
+                  <p className={`font-bold text-sm ${isPro ? 'text-violet-300' : 'text-white/60'}`}>{currentPlan.label}</p>
                 </div>
               </div>
-              {/* Subscription countdown + renewal CTA */}
               {showCountdown && daysLeft !== null && (
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
-                  <span className={`text-xs font-medium px-3 py-1.5 rounded-lg inline-block ${
-                    daysLeft <= 1 ? 'bg-red-500/20 text-red-400' : 
-                    daysLeft <= 3 ? 'bg-orange-500/20 text-orange-400' : 
-                    'bg-purple-500/20 text-purple-300'
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
+                    daysLeft <= 1 ? 'bg-red-500/15 text-red-400' : 
+                    daysLeft <= 3 ? 'bg-orange-500/15 text-orange-400' : 
+                    'bg-violet-500/15 text-violet-300'
                   }`}>
                     {daysLeft <= 0 ? 'Expires today' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`}
                   </span>
                   {daysLeft <= 3 && (
-                    <Link href="/pricing" className="text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors">
+                    <Link href="/pricing" className="text-[10px] font-bold text-violet-400 hover:text-violet-300 transition-colors">
                       Renew →
                     </Link>
                   )}
@@ -370,72 +393,76 @@ export default async function DashboardPage() {
             </div>
 
             {/* Usage Stats */}
-            <div className={`bg-white/10 backdrop-blur-sm rounded-2xl border p-6 ${isAtLimit ? 'border-red-500/50' : 'border-white/20'}`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isAtLimit ? 'bg-red-500' : 'bg-blue-500'}`}>
-                  <TrendingUp className="h-5 w-5 text-white" />
+            <div className={`rounded-2xl bg-white/[0.04] border p-5 ${
+              isAtLimit ? 'border-red-500/25' : 'border-white/[0.08]'
+            }`}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                  isAtLimit ? 'bg-red-500/15' : 'bg-blue-500/15'
+                }`}>
+                  <TrendingUp className={`h-4 w-4 ${
+                    isAtLimit ? 'text-red-400' : 'text-blue-400'
+                  }`} />
                 </div>
                 <div>
-                  <p className="text-sm text-white/60">Today&apos;s Usage</p>
-                  <p className={`font-bold ${isAtLimit ? 'text-red-400' : 'text-white'}`}>
+                  <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Today</p>
+                  <p className={`font-bold text-sm ${isAtLimit ? 'text-red-400' : 'text-white/80'}`}>
                     {userProfile.usage_count} / {userProfile.subscription_status === 'free' ? userProfile.usage_limit : '∞'}
                   </p>
                 </div>
               </div>
               {userProfile.subscription_status === 'free' && (
                 <>
-                  <div className="w-full bg-white/20 rounded-full h-2">
+                  <div className="w-full bg-white/[0.08] rounded-full h-1.5">
                     <div 
-                      className={`h-2 rounded-full transition-all ${isAtLimit ? 'bg-red-500' : usagePercentage >= 67 ? 'bg-orange-500' : 'bg-blue-500'}`}
+                      className={`h-1.5 rounded-full transition-all ${isAtLimit ? 'bg-red-500' : usagePercentage >= 67 ? 'bg-orange-500' : 'bg-blue-500'}`}
                       style={{ width: `${Math.min(usagePercentage, 100)}%` }}
                     />
                   </div>
                   {isAtLimit && (
-                    <p className="text-xs text-red-400 mt-2 font-medium">Free limit reached • Resets in 24h</p>
+                    <p className="text-[10px] text-red-400/80 mt-2 font-medium">Limit reached • Resets in 24h</p>
                   )}
                 </>
               )}
               {userProfile.subscription_status !== 'free' && (
-                <p className="text-sm text-green-400">Unlimited verified replies</p>
+                <p className="text-xs text-emerald-400/60 font-medium">Unlimited verified replies</p>
               )}
             </div>
 
             {/* Total Replies */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-white" />
+                <div className="w-9 h-9 bg-emerald-500/15 rounded-xl flex items-center justify-center">
+                  <Sparkles className="h-4 w-4 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-white/60">Total Replies</p>
-                  <p className="font-bold text-white">{totalReplies || 0}</p>
+                  <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Total</p>
+                  <p className="font-bold text-sm text-white/80">{totalReplies || 0}</p>
                 </div>
               </div>
               {(totalReplies || 0) > 0 && (
-                <p className="text-sm text-green-400 mt-3">Keep going!</p>
+                <p className="text-xs text-emerald-400/50 mt-3 font-medium">Keep going!</p>
               )}
             </div>
           </div>
 
           {/* Style Snapshot - Show after 3+ copies */}
           {totalCopies >= 3 && favoriteTone && (
-            <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-sm rounded-2xl border border-indigo-500/30 p-6">
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-5">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
-                  <span className="text-lg">🧠</span>
+                <div className="w-9 h-9 bg-indigo-500/15 rounded-xl flex items-center justify-center">
+                  <span className="text-base">🧠</span>
                 </div>
                 <div>
-                  <h3 className="font-bold text-white">Your Style Snapshot</h3>
-                  <p className="text-xs text-white/50">Based on {totalCopies} copied replies</p>
+                  <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Style Snapshot</p>
+                  <p className="text-xs text-white/40">Based on {totalCopies} copied replies</p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{toneEmojis[favoriteTone] || '✨'}</span>
-                  <div>
-                    <p className="text-xs text-white/50">You usually pick</p>
-                    <p className="font-bold text-white">{toneLabels[favoriteTone] || favoriteTone} replies</p>
-                  </div>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="text-xl">{toneEmojis[favoriteTone] || '✨'}</span>
+                <div>
+                  <p className="text-[10px] text-white/30 font-medium">You usually pick</p>
+                  <p className="font-bold text-sm text-white/80">{toneLabels[favoriteTone] || favoriteTone} replies</p>
                 </div>
               </div>
             </div>
@@ -445,19 +472,19 @@ export default async function DashboardPage() {
           {userProfile.subscription_status === 'free' && (
             <Link 
               href="/pricing"
-              className="block bg-white/10 backdrop-blur-sm rounded-2xl border border-purple-500/30 p-6 hover:bg-white/15 transition-colors group"
+              className="block rounded-2xl bg-violet-500/8 border border-violet-500/20 p-5 hover:bg-violet-500/12 transition-all group"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center">
-                    <Crown className="h-6 w-6 text-white" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-violet-500/15 rounded-xl flex items-center justify-center">
+                    <Crown className="h-5 w-5 text-violet-400" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white group-hover:text-purple-300 transition-colors">Unlock unlimited replies</h3>
-                    <p className="text-sm text-white/60">Remove limits. Get the best reply every time.</p>
+                    <h3 className="font-bold text-sm text-white/80 group-hover:text-white transition-colors">Unlock unlimited replies</h3>
+                    <p className="text-xs text-white/30">Remove limits. Get the best reply every time.</p>
                   </div>
                 </div>
-                <span className="text-purple-400 font-medium text-sm hidden sm:block">View Plans</span>
+                <span className="text-violet-400/60 font-bold text-xs hidden sm:block">View Plans →</span>
               </div>
             </Link>
           )}
@@ -469,19 +496,18 @@ export default async function DashboardPage() {
 
           {/* Recent Replies Section */}
           {recentReplies && recentReplies.length > 0 && (
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-white flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-green-400" />
-                  Your Recent Wins
-                </h3>
-                <Link href="/profile" className="text-xs text-purple-400 hover:text-purple-300 font-medium transition-colors">
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+              <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Recent Wins</span>
+                </div>
+                <Link href="/profile" className="text-[10px] text-violet-400/60 hover:text-violet-400 font-bold transition-colors">
                   View all →
                 </Link>
               </div>
-              <div className="space-y-3">
+              <div className="divide-y divide-white/[0.06]">
                 {recentReplies.map((reply) => {
-                  // Parse generated_replies - could be JSON string or already parsed array
                   let parsedReplies: Array<{tone: string; text: string}> = []
                   try {
                     const raw = reply.generated_replies
@@ -495,9 +521,9 @@ export default async function DashboardPage() {
                   }
                   const firstReply = parsedReplies?.[0]?.text || 'No reply'
                   return (
-                    <div key={reply.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                      <p className="text-white/60 text-xs mb-1 truncate">They said: &quot;{reply.their_message}&quot;</p>
-                      <p className="text-white font-medium truncate">&quot;{firstReply}&quot;</p>
+                    <div key={reply.id} className="px-5 py-3.5">
+                      <p className="text-white/25 text-[10px] font-medium mb-1 truncate">They said: &quot;{reply.their_message}&quot;</p>
+                      <p className="text-white/70 text-sm font-medium truncate">&quot;{firstReply}&quot;</p>
                     </div>
                   )
                 })}
@@ -508,54 +534,54 @@ export default async function DashboardPage() {
           {/* What's New Widget */}
           <Link 
             href="/changelog"
-            className="block bg-gradient-to-r from-orange-500/10 to-pink-500/10 backdrop-blur-sm rounded-2xl border border-orange-500/20 p-5 hover:bg-white/10 transition-all group"
+            className="block rounded-2xl bg-white/[0.04] border border-white/[0.08] p-5 hover:bg-white/[0.06] transition-all group"
           >
-            <div className="flex items-start gap-4">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${TYPE_CONFIG[LATEST_UPDATE.type].bg} border ${TYPE_CONFIG[LATEST_UPDATE.type].border}`}>
-                <Megaphone className="h-5 w-5 text-orange-400" />
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-orange-500/15 flex items-center justify-center shrink-0">
+                <Megaphone className="h-4 w-4 text-orange-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-xs font-bold text-orange-400">v{CURRENT_VERSION}</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white">NEW</span>
+                  <span className="text-[10px] font-bold text-orange-400/80">v{CURRENT_VERSION}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-500/20 text-orange-400">NEW</span>
                 </div>
-                <h3 className="font-bold text-white text-sm group-hover:text-orange-300 transition-colors truncate">{LATEST_UPDATE.title}</h3>
-                <p className="text-xs text-white/50 mt-0.5 line-clamp-1">{LATEST_UPDATE.description}</p>
+                <h3 className="font-bold text-white/80 text-sm group-hover:text-white transition-colors truncate">{LATEST_UPDATE.title}</h3>
+                <p className="text-[11px] text-white/30 mt-0.5 line-clamp-1">{LATEST_UPDATE.description}</p>
               </div>
-              <span className="text-white/30 group-hover:text-white/60 text-sm shrink-0 mt-1 transition-colors">View all →</span>
+              <span className="text-white/20 group-hover:text-white/50 text-xs shrink-0 mt-1 transition-colors font-bold">View all →</span>
             </div>
           </Link>
 
           {/* Locked Features Teaser - for free users */}
           {userProfile.subscription_status === 'free' && (
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-              <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                <Lock className="h-5 w-5 text-purple-400" />
-                Unlock with Pro
-              </h3>
-              <div className="grid sm:grid-cols-3 gap-4">
-                <div className="flex items-center gap-3 text-white/60">
-                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                    <span className="text-lg">♾️</span>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Lock className="h-4 w-4 text-violet-400" />
+                <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">Unlock with Pro</span>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <div className="flex items-center gap-2.5 text-white/50">
+                  <div className="w-7 h-7 bg-white/[0.06] rounded-lg flex items-center justify-center">
+                    <span className="text-sm">♾️</span>
                   </div>
-                  <span className="text-sm">Unlimited verified replies</span>
+                  <span className="text-xs font-medium">Unlimited replies</span>
                 </div>
-                <div className="flex items-center gap-3 text-white/60">
-                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                    <span className="text-lg">🎯</span>
+                <div className="flex items-center gap-2.5 text-white/50">
+                  <div className="w-7 h-7 bg-white/[0.06] rounded-lg flex items-center justify-center">
+                    <span className="text-sm">🎯</span>
                   </div>
-                  <span className="text-sm">All tone styles</span>
+                  <span className="text-xs font-medium">All tone styles</span>
                 </div>
-                <div className="flex items-center gap-3 text-white/60">
-                  <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                    <span className="text-lg">📱</span>
+                <div className="flex items-center gap-2.5 text-white/50">
+                  <div className="w-7 h-7 bg-white/[0.06] rounded-lg flex items-center justify-center">
+                    <span className="text-sm">📱</span>
                   </div>
-                  <span className="text-sm">Shareable cards</span>
+                  <span className="text-xs font-medium">Shareable cards</span>
                 </div>
               </div>
               <Link 
                 href="/pricing"
-                className="mt-4 block text-center text-purple-400 hover:text-purple-300 text-sm font-medium"
+                className="mt-4 block text-center text-violet-400/60 hover:text-violet-400 text-xs font-bold transition-colors"
               >
                 See all Pro features →
               </Link>

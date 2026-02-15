@@ -42,26 +42,26 @@ export default function FeedbackSection({ userEmail, planType }: FeedbackSection
   };
 
   return (
-    <div className="space-y-4 pt-6 border-t border-white/10">
+    <div className="space-y-4 pt-6 border-t border-white/[0.06]">
       {/* Help Shape What's Next */}
       <div className="text-center">
-        <h3 className="text-white font-medium mb-1">Help shape what&apos;s next</h3>
-        <p className="text-white/50 text-xs mb-3">You&apos;re early — your input matters</p>
+        <h3 className="text-white/60 font-bold text-sm mb-1">Help shape what&apos;s next</h3>
+        <p className="text-white/25 text-xs mb-3">You&apos;re early — your input matters</p>
         {suggestionSubmitted ? (
-          <p className="text-green-400 text-sm">✓ Thanks! We read every suggestion.</p>
+          <p className="text-emerald-400/80 text-xs font-medium">✓ Thanks! We read every suggestion.</p>
         ) : (
           <div className="flex gap-2 max-w-md mx-auto">
             <Input
               value={suggestion}
               onChange={(e) => setSuggestion(e.target.value)}
               placeholder="What would make this better?"
-              className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/40 rounded-xl"
+              className="flex-1 bg-white/[0.06] border-white/[0.12] text-white placeholder:text-white/30 rounded-xl text-sm"
               maxLength={500}
             />
             <Button
               onClick={handleSuggestionSubmit}
               disabled={suggestionSubmitting || !suggestion.trim()}
-              className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-4"
+              className="bg-violet-500/20 border border-violet-500/30 hover:bg-violet-500/30 text-violet-300 rounded-xl px-4 text-xs font-bold"
             >
               {suggestionSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
             </Button>
@@ -71,14 +71,14 @@ export default function FeedbackSection({ userEmail, planType }: FeedbackSection
 
       {/* Report an Issue */}
       <div className="text-center pt-4">
-        <p className="text-white/40 text-xs mb-2">
+        <p className="text-white/20 text-xs mb-2">
           Something feel off? Tell us — we read everything.
         </p>
         <a
           href={`mailto:gulalabs1@gmail.com?subject=Text Wingman Feedback&body=${encodeURIComponent(
             `\n\n---\nUser: ${userEmail}\nPlan: ${planType}\nBrowser: `
           )}`}
-          className="inline-flex items-center gap-2 text-purple-300 hover:text-white text-sm transition-colors"
+          className="inline-flex items-center gap-2 text-violet-400/50 hover:text-violet-400 text-xs font-medium transition-colors"
         >
           <MessageCircle className="h-4 w-4" />
           Report an issue
