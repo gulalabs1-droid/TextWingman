@@ -347,7 +347,7 @@ export default function AppPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          message: thread.length > 0 ? fullContext : message.trim(),
+          message: fullContext,
           context: selectedContext || 'crush'
         }),
       });
