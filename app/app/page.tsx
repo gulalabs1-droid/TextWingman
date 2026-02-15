@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
@@ -99,6 +99,23 @@ type ThreadMessage = {
   timestamp: number;
 };
 
+type StrategyData = {
+  momentum: string;
+  balance: string;
+  move: {
+    energy: string;
+    one_liner: string;
+    constraints: {
+      no_questions: boolean;
+      keep_short: boolean;
+      add_tease: boolean;
+      push_meetup: boolean;
+    };
+    risk: string;
+  };
+  latencyMs: number;
+} | null;
+
 type AppMode = 'reply' | 'decode' | 'opener';
 
 const OPENER_CONTEXTS = [
@@ -188,6 +205,7 @@ export default function AppPage() {
   const [pendingSent, setPendingSent] = useState<Reply | null>(null);
   const [customSent, setCustomSent] = useState('');
   const [showCustomSent, setShowCustomSent] = useState(false);
+  const [strategyData, setStrategyData] = useState<StrategyData>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
@@ -378,6 +396,9 @@ export default function AppPage() {
         setReplies(v2Replies);
         if (data.meta) {
           setV2Meta(data.meta);
+        }
+        if (data.strategy) {
+          setStrategyData(data.strategy);
         }
       }
       // Handle V1 response format
@@ -710,6 +731,7 @@ export default function AppPage() {
     setShowCustomSent(false);
     setReplies([]);
     setDecodeResult(null);
+    setStrategyData(null);
     setMessage('');
     setShowExamples(false);
     setShowThread(true);
@@ -727,6 +749,7 @@ export default function AppPage() {
     setShowCustomSent(false);
     setReplies([]);
     setDecodeResult(null);
+    setStrategyData(null);
     setMessage('');
     setShowExamples(false);
     setShowThread(true);
@@ -842,6 +865,7 @@ export default function AppPage() {
   const handleNewThread = () => {
     setThread([]);
     setReplies([]);
+    setStrategyData(null);
     setMessage('');
     setDecodeResult(null);
     setPendingSent(null);
@@ -1860,6 +1884,76 @@ export default function AppPage() {
         {/* Replies Section */}
         {replies.length > 0 && (
           <div className="animate-in fade-in duration-400">
+            {/* ══════════ STRATEGY COACH CARD ══════════ */}
+            {isPro && strategyData ? (
+              <div className="mb-4 rounded-2xl bg-gradient-to-r from-emerald-500/[0.08] to-cyan-500/[0.08] border border-emerald-500/20 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <Target className="h-3.5 w-3.5 text-emerald-400" />
+                  </div>
+                  <span className="text-emerald-300 text-[11px] font-bold uppercase tracking-widest">Strategy</span>
+                  {strategyData.move.risk !== 'low' && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      strategyData.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
+                    }`}>
+                      {strategyData.move.risk} risk
+                    </span>
+                  )}
+                </div>
+                <p className="text-white/90 text-sm font-semibold leading-relaxed mb-3">
+                  {strategyData.move.one_liner}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
+                    strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
+                    'bg-white/[0.08] text-white/50'
+                  }`}>
+                    {strategyData.momentum === 'Rising' ? <TrendingUp className="h-3 w-3" /> :
+                     strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? <TrendingDown className="h-3 w-3" /> :
+                     <Minus className="h-3 w-3" />}
+                    {strategyData.momentum}
+                  </span>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">
+                    {strategyData.balance}
+                  </span>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
+                    strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
+                    'bg-violet-500/15 text-violet-300'
+                  }`}>
+                    {strategyData.move.energy.replace('_', ' ')}
+                  </span>
+                  {strategyData.move.constraints.keep_short && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">keep short</span>
+                  )}
+                  {strategyData.move.constraints.no_questions && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">no questions</span>
+                  )}
+                  {strategyData.move.constraints.add_tease && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">add tease</span>
+                  )}
+                  {strategyData.move.constraints.push_meetup && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">push meetup</span>
+                  )}
+                </div>
+              </div>
+            ) : !isPro && replies.length > 0 ? (
+              <button
+                onClick={() => setShowPaywall(true)}
+                className="w-full mb-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all flex items-center gap-3 group"
+              >
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <Target className="h-4 w-4 text-emerald-400/50" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-white/40 text-xs font-bold">Strategy Mode</p>
+                  <p className="text-white/20 text-[10px]">AI coaching for every reply — Pro only</p>
+                </div>
+                <Lock className="h-3.5 w-3.5 text-white/20 group-hover:text-white/40 transition-colors" />
+              </button>
+            ) : null}
+
             <div className="mb-4">
               {showCraftedMessage && (
                 <p className={`text-[11px] font-bold uppercase tracking-widest mb-2 ${

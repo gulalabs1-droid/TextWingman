@@ -6,6 +6,7 @@ import { Agent, run } from "@openai/agents";
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
+import { analyzeStrategy, formatStrategyForDraft, SAFE_DEFAULT, type StrategyResult } from '@/lib/strategy';
 
 const MAX_REVISE_ATTEMPTS = 2;
 
@@ -142,10 +143,22 @@ export async function POST(req: Request) {
   let tone: any = {};
   let reviseAttempts = 0;
   let allPassed = false;
+  let strategy: StrategyResult = SAFE_DEFAULT;
+  let strategyLatency = 0;
 
   try {
-    // Step 1: Draft
-    const draftRes = await run(DraftAgent, `Context: ${context}\nMessage: ${message}`);
+    // Step 0: Strategy analysis (runs fast, <2s)
+    try {
+      const stratResult = await analyzeStrategy(message, context);
+      strategy = stratResult.strategy;
+      strategyLatency = stratResult.latencyMs;
+    } catch (e) {
+      console.error('Strategy analysis failed, using defaults:', e);
+    }
+
+    // Step 1: Draft (with strategy constraints injected)
+    const strategyHint = formatStrategyForDraft(strategy);
+    const draftRes = await run(DraftAgent, `Context: ${context}\n${strategyHint}\nMessage: ${message}`);
     drafts = safeJson(draftRes.finalOutput);
 
     // Step 2: Rule check with revise loop (max 2 attempts)
@@ -193,6 +206,12 @@ export async function POST(req: Request) {
       reviseAttempts,
       allRulesPassed: allPassed,
       latencyMs: latency,
+    },
+    strategy: {
+      momentum: strategy.momentum,
+      balance: strategy.balance,
+      move: strategy.move,
+      latencyMs: strategyLatency,
     },
   };
 
