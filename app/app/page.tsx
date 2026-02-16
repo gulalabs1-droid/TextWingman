@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
@@ -126,7 +126,13 @@ type ScanResult = {
   replies: Reply[];
 } | null;
 
-type AppMode = 'reply' | 'decode' | 'opener';
+type AppMode = 'reply' | 'decode' | 'opener' | 'revive';
+
+type ReviveMessage = {
+  tone: string;
+  text: string;
+  why: string;
+};
 
 const OPENER_CONTEXTS = [
   { value: 'dating-app', label: 'Dating App', emoji: '💘', description: 'Tinder, Hinge, Bumble' },
@@ -140,6 +146,12 @@ const OPENER_TONE_CONFIG: Record<string, { label: string; emoji: string; gradien
   bold: { label: 'Bold', emoji: '🎯', gradient: 'from-red-500 to-orange-500', lightBg: 'bg-red-50' },
   witty: { label: 'Witty', emoji: '⚡', gradient: 'from-purple-500 to-pink-500', lightBg: 'bg-purple-50' },
   warm: { label: 'Warm', emoji: '💚', gradient: 'from-green-500 to-emerald-500', lightBg: 'bg-green-50' },
+};
+
+const REVIVE_TONE_CONFIG: Record<string, { label: string; emoji: string; gradient: string }> = {
+  smooth: { label: 'Smooth', emoji: '🎯', gradient: 'from-cyan-500 to-blue-500' },
+  bold: { label: 'Bold', emoji: '🔥', gradient: 'from-orange-500 to-red-500' },
+  warm: { label: 'Warm', emoji: '💚', gradient: 'from-green-500 to-emerald-500' },
 };
 
 const ENERGY_CONFIG: Record<string, { emoji: string; color: string; bg: string }> = {
@@ -205,6 +217,11 @@ export default function AppPage() {
   const [openerContext, setOpenerContext] = useState<string>('dating-app');
   const [openerDescription, setOpenerDescription] = useState('');
   const [loadingOpeners, setLoadingOpeners] = useState(false);
+  const [reviveMessages, setReviveMessages] = useState<ReviveMessage[]>([]);
+  const [reviveAnalysis, setReviveAnalysis] = useState('');
+  const [loadingRevive, setLoadingRevive] = useState(false);
+  const [reviveUsed, setReviveUsed] = useState(0);
+  const [reviveLimit, setReviveLimit] = useState(1);
   const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
   const [showThreads, setShowThreads] = useState(false);
   const [savingThread, setSavingThread] = useState(false);
@@ -614,14 +631,17 @@ export default function AppPage() {
           setExtractedPlatform(data.platform);
           const msgCount = data.message_count || 1;
 
-          // For Decode and Opener modes: just extract text into textarea, don't auto-generate replies
-          if (appMode === 'decode' || appMode === 'opener') {
-            setMessage(data.last_received || data.extracted_text);
+          // For Decode, Opener, and Revive modes: just extract text into textarea, don't auto-generate replies
+          if (appMode === 'decode' || appMode === 'opener' || appMode === 'revive') {
+            // Revive needs the full conversation for context; Decode needs just the last received
+            setMessage(appMode === 'revive' ? (data.full_conversation || data.extracted_text) : (data.last_received || data.extracted_text));
             setShowExamples(false);
             toast({
               title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'}`,
               description: appMode === 'decode'
                 ? 'Now hit Decode to analyze it'
+                : appMode === 'revive'
+                ? 'Conversation loaded — hit Revive to generate re-engagement messages'
                 : 'Text extracted — use it for your opener',
             });
             return;
@@ -822,6 +842,51 @@ export default function AppPage() {
     }
   };
 
+  // Revive a dead conversation
+  const handleGenerateRevive = async () => {
+    if (!message.trim()) {
+      toast({ title: 'No conversation to revive', description: 'Paste the conversation or upload a screenshot first', variant: 'destructive' });
+      return;
+    }
+    if (!isPro && reviveUsed >= reviveLimit) {
+      setShowPaywall(true);
+      toast({ title: '🔒 Daily revive used', description: 'Upgrade to Pro for unlimited revives', variant: 'destructive' });
+      return;
+    }
+    setLoadingRevive(true);
+    setReviveMessages([]);
+    setReviveAnalysis('');
+    try {
+      const res = await fetch('/api/generate-revive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message.trim(),
+          context: selectedContext || 'crush',
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 429) {
+        setShowPaywall(true);
+        toast({ title: '🔒 Daily revive used', description: 'Upgrade to Pro for unlimited revives', variant: 'destructive' });
+        setReviveUsed(reviveLimit);
+        return;
+      }
+      if (data.error && !data.revives) {
+        toast({ title: 'Revive failed', description: data.error, variant: 'destructive' });
+        return;
+      }
+      setReviveMessages(data.revives || []);
+      setReviveAnalysis(data.analysis || '');
+      setReviveUsed(prev => prev + 1);
+      toast({ title: '✨ Revive messages ready!', description: 'Pick the one that feels right' });
+    } catch {
+      toast({ title: 'Revive failed', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setLoadingRevive(false);
+    }
+  };
+
   // ── Thread helpers ──────────────────────────────────────
   const buildThreadContext = (extraMessage?: string) => {
     const lines = thread.map(m => `${m.role === 'them' ? 'Them' : 'You'}: ${m.text}`);
@@ -983,6 +1048,8 @@ export default function AppPage() {
     setActiveThreadName(null);
     setShowThreads(false);
     setShowExamples(true);
+    setReviveMessages([]);
+    setReviveAnalysis('');
   };
 
   const handleTryAgain = () => {
@@ -994,6 +1061,8 @@ export default function AppPage() {
     setExtractedPlatform(null);
     setDecodeResult(null);
     setOpeners([]);
+    setReviveMessages([]);
+    setReviveAnalysis('');
   };
 
   const handleExampleClick = (example: string) => {
@@ -1255,7 +1324,7 @@ export default function AppPage() {
             {/* Mode Tabs */}
             <div className="flex items-center gap-1 bg-white/[0.06] rounded-2xl p-1 mb-4 border border-white/[0.08]">
               <button
-                onClick={() => { setAppMode('reply'); setOpeners([]); }}
+                onClick={() => { setAppMode('reply'); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
                   appMode === 'reply' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
@@ -1264,7 +1333,7 @@ export default function AppPage() {
                 Reply
               </button>
               <button
-                onClick={() => { setAppMode('decode'); setReplies([]); setOpeners([]); }}
+                onClick={() => { setAppMode('decode'); setReplies([]); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
                   appMode === 'decode' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
@@ -1273,13 +1342,22 @@ export default function AppPage() {
                 Decode
               </button>
               <button
-                onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); }}
+                onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); setReviveMessages([]); }}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
                   appMode === 'opener' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
               >
                 <Send className="h-3.5 w-3.5" />
                 Opener
+              </button>
+              <button
+                onClick={() => { setAppMode('revive'); setReplies([]); setDecodeResult(null); setOpeners([]); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+                  appMode === 'revive' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
+                }`}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Revive
               </button>
             </div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -1301,11 +1379,18 @@ export default function AppPage() {
                   Start the conversation
                 </>
               )}
+              {appMode === 'revive' && (
+                <>
+                  <RefreshCw className="h-5 w-5 text-cyan-400" />
+                  Revive a dead convo
+                </>
+              )}
             </h2>
             <p className="text-sm text-white/40 font-medium">
               {appMode === 'reply' && 'Paste the text and we\'ll handle the rest'}
               {appMode === 'decode' && 'Paste any message \u2014 we\'ll reveal the intent, subtext, and flags'}
               {appMode === 'opener' && 'Generate the perfect opening line for any situation'}
+              {appMode === 'revive' && 'Paste or screenshot the stale convo \u2014 we\'ll craft the perfect re-engagement'}
             </p>
           </div>
           <div className="space-y-4 px-6 pb-6">
@@ -1847,6 +1932,14 @@ export default function AppPage() {
                 {openerDescription.length}/300
               </div>
             </div>
+            {/* Screenshot upload for opener */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white/50 hover:bg-white/[0.08] hover:text-white/70 transition-all text-sm font-semibold"
+            >
+              <Camera className="h-4 w-4" />
+              {extracting ? 'Reading screenshot...' : 'Upload screenshot for context'}
+            </button>
             <Button
               onClick={handleGenerateOpeners}
               disabled={loadingOpeners || (!isPro && openerUsed >= openerLimit)}
@@ -1868,6 +1961,95 @@ export default function AppPage() {
             {!isPro && (
               <p className="text-center text-xs text-white/30 font-medium">
                 {openerUsed >= openerLimit ? '0' : `${openerLimit - openerUsed}`}/{openerLimit} free opener{openerLimit === 1 ? '' : 's'} remaining today
+              </p>
+            )}
+            </>)}
+
+            {/* ===== REVIVE MODE ===== */}
+            {appMode === 'revive' && (<>
+            {/* Context Selector */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+                Who is this?
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {CONTEXT_OPTIONS.map((context) => (
+                  <button
+                    key={context.value}
+                    onClick={() => setSelectedContext(selectedContext === context.value ? null : context.value as ContextType)}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95 ${
+                      selectedContext === context.value
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
+                        : 'bg-white/[0.06] text-white/55 border border-white/[0.10] hover:bg-white/[0.10] hover:text-white/70'
+                    }`}
+                  >
+                    <span>{context.emoji}</span>
+                    <span>{context.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Conversation input */}
+            <div className="relative">
+              <textarea
+                ref={inputAreaRef as any}
+                value={message}
+                onChange={(e) => { setMessage(e.target.value); setShowExamples(false); }}
+                placeholder="Paste the conversation thread here (or upload a screenshot below)..."
+                className="w-full min-h-[120px] p-4 pb-12 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-cyan-500/30 transition-all text-sm leading-relaxed"
+                maxLength={3000}
+              />
+              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.14] transition-all text-xs font-bold"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  {extracting ? 'Reading...' : 'Screenshot'}
+                </button>
+                <span className={`text-xs ${message.length > 2500 ? 'text-red-400' : 'text-white/30'}`}>
+                  {message.length}/3000
+                </span>
+              </div>
+            </div>
+            {/* Screenshot preview */}
+            {screenshotPreview && (
+              <div className="relative rounded-2xl overflow-hidden border border-cyan-500/20">
+                <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-40 object-cover opacity-70" />
+                <button
+                  onClick={clearScreenshot}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-all"
+                >
+                  <X className="h-3.5 w-3.5 text-white" />
+                </button>
+                {extracting && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+                  </div>
+                )}
+              </div>
+            )}
+            <Button
+              onClick={handleGenerateRevive}
+              disabled={loadingRevive || !message.trim() || (!isPro && reviveUsed >= reviveLimit)}
+              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
+                !isPro && reviveUsed >= reviveLimit
+                  ? 'bg-white/[0.08] text-white/30'
+                  : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
+              }`}
+              size="lg"
+            >
+              {loadingRevive ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Crafting revive messages...</>
+              ) : !isPro && reviveUsed >= reviveLimit ? (
+                <><Lock className="mr-2 h-5 w-5" /> Revive Used — Upgrade</>
+              ) : (
+                <><RefreshCw className="mr-2 h-5 w-5" /> Revive This Convo</>
+              )}
+            </Button>
+            {!isPro && (
+              <p className="text-center text-xs text-white/30 font-medium">
+                {reviveUsed >= reviveLimit ? '0' : `${reviveLimit - reviveUsed}`}/{reviveLimit} free revive{reviveLimit === 1 ? '' : 's'} remaining today
               </p>
             )}
             </>)}
@@ -1985,6 +2167,72 @@ export default function AppPage() {
             </div>
             <div className="text-center pt-5">
               <button onClick={() => setOpeners([])} className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95">
+                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" /> Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Revive Results */}
+        {reviveMessages.length > 0 && (
+          <div className="animate-in fade-in duration-400 mb-8">
+            {/* Analysis */}
+            {reviveAnalysis && (
+              <div className="mb-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />
+                  <span className="text-cyan-400/80 text-[10px] font-bold uppercase tracking-widest">convo analysis</span>
+                </div>
+                <p className="text-white/70 text-sm leading-relaxed">{reviveAnalysis}</p>
+              </div>
+            )}
+            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your revive messages</p>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
+              {reviveMessages.map((msg, idx) => {
+                const config = REVIVE_TONE_CONFIG[msg.tone] || REVIVE_TONE_CONFIG.smooth;
+                const label = ['A', 'B', 'C'][idx];
+                const isCopied = copied === msg.tone;
+                return (
+                  <div
+                    key={idx}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
+                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                        </div>
+                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-2">{msg.text}</p>
+                        <p className="text-white/30 text-xs italic mb-3">{msg.why}</p>
+                        <button
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(msg.text);
+                            setCopied(msg.tone);
+                            toast({ title: '✓ Copied!', description: 'Send it and see what happens' });
+                            setTimeout(() => setCopied(null), 2000);
+                          }}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                            isCopied
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                          }`}
+                        >
+                          {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-center pt-5">
+              <button onClick={() => { setReviveMessages([]); setReviveAnalysis(''); }} className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95">
                 <Sparkles className="h-3.5 w-3.5 inline mr-1.5" /> Try Again
               </button>
             </div>
