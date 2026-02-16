@@ -229,6 +229,7 @@ export default function AppPage() {
   const [activeThreadName, setActiveThreadName] = useState<string | null>(null);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [showThread, setShowThread] = useState(true);
+  const [selectedThreadMsg, setSelectedThreadMsg] = useState<number | null>(null);
   const [pendingSent, setPendingSent] = useState<Reply | null>(null);
   const [customSent, setCustomSent] = useState('');
   const [showCustomSent, setShowCustomSent] = useState(false);
@@ -954,6 +955,12 @@ export default function AppPage() {
     toast({ title: '✓ Your message added', description: 'Now paste what they said back' });
   };
 
+  const handleDeleteThreadMessage = (index: number) => {
+    setThread(prev => prev.filter((_, i) => i !== index));
+    setSelectedThreadMsg(null);
+    toast({ title: '✓ Message removed', description: 'You can re-add it with the correct sender' });
+  };
+
   // ── Saved threads ─────────────────────────────────────
   const fetchThreads = async () => {
     try {
@@ -1458,31 +1465,48 @@ export default function AppPage() {
                 </button>
 
                 {showThread && (
-                  <div className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto">
+                  <div className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto" onClick={() => setSelectedThreadMsg(null)}>
                     <div className="space-y-1">
                       {thread.map((msg, i) => {
                         const prevRole = i > 0 ? thread[i - 1].role : null;
                         const nextRole = i < thread.length - 1 ? thread[i + 1].role : null;
                         const isGroupStart = prevRole !== msg.role;
                         const isGroupEnd = nextRole !== msg.role;
+                        const isSelected = selectedThreadMsg === i;
                         return (
                           <div key={i} className={`flex ${msg.role === 'you' ? 'justify-end' : 'justify-start'} ${isGroupStart && i > 0 ? 'mt-3' : ''}`}>
-                            <div className={`max-w-[80%] px-4 py-2 text-[13px] leading-relaxed ${
-                              msg.role === 'them'
-                                ? `bg-white/[0.07] text-white/80 border border-white/[0.06] ${
-                                    isGroupStart && isGroupEnd ? 'rounded-2xl rounded-bl-lg' :
-                                    isGroupStart ? 'rounded-2xl rounded-bl-md' :
-                                    isGroupEnd ? 'rounded-2xl rounded-tl-md rounded-bl-lg' :
-                                    'rounded-xl rounded-l-md'
-                                  }`
-                                : `bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/10 ${
-                                    isGroupStart && isGroupEnd ? 'rounded-2xl rounded-br-lg' :
-                                    isGroupStart ? 'rounded-2xl rounded-br-md' :
-                                    isGroupEnd ? 'rounded-2xl rounded-tr-md rounded-br-lg' :
-                                    'rounded-xl rounded-r-md'
-                                  }`
-                            }`}>
-                              <p className="font-medium">{msg.text}</p>
+                            <div className="relative max-w-[80%]">
+                              <div
+                                onClick={(e) => { e.stopPropagation(); setSelectedThreadMsg(isSelected ? null : i); }}
+                                className={`px-4 py-2 text-[13px] leading-relaxed cursor-pointer transition-all ${
+                                  isSelected ? 'ring-1 ring-red-400/40 ' : ''
+                                }${
+                                  msg.role === 'them'
+                                    ? `bg-white/[0.07] text-white/80 border border-white/[0.06] ${
+                                        isGroupStart && isGroupEnd ? 'rounded-2xl rounded-bl-lg' :
+                                        isGroupStart ? 'rounded-2xl rounded-bl-md' :
+                                        isGroupEnd ? 'rounded-2xl rounded-tl-md rounded-bl-lg' :
+                                        'rounded-xl rounded-l-md'
+                                      }`
+                                    : `bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/10 ${
+                                        isGroupStart && isGroupEnd ? 'rounded-2xl rounded-br-lg' :
+                                        isGroupStart ? 'rounded-2xl rounded-br-md' :
+                                        isGroupEnd ? 'rounded-2xl rounded-tr-md rounded-br-lg' :
+                                        'rounded-xl rounded-r-md'
+                                      }`
+                                }`}>
+                                <p className="font-medium">{msg.text}</p>
+                              </div>
+                              {isSelected && (
+                                <div className={`absolute top-full mt-1 z-10 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-1 duration-150 ${msg.role === 'you' ? 'right-0' : 'left-0'}`}>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteThreadMessage(i); }}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[11px] font-bold hover:bg-red-500/30 transition-all active:scale-95"
+                                  >
+                                    <X className="h-3 w-3" /> Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
