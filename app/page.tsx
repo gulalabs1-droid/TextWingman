@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, Eye, RefreshCw, Pencil } from "lucide-react";
+import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, TrendingUp, Eye, RefreshCw, Pencil } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export default function HomePage() {
@@ -68,27 +68,27 @@ export default function HomePage() {
                   <div className="space-y-1.5">
                     <div className="flex justify-start">
                       <div className="bg-white/[0.07] border border-white/[0.06] rounded-2xl rounded-bl-md px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white/70 text-xs">&ldquo;hey how&apos;s your day going&rdquo;</p>
+                        <p className="text-white/70 text-xs">&ldquo;wyd tonight&rdquo;</p>
                       </div>
                     </div>
                     <div className="flex justify-end">
                       <div className="bg-gradient-to-r from-violet-600/80 to-fuchsia-600/80 rounded-2xl rounded-br-md px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white text-xs">&ldquo;pretty good, long week though&rdquo;</p>
+                        <p className="text-white text-xs">&ldquo;probably just staying in, you?&rdquo;</p>
                       </div>
                     </div>
                     <div className="flex justify-start">
                       <div className="bg-white/[0.07] border border-white/[0.06] rounded-2xl rounded-bl-md px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white/70 text-xs">&ldquo;lol same. what u getting into this weekend&rdquo;</p>
+                        <p className="text-white/70 text-xs">&ldquo;my friends bailed on me lol&rdquo;</p>
                       </div>
                     </div>
                     <div className="flex justify-end">
                       <div className="bg-gradient-to-r from-violet-600/80 to-fuchsia-600/80 rounded-2xl rounded-br-md px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white text-xs">&ldquo;not sure yet, might just chill&rdquo;</p>
+                        <p className="text-white text-xs">&ldquo;that&apos;s weak of them&rdquo;</p>
                       </div>
                     </div>
                     <div className="flex justify-start">
                       <div className="bg-white/[0.07] border border-white/[0.06] rounded-2xl rounded-bl-lg px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white/70 text-xs">&ldquo;oh ok lol&rdquo;</p>
+                        <p className="text-white/70 text-xs">&ldquo;right? now I got nothing to do&rdquo;</p>
                       </div>
                     </div>
                   </div>
@@ -100,14 +100,14 @@ export default function HomePage() {
                     <Target className="h-3.5 w-3.5 text-emerald-400" />
                     <span className="text-emerald-300 text-[10px] font-bold uppercase tracking-widest">Your sharp friend says</span>
                   </div>
-                  <p className="text-white/90 text-sm font-semibold mb-2.5">&ldquo;She&apos;s losing interest. Stop chasing — pull back.&rdquo;</p>
+                  <p className="text-white/90 text-sm font-semibold mb-2.5">&ldquo;She&apos;s hinting. This is your window — make a move.&rdquo;</p>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 flex items-center gap-1">
-                      <TrendingDown className="h-2.5 w-2.5" /> Declining
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center gap-1">
+                      <TrendingUp className="h-2.5 w-2.5" /> Rising
                     </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.08] text-white/50">You leading</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">pull back</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30">keep short</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.08] text-white/50">Balanced</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">escalate</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30">push meetup</span>
                   </div>
                 </div>
 
@@ -115,15 +115,15 @@ export default function HomePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
                   <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
                     <p className="text-[10px] font-bold text-white/40 mb-1">⚡ Shorter</p>
-                    <p className="text-white/80 text-xs">&ldquo;fair enough&rdquo;</p>
+                    <p className="text-white/80 text-xs">&ldquo;come through then&rdquo;</p>
                   </div>
                   <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
                     <p className="text-[10px] font-bold text-white/40 mb-1">🔥 Spicier</p>
-                    <p className="text-white/80 text-xs">&ldquo;wow living on the edge huh&rdquo;</p>
+                    <p className="text-white/80 text-xs">&ldquo;sounds like you need a rescue&rdquo;</p>
                   </div>
                   <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
                     <p className="text-[10px] font-bold text-white/40 mb-1">💚 Softer</p>
-                    <p className="text-white/80 text-xs">&ldquo;you earned it&rdquo;</p>
+                    <p className="text-white/80 text-xs">&ldquo;their loss. come chill with me&rdquo;</p>
                   </div>
                 </div>
 
@@ -159,7 +159,7 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Context changes everything.</h2>
           <p className="text-white/50">Other tools see one message. Wingman reads the whole conversation.</p>
         </div>
-        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-5">
+          <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-5">
           {/* Without Wingman */}
           <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 space-y-5">
             <div className="flex items-center gap-2">
@@ -169,16 +169,16 @@ export default function HomePage() {
             <div className="space-y-3">
               <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3">
                 <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-1.5">They sent</p>
-                <p className="text-white/70 text-sm">&ldquo;oh ok lol&rdquo;</p>
+                <p className="text-white/70 text-sm">&ldquo;right? now I got nothing to do&rdquo;</p>
               </div>
               <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3">
                 <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-1.5">You think</p>
-                <p className="text-white/50 text-sm italic">&ldquo;What does that even mean? Are they mad? Bored? Should I double text?&rdquo;</p>
+                <p className="text-white/50 text-sm italic">&ldquo;Wait is she hinting? Should I invite her? What if she says no? I don&apos;t want to seem thirsty&hellip;&rdquo;</p>
               </div>
               <div className="bg-red-500/[0.08] border border-red-500/20 rounded-xl p-3">
                 <p className="text-red-300/60 text-[10px] font-bold uppercase tracking-wider mb-1.5">You send</p>
-                <p className="text-red-200 text-sm">&ldquo;haha yeah so anyway what are you up to this weekend do you wanna maybe hang out or something&rdquo;</p>
-                <p className="text-red-400/60 text-xs mt-2">Overexplaining. Needy. No awareness of the dynamic.</p>
+                <p className="text-red-200 text-sm">&ldquo;dang that sucks lol yeah I mean if you want we could maybe link or something idk up to you though&rdquo;</p>
+                <p className="text-red-400/60 text-xs mt-2">Overthinking it. Hedging every word. Zero confidence.</p>
               </div>
             </div>
           </div>
@@ -192,24 +192,24 @@ export default function HomePage() {
             <div className="space-y-3">
               <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3">
                 <p className="text-white/40 text-[10px] font-bold uppercase tracking-wider mb-1.5">Full thread analyzed</p>
-                <p className="text-white/50 text-xs">6 messages &bull; Declining momentum &bull; You leading</p>
+                <p className="text-white/50 text-xs">6 messages &bull; Rising momentum &bull; She&apos;s hinting</p>
               </div>
               <div className="bg-emerald-500/[0.08] border border-emerald-500/20 rounded-xl p-3">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <Target className="h-3 w-3 text-emerald-400" />
                   <p className="text-emerald-300 text-[10px] font-bold uppercase tracking-wider">Sharp friend says</p>
                 </div>
-                <p className="text-white/90 text-sm font-semibold">&ldquo;She&apos;s losing interest. Stop chasing — pull back.&rdquo;</p>
+                <p className="text-white/90 text-sm font-semibold">&ldquo;She&apos;s hinting. This is your window — make a move.&rdquo;</p>
                 <div className="flex gap-1.5 mt-2">
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">keep short</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">no questions</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">pull back</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">escalate</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">push meetup</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">add tease</span>
                 </div>
               </div>
               <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-3">
                 <p className="text-emerald-300/60 text-[10px] font-bold uppercase tracking-wider mb-1.5">Strategy-shaped reply</p>
-                <p className="text-emerald-200 text-sm">&ldquo;wow living on the edge huh&rdquo;</p>
-                <p className="text-emerald-400/60 text-xs mt-2">Short. Unbothered. Teasing. Strategy-compliant.</p>
+                <p className="text-emerald-200 text-sm">&ldquo;come through then&rdquo;</p>
+                <p className="text-emerald-400/60 text-xs mt-2">Short. Confident. Reads the subtext. Makes the move.</p>
               </div>
             </div>
           </div>
