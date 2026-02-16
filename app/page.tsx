@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, Eye, RefreshCw } from "lucide-react";
+import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, Eye, RefreshCw, Pencil } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export default function HomePage() {
@@ -39,17 +39,17 @@ export default function HomePage() {
           <div className="text-center space-y-5 mb-12 md:mb-16">
             <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full text-xs font-bold border border-cyan-500/20">
               <RefreshCw className="h-3.5 w-3.5" />
-              V3.2 — Revive Mode + Screenshot Briefing
+              V3.3 — Edit + Polish, Regenerate & Smarter Context
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
               Your sharp friend
               <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">for every conversation.</span>
             </h1>
             <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-              Text Wingman reads your whole conversation, tells you the move, and writes the reply. Like having a sharp friend reading over your shoulder.
+              Text Wingman reads your whole conversation, tells you the move, writes the reply — and now lets you edit and polish it your way. Like having a sharp friend reading over your shoulder.
             </p>
             <p className="text-sm text-white/30 font-medium">
-              Free. No card. Threads + replies + decode + openers + revive every day.
+              Free. No card. Threads + replies + edit & polish + decode + openers + revive every day.
             </p>
           </div>
 
@@ -111,8 +111,8 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Shaped Replies */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-5">
+                {/* Shaped Replies with Edit hint */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
                   <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
                     <p className="text-[10px] font-bold text-white/40 mb-1">⚡ Shorter</p>
                     <p className="text-white/80 text-xs">&ldquo;fair enough&rdquo;</p>
@@ -125,6 +125,16 @@ export default function HomePage() {
                     <p className="text-[10px] font-bold text-white/40 mb-1">💚 Softer</p>
                     <p className="text-white/80 text-xs">&ldquo;you earned it&rdquo;</p>
                   </div>
+                </div>
+
+                {/* Edit + Polish hint */}
+                <div className="bg-violet-500/[0.08] border border-violet-500/20 rounded-xl p-3 mb-5">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Pencil className="h-3 w-3 text-violet-400" />
+                    <span className="text-violet-300 text-[10px] font-bold uppercase tracking-widest">Edit + Polish</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300">New</span>
+                  </div>
+                  <p className="text-white/50 text-xs">Don&apos;t like a reply? Edit it, add your own ideas, and hit Polish — AI smooths it out while keeping your additions.</p>
                 </div>
 
                 {/* CTA Row */}
@@ -212,7 +222,7 @@ export default function HomePage() {
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Four modes. Every situation covered.</h2>
-          <p className="text-white/50">Reply, Decode, Revive dead convos, or generate Openers — all from screenshots or text.</p>
+          <p className="text-white/50">Reply, Decode, Revive dead convos, or generate Openers — edit any reply and make it yours.</p>
         </div>
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-5">
           {/* Screenshot Path */}
@@ -231,7 +241,7 @@ export default function HomePage() {
                 { n: '1', text: 'Upload a screenshot of the conversation' },
                 { n: '2', text: 'AI reads every message and identifies who said what' },
                 { n: '3', text: 'Get instant briefing — strategy + 3 replies' },
-                { n: '4', text: 'Copy your reply and go, or continue in Thread' },
+                { n: '4', text: 'Edit any reply to add your ideas, Polish it, then send' },
               ].map((step) => (
                 <div key={step.n} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-lg bg-cyan-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -259,7 +269,7 @@ export default function HomePage() {
                 { n: '1', text: 'Paste what they sent and hit Generate' },
                 { n: '2', text: 'Pick a reply and tap "I sent this" — or type your own' },
                 { n: '3', text: 'Paste their next message — AI sees the full thread' },
-                { n: '4', text: 'Strategy coach + shaped replies every round' },
+                { n: '4', text: 'Edit replies, regenerate for fresh options, or keep going' },
               ].map((step) => (
                 <div key={step.n} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -281,31 +291,38 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Why it hits different.</h2>
           <p className="text-white/50">Not a chatbot. Not a template. A competitive advantage.</p>
         </div>
-        <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
           <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-violet-500/15 flex items-center justify-center">
               <MessageCircle className="h-6 w-6 text-violet-400" />
             </div>
             <h3 className="font-bold text-white mb-2">Reads the whole conversation</h3>
-            <p className="text-white/50 text-sm leading-relaxed">Thread-Aware AI sees every message — theirs and yours. Every reply fits the flow, not just the last text.</p>
+            <p className="text-white/50 text-sm leading-relaxed">Thread-Aware AI sees every message — theirs and yours. Replies fit the flow, not just the last text.</p>
           </div>
           <div className="bg-white/[0.03] border border-emerald-500/10 rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-emerald-500/15 flex items-center justify-center">
               <Target className="h-6 w-6 text-emerald-400" />
             </div>
             <h3 className="font-bold text-white mb-2">Coaches you on the move</h3>
-            <p className="text-white/50 text-sm leading-relaxed">StrategyAgent tells you who&apos;s chasing, what the momentum is, and what to do next — before you even see the replies.</p>
+            <p className="text-white/50 text-sm leading-relaxed">StrategyAgent tells you who&apos;s chasing, the momentum, and what to do next — before you see the replies.</p>
+          </div>
+          <div className="bg-white/[0.03] border border-violet-500/10 rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-violet-500/15 flex items-center justify-center">
+              <Pencil className="h-6 w-6 text-violet-400" />
+            </div>
+            <h3 className="font-bold text-white mb-2">Edit + Polish any reply</h3>
+            <p className="text-white/50 text-sm leading-relaxed">Add your own ideas to any reply, then hit Polish — AI smooths it out while keeping your words tight.</p>
           </div>
           <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-cyan-500/15 flex items-center justify-center">
               <Camera className="h-6 w-6 text-cyan-400" />
             </div>
             <h3 className="font-bold text-white mb-2">Screenshot to briefing</h3>
-            <p className="text-white/50 text-sm leading-relaxed">Upload a screenshot. Get the full read — strategy analysis + 3 replies — in seconds. No typing. No pasting.</p>
+            <p className="text-white/50 text-sm leading-relaxed">Upload a screenshot. Get strategy analysis + 3 replies in seconds. No typing. No pasting.</p>
           </div>
         </div>
         <div className="text-center mt-6">
-          <p className="text-white/25 text-xs mb-4">Plus: 3-agent verified pipeline, ≤18 word enforcement, tone confidence scoring</p>
+          <p className="text-white/25 text-xs mb-4">Plus: 3-agent verified pipeline, ≤18 word enforcement, regenerate for fresh options, tone confidence scoring</p>
           <Link href="/features" className="text-emerald-400 hover:text-white text-sm font-medium transition-colors inline-flex items-center gap-1">
             See all features <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -338,7 +355,7 @@ export default function HomePage() {
                 <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> Thread Mode
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
-                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> Screenshot Briefing
+                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> Screenshot Briefing + Edit & Polish
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
                 <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> 1 decode + 1 opener + 1 revive / day
@@ -380,7 +397,7 @@ export default function HomePage() {
                 <Shield className="h-4 w-4 text-emerald-400 flex-shrink-0" /> V2 Verified pipeline
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
-                <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Thread-aware AI conversations
+                <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Edit + Polish — make any reply yours
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
                 <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited decodes, openers &amp; revives
@@ -438,7 +455,7 @@ export default function HomePage() {
           <div className="flex flex-col items-center space-y-6">
             <Logo size="lg" showText={true} />
             <p className="text-sm text-white/40 text-center max-w-md">
-              Your AI texting companion — reads the conversation, coaches the move, writes the reply.
+              Your AI texting companion — reads the conversation, coaches the move, writes the reply, and lets you make it yours.
             </p>
             <div className="flex gap-6 text-sm text-white/30">
               <Link href="/terms" className="hover:text-white/60 transition">

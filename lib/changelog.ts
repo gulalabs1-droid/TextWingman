@@ -10,6 +10,21 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '3.3.0',
+    date: '2026-02-16',
+    title: 'Edit + Polish, Regenerate & Smarter Context',
+    description: 'Edit any reply inline, add your own ideas, and let AI polish it smooth. Regenerate replies when you want fresh options. Plus a major upgrade to how the AI reads conversation context.',
+    type: 'feature',
+    highlights: [
+      'Edit + Polish — tap Edit on any reply, add your own ideas (like "let\'s grab food"), then hit Polish to have AI smooth it out while keeping your additions',
+      'Regenerate Replies — "Generate different replies" button for fresh options without re-entering the conversation',
+      'Smarter Context Analysis — AI now detects re-initiation (they came back to you), personal sharing, questions, and growing energy instead of misreading casual style as low effort',
+      'Content Engagement — replies now reference specifics from their message instead of giving generic responses',
+      'Thread input fix — "Add as their message" and "Add as my message" buttons always visible after deleting a thread message',
+      'Use As Is option — save your raw edit without AI polish if you prefer your own wording',
+    ],
+  },
+  {
     version: '3.2.0',
     date: '2026-02-15',
     title: 'Revive Mode, Screenshot Briefing & Energy Matching',

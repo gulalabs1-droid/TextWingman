@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw, Pencil } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FEATURES = [
@@ -127,6 +127,47 @@ const FEATURES = [
     },
   },
   {
+    id: 'edit-polish',
+    badge: 'New',
+    badgeColor: 'bg-violet-500',
+    icon: Pencil,
+    iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
+    title: 'Edit + Polish',
+    tagline: 'Make any reply yours.',
+    description: 'Like a reply but want to add your own twist? Tap Edit, add your ideas — like "let\'s grab food later" — then hit Polish. AI smooths it out, keeps it under 18 words, and maintains the tone. Or tap "Use as is" to keep your exact wording. Works on every reply in both Thread Mode and Screenshot Briefing.',
+    howItWorks: [
+      'Tap Edit on any reply card',
+      'Modify the text or add your own ideas',
+      'Hit Polish — AI refines it while keeping your additions',
+      'Or tap "Use as is" to keep your exact edit',
+    ],
+    example: {
+      input: 'Original: "Called in sick for pampering? Bold move."\nYour edit: "Called in sick for pampering? Bold move. I\'m gonna get something to eat later"',
+      outputs: [
+        { tone: 'Polish', text: 'called in sick for the spa? bold. let\'s grab food later', emoji: '✨' },
+        { tone: 'Use as is', text: 'Your exact words, no changes', emoji: '✓' },
+        { tone: 'Cancel', text: 'Discard and keep the original', emoji: '↩️' },
+      ],
+    },
+  },
+  {
+    id: 'regenerate',
+    badge: 'New',
+    badgeColor: 'bg-white/20',
+    icon: RefreshCw,
+    iconBg: 'bg-gradient-to-br from-gray-500 to-zinc-600',
+    title: 'Regenerate Replies',
+    tagline: 'Not feeling it? Get fresh options.',
+    description: 'If the AI-generated replies don\'t hit right, tap "Generate different replies" for a brand new set — same conversation context, completely different replies. Works in both Thread Mode and Screenshot Briefing. No need to re-enter or re-upload anything.',
+    howItWorks: [
+      'Generate replies as usual (thread or screenshot)',
+      'Not satisfied? Tap "Generate different replies" or "Retry"',
+      'Get a fresh set of 3 replies using the same conversation context',
+      'Regenerate as many times as you want',
+    ],
+    example: null,
+  },
+  {
     id: 'revive-mode',
     badge: 'New',
     badgeColor: 'bg-cyan-500',
@@ -166,11 +207,11 @@ const FEATURES = [
       'Pick from 3 energy-matched replies and send',
     ],
     example: {
-      input: 'Screenshot from Facebook Dating — 4 messages',
+      input: 'Screenshot from iMessage — "I took a sick day to go to the spa lol"',
       outputs: [
-        { tone: 'Strategy', text: 'Declining momentum. They\'re giving you nothing. Don\'t reward it.', emoji: '📉' },
-        { tone: 'Shorter', text: 'Bet.', emoji: '⚡' },
-        { tone: 'Spicier', text: 'Figures.', emoji: '🔥' },
+        { tone: 'Strategy', text: 'They\'re into you. They re-initiated and shared personal plans. Turn up the charm.', emoji: '�' },
+        { tone: 'Shorter', text: 'called in sick for the spa? respect', emoji: '⚡' },
+        { tone: 'Spicier', text: 'skipped work for a spa day? risk-taker huh', emoji: '🔥' },
       ],
     },
   },
@@ -254,14 +295,14 @@ export default function FeaturesPage() {
       <section className="container mx-auto px-4 pt-8 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30 mb-6">
           <Sparkles className="h-4 w-4" />
-          v{CURRENT_VERSION} — Revive Mode + Screenshot Briefing
+          v{CURRENT_VERSION} — Edit + Polish, Regenerate & Smarter Context
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
           Not just replies.
           <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">Conversations.</span>
         </h1>
         <p className="text-lg text-white/60 max-w-2xl mx-auto mb-8">
-          Text Wingman tracks the full conversation, coaches you on the right move, and generates replies that fit the flow. Your AI texting companion.
+          Text Wingman tracks the full conversation, coaches you on the right move, generates replies that fit the flow — and now lets you edit any reply and make it yours.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           {FEATURES.map(f => (
