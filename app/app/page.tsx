@@ -575,6 +575,29 @@ export default function AppPage() {
     setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
   };
 
+  // Compress image client-side to avoid size issues with iPhone screenshots
+  const compressImage = (file: File, maxWidth = 1600, quality = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   // Screenshot upload & extraction
   const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -590,157 +613,152 @@ export default function AppPage() {
       return;
     }
 
-    // Validate file size (4MB)
-    if (file.size > 4 * 1024 * 1024) {
+    // Compress image client-side (handles large iPhone screenshots)
+    let base64: string;
+    try {
+      base64 = await compressImage(file);
+    } catch {
       toast({
-        title: 'Image too large',
-        description: 'Please upload an image under 4MB',
+        title: 'Could not process image',
+        description: 'Try a different screenshot',
         variant: 'destructive',
       });
       return;
     }
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      setScreenshotPreview(base64);
-      setExtracting(true);
-      setExtractedPlatform(null);
+    setScreenshotPreview(base64);
+    setExtracting(true);
+    setExtractedPlatform(null);
 
-      try {
-        // Step 1: Extract conversation from screenshot
-        const res = await fetch('/api/extract-text', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64 }),
-        });
+    try {
+      // Step 1: Extract conversation from screenshot
+      const res = await fetch('/api/extract-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 }),
+      });
 
-        const data = await res.json();
+      const data = await res.json();
 
-        if (data.error && !data.extracted_text) {
-          toast({
-            title: '📷 Could not read screenshot',
-            description: data.error || 'Try a clearer screenshot of the conversation',
-            variant: 'destructive',
-          });
-          setScreenshotPreview(null);
-          return;
-        }
-
-        if (data.extracted_text) {
-          setExtractedPlatform(data.platform);
-          const msgCount = data.message_count || 1;
-
-          // For Decode, Opener, and Revive modes: just extract text into textarea, don't auto-generate replies
-          if (appMode === 'decode' || appMode === 'opener' || appMode === 'revive') {
-            // Revive needs the full conversation for context; Decode needs just the last received
-            setMessage(appMode === 'revive' ? (data.full_conversation || data.extracted_text) : (data.last_received || data.extracted_text));
-            setShowExamples(false);
-            setScreenshotPreview(null);
-            toast({
-              title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'}`,
-              description: appMode === 'decode'
-                ? 'Now hit Decode to analyze it'
-                : appMode === 'revive'
-                ? 'Conversation loaded — hit Revive to generate re-engagement messages'
-                : 'Text extracted — use it for your opener',
-            });
-            return;
-          }
-
-          // Reply mode: auto-generate replies via Screenshot Briefing
-          toast({
-            title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'} — generating replies...`,
-            description: data.platform !== 'unknown' ? `From ${data.platform}` : 'Reading your conversation',
-          });
-
-          // Step 2: Auto-generate replies using the extracted conversation
-          const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
-          const genRes = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: data.extracted_text,
-              context: selectedContext || 'crush',
-            }),
-          });
-
-          const genData = await genRes.json();
-
-          if (!genRes.ok) {
-            throw new Error(genData.error || 'Generation failed');
-          }
-
-          // Parse replies from response
-          let scanReplies: Reply[] = [];
-          let scanStrategy: StrategyData = null;
-
-          if (isPro && genData.shorter && genData.spicier && genData.softer) {
-            scanReplies = [
-              { tone: 'shorter', text: genData.shorter },
-              { tone: 'spicier', text: genData.spicier },
-              { tone: 'softer', text: genData.softer },
-            ];
-            if (genData.strategy) {
-              scanStrategy = genData.strategy;
-            }
-          } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
-            scanReplies = genData.replies.filter((r: any) => r && r.tone && r.text);
-          }
-
-          if (scanReplies.length > 0) {
-            setScanResult({
-              platform: data.platform || 'unknown',
-              messageCount: msgCount,
-              confidence: data.confidence || 'medium',
-              fullConversation: data.full_conversation || data.extracted_text,
-              lastReceived: data.last_received || '',
-              strategy: scanStrategy,
-              replies: scanReplies,
-            });
-            setShowExamples(false);
-
-            // Track usage
-            const usageRes = await fetch('/api/usage');
-            if (usageRes.ok) {
-              const usageData = await usageRes.json();
-              setUsageCount(usageData.usageCount);
-              setRemainingReplies(usageData.remaining);
-            }
-
-            setScreenshotPreview(null);
-            toast({
-              title: '📷 Briefing ready',
-              description: `${msgCount} messages scanned — your move is below`,
-            });
-          } else {
-            // Fallback: put text in textarea like before
-            setMessage(data.extracted_text);
-            setScreenshotPreview(null);
-            toast({
-              title: `📷 ${msgCount > 1 ? `${msgCount} messages extracted` : 'Message extracted'}`,
-              description: 'Hit Generate to get replies',
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Screenshot extraction error:', error);
+      if (data.error && !data.extracted_text) {
         toast({
-          title: 'Scan failed',
-          description: 'Something went wrong. Try pasting the message instead.',
+          title: '📷 Could not read screenshot',
+          description: data.error || 'Try a clearer screenshot of the conversation',
           variant: 'destructive',
         });
         setScreenshotPreview(null);
-      } finally {
-        setExtracting(false);
+        return;
       }
-    };
-    reader.readAsDataURL(file);
 
-    // Reset file input so the same file can be re-selected
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      if (data.extracted_text) {
+        setExtractedPlatform(data.platform);
+        const msgCount = data.message_count || 1;
+
+        // For Decode, Opener, and Revive modes: just extract text into textarea, don't auto-generate replies
+        if (appMode === 'decode' || appMode === 'opener' || appMode === 'revive') {
+          setMessage(appMode === 'revive' ? (data.full_conversation || data.extracted_text) : (data.last_received || data.extracted_text));
+          setShowExamples(false);
+          setScreenshotPreview(null);
+          toast({
+            title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'}`,
+            description: appMode === 'decode'
+              ? 'Now hit Decode to analyze it'
+              : appMode === 'revive'
+              ? 'Conversation loaded — hit Revive to generate re-engagement messages'
+              : 'Text extracted — use it for your opener',
+          });
+          return;
+        }
+
+        // Reply mode: auto-generate replies via Screenshot Briefing
+        toast({
+          title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'} — generating replies...`,
+          description: data.platform !== 'unknown' ? `From ${data.platform}` : 'Reading your conversation',
+        });
+
+        // Step 2: Auto-generate replies using the extracted conversation
+        const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+        const genRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: data.extracted_text,
+            context: selectedContext || 'crush',
+          }),
+        });
+
+        const genData = await genRes.json();
+
+        if (!genRes.ok) {
+          throw new Error(genData.error || 'Generation failed');
+        }
+
+        // Parse replies from response
+        let scanReplies: Reply[] = [];
+        let scanStrategy: StrategyData = null;
+
+        if (isPro && genData.shorter && genData.spicier && genData.softer) {
+          scanReplies = [
+            { tone: 'shorter', text: genData.shorter },
+            { tone: 'spicier', text: genData.spicier },
+            { tone: 'softer', text: genData.softer },
+          ];
+          if (genData.strategy) {
+            scanStrategy = genData.strategy;
+          }
+        } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
+          scanReplies = genData.replies.filter((r: any) => r && r.tone && r.text);
+        }
+
+        if (scanReplies.length > 0) {
+          setScanResult({
+            platform: data.platform || 'unknown',
+            messageCount: msgCount,
+            confidence: data.confidence || 'medium',
+            fullConversation: data.full_conversation || data.extracted_text,
+            lastReceived: data.last_received || '',
+            strategy: scanStrategy,
+            replies: scanReplies,
+          });
+          setShowExamples(false);
+
+          // Track usage
+          const usageRes = await fetch('/api/usage');
+          if (usageRes.ok) {
+            const usageData = await usageRes.json();
+            setUsageCount(usageData.usageCount);
+            setRemainingReplies(usageData.remaining);
+          }
+
+          setScreenshotPreview(null);
+          toast({
+            title: '📷 Briefing ready',
+            description: `${msgCount} messages scanned — your move is below`,
+          });
+        } else {
+          // Fallback: put text in textarea like before
+          setMessage(data.extracted_text);
+          setScreenshotPreview(null);
+          toast({
+            title: `📷 ${msgCount > 1 ? `${msgCount} messages extracted` : 'Message extracted'}`,
+            description: 'Hit Generate to get replies',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Screenshot extraction error:', error);
+      toast({
+        title: 'Scan failed',
+        description: 'Something went wrong. Try pasting the message instead.',
+        variant: 'destructive',
+      });
+      setScreenshotPreview(null);
+    } finally {
+      setExtracting(false);
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
