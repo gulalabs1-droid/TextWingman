@@ -201,6 +201,7 @@ export default function AppPage() {
   const [openerUsed, setOpenerUsed] = useState(0);
   const [openerLimit, setOpenerLimit] = useState(1);
   const [isPro, setIsPro] = useState(false);
+  const [useV2, setUseV2] = useState(true); // Pro users default to V2, can toggle to V1 for speed
   const [v2Meta, setV2Meta] = useState<V2Meta>(null);
   const [v2Step, setV2Step] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -380,13 +381,13 @@ export default function AppPage() {
     
     try {
       // Use V2 API if enabled (Pro-only)
-      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
       
       // Build full conversation context for smarter replies
       const fullContext = buildThreadContext(message.trim());
       
       // Show progress steps for V2
-      if (isPro) {
+      if (isPro && useV2) {
         setV2Step('drafting');
         await new Promise(r => setTimeout(r, 800));
         setV2Step('rule-checking');
@@ -421,7 +422,7 @@ export default function AppPage() {
       }
       
       // Handle V2 response format
-      if (isPro && data.shorter && data.spicier && data.softer) {
+      if (isPro && useV2 && data.shorter && data.spicier && data.softer) {
         const v2Replies: Reply[] = [
           { tone: 'shorter', text: data.shorter },
           { tone: 'spicier', text: data.spicier },
@@ -466,7 +467,7 @@ export default function AppPage() {
       setTimeout(() => setShowCraftedMessage(false), 3000);
 
       toast({
-        title: isPro ? "✅ Verified replies ready!" : "✨ Replies generated!",
+        title: (isPro && useV2) ? "✅ Verified replies ready!" : "✨ Replies generated!",
         description: "Copy one and tap 'I sent this' to keep the thread going",
       });
     } catch (error) {
@@ -498,10 +499,10 @@ export default function AppPage() {
     setPendingSent(null);
 
     try {
-      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
       const fullContext = buildThreadContext(lastThem.text);
 
-      if (isPro) {
+      if (isPro && useV2) {
         setV2Step('drafting');
         await new Promise(r => setTimeout(r, 800));
         setV2Step('rule-checking');
@@ -522,7 +523,7 @@ export default function AppPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to regenerate');
 
-      if (isPro && data.shorter && data.spicier && data.softer) {
+      if (isPro && useV2 && data.shorter && data.spicier && data.softer) {
         setReplies([
           { tone: 'shorter', text: data.shorter },
           { tone: 'spicier', text: data.spicier },
@@ -551,7 +552,7 @@ export default function AppPage() {
     setLoading(true);
 
     try {
-      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
       const genRes = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -568,7 +569,7 @@ export default function AppPage() {
       let newReplies: Reply[] = [];
       let newStrategy: StrategyData = null;
 
-      if (isPro && genData.shorter && genData.spicier && genData.softer) {
+      if (isPro && useV2 && genData.shorter && genData.spicier && genData.softer) {
         newReplies = [
           { tone: 'shorter', text: genData.shorter },
           { tone: 'spicier', text: genData.spicier },
@@ -676,7 +677,7 @@ export default function AppPage() {
       setCopied(tone);
       setPendingSent({ tone: tone as Reply['tone'], text });
       toast({
-        title: isPro ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
+        title: (isPro && useV2) ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
         description: "Tap 'I sent this' to continue the thread",
       });
       
@@ -957,7 +958,7 @@ export default function AppPage() {
         });
 
         // Step 2: Auto-generate replies using the extracted conversation
-        const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+        const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
         const genRes = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -978,7 +979,7 @@ export default function AppPage() {
         let scanReplies: Reply[] = [];
         let scanStrategy: StrategyData = null;
 
-        if (isPro && genData.shorter && genData.spicier && genData.softer) {
+        if (isPro && useV2 && genData.shorter && genData.spicier && genData.softer) {
           scanReplies = [
             { tone: 'shorter', text: genData.shorter },
             { tone: 'spicier', text: genData.spicier },
@@ -1556,11 +1557,13 @@ export default function AppPage() {
 
         {/* Pro Status Badge - Compact */}
         {isPro && (
-          <div className="mb-5 px-4 py-3 rounded-2xl flex items-center justify-center gap-2.5 bg-emerald-500/10 border border-emerald-500/20">
-            <Shield className="h-4 w-4 text-emerald-400" />
-            <span className="text-xs font-bold text-emerald-300">V2 Verified</span>
+          <div className={`mb-5 px-4 py-3 rounded-2xl flex items-center justify-center gap-2.5 ${
+            useV2 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-violet-500/10 border border-violet-500/20'
+          }`}>
+            {useV2 ? <Shield className="h-4 w-4 text-emerald-400" /> : <Zap className="h-4 w-4 text-violet-400" />}
+            <span className={`text-xs font-bold ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>{useV2 ? 'V2 Verified' : 'V1 Fast Mode'}</span>
             <span className="text-white/15">·</span>
-            <span className="text-xs text-emerald-400/60">≤18 words · No emojis · Tone-checked</span>
+            <span className={`text-xs ${useV2 ? 'text-emerald-400/60' : 'text-violet-400/60'}`}>{useV2 ? '≤18 words · No emojis · Tone-checked' : 'Quick replies · No strategy overhead'}</span>
           </div>
         )}
 
@@ -2007,16 +2010,37 @@ export default function AppPage() {
               </div>
             )}
 
-            {/* V2 Verified Badge — always on for Pro, upgrade prompt for free */}
+            {/* V2/V1 Toggle — Pro users can switch between verified (V2) and fast (V1) */}
             {isPro ? (
-              <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                <Shield className="h-5 w-5 text-emerald-400" />
+              <button
+                onClick={() => setUseV2(!useV2)}
+                className={`flex items-center gap-2.5 p-3.5 rounded-2xl w-full text-left transition-all ${
+                  useV2
+                    ? 'bg-emerald-500/10 border border-emerald-500/20'
+                    : 'bg-violet-500/10 border border-violet-500/20'
+                }`}
+              >
+                {useV2 ? (
+                  <Shield className="h-5 w-5 text-emerald-400" />
+                ) : (
+                  <Zap className="h-5 w-5 text-violet-400" />
+                )}
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-emerald-300">V2 Verified</p>
-                  <p className="text-xs text-emerald-400/60">≤18 words • No emojis • Tone-verified</p>
+                  <p className={`text-sm font-bold ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>
+                    {useV2 ? 'V2 Verified' : 'V1 Fast Mode'}
+                  </p>
+                  <p className={`text-xs ${useV2 ? 'text-emerald-400/60' : 'text-violet-400/60'}`}>
+                    {useV2 ? 'Strategy + 3-agent pipeline • Tap for V1' : 'Quick replies, no strategy • Tap for V2'}
+                  </p>
                 </div>
-                <span className="text-xs font-bold text-emerald-400 bg-emerald-500/15 px-2.5 py-1 rounded-full">Active</span>
-              </div>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                  useV2
+                    ? 'text-emerald-400 bg-emerald-500/15'
+                    : 'text-violet-300 bg-violet-500/15'
+                }`}>
+                  {useV2 ? 'V2' : 'V1'}
+                </span>
+              </button>
             ) : (
               <button
                 onClick={() => {
