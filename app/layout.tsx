@@ -13,6 +13,18 @@ export const metadata: Metadata = {
   creator: "Gula Labs",
   publisher: "Gula Labs",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  applicationName: 'Text Wingman',
+  appleWebApp: {
+    capable: true,
+    title: 'Text Wingman',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   openGraph: {
     title: "Text Wingman - AI-Powered Text Replies",
     description: "Never text alone again. Get 3 perfect AI-generated replies for any message instantly.",
@@ -34,7 +46,9 @@ export const metadata: Metadata = {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 5,
+    viewportFit: 'cover',
   },
+  themeColor: '#0a0a0f',
 };
 
 export default function RootLayout({
@@ -44,6 +58,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="scroll-smooth">
+      <head>
+        <meta name="theme-color" content="#0a0a0f" />
+      </head>
       <body className={inter.className}>
         {children}
         <Toaster />

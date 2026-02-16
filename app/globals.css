@@ -69,6 +69,47 @@
   /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* GPU-accelerated scrolling + touch optimization */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
+  }
+
+  /* Eliminate 300ms tap delay on all interactive elements */
+  a, button, input, select, textarea, [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* GPU-accelerate all transitions for buttery smooth animations */
+  .transition-all,
+  .transition-colors,
+  .transition-opacity,
+  .transition-transform {
+    will-change: auto;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  /* Smoother button presses on mobile */
+  button, [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Prevent layout thrashing from font loading */
+  html {
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Hardware-accelerated animations */
+  .animate-in {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
 
   /* Disable animations for users who prefer reduced motion */
