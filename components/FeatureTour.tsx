@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Send, BookmarkCheck, Camera, MessageCircle, RefreshCw, X, ArrowRight, Sparkles } from 'lucide-react';
+import { Brain, Send, BookmarkCheck, Camera, MessageCircle, RefreshCw, X, ArrowRight, Sparkles, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -10,8 +10,8 @@ const TOUR_STEPS = [
     id: 'welcome',
     icon: Sparkles,
     iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
-    title: 'Welcome to Text Wingman v3.2',
-    description: 'We just shipped 5 new features including Revive Mode and Screenshot Briefing. Here\'s what\'s new — takes 30 seconds.',
+    title: 'Welcome to Text Wingman v3.3',
+    description: 'New: Edit + Polish any reply, Regenerate for fresh options, and smarter AI that actually reads the conversation. Here\'s what\'s new — takes 30 seconds.',
     highlight: null,
   },
   {
@@ -62,9 +62,25 @@ const TOUR_STEPS = [
     description: 'Got a dead conversation? Switch to Revive Mode, paste the thread, and get 3 re-engagement messages — Smooth, Bold, and Warm. No more "hey stranger" energy.',
     highlight: 'revive-mode',
   },
+  {
+    id: 'edit-polish',
+    icon: Pencil,
+    iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
+    title: '✏️ Edit + Polish',
+    description: 'Like a reply but want to add your own twist? Tap Edit, type your ideas — like "let\'s grab food later" — then hit Polish. AI smooths it out while keeping your additions under 18 words.',
+    highlight: null,
+  },
+  {
+    id: 'regenerate',
+    icon: RefreshCw,
+    iconBg: 'bg-gradient-to-br from-gray-500 to-zinc-600',
+    title: '🔁 Regenerate Replies',
+    description: 'Not feeling the replies? Tap "Generate different replies" for a fresh set — same conversation, completely new options. No need to re-enter anything.',
+    highlight: null,
+  },
 ];
 
-const STORAGE_KEY = 'tw_feature_tour_v3.2';
+const STORAGE_KEY = 'tw_feature_tour_v3.3';
 
 export default function FeatureTour() {
   const [visible, setVisible] = useState(false);
