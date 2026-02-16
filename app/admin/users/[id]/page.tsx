@@ -110,8 +110,8 @@ export default function UserDetailPage() {
           Back
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{p.email}</h1>
-          <p className="text-sm text-gray-500">ID: {p.id}</p>
+          <h1 className="text-2xl font-bold text-white">{p.email}</h1>
+          <p className="text-sm text-white/50">ID: {p.id}</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setRevealContent(!revealContent)}>
           {revealContent ? <EyeOff className="h-4 w-4 mr-1" /> : <Eye className="h-4 w-4 mr-1" />}
@@ -122,9 +122,9 @@ export default function UserDetailPage() {
       {/* Profile + Subscription + Usage */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Profile */}
-        <Card className="border border-gray-200">
+        <Card className="border border-white/[0.08] bg-white/[0.03]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">Profile</CardTitle>
+            <CardTitle className="text-sm font-semibold text-white/70">Profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <Row label="Name" value={p.full_name || '-'} />
@@ -137,9 +137,9 @@ export default function UserDetailPage() {
         </Card>
 
         {/* Subscription */}
-        <Card className="border border-gray-200">
+        <Card className="border border-white/[0.08] bg-white/[0.03]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">Subscription</CardTitle>
+            <CardTitle className="text-sm font-semibold text-white/70">Subscription</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {s ? (
@@ -152,15 +152,15 @@ export default function UserDetailPage() {
                 <Row label="Stripe Sub" value={s.stripe_subscription_id || '-'} mono />
               </>
             ) : (
-              <p className="text-gray-400 py-4 text-center">No subscription</p>
+              <p className="text-white/30 py-4 text-center">No subscription</p>
             )}
           </CardContent>
         </Card>
 
         {/* Usage */}
-        <Card className="border border-gray-200">
+        <Card className="border border-white/[0.08] bg-white/[0.03]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">Usage</CardTitle>
+            <CardTitle className="text-sm font-semibold text-white/70">Usage</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <Row label="Last 24h" value={String(u.h24)} />
@@ -178,9 +178,9 @@ export default function UserDetailPage() {
       </div>
 
       {/* Actions */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700">Actions</CardTitle>
+          <CardTitle className="text-sm font-semibold text-white/70">Actions</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -201,7 +201,7 @@ export default function UserDetailPage() {
               Grant Pro
             </Button>
             {e && e.tier !== 'free' && (
-              <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => setModal({
+              <Button size="sm" variant="outline" className="text-red-400 border-red-500/30" onClick={() => setModal({
                 action: 'revoke_entitlement',
                 title: 'Revoke Entitlement',
                 desc: `Revoke ${e.tier} access from ${p.email}. They will fall back to their Stripe subscription status.`,
@@ -213,7 +213,7 @@ export default function UserDetailPage() {
               <Tag className="h-3.5 w-3.5 mr-1" />
               {p.beta_group ? 'Remove Beta' : 'Set Beta'}
             </Button>
-            <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => setModal({
+            <Button size="sm" variant="outline" className="text-red-400 border-red-500/30" onClick={() => setModal({
               action: 'delete_history',
               title: 'Delete Reply History',
               desc: `Permanently delete all reply history for ${p.email}. This cannot be undone.`,
@@ -221,7 +221,7 @@ export default function UserDetailPage() {
               <Trash2 className="h-3.5 w-3.5 mr-1" />
               Delete History
             </Button>
-            <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => setModal({
+            <Button size="sm" variant="outline" className="text-red-400 border-red-500/30" onClick={() => setModal({
               action: 'disable_account',
               title: 'Disable Account',
               desc: `Soft-disable account for ${p.email}. Sets plan to 'disabled'.`,
@@ -234,25 +234,25 @@ export default function UserDetailPage() {
       </Card>
 
       {/* Recent Replies */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Zap className="h-4 w-4 text-purple-500" />
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-purple-400" />
             Recent Replies ({recentReplies.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {recentReplies.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-6">No replies yet</p>
+            <p className="text-white/30 text-sm text-center py-6">No replies yet</p>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {recentReplies.map((r) => (
-                <div key={r.id} className="p-3 bg-gray-50 rounded-lg text-xs">
+                <div key={r.id} className="p-3 bg-white/[0.04] rounded-lg text-xs">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-gray-500">{new Date(r.created_at).toLocaleString()}</span>
-                    {r.context && <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px]">{r.context}</span>}
+                    <span className="text-white/50">{new Date(r.created_at).toLocaleString()}</span>
+                    {r.context && <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded text-[10px]">{r.context}</span>}
                   </div>
-                  <p className="text-gray-700 font-medium">{maskText(r.their_message)}</p>
+                  <p className="text-white/70 font-medium">{maskText(r.their_message)}</p>
                 </div>
               ))}
             </div>
@@ -262,30 +262,30 @@ export default function UserDetailPage() {
 
       {/* V2 Runs */}
       {v2Runs.length > 0 && (
-        <Card className="border border-gray-200">
+        <Card className="border border-white/[0.08] bg-white/[0.03]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">V2 Runs ({v2Runs.length})</CardTitle>
+            <CardTitle className="text-sm font-semibold text-white/70">V2 Runs ({v2Runs.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left px-3 py-2 font-medium text-gray-500">Date</th>
-                    <th className="text-center px-3 py-2 font-medium text-gray-500">Passed</th>
-                    <th className="text-right px-3 py-2 font-medium text-gray-500">Confidence</th>
-                    <th className="text-right px-3 py-2 font-medium text-gray-500">Latency</th>
-                    <th className="text-right px-3 py-2 font-medium text-gray-500">Revisions</th>
+                  <tr className="border-b border-white/[0.08]">
+                    <th className="text-left px-3 py-2 font-medium text-white/50">Date</th>
+                    <th className="text-center px-3 py-2 font-medium text-white/50">Passed</th>
+                    <th className="text-right px-3 py-2 font-medium text-white/50">Confidence</th>
+                    <th className="text-right px-3 py-2 font-medium text-white/50">Latency</th>
+                    <th className="text-right px-3 py-2 font-medium text-white/50">Revisions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {v2Runs.map((r) => (
-                    <tr key={r.id} className="border-b border-gray-50">
-                      <td className="px-3 py-2 text-gray-600">{new Date(r.created_at).toLocaleString()}</td>
-                      <td className="px-3 py-2 text-center">{r.all_passed ? <span className="text-green-600">Pass</span> : <span className="text-red-600">Fail</span>}</td>
-                      <td className="px-3 py-2 text-right font-mono">{r.avg_confidence}%</td>
-                      <td className="px-3 py-2 text-right font-mono">{r.latency_ms}ms</td>
-                      <td className="px-3 py-2 text-right font-mono">{r.revise_attempts}</td>
+                    <tr key={r.id} className="border-b border-white/[0.04]">
+                      <td className="px-3 py-2 text-white/60">{new Date(r.created_at).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-center">{r.all_passed ? <span className="text-green-400">Pass</span> : <span className="text-red-400">Fail</span>}</td>
+                      <td className="px-3 py-2 text-right font-mono text-white/70">{r.avg_confidence}%</td>
+                      <td className="px-3 py-2 text-right font-mono text-white/70">{r.latency_ms}ms</td>
+                      <td className="px-3 py-2 text-right font-mono text-white/70">{r.revise_attempts}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -332,10 +332,10 @@ export default function UserDetailPage() {
 }
 
 function Row({ label, value, highlight, mono }: { label: string; value: string; highlight?: 'green' | 'red'; mono?: boolean }) {
-  const colors = highlight === 'green' ? 'text-green-600' : highlight === 'red' ? 'text-red-600' : 'text-gray-900';
+  const colors = highlight === 'green' ? 'text-green-400' : highlight === 'red' ? 'text-red-400' : 'text-white';
   return (
     <div className="flex items-center justify-between">
-      <span className="text-gray-500">{label}</span>
+      <span className="text-white/50">{label}</span>
       <span className={`font-medium ${colors} ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
     </div>
   );

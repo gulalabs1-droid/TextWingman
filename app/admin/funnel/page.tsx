@@ -49,8 +49,8 @@ export default function FunnelPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Funnel</h1>
-          <p className="text-sm text-gray-500">User conversion journey</p>
+          <h1 className="text-2xl font-bold text-white">Funnel</h1>
+          <p className="text-sm text-white/50">User conversion journey</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>
           <RefreshCw className="h-4 w-4 mr-1.5" />
@@ -58,10 +58,10 @@ export default function FunnelPage() {
         </Button>
       </div>
 
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-purple-500" />
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-purple-400" />
             Conversion Funnel
           </CardTitle>
         </CardHeader>
@@ -80,7 +80,7 @@ export default function FunnelPage() {
               return (
                 <div key={step.label}>
                   {i > 0 && (
-                    <div className="flex items-center justify-center gap-2 py-1.5 text-xs text-gray-400">
+                    <div className="flex items-center justify-center gap-2 py-1.5 text-xs text-white/40">
                       <ArrowDown className="h-3 w-3" />
                       <span>{convRate !== null ? `${convRate}% converted` : ''}</span>
                       {dropRate !== null && dropRate > 0 && (
@@ -89,8 +89,8 @@ export default function FunnelPage() {
                     </div>
                   )}
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600 w-44 shrink-0 font-medium">{step.label}</span>
-                    <div className="flex-1 h-10 bg-gray-100 rounded-lg overflow-hidden">
+                    <span className="text-sm text-white/70 w-44 shrink-0 font-medium">{step.label}</span>
+                    <div className="flex-1 h-10 bg-white/[0.06] rounded-lg overflow-hidden">
                       <div
                         className={`h-full ${step.color} rounded-lg flex items-center px-3 transition-all duration-500`}
                         style={{ width: `${Math.max(pct, 10)}%` }}
@@ -105,23 +105,23 @@ export default function FunnelPage() {
           </div>
 
           {/* Summary */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="mt-6 pt-4 border-t border-white/[0.08]">
             <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-xs text-blue-600 font-medium">Activation Rate</p>
-                <p className="text-xl font-bold text-blue-800">
+              <div className="p-3 bg-blue-500/10 rounded-lg">
+                <p className="text-xs text-blue-400 font-medium">Activation Rate</p>
+                <p className="text-xl font-bold text-white">
                   {data.signups.d30 > 0 ? Math.round((data.activatedUsers / data.signups.d30) * 100) : 0}%
                 </p>
               </div>
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <p className="text-xs text-purple-600 font-medium">Free→Paid</p>
-                <p className="text-xl font-bold text-purple-800">
+              <div className="p-3 bg-purple-500/10 rounded-lg">
+                <p className="text-xs text-purple-400 font-medium">Free→Paid</p>
+                <p className="text-xl font-bold text-white">
                   {data.freeUsers > 0 ? Math.round((data.paidUsers / (data.freeUsers + data.paidUsers)) * 100) : 0}%
                 </p>
               </div>
-              <div className="p-3 bg-green-50 rounded-lg">
-                <p className="text-xs text-green-600 font-medium">Overall Conv.</p>
-                <p className="text-xl font-bold text-green-800">
+              <div className="p-3 bg-green-500/10 rounded-lg">
+                <p className="text-xs text-green-400 font-medium">Overall Conv.</p>
+                <p className="text-xl font-bold text-white">
                   {data.signups.d30 > 0 ? Math.round((data.paidUsers / data.signups.d30) * 100) : 0}%
                 </p>
               </div>

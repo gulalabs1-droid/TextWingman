@@ -65,14 +65,14 @@ export default function AdminOverviewPage() {
   }
 
   const kpis = [
-    { label: 'Total Users', value: data.totalUsers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Signups (24h)', value: data.signups.h24, sub: `${data.signups.d7} / 7d`, icon: UserCheck, color: 'text-green-600', bg: 'bg-green-50' },
-    { label: 'Generations (24h)', value: data.generations.h24, sub: `${data.generations.d7} / 7d`, icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50' },
-    { label: 'Activated', value: data.activatedUsers, sub: `${data.activationRate}% rate`, icon: Activity, color: 'text-orange-600', bg: 'bg-orange-50' },
-    { label: 'Paid Users', value: data.paidUsers, sub: `${data.conversionRate}% conv`, icon: Crown, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-    { label: 'MRR', value: `$${data.mrr}`, sub: `$${data.arr} ARR`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Churn (7d)', value: data.churn.d7, sub: `${data.churn.d30} / 30d`, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
-    { label: 'Canceling', value: data.cancelingCount, icon: TrendingUp, color: 'text-gray-600', bg: 'bg-gray-50' },
+    { label: 'Total Users', value: data.totalUsers, icon: Users, color: 'text-blue-400', bg: 'bg-blue-500/15' },
+    { label: 'Signups (24h)', value: data.signups.h24, sub: `${data.signups.d7} / 7d`, icon: UserCheck, color: 'text-green-400', bg: 'bg-green-500/15' },
+    { label: 'Generations (24h)', value: data.generations.h24, sub: `${data.generations.d7} / 7d`, icon: Zap, color: 'text-purple-400', bg: 'bg-purple-500/15' },
+    { label: 'Activated', value: data.activatedUsers, sub: `${data.activationRate}% rate`, icon: Activity, color: 'text-orange-400', bg: 'bg-orange-500/15' },
+    { label: 'Paid Users', value: data.paidUsers, sub: `${data.conversionRate}% conv`, icon: Crown, color: 'text-yellow-400', bg: 'bg-yellow-500/15' },
+    { label: 'MRR', value: `$${data.mrr}`, sub: `$${data.arr} ARR`, icon: DollarSign, color: 'text-emerald-400', bg: 'bg-emerald-500/15' },
+    { label: 'Churn (7d)', value: data.churn.d7, sub: `${data.churn.d30} / 30d`, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/15' },
+    { label: 'Canceling', value: data.cancelingCount, icon: TrendingUp, color: 'text-white/50', bg: 'bg-white/[0.06]' },
   ];
 
   const genDays = Object.keys(data.genByDay).sort();
@@ -82,8 +82,8 @@ export default function AdminOverviewPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
-          <p className="text-sm text-gray-500">Key metrics at a glance</p>
+          <h1 className="text-2xl font-bold text-white">Overview</h1>
+          <p className="text-sm text-white/50">Key metrics at a glance</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
           <RefreshCw className="h-4 w-4 mr-1.5" />
@@ -94,16 +94,16 @@ export default function AdminOverviewPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((k) => (
-          <Card key={k.label} className="border border-gray-200">
+          <Card key={k.label} className="border border-white/[0.08] bg-white/[0.03]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{k.label}</span>
+                <span className="text-xs font-medium text-white/50 uppercase tracking-wide">{k.label}</span>
                 <div className={`p-1.5 rounded-lg ${k.bg}`}>
                   <k.icon className={`h-3.5 w-3.5 ${k.color}`} />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{typeof k.value === 'number' ? k.value.toLocaleString() : k.value}</p>
-              {k.sub && <p className="text-xs text-gray-400 mt-0.5">{k.sub}</p>}
+              <p className="text-2xl font-bold text-white">{typeof k.value === 'number' ? k.value.toLocaleString() : k.value}</p>
+              {k.sub && <p className="text-xs text-white/40 mt-0.5">{k.sub}</p>}
             </CardContent>
           </Card>
         ))}
@@ -112,25 +112,25 @@ export default function AdminOverviewPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Generations sparkline */}
-        <Card className="border border-gray-200">
+        <Card className="border border-white/[0.08] bg-white/[0.03]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-purple-400" />
               Generations (7d)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {genDays.length === 0 ? (
-                <p className="text-gray-400 text-sm text-center py-6">No data</p>
+                <p className="text-white/30 text-sm text-center py-6">No data</p>
               ) : genDays.map((day) => {
                 const count = data.genByDay[day];
                 const pct = (count / maxGen) * 100;
                 const label = new Date(day + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
                 return (
                   <div key={day} className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500 w-20 shrink-0">{label}</span>
-                    <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
+                    <span className="text-xs text-white/50 w-20 shrink-0">{label}</span>
+                    <div className="flex-1 h-6 bg-white/[0.06] rounded overflow-hidden">
                       <div
                         className="h-full bg-purple-500 rounded flex items-center justify-end pr-1.5 transition-all"
                         style={{ width: `${Math.max(pct, 8)}%` }}
@@ -146,33 +146,33 @@ export default function AdminOverviewPage() {
         </Card>
 
         {/* Plan breakdown */}
-        <Card className="border border-gray-200">
+        <Card className="border border-white/[0.08] bg-white/[0.03]">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <Crown className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+              <Crown className="h-4 w-4 text-yellow-400" />
               Plan Breakdown
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">Free</span>
+                  <div className="w-2.5 h-2.5 rounded-full bg-white/30" />
+                  <span className="text-sm font-medium text-white/70">Free</span>
                 </div>
-                <span className="text-lg font-bold text-gray-900">{data.freeUsers}</span>
+                <span className="text-lg font-bold text-white">{data.freeUsers}</span>
               </div>
               {Object.entries(data.planBreakdown).length === 0 ? (
-                <p className="text-gray-400 text-sm text-center py-4">No paid subscriptions</p>
+                <p className="text-white/30 text-sm text-center py-4">No paid subscriptions</p>
               ) : Object.entries(data.planBreakdown).map(([plan, count]) => {
                 const colors: Record<string, string> = { weekly: 'bg-purple-500', monthly: 'bg-blue-500', annual: 'bg-green-500' };
                 return (
-                  <div key={plan} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={plan} className="flex items-center justify-between p-3 bg-white/[0.04] rounded-lg">
                     <div className="flex items-center gap-2">
                       <div className={`w-2.5 h-2.5 rounded-full ${colors[plan] || 'bg-yellow-500'}`} />
-                      <span className="text-sm font-medium text-gray-700 capitalize">{plan}</span>
+                      <span className="text-sm font-medium text-white/70 capitalize">{plan}</span>
                     </div>
-                    <span className="text-lg font-bold text-gray-900">{count}</span>
+                    <span className="text-lg font-bold text-white">{count}</span>
                   </div>
                 );
               })}
@@ -182,10 +182,10 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* All-time stats */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-blue-500" />
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-blue-400" />
             All-Time Stats
           </CardTitle>
         </CardHeader>
@@ -198,9 +198,9 @@ export default function AdminOverviewPage() {
               { label: 'Activation Rate', value: `${data.activationRate}%` },
               { label: 'Conversion Rate', value: `${data.conversionRate}%` },
             ].map(s => (
-              <div key={s.label} className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500">{s.label}</p>
-                <p className="text-xl font-bold text-gray-900">{typeof s.value === 'number' ? s.value.toLocaleString() : s.value}</p>
+              <div key={s.label} className="text-center p-3 bg-white/[0.04] rounded-lg">
+                <p className="text-xs text-white/50">{s.label}</p>
+                <p className="text-xl font-bold text-white">{typeof s.value === 'number' ? s.value.toLocaleString() : s.value}</p>
               </div>
             ))}
           </div>

@@ -21,11 +21,11 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col min-h-screen">
-      <div className="p-4 border-b border-gray-200">
+    <aside className="w-56 shrink-0 border-r border-white/[0.08] bg-[#0d0d15] flex flex-col min-h-screen">
+      <div className="p-4 border-b border-white/[0.08]">
         <Link href="/admin" className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-purple-600" />
-          <span className="font-bold text-gray-900 text-sm">TW Admin</span>
+          <span className="font-bold text-white text-sm">TW Admin</span>
         </Link>
       </div>
       <nav className="flex-1 p-2 space-y-0.5">
@@ -40,8 +40,8 @@ export function AdminSidebar() {
               className={cn(
                 'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-purple-100 text-purple-800'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-purple-500/20 text-purple-300'
+                  : 'text-white/50 hover:bg-white/[0.06] hover:text-white/80'
               )}
             >
               <item.icon className="h-4 w-4" />
@@ -50,10 +50,10 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-      <div className="p-2 border-t border-gray-200">
+      <div className="p-2 border-t border-white/[0.08]">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-white/40 hover:bg-white/[0.06] hover:text-white/70 transition-colors"
         >
           <LogOut className="h-4 w-4" />
           Back to App

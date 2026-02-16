@@ -86,8 +86,8 @@ export default function ToolsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin Tools</h1>
-          <p className="text-sm text-gray-500">System status and utilities</p>
+          <h1 className="text-2xl font-bold text-white">Admin Tools</h1>
+          <p className="text-sm text-white/50">System status and utilities</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>
           <RefreshCw className="h-4 w-4 mr-1.5" />Refresh
@@ -95,35 +95,35 @@ export default function ToolsPage() {
       </div>
 
       {actionResult && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 flex items-center justify-between">
+        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-400 flex items-center justify-between">
           <span>{actionResult}</span>
-          <button onClick={() => setActionResult(null)} className="text-green-500 hover:text-green-700">&times;</button>
+          <button onClick={() => setActionResult(null)} className="text-green-400 hover:text-green-300">&times;</button>
         </div>
       )}
 
       {/* System Status */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Shield className="h-4 w-4 text-blue-500" />
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-blue-400" />
             System Status
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {envChecks.map(([key, ok]) => (
-              <div key={key} className={`flex items-center gap-2 p-2 rounded-lg text-xs ${ok ? 'bg-green-50' : 'bg-red-50'}`}>
-                {ok ? <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-red-600 shrink-0" />}
-                <span className={`font-mono ${ok ? 'text-green-700' : 'text-red-700'}`}>{key.replace(/_/g, ' ')}</span>
+              <div key={key} className={`flex items-center gap-2 p-2 rounded-lg text-xs ${ok ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                {ok ? <CheckCircle className="h-3.5 w-3.5 text-green-400 shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-red-400 shrink-0" />}
+                <span className={`font-mono ${ok ? 'text-green-300' : 'text-red-300'}`}>{key.replace(/_/g, ' ')}</span>
               </div>
             ))}
           </div>
           {envStrings.length > 0 && (
             <div className="mt-3 space-y-1">
               {envStrings.map(([key, val]) => (
-                <div key={key} className="flex items-center justify-between text-xs p-2 bg-gray-50 rounded">
-                  <span className="font-mono text-gray-600">{key}</span>
-                  <span className="font-mono text-gray-900">{val}</span>
+                <div key={key} className="flex items-center justify-between text-xs p-2 bg-white/[0.04] rounded">
+                  <span className="font-mono text-white/50">{key}</span>
+                  <span className="font-mono text-white">{val}</span>
                 </div>
               ))}
             </div>
@@ -132,10 +132,10 @@ export default function ToolsPage() {
       </Card>
 
       {/* Quick Actions */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-purple-500" />
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-purple-400" />
             Quick Actions
           </CardTitle>
         </CardHeader>
@@ -194,24 +194,24 @@ export default function ToolsPage() {
       </Card>
 
       {/* Audit Log */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700">Recent Admin Activity</CardTitle>
+          <CardTitle className="text-sm font-semibold text-white/70">Recent Admin Activity</CardTitle>
         </CardHeader>
         <CardContent>
           {data.recentEvents.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-6">No admin events logged</p>
+            <p className="text-white/30 text-sm text-center py-6">No admin events logged</p>
           ) : (
             <div className="space-y-1 max-h-72 overflow-y-auto">
               {data.recentEvents.map((ev) => (
-                <div key={ev.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                <div key={ev.id} className="flex items-center justify-between p-2 bg-white/[0.04] rounded text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded font-medium">{ev.event_type}</span>
+                    <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded font-medium">{ev.event_type}</span>
                     {ev.payload && Object.keys(ev.payload).length > 0 && (
-                      <span className="text-gray-400 font-mono truncate max-w-xs">{JSON.stringify(ev.payload)}</span>
+                      <span className="text-white/30 font-mono truncate max-w-xs">{JSON.stringify(ev.payload)}</span>
                     )}
                   </div>
-                  <span className="text-gray-400 shrink-0">{new Date(ev.created_at).toLocaleString()}</span>
+                  <span className="text-white/40 shrink-0">{new Date(ev.created_at).toLocaleString()}</span>
                 </div>
               ))}
             </div>

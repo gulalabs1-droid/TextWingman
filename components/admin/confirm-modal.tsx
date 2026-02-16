@@ -46,12 +46,12 @@ export function ConfirmModal({
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setSecret(''); setError(''); } }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className={destructive ? 'text-red-600' : ''}>{title}</DialogTitle>
+          <DialogTitle className={destructive ? 'text-red-400' : 'text-white'}>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         {requireSecret && (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Enter Admin Secret to confirm</label>
+            <label className="text-sm font-medium text-white/70">Enter Admin Secret to confirm</label>
             <Input
               type="password"
               placeholder="ADMIN_SECRET"

@@ -91,8 +91,8 @@ export default function ExperimentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Experiments</h1>
-          <p className="text-sm text-gray-500">Feature flags and rollout controls</p>
+          <h1 className="text-2xl font-bold text-white">Experiments</h1>
+          <p className="text-sm text-white/50">Feature flags and rollout controls</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchFlags}>
           <RefreshCw className="h-4 w-4 mr-1.5" />Refresh
@@ -101,24 +101,24 @@ export default function ExperimentsPage() {
 
       <div className="space-y-3">
         {flags.length === 0 ? (
-          <p className="text-gray-400 text-center py-12">No feature flags configured</p>
+          <p className="text-white/30 text-center py-12">No feature flags configured</p>
         ) : flags.map((flag) => {
           const val = getLocalValue(flag.key);
           const changed = hasPendingChange(flag.key);
 
           return (
-            <Card key={flag.key} className={`border ${changed ? 'border-purple-300 bg-purple-50/30' : 'border-gray-200'}`}>
+            <Card key={flag.key} className={`border ${changed ? 'border-purple-500/40 bg-purple-500/10' : 'border-white/[0.08] bg-white/[0.03]'}`}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <Beaker className="h-4 w-4 text-purple-500 shrink-0" />
-                      <span className="font-mono text-sm font-semibold text-gray-900">{flag.key}</span>
+                      <span className="font-mono text-sm font-semibold text-white">{flag.key}</span>
                     </div>
                     {flag.description && (
-                      <p className="text-xs text-gray-500 ml-6">{flag.description}</p>
+                      <p className="text-xs text-white/50 ml-6">{flag.description}</p>
                     )}
-                    <p className="text-[10px] text-gray-400 ml-6 mt-0.5">
+                    <p className="text-[10px] text-white/30 ml-6 mt-0.5">
                       Updated: {new Date(flag.updated_at).toLocaleString()}
                     </p>
                   </div>
@@ -130,11 +130,11 @@ export default function ExperimentsPage() {
                       className="flex items-center gap-1.5"
                     >
                       {val.enabled ? (
-                        <ToggleRight className="h-6 w-6 text-green-600" />
+                        <ToggleRight className="h-6 w-6 text-green-400" />
                       ) : (
-                        <ToggleLeft className="h-6 w-6 text-gray-400" />
+                        <ToggleLeft className="h-6 w-6 text-white/30" />
                       )}
-                      <span className={`text-xs font-medium ${val.enabled ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className={`text-xs font-medium ${val.enabled ? 'text-green-400' : 'text-white/30'}`}>
                         {val.enabled ? 'ON' : 'OFF'}
                       </span>
                     </button>
@@ -149,7 +149,7 @@ export default function ExperimentsPage() {
                         onChange={(e) => updateLocal(flag.key, { rollout_pct: Math.min(100, Math.max(0, parseInt(e.target.value) || 0)) })}
                         className="w-16 h-8 text-xs text-center"
                       />
-                      <span className="text-xs text-gray-500">%</span>
+                      <span className="text-xs text-white/50">%</span>
                     </div>
 
                     {/* Save */}

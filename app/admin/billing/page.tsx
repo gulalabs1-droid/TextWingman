@@ -79,8 +79,8 @@ export default function BillingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Billing &amp; Stripe Health</h1>
-          <p className="text-sm text-gray-500">Subscription diagnostics</p>
+          <h1 className="text-2xl font-bold text-white">Billing &amp; Stripe Health</h1>
+          <p className="text-sm text-white/50">Subscription diagnostics</p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>
           <RefreshCw className="h-4 w-4 mr-1.5" />Refresh
@@ -90,18 +90,18 @@ export default function BillingPage() {
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Subs', value: data.totalSubs, icon: CreditCard, bg: 'bg-blue-50', color: 'text-blue-600' },
-          { label: 'Active', value: data.activeSubs, icon: CheckCircle, bg: 'bg-green-50', color: 'text-green-600' },
-          { label: 'Canceled', value: data.canceledSubs, icon: XCircle, bg: 'bg-red-50', color: 'text-red-600' },
-          { label: 'Orphaned', value: data.orphaned.length, icon: AlertTriangle, bg: data.orphaned.length > 0 ? 'bg-red-50' : 'bg-gray-50', color: data.orphaned.length > 0 ? 'text-red-600' : 'text-gray-600' },
+          { label: 'Total Subs', value: data.totalSubs, icon: CreditCard, bg: 'bg-blue-500/15', color: 'text-blue-400' },
+          { label: 'Active', value: data.activeSubs, icon: CheckCircle, bg: 'bg-green-500/15', color: 'text-green-400' },
+          { label: 'Canceled', value: data.canceledSubs, icon: XCircle, bg: 'bg-red-500/15', color: 'text-red-400' },
+          { label: 'Orphaned', value: data.orphaned.length, icon: AlertTriangle, bg: data.orphaned.length > 0 ? 'bg-red-500/15' : 'bg-white/[0.06]', color: data.orphaned.length > 0 ? 'text-red-400' : 'text-white/50' },
         ].map(c => (
-          <Card key={c.label} className="border border-gray-200">
+          <Card key={c.label} className="border border-white/[0.08] bg-white/[0.03]">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{c.label}</span>
+                <span className="text-xs font-medium text-white/50 uppercase tracking-wide">{c.label}</span>
                 <div className={`p-1.5 rounded-lg ${c.bg}`}><c.icon className={`h-3.5 w-3.5 ${c.color}`} /></div>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{c.value}</p>
+              <p className="text-2xl font-bold text-white">{c.value}</p>
             </CardContent>
           </Card>
         ))}
@@ -109,18 +109,18 @@ export default function BillingPage() {
 
       {/* Orphaned Subscriptions */}
       {data.orphaned.length > 0 && (
-        <Card className="border border-red-200 bg-red-50">
+        <Card className="border border-red-500/30 bg-red-500/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-red-700 flex items-center gap-2">
+            <CardTitle className="text-sm font-semibold text-red-400 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" /> Orphaned Subscriptions ({data.orphaned.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {data.orphaned.map((o, i) => (
-                <div key={i} className="p-2 bg-white rounded text-xs flex items-center justify-between">
-                  <span className="font-mono text-gray-700">{o.user_id}</span>
-                  <span className="text-red-600">Missing: {!o.stripe_subscription_id ? 'sub_id ' : ''}{!o.stripe_customer_id ? 'cust_id' : ''}</span>
+                <div key={i} className="p-2 bg-white/[0.06] rounded text-xs flex items-center justify-between">
+                  <span className="font-mono text-white/70">{o.user_id}</span>
+                  <span className="text-red-400">Missing: {!o.stripe_subscription_id ? 'sub_id ' : ''}{!o.stripe_customer_id ? 'cust_id' : ''}</span>
                 </div>
               ))}
             </div>
@@ -129,23 +129,23 @@ export default function BillingPage() {
       )}
 
       {/* Upcoming Renewals */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-blue-500" /> Upcoming Renewals (7d) — {data.upcomingRenewals.length}
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-blue-400" /> Upcoming Renewals (7d) — {data.upcomingRenewals.length}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {data.upcomingRenewals.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-4">None</p>
+            <p className="text-white/30 text-sm text-center py-4">None</p>
           ) : (
             <div className="space-y-1">
               {data.upcomingRenewals.map((r, i) => (
-                <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
-                  <span className="text-gray-700">{r.profiles?.email}</span>
+                <div key={i} className="flex items-center justify-between p-2 bg-white/[0.04] rounded text-xs">
+                  <span className="text-white/70">{r.profiles?.email}</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-gray-500 capitalize">{r.plan_type}</span>
-                    <span className="text-blue-600">{new Date(r.current_period_end).toLocaleDateString()}</span>
+                    <span className="text-white/50 capitalize">{r.plan_type}</span>
+                    <span className="text-blue-400">{new Date(r.current_period_end).toLocaleDateString()}</span>
                   </div>
                 </div>
               ))}
@@ -155,21 +155,21 @@ export default function BillingPage() {
       </Card>
 
       {/* Canceling */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <XCircle className="h-4 w-4 text-orange-500" /> Canceling at Period End — {data.cancelingSubs.length}
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <XCircle className="h-4 w-4 text-orange-400" /> Canceling at Period End — {data.cancelingSubs.length}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {data.cancelingSubs.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-4">None</p>
+            <p className="text-white/30 text-sm text-center py-4">None</p>
           ) : (
             <div className="space-y-1">
               {data.cancelingSubs.map((c, i) => (
-                <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
-                  <span className="text-gray-700">{c.profiles?.email}</span>
-                  <span className="text-orange-600">Ends: {new Date(c.current_period_end).toLocaleDateString()}</span>
+                <div key={i} className="flex items-center justify-between p-2 bg-white/[0.04] rounded text-xs">
+                  <span className="text-white/70">{c.profiles?.email}</span>
+                  <span className="text-orange-400">Ends: {new Date(c.current_period_end).toLocaleDateString()}</span>
                 </div>
               ))}
             </div>
@@ -178,10 +178,10 @@ export default function BillingPage() {
       </Card>
 
       {/* CSV Exports */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Download className="h-4 w-4 text-green-500" /> CSV Exports
+          <CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2">
+            <Download className="h-4 w-4 text-green-400" /> CSV Exports
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -201,19 +201,19 @@ export default function BillingPage() {
       </Card>
 
       {/* Audit Log */}
-      <Card className="border border-gray-200">
+      <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold text-gray-700">Recent Admin Events</CardTitle>
+          <CardTitle className="text-sm font-semibold text-white/70">Recent Admin Events</CardTitle>
         </CardHeader>
         <CardContent>
           {data.recentEvents.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-4">No events yet</p>
+            <p className="text-white/30 text-sm text-center py-4">No events yet</p>
           ) : (
             <div className="space-y-1 max-h-64 overflow-y-auto">
               {data.recentEvents.map((ev) => (
-                <div key={ev.id} className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
-                  <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded font-medium">{ev.event_type}</span>
-                  <span className="text-gray-400">{new Date(ev.created_at).toLocaleString()}</span>
+                <div key={ev.id} className="flex items-center justify-between p-2 bg-white/[0.04] rounded text-xs">
+                  <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded font-medium">{ev.event_type}</span>
+                  <span className="text-white/40">{new Date(ev.created_at).toLocaleString()}</span>
                 </div>
               ))}
             </div>
