@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Send, BookmarkCheck, Camera, MessageCircle, RefreshCw, X, ArrowRight, Sparkles, Pencil } from 'lucide-react';
+import { Brain, BookmarkCheck, Camera, MessageCircle, X, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -10,77 +10,45 @@ const TOUR_STEPS = [
     id: 'welcome',
     icon: Sparkles,
     iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
-    title: 'Welcome to Text Wingman v3.3',
-    description: 'New: Edit + Polish any reply, Regenerate for fresh options, and smarter AI that actually reads the conversation. Here\'s what\'s new — takes 30 seconds.',
+    title: 'Welcome to Text Wingman',
+    description: 'Your AI texting copilot. Paste a message, upload a screenshot, or start fresh — we handle the rest.',
     highlight: null,
   },
   {
-    id: 'reply-mode',
+    id: 'core',
     icon: MessageCircle,
     iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
-    title: 'Reply Mode',
-    description: 'Paste any text you received, pick the context (crush, friend, work), and hit Generate to get 3 reply options — Shorter, Spicier, and Softer.',
+    title: 'Paste, Generate, Send',
+    description: 'Paste what they sent, pick the vibe (crush, work, friend), and get 3 reply options. Edit any reply and hit Polish to make it yours.',
     highlight: 'reply-mode',
-  },
-  {
-    id: 'decoder',
-    icon: Brain,
-    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
-    title: '🧠 Message Decoder',
-    description: 'Not sure what they mean? Hit the Decode button and our AI analyzes the subtext, intent, energy, and red/green flags — plus gives you a tactical Coach Tip on how to respond.',
-    highlight: 'decode-btn',
-  },
-  {
-    id: 'opener',
-    icon: Send,
-    iconBg: 'bg-gradient-to-br from-pink-500 to-rose-600',
-    title: '💬 Opening Line Generator',
-    description: 'Switch to Opener Mode at the top to generate first messages — for dating apps, Instagram DMs, cold texts, and more. Get 3 openers: Bold, Witty, and Warm.',
-    highlight: 'opener-mode',
-  },
-  {
-    id: 'saved-threads',
-    icon: BookmarkCheck,
-    iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-600',
-    title: '📑 Saved Threads',
-    description: 'Save conversations by name (like "Sarah 🔥") and come back later for context-aware replies. The AI remembers the whole thread.',
-    highlight: 'save-btn',
   },
   {
     id: 'screenshot',
     icon: Camera,
     iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
-    title: '📸 Screenshot Briefing',
-    description: 'Screenshot any conversation (iMessage, WhatsApp, Tinder, etc.) and upload it. Our AI reads every message, analyzes the dynamic, and generates strategy + replies instantly.',
+    title: 'Screenshot It',
+    description: 'Upload a screenshot from any app — iMessage, WhatsApp, Tinder, etc. We read the whole convo and generate replies instantly.',
     highlight: 'screenshot-btn',
   },
   {
-    id: 'revive',
-    icon: RefreshCw,
-    iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-600',
-    title: '🔄 Revive Mode',
-    description: 'Got a dead conversation? Switch to Revive Mode, paste the thread, and get 3 re-engagement messages — Smooth, Bold, and Warm. No more "hey stranger" energy.',
-    highlight: 'revive-mode',
+    id: 'tools',
+    icon: Brain,
+    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
+    title: 'Decode, Open & Revive',
+    description: 'Decode what they really mean. Generate opening lines for new convos. Revive dead threads. Switch modes at the top.',
+    highlight: 'decode-btn',
   },
   {
-    id: 'edit-polish',
-    icon: Pencil,
-    iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
-    title: '✏️ Edit + Polish',
-    description: 'Like a reply but want to add your own twist? Tap Edit, type your ideas — like "let\'s grab food later" — then hit Polish. AI smooths it out while keeping your additions under 18 words.',
-    highlight: null,
-  },
-  {
-    id: 'regenerate',
-    icon: RefreshCw,
-    iconBg: 'bg-gradient-to-br from-gray-500 to-zinc-600',
-    title: '🔁 Regenerate Replies',
-    description: 'Not feeling the replies? Tap "Generate different replies" for a fresh set — same conversation, completely new options. No need to re-enter anything.',
-    highlight: null,
+    id: 'threads',
+    icon: BookmarkCheck,
+    iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-600',
+    title: 'Threads Keep Context',
+    description: 'Build a back-and-forth thread and every reply gets smarter. Save threads by name to pick up later.',
+    highlight: 'save-btn',
   },
 ];
 
-const STORAGE_KEY = 'tw_feature_tour_v3.3';
+const STORAGE_KEY = 'tw_feature_tour_v3.3.2';
 
 export default function FeatureTour() {
   const [visible, setVisible] = useState(false);
