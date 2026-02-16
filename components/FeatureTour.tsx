@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Send, BookmarkCheck, Camera, MessageCircle, Shield, X, ArrowRight, Sparkles } from 'lucide-react';
+import { Brain, Send, BookmarkCheck, Camera, MessageCircle, RefreshCw, X, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -10,8 +10,8 @@ const TOUR_STEPS = [
     id: 'welcome',
     icon: Sparkles,
     iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
-    title: 'Welcome to Text Wingman v2.5',
-    description: 'We just shipped 4 new features. Let us show you what\'s new — takes 30 seconds.',
+    title: 'Welcome to Text Wingman v3.2',
+    description: 'We just shipped 5 new features including Revive Mode and Screenshot Briefing. Here\'s what\'s new — takes 30 seconds.',
     highlight: null,
   },
   {
@@ -50,13 +50,21 @@ const TOUR_STEPS = [
     id: 'screenshot',
     icon: Camera,
     iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
-    title: '📸 Screenshot Upload',
-    description: 'Screenshot any conversation (iMessage, WhatsApp, Tinder, etc.) and upload it. Our AI reads every message and fills it in automatically.',
+    title: '📸 Screenshot Briefing',
+    description: 'Screenshot any conversation (iMessage, WhatsApp, Tinder, etc.) and upload it. Our AI reads every message, analyzes the dynamic, and generates strategy + replies instantly.',
     highlight: 'screenshot-btn',
+  },
+  {
+    id: 'revive',
+    icon: RefreshCw,
+    iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-600',
+    title: '🔄 Revive Mode',
+    description: 'Got a dead conversation? Switch to Revive Mode, paste the thread, and get 3 re-engagement messages — Smooth, Bold, and Warm. No more "hey stranger" energy.',
+    highlight: 'revive-mode',
   },
 ];
 
-const STORAGE_KEY = 'tw_feature_tour_v2.5';
+const STORAGE_KEY = 'tw_feature_tour_v3.2';
 
 export default function FeatureTour() {
   const [visible, setVisible] = useState(false);
