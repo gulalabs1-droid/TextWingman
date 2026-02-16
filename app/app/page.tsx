@@ -614,6 +614,20 @@ export default function AppPage() {
           setExtractedPlatform(data.platform);
           const msgCount = data.message_count || 1;
 
+          // For Decode and Opener modes: just extract text into textarea, don't auto-generate replies
+          if (appMode === 'decode' || appMode === 'opener') {
+            setMessage(data.last_received || data.extracted_text);
+            setShowExamples(false);
+            toast({
+              title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'}`,
+              description: appMode === 'decode'
+                ? 'Now hit Decode to analyze it'
+                : 'Text extracted — use it for your opener',
+            });
+            return;
+          }
+
+          // Reply mode: auto-generate replies via Screenshot Briefing
           toast({
             title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'} — generating replies...`,
             description: data.platform !== 'unknown' ? `From ${data.platform}` : 'Reading your conversation',
