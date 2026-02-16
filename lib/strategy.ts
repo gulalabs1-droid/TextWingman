@@ -48,6 +48,10 @@ export interface ThreadMetrics {
   theirAvgLength: number;
   yourAvgLength: number;
   lastReceivedLength: number;
+  lastMessageSubstantive: boolean; // 8+ words in their last message
+  recentTheirAvgLength: number; // avg of their last 2 messages (more representative)
+  theirRecentQuestions: number; // how many of their last 3 messages contain '?'
+  theyReinitiated: boolean; // they messaged after you had the last word
 }
 
 export function computeMetrics(threadText: string): ThreadMetrics {
@@ -81,9 +85,35 @@ export function computeMetrics(threadText: string): ThreadMetrics {
 
   // Length of the last received message (what we're replying to)
   const lastThemLine = [...themLines].pop() || '';
-  const lastReceivedLength = lastThemLine.replace(/^Them:\s*/, '').replace(/\s*\(.*\)\s*$/, '').length;
+  const lastThemText = lastThemLine.replace(/^Them:\s*/, '').replace(/\s*\(.*\)\s*$/, '');
+  const lastReceivedLength = lastThemText.length;
 
-  return { youCount, themCount, totalMessages, investmentRatio, recentEnergy, lastSpeaker, theirAvgLength, yourAvgLength, lastReceivedLength };
+  // Last message substantive: 8+ words = real content, not filler
+  const lastMessageWords = lastThemText.split(/\s+/).filter(w => w.length > 0).length;
+  const lastMessageSubstantive = lastMessageWords >= 8;
+
+  // Recent their avg length (last 2 messages — more representative than all-time)
+  const recentThemLines = themLines.slice(-2);
+  const recentThemChars = recentThemLines.reduce((sum, l) => sum + l.replace(/^Them:\s*/, '').replace(/\s*\(.*\)\s*$/, '').length, 0);
+  const recentTheirAvgLength = recentThemLines.length > 0 ? Math.round(recentThemChars / recentThemLines.length) : 0;
+
+  // How many of their last 3 messages contain questions (engagement signal)
+  const recentThemForQ = themLines.slice(-3);
+  const theirRecentQuestions = recentThemForQ.filter(l => l.includes('?')).length;
+
+  // They re-initiated: they sent a message after you had the last word
+  // Walk backwards to find the latest You→Them transition
+  const theyReinitiated = (() => {
+    for (let i = lines.length - 1; i >= 1; i--) {
+      if (lines[i].startsWith('Them:') && lines[i - 1].startsWith('You:')) {
+        // They messaged after us — if they asked a question or it's mid-convo, it's re-initiation
+        return i >= 2;
+      }
+    }
+    return false;
+  })();
+
+  return { youCount, themCount, totalMessages, investmentRatio, recentEnergy, lastSpeaker, theirAvgLength, yourAvgLength, lastReceivedLength, lastMessageSubstantive, recentTheirAvgLength, theirRecentQuestions, theyReinitiated };
 }
 
 // ── Strategy prompt ──────────────────────────────────────
@@ -142,11 +172,20 @@ READING THE THREAD:
 
 CONSERVATIVE RULE: If <3 total messages, set momentum and balance to "Unknown" and give safe defaults.
 
-LOW-EFFORT DETECTION:
-- If their last message is very short (1-4 words like "ok", "The same", "lol", "nm u"), momentum is Declining or Stalling.
+ENGAGEMENT SIGNALS (CHECK THESE FIRST — they override low-effort assumptions):
+- RE-INITIATION: If they messaged AFTER you had the last word (especially after a time gap), that's a strong interest signal. They came back to YOU. This is NOT "giving nothing" — it's pursuit.
+- QUESTIONS: If they asked you a question ("Are you off today?", "wyd", "hbu"), they're actively engaging. Asking = interest.
+- PERSONAL SHARING: If they share what they're doing, feeling, or planning ("took a sick day to go to the spa", "just got back from the gym", "my mom is driving me crazy"), they're opening up. Engage with the CONTENT.
+- GROWING ENERGY: If their recent messages are getting LONGER than their earlier messages, momentum is Rising even if early messages were short filler.
+- When engagement signals are present: momentum is Rising or at least Flat, energy should be "match" or "escalate", and you CAN suggest teasing, questions, or plans.
+
+LOW-EFFORT DETECTION (only when engagement signals above are ABSENT):
+- If their last message is very short (1-4 words like "ok", "The same", "lol", "nm u") AND they didn't ask any questions recently AND they didn't re-initiate, momentum is Declining or Stalling.
 - Do NOT suggest asking questions or pushing for plans when they're giving minimal effort — it looks desperate.
-- For low-effort replies: energy should be "match" or "pull_back", keep_short=true, no_questions=true.
-- The one_liner should call out the dynamic honestly, e.g. "They're giving you nothing. Don't reward it." or "Match their energy. Two words back."`;
+- For true low-effort: energy should be "match" or "pull_back", keep_short=true, no_questions=true.
+- The one_liner should call it out honestly ONLY if they're genuinely disengaged.
+
+CRITICAL: Do NOT confuse casual texting style with low effort. Short earlier messages like "Alrightyyy" or "Me too lol" are normal conversational fillers — what matters most is their LAST message and whether THEY initiated.`;
 
 // ── Main analysis function ───────────────────────────────
 export async function analyzeStrategy(
@@ -170,7 +209,7 @@ export async function analyzeStrategy(
         { role: 'system', content: STRATEGY_PROMPT },
         {
           role: 'user',
-          content: `THREAD:\n${threadText}\n\nCONTEXT: ${context || 'unknown'}\nMETRICS: ${JSON.stringify(metrics)}\nTHEIR LAST MESSAGE LENGTH: ${metrics.lastReceivedLength} chars\nTHEIR AVG LENGTH: ${metrics.theirAvgLength} chars\nYOUR AVG LENGTH: ${metrics.yourAvgLength} chars`,
+          content: `THREAD:\n${threadText}\n\nCONTEXT: ${context || 'unknown'}\nMETRICS: ${JSON.stringify(metrics)}\nTHEIR LAST MESSAGE LENGTH: ${metrics.lastReceivedLength} chars (${metrics.lastMessageSubstantive ? 'SUBSTANTIVE — real content' : 'short'})\nTHEIR RECENT AVG LENGTH: ${metrics.recentTheirAvgLength} chars (last 2 msgs)\nTHEIR ALL-TIME AVG LENGTH: ${metrics.theirAvgLength} chars\nYOUR AVG LENGTH: ${metrics.yourAvgLength} chars\nTHEY RE-INITIATED: ${metrics.theyReinitiated ? 'YES — they came back after you had the last word' : 'no'}\nTHEIR RECENT QUESTIONS: ${metrics.theirRecentQuestions} of last 3 messages`,
         },
       ],
       temperature: 0.3,
@@ -201,10 +240,13 @@ export function formatStrategyForDraft(strategy: StrategyResult, metrics?: Threa
   if (c.push_meetup) rules.push('Steer toward making plans to meet.');
 
   // Energy-matching hint based on their message lengths
+  // Prioritize LAST message over average — their current energy matters more than history
   let energyHint = '';
   if (metrics) {
-    if (metrics.lastReceivedLength <= 15) {
-      energyHint = `\nENERGY LEVEL: Their last message was only ${metrics.lastReceivedLength} chars. Match that energy — keep replies very short (2-5 words). Do NOT ask questions or push for plans.`;
+    if (metrics.lastReceivedLength <= 15 && !metrics.lastMessageSubstantive && !metrics.theyReinitiated && metrics.theirRecentQuestions === 0) {
+      energyHint = `\nENERGY LEVEL: Their last message was only ${metrics.lastReceivedLength} chars and no engagement signals. Match that energy — keep replies very short (2-5 words). Do NOT ask questions or push for plans.`;
+    } else if (metrics.lastMessageSubstantive || metrics.theyReinitiated || metrics.theirRecentQuestions > 0) {
+      energyHint = `\nENERGY LEVEL: They're engaged — ${metrics.theyReinitiated ? 'they re-initiated, ' : ''}${metrics.lastMessageSubstantive ? 'last message is substantive, ' : ''}${metrics.theirRecentQuestions > 0 ? 'they asked questions. ' : ''}Engage with the CONTENT of their message. Reference specifics from what they said.`;
     } else if (metrics.theirAvgLength < 20) {
       energyHint = `\nENERGY LEVEL: They average ${metrics.theirAvgLength} chars per message. Keep replies brief and casual.`;
     }

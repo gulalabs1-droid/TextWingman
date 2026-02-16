@@ -477,6 +477,116 @@ export default function AppPage() {
     }
   };
 
+  // Regenerate replies (regular flow) — re-calls API with same thread context, no re-add
+  const handleRegenerate = async () => {
+    if (loading) return;
+    
+    // Get last "them" message from thread to rebuild context
+    const lastThem = [...thread].reverse().find(m => m.role === 'them');
+    if (!lastThem) return;
+
+    setLoading(true);
+    setReplies([]);
+    setV2Meta(null);
+    setV2Step(null);
+    setStrategyData(null);
+    setPendingSent(null);
+
+    try {
+      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+      const fullContext = buildThreadContext(lastThem.text);
+
+      if (isPro) {
+        setV2Step('drafting');
+        await new Promise(r => setTimeout(r, 800));
+        setV2Step('rule-checking');
+        await new Promise(r => setTimeout(r, 600));
+        setV2Step('tone-verifying');
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: fullContext,
+          context: selectedContext || 'crush'
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to regenerate');
+
+      if (isPro && data.shorter && data.spicier && data.softer) {
+        setReplies([
+          { tone: 'shorter', text: data.shorter },
+          { tone: 'spicier', text: data.spicier },
+          { tone: 'softer', text: data.softer },
+        ]);
+        if (data.meta) setV2Meta(data.meta);
+        if (data.strategy) setStrategyData(data.strategy);
+      } else if (Array.isArray(data.replies) && data.replies.length > 0) {
+        const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
+        if (validReplies.length > 0) setReplies(validReplies);
+      }
+
+      toast({ title: '🔄 Fresh replies generated', description: 'New options for the same message' });
+    } catch (error) {
+      toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+      setV2Step(null);
+    }
+  };
+
+  // Regenerate replies for screenshot briefing — re-calls API with same extracted conversation
+  const handleRegenerateScan = async () => {
+    if (loading || !scanResult) return;
+
+    setLoading(true);
+
+    try {
+      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+      const genRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: scanResult.fullConversation,
+          context: selectedContext || 'crush',
+        }),
+      });
+
+      const genData = await genRes.json();
+      if (!genRes.ok) throw new Error(genData.error || 'Regeneration failed');
+
+      let newReplies: Reply[] = [];
+      let newStrategy: StrategyData = null;
+
+      if (isPro && genData.shorter && genData.spicier && genData.softer) {
+        newReplies = [
+          { tone: 'shorter', text: genData.shorter },
+          { tone: 'spicier', text: genData.spicier },
+          { tone: 'softer', text: genData.softer },
+        ];
+        if (genData.strategy) newStrategy = genData.strategy;
+      } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
+        newReplies = genData.replies.filter((r: any) => r && r.tone && r.text);
+      }
+
+      if (newReplies.length > 0) {
+        setScanResult({
+          ...scanResult,
+          replies: newReplies,
+          strategy: newStrategy,
+        });
+        toast({ title: '🔄 Fresh replies generated', description: 'New options for the same conversation' });
+      }
+    } catch (error) {
+      toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCopy = async (text: string, tone: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -2404,6 +2514,13 @@ export default function AppPage() {
                 <MessageCircle className="h-3.5 w-3.5" /> Continue in Thread
               </button>
               <button
+                onClick={handleRegenerateScan}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.10] text-xs font-bold transition-all active:scale-95 disabled:opacity-40"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Retry
+              </button>
+              <button
                 onClick={() => { setScanResult(null); setScreenshotPreview(null); }}
                 className="px-4 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.10] text-xs font-bold transition-all active:scale-95"
               >
@@ -2594,8 +2711,16 @@ export default function AppPage() {
               })}
             </div>
 
-            {/* "I said something else" custom input */}
+            {/* Regenerate + custom input */}
             <div className="pt-3 space-y-2">
+              <button
+                onClick={handleRegenerate}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl bg-white/[0.04] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.08] text-xs font-bold transition-all active:scale-95 disabled:opacity-40"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Generating...' : 'Generate different replies'}
+              </button>
               {!showCustomSent ? (
                 <button
                   onClick={() => setShowCustomSent(true)}
