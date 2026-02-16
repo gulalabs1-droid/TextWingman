@@ -236,6 +236,9 @@ export default function AppPage() {
   const [strategyData, setStrategyData] = useState<StrategyData>(null);
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [saving, setSaving] = useState(false);
+  const [editingReply, setEditingReply] = useState<string | null>(null); // tone being edited
+  const [editText, setEditText] = useState('');
+  const [refining, setRefining] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
@@ -585,6 +588,81 @@ export default function AppPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Edit + Refine reply inline
+  const handleStartEdit = (tone: string, currentText: string) => {
+    setEditingReply(tone);
+    setEditText(currentText);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReply(null);
+    setEditText('');
+  };
+
+  const handleRefine = async (tone: string, originalText: string, isScan = false) => {
+    if (!editText.trim() || refining) return;
+    setRefining(true);
+
+    try {
+      const res = await fetch('/api/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          original: originalText,
+          edited: editText.trim(),
+          tone,
+          context: selectedContext || 'crush',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Refine failed');
+
+      if (data.refined) {
+        if (isScan && scanResult) {
+          // Update the scanResult replies
+          setScanResult({
+            ...scanResult,
+            replies: scanResult.replies.map(r =>
+              r.tone === tone ? { ...r, text: data.refined } : r
+            ),
+          });
+        } else {
+          // Update the regular replies
+          setReplies(prev => prev.map(r =>
+            r.tone === tone ? { ...r, text: data.refined } : r
+          ));
+        }
+        toast({ title: '✨ Reply polished', description: 'Your edit has been refined' });
+      }
+    } catch (error) {
+      toast({ title: 'Refine failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setRefining(false);
+      setEditingReply(null);
+      setEditText('');
+    }
+  };
+
+  // Use raw edit without AI polish
+  const handleUseRawEdit = (tone: string, isScan = false) => {
+    if (!editText.trim()) return;
+    if (isScan && scanResult) {
+      setScanResult({
+        ...scanResult,
+        replies: scanResult.replies.map(r =>
+          r.tone === tone ? { ...r, text: editText.trim() } : r
+        ),
+      });
+    } else {
+      setReplies(prev => prev.map(r =>
+        r.tone === tone ? { ...r, text: editText.trim() } : r
+      ));
+    }
+    setEditingReply(null);
+    setEditText('');
   };
 
   const handleCopy = async (text: string, tone: string) => {
@@ -2487,17 +2565,62 @@ export default function AppPage() {
                           <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
                           <span className="text-white/25 text-[11px]">{reply.text.split(' ').length}w</span>
                         </div>
-                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
-                        <button
-                          onClick={() => handleCopy(reply.text, reply.tone)}
-                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                            isCopied
-                              ? 'bg-emerald-500/20 text-emerald-400'
-                              : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
-                          }`}
-                        >
-                          {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
-                        </button>
+                        {editingReply === `scan-${reply.tone}` ? (
+                          <div className="space-y-2.5 mb-3">
+                            <textarea
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-violet-500/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/50 transition-all min-h-[60px] text-sm leading-relaxed"
+                              placeholder="Edit this reply, add your ideas..."
+                              autoFocus
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => handleRefine(reply.tone, reply.text, true)}
+                                disabled={refining || !editText.trim()}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                              >
+                                {refining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                {refining ? 'Polishing...' : 'Polish'}
+                              </button>
+                              <button
+                                onClick={() => handleUseRawEdit(reply.tone, true)}
+                                disabled={!editText.trim()}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30"
+                              >
+                                <Check className="h-3 w-3" /> Use as is
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/30 hover:text-white/50 transition-all"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleCopy(reply.text, reply.tone)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                              isCopied
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                            }`}
+                          >
+                            {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                          </button>
+                          {editingReply !== `scan-${reply.tone}` && (
+                            <button
+                              onClick={() => handleStartEdit(`scan-${reply.tone}`, reply.text)}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
+                            >
+                              <MessageCircle className="h-3 w-3" /> Edit
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2649,7 +2772,42 @@ export default function AppPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
+                        {editingReply === reply.tone ? (
+                          <div className="space-y-2.5 mb-3">
+                            <textarea
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-violet-500/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/50 transition-all min-h-[60px] text-sm leading-relaxed"
+                              placeholder="Edit this reply, add your ideas..."
+                              autoFocus
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => handleRefine(reply.tone, reply.text)}
+                                disabled={refining || !editText.trim()}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                              >
+                                {refining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                {refining ? 'Polishing...' : 'Polish'}
+                              </button>
+                              <button
+                                onClick={() => handleUseRawEdit(reply.tone)}
+                                disabled={!editText.trim()}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30"
+                              >
+                                <Check className="h-3 w-3" /> Use as is
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/30 hover:text-white/50 transition-all"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
+                        )}
                         
                         {/* Action buttons */}
                         <div className="flex items-center gap-2 flex-wrap">
@@ -2669,6 +2827,14 @@ export default function AppPage() {
                           >
                             <Send className="h-3.5 w-3.5" /> I sent this
                           </button>
+                          {editingReply !== reply.tone && (
+                            <button
+                              onClick={() => handleStartEdit(reply.tone, reply.text)}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
+                            >
+                              <MessageCircle className="h-3 w-3" /> Edit
+                            </button>
+                          )}
                           <div className="relative">
                             <button
                               onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
