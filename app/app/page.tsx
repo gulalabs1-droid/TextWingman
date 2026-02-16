@@ -1736,7 +1736,7 @@ export default function AppPage() {
                     ? "What did they send you?"
                     : thread[thread.length - 1]?.role === 'you'
                       ? "What did they say back?"
-                      : "They said more? Add it, or generate a reply"
+                      : "Add the next message, or generate a reply"
                 }
                 className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-violet-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
@@ -1750,17 +1750,19 @@ export default function AppPage() {
             </div>
 
             {/* Quick add to thread buttons (for double texts / non-generated messages) */}
-            {thread.length > 0 && message.trim() && (
+            {thread.length > 0 && (
               <div className="flex gap-2 animate-in fade-in duration-200">
                 <button
                   onClick={handleAddTheirMessage}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/40 hover:bg-white/[0.08] hover:text-white/60 text-xs font-bold transition-all active:scale-95"
+                  disabled={!message.trim()}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/40 hover:bg-white/[0.08] hover:text-white/60 text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-white/[0.04] disabled:hover:text-white/40"
                 >
                   <Plus className="h-3 w-3" /> Add as their message
                 </button>
                 <button
                   onClick={handleAddMyMessage}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300/60 hover:bg-violet-500/15 hover:text-violet-300 text-xs font-bold transition-all active:scale-95"
+                  disabled={!message.trim()}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300/60 hover:bg-violet-500/15 hover:text-violet-300 text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-violet-500/10 disabled:hover:text-violet-300/60"
                 >
                   <Plus className="h-3 w-3" /> Add as my message
                 </button>
