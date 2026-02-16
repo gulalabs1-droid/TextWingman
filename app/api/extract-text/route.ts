@@ -51,19 +51,28 @@ Your job:
    - In WhatsApp: sent messages are green/right, received are white/left.
    - In Instagram DMs: sent messages are blue/right, received are gray/left.
    - In Tinder/Bumble/Hinge: sent messages are typically on the right, received on the left.
+   - In Facebook Dating: sent messages are blue/purple bubbles on the RIGHT side, received messages are gray bubbles on the LEFT side. Ignore photos, match guide prompts, safety tips, and date headers — only extract actual chat messages.
+   - In Facebook Messenger: sent messages are blue/purple on the right, received are gray on the left.
+   - In Snapchat: sent messages are on the right (blue/red), received on the left (gray).
    - In other apps: sent messages are typically on the right, received on the left or a different color.
 3. Identify the LAST message that was RECEIVED (the one the user needs to reply to).
 4. If the image is not a conversation screenshot, say so.
 
-Format the full conversation as a readable thread using "Them:" and "You:" prefixes, one message per line. Keep the exact wording from the screenshot.
+IMPORTANT:
+- ONLY extract actual chat messages. Skip date/time headers, system messages, prompts ("Wondering how to start..."), safety warnings, and UI elements.
+- Get the sender RIGHT. Double-check: right-side bubbles = user SENT (prefix "You:"), left-side bubbles = RECEIVED from the other person (prefix "Them:").
+- Keep the EXACT wording from the screenshot. Do not paraphrase or clean up slang/abbreviations.
+- If you see timestamps between messages (e.g., "Dec 8 at 11:00 AM"), include them as a note in parentheses after the message like: "You: cooolin and u (Dec 8)"
+
+Format the full conversation as a readable thread using "Them:" and "You:" prefixes, one message per line.
 
 Return ONLY a JSON object:
 {
-  "full_conversation": "Them: first message\\nYou: your reply\\nThem: their next message\\nYou: your reply\\nThem: latest message they need to reply to",
+  "full_conversation": "You: first message\\nThem: their reply\\nYou: your next message\\nThem: latest message you need to reply to",
   "last_received": "the last received message text only",
   "message_count": 5,
   "confidence": "high" | "medium" | "low",
-  "platform": "imessage" | "whatsapp" | "instagram" | "tinder" | "snapchat" | "twitter" | "other" | "unknown",
+  "platform": "imessage" | "whatsapp" | "instagram" | "tinder" | "snapchat" | "twitter" | "facebook-dating" | "messenger" | "other" | "unknown",
   "error": null
 }
 

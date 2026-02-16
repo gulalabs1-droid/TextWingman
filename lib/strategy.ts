@@ -45,6 +45,9 @@ export interface ThreadMetrics {
   investmentRatio: number; // >1 = you investing more
   recentEnergy: 'low' | 'medium' | 'high';
   lastSpeaker: 'you' | 'them' | 'unknown';
+  theirAvgLength: number;
+  yourAvgLength: number;
+  lastReceivedLength: number;
 }
 
 export function computeMetrics(threadText: string): ThreadMetrics {
@@ -72,7 +75,15 @@ export function computeMetrics(threadText: string): ThreadMetrics {
   const lastSpeaker: 'you' | 'them' | 'unknown' =
     lastLine.startsWith('You:') ? 'you' : lastLine.startsWith('Them:') ? 'them' : 'unknown';
 
-  return { youCount, themCount, totalMessages, investmentRatio, recentEnergy, lastSpeaker };
+  // Average message lengths for energy-matching
+  const yourAvgLength = youCount > 0 ? Math.round(youChars / youCount) : 0;
+  const theirAvgLength = themCount > 0 ? Math.round(themChars / themCount) : 0;
+
+  // Length of the last received message (what we're replying to)
+  const lastThemLine = [...themLines].pop() || '';
+  const lastReceivedLength = lastThemLine.replace(/^Them:\s*/, '').replace(/\s*\(.*\)\s*$/, '').length;
+
+  return { youCount, themCount, totalMessages, investmentRatio, recentEnergy, lastSpeaker, theirAvgLength, yourAvgLength, lastReceivedLength };
 }
 
 // ── Strategy prompt ──────────────────────────────────────
@@ -129,7 +140,13 @@ READING THE THREAD:
 - risk: low = safe play. medium = bold but justified. high = could blow up in their face.
 - constraints: set these based on what would PROTECT the user. no_questions=true if asking will look needy. keep_short=true if they're writing novels. add_tease=true if the convo needs spark. push_meetup=true if it's time to get off the phone.
 
-CONSERVATIVE RULE: If <4 total messages, set momentum and balance to "Unknown" and give safe defaults.`;
+CONSERVATIVE RULE: If <3 total messages, set momentum and balance to "Unknown" and give safe defaults.
+
+LOW-EFFORT DETECTION:
+- If their last message is very short (1-4 words like "ok", "The same", "lol", "nm u"), momentum is Declining or Stalling.
+- Do NOT suggest asking questions or pushing for plans when they're giving minimal effort — it looks desperate.
+- For low-effort replies: energy should be "match" or "pull_back", keep_short=true, no_questions=true.
+- The one_liner should call out the dynamic honestly, e.g. "They're giving you nothing. Don't reward it." or "Match their energy. Two words back."`;
 
 // ── Main analysis function ───────────────────────────────
 export async function analyzeStrategy(
@@ -139,8 +156,8 @@ export async function analyzeStrategy(
   const startTime = Date.now();
   const metrics = computeMetrics(threadText);
 
-  // Short thread → safe default
-  if (metrics.totalMessages < 4) {
+  // Very short thread → safe default (3+ messages = enough to analyze)
+  if (metrics.totalMessages < 3) {
     return { strategy: SAFE_DEFAULT, metrics, latencyMs: Date.now() - startTime };
   }
 
@@ -153,7 +170,7 @@ export async function analyzeStrategy(
         { role: 'system', content: STRATEGY_PROMPT },
         {
           role: 'user',
-          content: `THREAD:\n${threadText}\n\nCONTEXT: ${context || 'unknown'}\nMETRICS: ${JSON.stringify(metrics)}`,
+          content: `THREAD:\n${threadText}\n\nCONTEXT: ${context || 'unknown'}\nMETRICS: ${JSON.stringify(metrics)}\nTHEIR LAST MESSAGE LENGTH: ${metrics.lastReceivedLength} chars\nTHEIR AVG LENGTH: ${metrics.theirAvgLength} chars\nYOUR AVG LENGTH: ${metrics.yourAvgLength} chars`,
         },
       ],
       temperature: 0.3,
@@ -175,7 +192,7 @@ export async function analyzeStrategy(
 }
 
 // ── Format constraints for DraftAgent injection ──────────
-export function formatStrategyForDraft(strategy: StrategyResult): string {
+export function formatStrategyForDraft(strategy: StrategyResult, metrics?: ThreadMetrics): string {
   const c = strategy.move.constraints;
   const rules: string[] = [];
   if (c.keep_short) rules.push('Keep it SHORT. No essays.');
@@ -183,10 +200,21 @@ export function formatStrategyForDraft(strategy: StrategyResult): string {
   if (c.add_tease) rules.push('Add a playful tease or callback.');
   if (c.push_meetup) rules.push('Steer toward making plans to meet.');
 
+  // Energy-matching hint based on their message lengths
+  let energyHint = '';
+  if (metrics) {
+    if (metrics.lastReceivedLength <= 15) {
+      energyHint = `\nENERGY LEVEL: Their last message was only ${metrics.lastReceivedLength} chars. Match that energy — keep replies very short (2-5 words). Do NOT ask questions or push for plans.`;
+    } else if (metrics.theirAvgLength < 20) {
+      energyHint = `\nENERGY LEVEL: They average ${metrics.theirAvgLength} chars per message. Keep replies brief and casual.`;
+    }
+  }
+
   return [
     `STRATEGY (your sharp friend says):`,
     `"${strategy.move.one_liner}"`,
     `Energy: ${strategy.move.energy} | Risk: ${strategy.move.risk}`,
     rules.length > 0 ? `RULES:\n${rules.map(r => `- ${r}`).join('\n')}` : '',
+    energyHint,
   ].filter(Boolean).join('\n');
 }

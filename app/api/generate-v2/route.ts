@@ -48,6 +48,13 @@ CONVERSATION THREADS:
 - Reference earlier parts of the conversation naturally (callbacks, building on topics, matching energy).
 - If there's only a single message with no Them:/You: format, treat it as the first message in a new conversation.
 
+ENERGY MATCHING (CRITICAL):
+- Match the other person's effort level. If their last message is 1-4 words (like "The same", "nm", "lol", "ok"), your replies should be similarly short and low-effort — NOT full sentences asking about plans.
+- Do NOT escalate energy when they're giving you nothing. A 2-word message does not deserve a question about tonight's plans.
+- Mirror their vibe. If they text in slang ("shawty", "wya", "cooolin"), reply in that same register. Don't code-switch to formal English.
+- If you see a STRATEGY section in the input, follow its constraints strictly — especially "no_questions" and "keep_short".
+- When their energy is low, the "shorter" reply should be 2-4 words max. "spicier" should add edge without asking anything. "softer" can be slightly warmer but still brief.
+
 SAFETY RULES (MUST FOLLOW):
 - If the message involves harassment, threats, illegal activity, sexual content involving minors, doxxing, or anything harmful: return safe, neutral alternatives or politely decline.
 - Never generate replies that could be used for manipulation, coercion, or harm.
@@ -148,16 +155,18 @@ export async function POST(req: Request) {
 
   try {
     // Step 0: Strategy analysis (runs fast, <2s)
+    let stratMetrics;
     try {
       const stratResult = await analyzeStrategy(message, context);
       strategy = stratResult.strategy;
       strategyLatency = stratResult.latencyMs;
+      stratMetrics = stratResult.metrics;
     } catch (e) {
       console.error('Strategy analysis failed, using defaults:', e);
     }
 
-    // Step 1: Draft (with strategy constraints injected)
-    const strategyHint = formatStrategyForDraft(strategy);
+    // Step 1: Draft (with strategy constraints + energy metrics injected)
+    const strategyHint = formatStrategyForDraft(strategy, stratMetrics);
     const draftRes = await run(DraftAgent, `Context: ${context}\n${strategyHint}\nMessage: ${message}`);
     drafts = safeJson(draftRes.finalOutput);
 

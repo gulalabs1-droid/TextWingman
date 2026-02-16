@@ -53,6 +53,12 @@ Generate 3 options:
 - Option B (Spicier): Playful, flirty, confident response
 - Option C (Softer): Warm, genuine, thoughtful response
 
+ENERGY MATCHING (CRITICAL):
+- Match the other person's effort level. If their last message is 1-4 words (like "The same", "nm", "lol", "ok"), your replies should be similarly short — NOT full sentences asking about plans.
+- Do NOT escalate energy when they're giving you nothing. A 2-word message does not deserve a question about tonight's plans.
+- Mirror their vibe. If they text in slang ("shawty", "wya", "cooolin"), reply in that same register. Don't code-switch to formal English.
+- When their energy is low, "shorter" should be 2-4 words max. "spicier" should add edge without asking anything. "softer" can be slightly warmer but still brief.
+
 CRITICAL RULES:
 - Keep each reply UNDER 18 words
 - NO emojis whatsoever
