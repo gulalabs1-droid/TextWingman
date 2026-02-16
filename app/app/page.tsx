@@ -187,6 +187,7 @@ export default function AppPage() {
   const [currentTagline, setCurrentTagline] = useState(0);
   const [showCraftedMessage, setShowCraftedMessage] = useState(false);
   const [selectedContext, setSelectedContext] = useState<ContextType>(null);
+  const [customContext, setCustomContext] = useState('');
   const [sharing, setSharing] = useState<string | null>(null);
   const [shareMenuOpen, setShareMenuOpen] = useState<string | null>(null);
   const [vpnBlocked, setVpnBlocked] = useState(false);
@@ -398,7 +399,8 @@ export default function AppPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: fullContext,
-          context: selectedContext || 'crush'
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
         }),
       });
 
@@ -512,7 +514,8 @@ export default function AppPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: fullContext,
-          context: selectedContext || 'crush'
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
         }),
       });
 
@@ -555,6 +558,7 @@ export default function AppPage() {
         body: JSON.stringify({
           message: scanResult.fullConversation,
           context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
         }),
       });
 
@@ -614,6 +618,7 @@ export default function AppPage() {
           edited: editText.trim(),
           tone,
           context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
         }),
       });
 
@@ -764,7 +769,7 @@ export default function AppPage() {
   };
 
   // Compress image client-side to avoid size issues with iPhone screenshots
-  const compressImage = (file: File, maxWidth = 1600, quality = 0.8): Promise<string> => {
+  const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<string> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -959,6 +964,7 @@ export default function AppPage() {
           body: JSON.stringify({
             message: data.extracted_text,
             context: selectedContext || 'crush',
+            customContext: customContext.trim() || undefined,
           }),
         });
 
@@ -1078,7 +1084,7 @@ export default function AppPage() {
       const res = await fetch('/api/decode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message.trim(), context: selectedContext || 'crush' }),
+        body: JSON.stringify({ message: message.trim(), context: selectedContext || 'crush', customContext: customContext.trim() || undefined }),
       });
       const data = await res.json();
       if (res.status === 429) {
@@ -1160,6 +1166,7 @@ export default function AppPage() {
         body: JSON.stringify({
           message: message.trim(),
           context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -1734,6 +1741,25 @@ export default function AppPage() {
                   Replies will be optimized for {CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label}
                 </p>
               )}
+              {/* Custom context input */}
+              <div className="relative animate-in fade-in duration-200">
+                <input
+                  type="text"
+                  value={customContext}
+                  onChange={(e) => setCustomContext(e.target.value)}
+                  placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
+                  maxLength={200}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/25 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
+                />
+                {customContext && (
+                  <button
+                    onClick={() => setCustomContext('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Scroll target for after "I sent this" */}
@@ -2301,6 +2327,25 @@ export default function AppPage() {
                     <span>{context.label}</span>
                   </button>
                 ))}
+              </div>
+              {/* Custom context input */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={customContext}
+                  onChange={(e) => setCustomContext(e.target.value)}
+                  placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
+                  maxLength={200}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/25 text-xs focus:outline-none focus:border-cyan-500/30 transition-all"
+                />
+                {customContext && (
+                  <button
+                    onClick={() => setCustomContext('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
             </div>
             {/* Conversation input */}

@@ -17,7 +17,7 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context } = await request.json();
+    const { message, context, customContext } = await request.json();
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         // Pro/Elite user - generate without limits
         const replies = process.env.TEXT_WINGMAN_AGENT_ID
           ? await generateRepliesWithAgent(message, context)
-          : await generateReplies(message, context);
+          : await generateReplies(message, context, customContext);
         
         // Save to reply history
         const supabaseAdmin = getSupabaseAdmin();
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     // Generate replies using OpenAI
     const replies = process.env.TEXT_WINGMAN_AGENT_ID
       ? await generateRepliesWithAgent(message, context)
-      : await generateReplies(message, context);
+      : await generateReplies(message, context, customContext);
 
     // Save to reply history for logged-in users
     if (userId && supabase) {

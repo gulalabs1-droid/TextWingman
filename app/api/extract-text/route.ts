@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -97,14 +97,14 @@ If you cannot extract messages:
               type: 'image_url',
               image_url: {
                 url: image,
-                detail: 'high',
+                detail: 'auto',
               },
             },
           ],
         },
       ],
       temperature: 0.1,
-      max_tokens: 1500,
+      max_tokens: 800,
       response_format: { type: 'json_object' },
     });
 

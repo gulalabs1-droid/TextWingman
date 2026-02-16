@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { original, edited, tone, context } = await request.json();
+    const { original, edited, tone, context, customContext } = await request.json();
 
     if (!edited || typeof edited !== 'string') {
       return NextResponse.json({ error: 'Edited text is required' }, { status: 400 });
@@ -44,6 +44,7 @@ RULES:
 - Don't add filler words. Every word should earn its spot.
 - If they added something like wanting to get food or make plans, weave it in naturally — don't just tack it on.
 ${context ? `- Relationship context: ${context}` : ''}
+${customContext ? `- User's situation: ${customContext} — use these details to personalize the polished reply.` : ''}
 
 Return ONLY the polished text. No quotes, no explanation, no JSON — just the final message.`,
         },

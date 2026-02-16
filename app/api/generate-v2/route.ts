@@ -125,7 +125,7 @@ Return JSON:
 
 export async function POST(req: Request) {
   const startTime = Date.now();
-  const { message, context } = await req.json();
+  const { message, context, customContext } = await req.json();
   
   // Get user info from headers for logging
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
@@ -184,7 +184,8 @@ export async function POST(req: Request) {
 
     // Step 1: Draft (with strategy constraints + energy metrics injected)
     const strategyHint = formatStrategyForDraft(strategy, stratMetrics);
-    const draftRes = await run(DraftAgent, `Context: ${context}\n${strategyHint}\nMessage: ${message}`);
+    const customHint = customContext ? `\nUser's situation details: ${customContext}` : '';
+    const draftRes = await run(DraftAgent, `Context: ${context}${customHint}\n${strategyHint}\nMessage: ${message}`);
     drafts = safeJson(draftRes.finalOutput);
 
     // Step 2: Rule check with revise loop (max 2 attempts)
