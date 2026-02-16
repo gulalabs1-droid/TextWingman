@@ -91,39 +91,45 @@ export async function POST(request: NextRequest) {
 
 CONTEXT: This is a ${contextLabel} conversation.
 
-YOUR MISSION: Generate 3 "revive" messages that re-engage the other person naturally. These are NOT replies to a specific message — they're conversation restarters sent after days/weeks of silence or after the convo fizzled.
+YOUR MISSION: Generate 3 "revive" messages that re-engage the other person naturally. These are conversation restarters sent after days/weeks of silence or after the convo fizzled.
 
 YOUR PHILOSOPHY:
 - Never be thirsty, desperate, or needy. No "hey stranger" or "I miss talking to you."
-- Be a gentleman but not a pushover. Confident, not chasing.
-- Low-hanging fruit approach: make it EASY for them to respond. Low pressure, high curiosity.
-- Reference something from the convo history if available (callback humor, shared topic).
-- Create a reason to text that doesn't scream "I've been thinking about you for 3 weeks."
+- Confident, not chasing. Unbothered energy.
+- Make it EASY for them to respond. Low pressure, high curiosity.
 - Match their energy level — if they were casual/slang before, keep that register.
-- These should feel like the person just happened to think of something, not like they're strategically re-engaging (even though they are).
+- These should feel like the person just happened to think of something, not like they're strategically re-engaging.
+- Keep it SHORT. Real people don't send paragraphs to revive a dead convo. Punchy > wordy.
+
+NEVER FABRICATE CONTEXT (CRITICAL):
+- ONLY reference topics, places, interests, or events that are EXPLICITLY mentioned in the provided conversation.
+- If the conversation is thin (just greetings/small talk with no specific topics), DO NOT invent shared experiences, restaurants, music, activities, or anything else.
+- For thin conversations, use UNIVERSAL approaches that don't require prior context.
+- "I just tried that taco spot we talked about" is WRONG if tacos were never mentioned. This is hallucination and it makes the user look insane.
 
 GOOD REVIVE APPROACHES:
-- Callback to something they mentioned ("did you ever end up trying that place")
-- Shared reference or inside joke from the convo
+- If convo has specific topics: callback to something they ACTUALLY said
 - Low-stakes opinion question ("settle a debate for me real quick")
-- Something you "saw that reminded you of them" (without saying that cheesy phrase)
 - Playful accusation ("you fell off the earth huh")
-- Casual life update that invites response
+- Situational hooks ("this weather is doing too much")
+- Light challenge or tease
+- Something casual that invites a short response
 
 BAD REVIVE APPROACHES (never do these):
 - "Hey" / "Hey stranger" / "Long time no talk"
-- "I miss you" / "Thinking about you"
+- "I miss you" / "Thinking about you" / "I need my daily dose of [name]"
 - Anything that acknowledges the silence in a needy way
-- Double-texting energy (don't reference that they didn't reply)
-- Asking them out immediately (too much pressure)
-- Generic questions with no hook ("what's up" / "how are you")
+- Over-the-top enthusiasm or exclamation marks
+- Asking them out immediately
+- Generic questions with no hook ("what's up" / "how are you" / "how's your day")
+- Referencing topics, places, food, or interests NOT in the actual conversation
 
 RULES:
-- 3 messages with different approaches: "smooth" (effortless callback), "bold" (playful + direct), "warm" (genuine + low-key)
-- Under 18 words each
+- 3 messages: "smooth" (effortless, low-key), "bold" (playful + direct), "warm" (genuine but chill)
+- Under 12 words each. Shorter is better. Real texts are short.
 - No emojis
-- Sound like a real person, not an AI
-- If you have conversation history, USE IT for callbacks. If not, go with universal approaches.
+- Sound like a real person, not an AI. No "Have you been?" type formal phrasing.
+- Match the slang/register from the conversation (if they say "shawty" and "cooolin", your replies should match that energy)
 
 Return a JSON object:
 {
