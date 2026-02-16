@@ -100,14 +100,14 @@ export default function HomePage() {
                     <Target className="h-3.5 w-3.5 text-emerald-400" />
                     <span className="text-emerald-300 text-[10px] font-bold uppercase tracking-widest">Your sharp friend says</span>
                   </div>
-                  <p className="text-white/90 text-sm font-semibold mb-2.5">&ldquo;You&apos;re boring her. Stop playing it safe.&rdquo;</p>
+                  <p className="text-white/90 text-sm font-semibold mb-2.5">&ldquo;She&apos;s losing interest. Stop chasing — pull back.&rdquo;</p>
                   <div className="flex flex-wrap gap-1.5">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 flex items-center gap-1">
                       <TrendingDown className="h-2.5 w-2.5" /> Declining
                     </span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.08] text-white/50">You leading</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">escalate</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30">add tease</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">pull back</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30">keep short</span>
                   </div>
                 </div>
 
@@ -115,15 +115,15 @@ export default function HomePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-5">
                   <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
                     <p className="text-[10px] font-bold text-white/40 mb-1">⚡ Shorter</p>
-                    <p className="text-white/80 text-xs">&ldquo;come find out&rdquo;</p>
+                    <p className="text-white/80 text-xs">&ldquo;fair enough&rdquo;</p>
                   </div>
                   <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
                     <p className="text-[10px] font-bold text-white/40 mb-1">🔥 Spicier</p>
-                    <p className="text-white/80 text-xs">&ldquo;boring answer. you should fix that&rdquo;</p>
+                    <p className="text-white/80 text-xs">&ldquo;wow living on the edge huh&rdquo;</p>
                   </div>
                   <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
                     <p className="text-[10px] font-bold text-white/40 mb-1">💚 Softer</p>
-                    <p className="text-white/80 text-xs">&ldquo;we should do something fun then&rdquo;</p>
+                    <p className="text-white/80 text-xs">&ldquo;you earned it&rdquo;</p>
                   </div>
                 </div>
 
@@ -189,17 +189,17 @@ export default function HomePage() {
                   <Target className="h-3 w-3 text-emerald-400" />
                   <p className="text-emerald-300 text-[10px] font-bold uppercase tracking-wider">Sharp friend says</p>
                 </div>
-                <p className="text-white/90 text-sm font-semibold">&ldquo;You&apos;re chasing. Let them come to you.&rdquo;</p>
+                <p className="text-white/90 text-sm font-semibold">&ldquo;She&apos;s losing interest. Stop chasing — pull back.&rdquo;</p>
                 <div className="flex gap-1.5 mt-2">
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">keep short</span>
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">no questions</span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">add tease</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-white/[0.06] text-white/30">pull back</span>
                 </div>
               </div>
               <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-3">
                 <p className="text-emerald-300/60 text-[10px] font-bold uppercase tracking-wider mb-1.5">Strategy-shaped reply</p>
-                <p className="text-emerald-200 text-sm">&ldquo;boring answer. you should fix that&rdquo;</p>
-                <p className="text-emerald-400/60 text-xs mt-2">Short. Teasing. Confident. Strategy-compliant.</p>
+                <p className="text-emerald-200 text-sm">&ldquo;wow living on the edge huh&rdquo;</p>
+                <p className="text-emerald-400/60 text-xs mt-2">Short. Unbothered. Teasing. Strategy-compliant.</p>
               </div>
             </div>
           </div>
