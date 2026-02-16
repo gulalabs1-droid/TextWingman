@@ -1322,41 +1322,41 @@ export default function AppPage() {
         <div className="mb-8 rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
           <div className="pb-4 pt-6 px-6">
             {/* Mode Tabs */}
-            <div className="flex items-center gap-1 bg-white/[0.06] rounded-2xl p-1 mb-4 border border-white/[0.08]">
+            <div className="flex items-center gap-0.5 bg-white/[0.06] rounded-2xl p-1 mb-4 border border-white/[0.08]">
               <button
                 onClick={() => { setAppMode('reply'); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
                   appMode === 'reply' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
               >
-                <MessageCircle className="h-3.5 w-3.5" />
+                <MessageCircle className="h-3 w-3 shrink-0" />
                 Reply
               </button>
               <button
                 onClick={() => { setAppMode('decode'); setReplies([]); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
                   appMode === 'decode' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
               >
-                <Brain className="h-3.5 w-3.5" />
+                <Brain className="h-3 w-3 shrink-0" />
                 Decode
               </button>
               <button
                 onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); setReviveMessages([]); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
                   appMode === 'opener' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
               >
-                <Send className="h-3.5 w-3.5" />
+                <Send className="h-3 w-3 shrink-0" />
                 Opener
               </button>
               <button
                 onClick={() => { setAppMode('revive'); setReplies([]); setDecodeResult(null); setOpeners([]); }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-sm font-bold transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
                   appMode === 'revive' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
                 }`}
               >
-                <RefreshCw className="h-3.5 w-3.5" />
+                <RefreshCw className="h-3 w-3 shrink-0" />
                 Revive
               </button>
             </div>
