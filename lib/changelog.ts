@@ -10,6 +10,32 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '3.3.2',
+    date: '2026-02-16',
+    title: 'V1/V2 Mode Toggle for Pro',
+    description: 'Pro users can now switch between V2 Verified (strategy + 3-agent pipeline) and V1 Fast Mode for quicker replies when you just need something fast.',
+    type: 'improvement',
+    highlights: [
+      'V1/V2 toggle — tap the mode badge to switch between V2 Verified and V1 Fast Mode',
+      'V2 (default) — full strategy analysis, 3-agent pipeline, ≤18 words enforced, tone-verified',
+      'V1 Fast Mode — quick single-call replies with no strategy overhead, ~2x faster',
+      'Top status badge updates to reflect your current mode',
+    ],
+  },
+  {
+    version: '3.3.1',
+    date: '2026-02-16',
+    title: 'Custom Context, Smart Thread Update & Speed Boost',
+    description: 'Tell the AI about your situation in your own words, update threads by just uploading a new screenshot, and enjoy noticeably faster screenshot processing.',
+    type: 'feature',
+    highlights: [
+      'Custom Context — free-text field to describe your situation (e.g. "talking 2 weeks, she\'s a nurse, went on one date") passed to all AI endpoints',
+      'Smart Thread Update — upload a new screenshot when you already have a thread and only new messages get added automatically',
+      'Screenshot speed boost — switched to gpt-4o-mini for extraction, smaller image compression, ~2-3x faster uploads',
+      'Custom context works across Reply, Revive, Decode, Opener, and Screenshot Briefing modes',
+    ],
+  },
+  {
     version: '3.3.0',
     date: '2026-02-16',
     title: 'Edit + Polish, Regenerate & Smarter Context',
