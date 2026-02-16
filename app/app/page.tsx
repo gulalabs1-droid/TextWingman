@@ -636,6 +636,7 @@ export default function AppPage() {
             // Revive needs the full conversation for context; Decode needs just the last received
             setMessage(appMode === 'revive' ? (data.full_conversation || data.extracted_text) : (data.last_received || data.extracted_text));
             setShowExamples(false);
+            setScreenshotPreview(null);
             toast({
               title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'}`,
               description: appMode === 'decode'
@@ -707,6 +708,7 @@ export default function AppPage() {
               setRemainingReplies(usageData.remaining);
             }
 
+            setScreenshotPreview(null);
             toast({
               title: '📷 Briefing ready',
               description: `${msgCount} messages scanned — your move is below`,
@@ -714,6 +716,7 @@ export default function AppPage() {
           } else {
             // Fallback: put text in textarea like before
             setMessage(data.extracted_text);
+            setScreenshotPreview(null);
             toast({
               title: `📷 ${msgCount > 1 ? `${msgCount} messages extracted` : 'Message extracted'}`,
               description: 'Hit Generate to get replies',
