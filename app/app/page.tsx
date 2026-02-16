@@ -1258,8 +1258,8 @@ export default function AppPage() {
         {usageCount > 0 && !isPro && (
           <div className={`fixed top-0 left-0 right-0 z-50 text-white animate-in slide-in-from-top duration-300 ${
             usageCount >= usageLimit 
-              ? 'bg-red-500/20 border-b border-red-500/30 backdrop-blur-md' 
-              : 'bg-violet-500/15 border-b border-violet-500/20 backdrop-blur-md'
+              ? 'bg-[#1a0a0f] border-b border-red-500/30' 
+              : 'bg-[#0f0a1a] border-b border-violet-500/20'
           }`}>
             <div className="mx-auto px-5 py-2.5">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
@@ -1394,6 +1394,16 @@ export default function AppPage() {
             </p>
           </div>
           <div className="space-y-4 px-6 pb-6">
+            {/* Global Screenshot Input — always in DOM for all modes */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              onChange={handleScreenshotUpload}
+              className="hidden"
+              aria-label="Upload screenshot"
+            />
+
             {/* ===== REPLY MODE ===== */}
             {appMode === 'reply' && (<>
             {/* Context Selector */}
@@ -1524,16 +1534,6 @@ export default function AppPage() {
               </div>
             )}
 
-            {/* Screenshot Upload */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp"
-              onChange={handleScreenshotUpload}
-              className="hidden"
-              aria-label="Upload screenshot"
-            />
-            
             {/* Screenshot Preview */}
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -1830,15 +1830,7 @@ export default function AppPage() {
               </div>
             </div>
 
-            {/* Screenshot Upload for Decode */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp"
-              onChange={handleScreenshotUpload}
-              className="hidden"
-              aria-label="Upload screenshot"
-            />
+            {/* Screenshot Preview for Decode */}
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
@@ -2527,7 +2519,7 @@ export default function AppPage() {
                               {sharing === reply.tone ? '✓ Shared' : <><Sparkles className="h-3.5 w-3.5" /> Share</>}
                             </button>
                             {shareMenuOpen === reply.tone && (
-                              <div className="absolute bottom-full mb-2 left-0 right-0 min-w-[180px] rounded-xl bg-white/[0.06] border border-white/[0.12] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200 backdrop-blur-md">
+                              <div className="absolute bottom-full mb-2 left-0 right-0 min-w-[180px] rounded-xl bg-[#1a1a2e] border border-white/[0.12] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                                 <button
                                   onClick={() => handleShareLink(reply)}
                                   className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2 border-b border-white/[0.06]"
