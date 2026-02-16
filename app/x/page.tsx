@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   ArrowLeft, Copy, Sparkles, Loader2, Zap, Heart, MessageCircle,
   Shield, CheckCircle, Camera, X, Brain, Send, ChevronDown, ChevronUp,
-  RotateCcw, Trash2, Check, Clock, List, Plus,
+  RotateCcw, Trash2, Check, Clock, List, Plus, Sun, Moon,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 
@@ -87,10 +87,13 @@ export default function ExperimentalThreadPage() {
   const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
   const [showRecent, setShowRecent] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+
+  const isLight = theme === 'light';
 
   // ── Load Pro status + recent threads ──────────────────
   useEffect(() => {
@@ -98,7 +101,18 @@ export default function ExperimentalThreadPage() {
       if (d.isPro) setIsPro(true);
     }).catch(() => {});
     fetchRecentThreads();
+
+    const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('x-theme') : null;
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+      setTheme(storedTheme);
+    }
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('x-theme', theme);
+    }
+  }, [theme]);
 
   // ── Auto-save after 2+ messages ────────────────────────
   useEffect(() => {
@@ -374,16 +388,16 @@ export default function ExperimentalThreadPage() {
 
   // ── Render ─────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className={`min-h-screen relative overflow-hidden ${isLight ? 'x-v4-light' : 'x-v4-dark'} ${isLight ? 'bg-[#eef4ff]' : 'bg-black'}`}>
       {/* Ambient background mesh */}
       <div className="fixed inset-0 pointer-events-none hidden md:block">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/8 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/8 blur-[120px]" />
-        <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
+        <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[120px] ${isLight ? 'bg-blue-400/25' : 'bg-violet-600/8'}`} />
+        <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[120px] ${isLight ? 'bg-cyan-300/25' : 'bg-fuchsia-600/8'}`} />
+        <div className={`absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full blur-[100px] ${isLight ? 'bg-violet-300/20' : 'bg-cyan-600/5'}`} />
       </div>
       <div className="fixed inset-0 pointer-events-none md:hidden">
-        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] rounded-full bg-violet-600/6 blur-[80px]" />
-        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
+        <div className={`absolute top-[-10%] left-[-5%] w-[50%] h-[50%] rounded-full blur-[80px] ${isLight ? 'bg-blue-400/30' : 'bg-violet-600/6'}`} />
+        <div className={`absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full blur-[80px] ${isLight ? 'bg-cyan-300/30' : 'bg-fuchsia-600/6'}`} />
       </div>
 
       <div className="relative z-10 mx-auto px-5 py-6 pb-10 w-full max-w-lg md:max-w-2xl">
@@ -394,17 +408,62 @@ export default function ExperimentalThreadPage() {
             <ArrowLeft className="h-5 w-5 text-white/70" />
           </Link>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
+            <div className={`w-9 h-9 rounded-2xl bg-gradient-to-br flex items-center justify-center shadow-lg ${isLight ? 'from-blue-500 to-cyan-500 shadow-blue-500/25' : 'from-violet-500 to-fuchsia-500 shadow-violet-500/25'}`}>
               <Sparkles className="h-4.5 w-4.5 text-white" />
             </div>
             <div>
-              <h1 className="text-white font-black text-base tracking-tight leading-none">wingman</h1>
-              <p className="text-white/50 text-[11px] font-medium tracking-widest uppercase">thread</p>
+              <h1 className="text-white font-black text-base tracking-tight leading-none">wingman v4</h1>
+              <p className="text-white/50 text-[11px] font-medium tracking-widest uppercase">x-lab thread engine</p>
             </div>
           </div>
-          <button onClick={handleReset} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
-            <RotateCcw className="h-4 w-4 text-white/60" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="p-1 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center gap-1">
+              <button
+                onClick={() => setTheme('dark')}
+                className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${!isLight ? 'bg-violet-500 text-white shadow-md shadow-violet-500/30' : 'text-white/50 hover:text-white/80'}`}
+                aria-label="Use dark theme"
+              >
+                <Moon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setTheme('light')}
+                className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all ${isLight ? 'bg-cyan-500 text-white shadow-md shadow-cyan-500/30' : 'text-white/50 hover:text-white/80'}`}
+                aria-label="Use light theme"
+              >
+                <Sun className="h-4 w-4" />
+              </button>
+            </div>
+            <button onClick={handleReset} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+              <RotateCcw className="h-4 w-4 text-white/60" />
+            </button>
+          </div>
+        </div>
+
+        {/* ══════════ V4 COMMAND CENTER ══════════ */}
+        <div className="mb-5 rounded-3xl bg-white/[0.05] border border-white/[0.10] p-4 backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">Command center</p>
+              <h2 className="text-white text-sm font-extrabold tracking-tight mt-1">Thread-aware coaching + screenshot instant briefing</h2>
+            </div>
+            <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black border ${isPro ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : 'bg-violet-500/15 text-violet-300 border-violet-500/25'}`}>
+              {isPro ? 'PRO · V2 VERIFIED' : 'FREE · V1'}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+              <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Mode</p>
+              <p className="text-white/85 text-xs font-semibold mt-1">{thread.length > 0 ? 'Live thread' : 'Ready'}</p>
+            </div>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+              <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Context</p>
+              <p className="text-white/85 text-xs font-semibold mt-1">{CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label || 'Crush'}</p>
+            </div>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+              <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Theme</p>
+              <p className="text-white/85 text-xs font-semibold mt-1">{isLight ? 'Light' : 'Dark'}</p>
+            </div>
+          </div>
         </div>
 
         {/* ══════════ TOP BAR: Recent / New / Active ══════════ */}
@@ -765,6 +824,43 @@ export default function ExperimentalThreadPage() {
         )}
 
       </div>
+
+      {/* /x-only theme overrides for rapid dark/light experimentation */}
+      <style jsx global>{`
+        .x-v4-light {
+          color: #0f172a;
+        }
+
+        .x-v4-light [class*='text-white'] {
+          color: rgba(15, 23, 42, 0.9) !important;
+        }
+
+        .x-v4-light [class*='text-violet-300'] {
+          color: rgba(67, 56, 202, 0.92) !important;
+        }
+
+        .x-v4-light [class*='text-violet-400'] {
+          color: rgba(79, 70, 229, 0.95) !important;
+        }
+
+        .x-v4-light [class*='text-emerald-400'] {
+          color: rgba(5, 150, 105, 0.95) !important;
+        }
+
+        .x-v4-light [class*='bg-white/[0.0'],
+        .x-v4-light [class*='bg-white/[0.1'],
+        .x-v4-light [class*='bg-white/[0.2'] {
+          background-color: rgba(15, 23, 42, 0.06) !important;
+        }
+
+        .x-v4-light [class*='border-white'] {
+          border-color: rgba(15, 23, 42, 0.14) !important;
+        }
+
+        .x-v4-light [class*='from-violet-600'][class*='to-fuchsia-600'] {
+          box-shadow: 0 8px 28px rgba(79, 70, 229, 0.2);
+        }
+      `}</style>
     </div>
   );
 }
