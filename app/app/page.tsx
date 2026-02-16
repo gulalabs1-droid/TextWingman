@@ -858,6 +858,93 @@ export default function AppPage() {
           return;
         }
 
+        // Smart Thread Update: if a thread already exists, compare and add only new messages
+        if (thread.length > 0 && data.full_conversation) {
+          const extractedLines = data.full_conversation.split('\n').filter((l: string) => l.trim());
+          const extractedMsgs = extractedLines.map((line: string) => ({
+            role: line.startsWith('You:') ? 'you' as const : 'them' as const,
+            text: line.replace(/^(Them|You):\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim(),
+          }));
+
+          // Normalize text for comparison (lowercase, strip punctuation/whitespace)
+          const normalize = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const existingNormalized = thread.map(m => normalize(m.text));
+
+          // Find messages in the extracted list that aren't in the existing thread
+          // Walk from the end of the extracted messages backward to find where our thread ends
+          let matchEnd = -1;
+          for (let i = extractedMsgs.length - 1; i >= 0; i--) {
+            const idx = existingNormalized.lastIndexOf(normalize(extractedMsgs[i].text));
+            if (idx !== -1 && idx === thread.length - 1) {
+              matchEnd = i;
+              break;
+            }
+          }
+
+          // If we couldn't find an exact tail match, try matching the last few thread messages sequentially
+          if (matchEnd === -1) {
+            for (let start = extractedMsgs.length - 1; start >= 0; start--) {
+              let threadIdx = thread.length - 1;
+              let extIdx = start;
+              let matched = false;
+              while (extIdx >= 0 && threadIdx >= 0) {
+                if (normalize(extractedMsgs[extIdx].text) === existingNormalized[threadIdx]) {
+                  if (threadIdx === thread.length - 1) {
+                    matchEnd = extIdx;
+                    matched = true;
+                  }
+                  threadIdx--;
+                }
+                extIdx--;
+              }
+              if (matched) break;
+            }
+          }
+
+          const newMessages = matchEnd !== -1
+            ? extractedMsgs.slice(matchEnd + 1)
+            : [];
+
+          if (newMessages.length > 0) {
+            const newThreadMsgs: ThreadMessage[] = newMessages.map((m: { role: 'you' | 'them'; text: string }) => ({
+              role: m.role,
+              text: m.text,
+              timestamp: Date.now(),
+            }));
+
+            setThread(prev => [...prev, ...newThreadMsgs]);
+            setScreenshotPreview(null);
+            setShowExamples(false);
+
+            const youCount = newMessages.filter((m: { role: string }) => m.role === 'you').length;
+            const themCount = newMessages.filter((m: { role: string }) => m.role === 'them').length;
+            const parts = [];
+            if (youCount > 0) parts.push(`${youCount} from you`);
+            if (themCount > 0) parts.push(`${themCount} from them`);
+
+            toast({
+              title: `📷 Thread updated — ${newMessages.length} new message${newMessages.length !== 1 ? 's' : ''}`,
+              description: parts.join(' and ') + ' added. Delete any that are wrong.',
+            });
+
+            // If the last new message is from them, set it in the textarea for easy generation
+            const lastNew = newMessages[newMessages.length - 1];
+            if (lastNew.role === 'them') {
+              setMessage(lastNew.text);
+            }
+
+            return;
+          } else {
+            // No new messages found — tell the user
+            setScreenshotPreview(null);
+            toast({
+              title: '📷 No new messages detected',
+              description: 'This screenshot looks the same as your current thread. Send a new screenshot with more messages.',
+            });
+            return;
+          }
+        }
+
         // Reply mode: auto-generate replies via Screenshot Briefing
         toast({
           title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'} — generating replies...`,
