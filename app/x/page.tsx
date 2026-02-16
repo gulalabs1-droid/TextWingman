@@ -1,16 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import {
   ArrowLeft, Copy, Sparkles, Loader2, Zap, Heart, MessageCircle,
   Shield, CheckCircle, Camera, X, Brain, Send, ChevronDown, ChevronUp,
-  RotateCcw, Trash2, Check, Clock, List, Plus, Sun, Moon,
+  RotateCcw, Trash2, Check, Clock, List, Plus, Sun, Moon, Target, Gauge, TrendingUp, TrendingDown, Wand2,
 } from 'lucide-react';
-import { Logo } from '@/components/Logo';
 
 // ── Types ──────────────────────────────────────────────────
 type Reply = { tone: 'shorter' | 'spicier' | 'softer'; text: string };
@@ -38,6 +35,23 @@ type DecodeResult = {
   coach_tip: string;
 } | null;
 
+type StrategyData = {
+  momentum: string;
+  balance: string;
+  move: {
+    energy: string;
+    one_liner: string;
+    constraints: {
+      no_questions: boolean;
+      keep_short: boolean;
+      add_tease: boolean;
+      push_meetup: boolean;
+    };
+    risk: string;
+  };
+  latencyMs?: number;
+} | null;
+
 // ── Constants ──────────────────────────────────────────────
 const TONE_CONFIG = {
   shorter: { label: 'Quick', description: 'Brief & casual', gradient: 'from-cyan-400 to-blue-500', glow: 'shadow-cyan-500/20', darkBg: 'bg-cyan-500/10 border-cyan-500/20', emoji: '⚡' },
@@ -54,6 +68,14 @@ const CONTEXT_OPTIONS = [
   { value: 'new-match', label: 'New Match', emoji: '💘' },
 ];
 
+const GOAL_OPTIONS = [
+  { value: 'reignite', label: 'Reignite Spark', emoji: '✨' },
+  { value: 'meetup', label: 'Set Plans', emoji: '📍' },
+  { value: 'defuse', label: 'Defuse Tension', emoji: '🕊️' },
+  { value: 'clarify', label: 'Get Clarity', emoji: '🧭' },
+  { value: 'keep-light', label: 'Keep It Light', emoji: '🎈' },
+];
+
 const ENERGY_CONFIG: Record<string, { emoji: string; bg: string; color: string }> = {
   interested:       { emoji: '💚', bg: 'bg-green-100', color: 'text-green-700' },
   testing:          { emoji: '🧪', bg: 'bg-yellow-100', color: 'text-yellow-700' },
@@ -67,6 +89,8 @@ const ENERGY_CONFIG: Record<string, { emoji: string; bg: string; color: string }
   warm:             { emoji: '☀️', bg: 'bg-amber-100', color: 'text-amber-700' },
 };
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
 export default function ExperimentalThreadPage() {
   // ── State ──────────────────────────────────────────────
   const [thread, setThread] = useState<ThreadMessage[]>([]);
@@ -75,8 +99,10 @@ export default function ExperimentalThreadPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [selectedContext, setSelectedContext] = useState<string>('crush');
+  const [selectedGoal, setSelectedGoal] = useState<string>('reignite');
   const [showThread, setShowThread] = useState(true);
   const [isPro, setIsPro] = useState(false);
+  const [strategyData, setStrategyData] = useState<StrategyData>(null);
   const [pendingSent, setPendingSent] = useState<Reply | null>(null);
   const [decoding, setDecoding] = useState(false);
   const [decodeResult, setDecodeResult] = useState<DecodeResult>(null);
@@ -94,6 +120,58 @@ export default function ExperimentalThreadPage() {
   const { toast } = useToast();
 
   const isLight = theme === 'light';
+
+  const tactical = useMemo(() => {
+    const themCount = thread.filter(m => m.role === 'them').length;
+    const youCount = thread.filter(m => m.role === 'you').length;
+    const recentSlice = thread.slice(-4);
+    const recentThem = recentSlice.filter(m => m.role === 'them').length;
+    const recentYou = recentSlice.filter(m => m.role === 'you').length;
+
+    const momentum = recentThem > recentYou ? 'theirs' : recentYou > recentThem ? 'yours' : 'balanced';
+    const reciprocityDenominator = Math.max(themCount, youCount, 1);
+    const reciprocity = Math.round((Math.min(themCount, youCount) / reciprocityDenominator) * 100);
+    const chasePenalty = youCount > themCount ? Math.min((youCount - themCount) * 9, 24) : 0;
+    const questionPenalty = (input.match(/\?/g)?.length ?? 0) * 6;
+    const longMessagePenalty = input.trim().length > 180 ? 12 : 0;
+
+    const healthScore = clamp(68 + Math.round(reciprocity * 0.22) + (momentum === 'balanced' ? 8 : 0) - chasePenalty, 24, 96);
+    const riskScore = clamp(30 + chasePenalty + questionPenalty + longMessagePenalty + (momentum === 'yours' ? 8 : 0), 8, 95);
+    const riskLevel = riskScore >= 70 ? 'high' : riskScore >= 46 ? 'medium' : 'low';
+    const waitWindow = riskLevel === 'high' ? '45–90 min' : riskLevel === 'medium' ? '20–45 min' : '10–20 min';
+
+    return {
+      themCount,
+      youCount,
+      momentum,
+      reciprocity,
+      healthScore,
+      riskScore,
+      riskLevel,
+      waitWindow,
+    };
+  }, [thread, input]);
+
+  const simulatedOutcomes = useMemo(() => {
+    return replies.reduce((acc, reply) => {
+      let confidence = tactical.healthScore - 12;
+
+      if (reply.tone === 'shorter') confidence += 6;
+      if (reply.tone === 'spicier') confidence += selectedGoal === 'meetup' || selectedGoal === 'reignite' ? 8 : -2;
+      if (reply.tone === 'softer') confidence += selectedGoal === 'defuse' ? 10 : 2;
+      if (tactical.riskLevel === 'high' && reply.tone === 'spicier') confidence -= 12;
+
+      confidence = clamp(confidence, 28, 95);
+      const branch = confidence > 78 ? 'High chance they engage' : confidence > 60 ? 'Likely neutral response' : 'Could stall thread';
+
+      acc[reply.tone] = { confidence, branch };
+      return acc;
+    }, {} as Record<Reply['tone'], { confidence: number; branch: string }>);
+  }, [replies, tactical.healthScore, tactical.riskLevel, selectedGoal]);
+
+  const bestOutcomeConfidence = useMemo(() => {
+    return Object.values(simulatedOutcomes).reduce((max, item) => Math.max(max, item.confidence), 0);
+  }, [simulatedOutcomes]);
 
   // ── Load Pro status + recent threads ──────────────────
   useEffect(() => {
@@ -146,6 +224,7 @@ export default function ExperimentalThreadPage() {
     addToThread('you', reply.text);
     setPendingSent(null);
     setReplies([]);
+    setStrategyData(null);
     setDecodeResult(null);
     setInput('');
     toast({ title: '✓ Marked as sent', description: 'Paste their next reply to keep going' });
@@ -160,6 +239,7 @@ export default function ExperimentalThreadPage() {
 
     setLoading(true);
     setReplies([]);
+    setStrategyData(null);
     setDecodeResult(null);
     setPendingSent(null);
 
@@ -173,6 +253,7 @@ export default function ExperimentalThreadPage() {
         body: JSON.stringify({
           message: fullContext,
           context: selectedContext,
+          goal: selectedGoal,
         }),
       });
 
@@ -196,6 +277,10 @@ export default function ExperimentalThreadPage() {
         ]);
       } else if (Array.isArray(data.replies)) {
         setReplies(data.replies.filter((r: any) => r?.tone && r?.text));
+      }
+
+      if (data.strategy && typeof data.strategy === 'object') {
+        setStrategyData(data.strategy as StrategyData);
       }
 
       setInput('');
@@ -339,6 +424,7 @@ export default function ExperimentalThreadPage() {
       setActiveThreadName(saved.name);
       if (saved.context) setSelectedContext(saved.context);
       setReplies([]);
+      setStrategyData(null);
       setDecodeResult(null);
       setPendingSent(null);
       setInput('');
@@ -366,6 +452,7 @@ export default function ExperimentalThreadPage() {
   const handleNewThread = () => {
     setThread([]);
     setReplies([]);
+    setStrategyData(null);
     setInput('');
     setDecodeResult(null);
     setPendingSent(null);
@@ -378,6 +465,7 @@ export default function ExperimentalThreadPage() {
   const handleReset = () => {
     setThread([]);
     setReplies([]);
+    setStrategyData(null);
     setInput('');
     setDecodeResult(null);
     setPendingSent(null);
@@ -440,29 +528,51 @@ export default function ExperimentalThreadPage() {
         </div>
 
         {/* ══════════ V4 COMMAND CENTER ══════════ */}
-        <div className="mb-5 rounded-3xl bg-white/[0.05] border border-white/[0.10] p-4 backdrop-blur-sm">
+        <div className="mb-5 rounded-[28px] bg-white/[0.05] border border-white/[0.10] p-4 backdrop-blur-sm shadow-[0_20px_60px_-30px_rgba(14,165,233,0.35)]">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div>
-              <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">Command center</p>
-              <h2 className="text-white text-sm font-extrabold tracking-tight mt-1">Thread-aware coaching + screenshot instant briefing</h2>
+              <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.22em]">Command center</p>
+              <h2 className="text-white text-sm font-extrabold tracking-tight mt-1">Future-grade thread intelligence + instant tactical reads</h2>
             </div>
             <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black border ${isPro ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25' : 'bg-violet-500/15 text-violet-300 border-violet-500/25'}`}>
               {isPro ? 'PRO · V2 VERIFIED' : 'FREE · V1'}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
             <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
               <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Mode</p>
               <p className="text-white/85 text-xs font-semibold mt-1">{thread.length > 0 ? 'Live thread' : 'Ready'}</p>
             </div>
             <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
-              <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Context</p>
-              <p className="text-white/85 text-xs font-semibold mt-1">{CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label || 'Crush'}</p>
+              <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Momentum</p>
+              <p className="text-white/85 text-xs font-semibold mt-1 flex items-center gap-1.5">
+                {tactical.momentum === 'theirs' ? <TrendingUp className="h-3.5 w-3.5 text-emerald-400" /> : tactical.momentum === 'yours' ? <TrendingDown className="h-3.5 w-3.5 text-rose-400" /> : <Gauge className="h-3.5 w-3.5 text-amber-400" />}
+                {tactical.momentum === 'theirs' ? 'Theirs' : tactical.momentum === 'yours' ? 'Yours' : 'Balanced'}
+              </p>
             </div>
             <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
-              <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Theme</p>
-              <p className="text-white/85 text-xs font-semibold mt-1">{isLight ? 'Light' : 'Dark'}</p>
+              <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Health</p>
+              <p className="text-white/85 text-xs font-semibold mt-1">{tactical.healthScore}/100</p>
             </div>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+              <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider">Risk</p>
+              <p className={`text-xs font-semibold mt-1 ${tactical.riskLevel === 'high' ? 'text-rose-400' : tactical.riskLevel === 'medium' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {tactical.riskLevel.toUpperCase()} · {tactical.riskScore}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 text-[10px] font-bold uppercase tracking-wide">
+              <Clock className="h-3 w-3" /> wait window {tactical.waitWindow}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-violet-500/10 text-violet-300 border border-violet-500/20 text-[10px] font-bold uppercase tracking-wide">
+              <Target className="h-3 w-3" /> goal {GOAL_OPTIONS.find(g => g.value === selectedGoal)?.label || 'Reignite Spark'}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/[0.05] text-white/50 border border-white/[0.10] text-[10px] font-bold uppercase tracking-wide">
+              <Wand2 className="h-3 w-3" /> theme {isLight ? 'Light' : 'Dark'}
+            </span>
           </div>
         </div>
 
@@ -570,6 +680,67 @@ export default function ExperimentalThreadPage() {
           ))}
         </div>
 
+        {/* ══════════ GOAL SELECTOR ══════════ */}
+        <div className="flex flex-wrap gap-2 mb-5 justify-center">
+          {GOAL_OPTIONS.map(goal => (
+            <button
+              key={goal.value}
+              onClick={() => setSelectedGoal(goal.value)}
+              className={`px-4 py-2 rounded-2xl text-[12px] font-semibold transition-all active:scale-95 ${
+                selectedGoal === goal.value
+                  ? 'bg-violet-500/20 text-violet-200 border border-violet-400/35 shadow-lg shadow-violet-500/15'
+                  : 'bg-white/[0.06] text-white/55 border border-white/[0.10] hover:bg-white/[0.10] hover:text-white/80'
+              }`}
+            >
+              <span className="mr-1.5">{goal.emoji}</span>{goal.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ══════════ TACTICAL INTELLIGENCE BAR ══════════ */}
+        <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-2.5">
+          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+            <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider mb-1.5">Reciprocity</p>
+            <p className="text-white/85 text-sm font-semibold">{tactical.reciprocity}% balanced</p>
+            <p className="text-white/45 text-[11px] mt-1">Them {tactical.themCount} • You {tactical.youCount}</p>
+          </div>
+          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+            <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider mb-1.5">Timing Guidance</p>
+            <p className="text-cyan-300 text-sm font-semibold">Wait {tactical.waitWindow}</p>
+            <p className="text-white/45 text-[11px] mt-1">Reduces chase pressure & keeps frame</p>
+          </div>
+          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3">
+            <p className="text-white/35 text-[9px] font-bold uppercase tracking-wider mb-1.5">Guardrail</p>
+            <p className={`text-sm font-semibold ${tactical.riskLevel === 'high' ? 'text-rose-400' : tactical.riskLevel === 'medium' ? 'text-amber-400' : 'text-emerald-400'}`}>
+              {tactical.riskLevel === 'high' ? 'Do not double-text' : tactical.riskLevel === 'medium' ? 'Keep it short + no pressure' : 'Safe to advance'}
+            </p>
+            <p className="text-white/45 text-[11px] mt-1">Risk score {tactical.riskScore}/100</p>
+          </div>
+        </div>
+
+        {/* ══════════ STRATEGY INSIGHT ══════════ */}
+        {strategyData && (
+          <div className="mb-4 rounded-3xl bg-emerald-500/[0.08] border border-emerald-500/20 p-4">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 text-emerald-300 text-[10px] font-bold uppercase tracking-widest">
+                <Target className="h-3.5 w-3.5" /> Strategy pulse
+              </span>
+              <span className="text-[10px] font-bold text-emerald-300/70 bg-emerald-500/15 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                {strategyData.move.energy}
+              </span>
+            </div>
+            <p className="text-white/90 text-sm font-semibold">“{strategyData.move.one_liner}”</p>
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/[0.08] text-white/60">Momentum: {strategyData.momentum}</span>
+              <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/[0.08] text-white/60">Balance: {strategyData.balance}</span>
+              {strategyData.move.constraints.keep_short && <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/[0.08] text-white/60">keep short</span>}
+              {strategyData.move.constraints.no_questions && <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/[0.08] text-white/60">no questions</span>}
+              {strategyData.move.constraints.add_tease && <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/[0.08] text-white/60">add tease</span>}
+              {strategyData.move.constraints.push_meetup && <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/[0.08] text-white/60">push meetup</span>}
+            </div>
+          </div>
+        )}
+
         {/* ══════════ THREAD VIEW ══════════ */}
         {thread.length > 0 && (
           <div className="mb-4">
@@ -620,6 +791,11 @@ export default function ExperimentalThreadPage() {
               <p className="text-white/80 text-sm font-medium leading-relaxed pl-4 border-l-2 border-emerald-500/30">
                 {pendingSent.text}
               </p>
+              <div className="rounded-2xl bg-black/20 border border-white/[0.08] px-3 py-2">
+                <p className="text-[11px] text-white/60 font-medium">
+                  Timing tip: wait <span className="text-cyan-300 font-bold">{tactical.waitWindow}</span> before your next follow-up if they go quiet.
+                </p>
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleMarkSent(pendingSent)}
@@ -765,6 +941,8 @@ export default function ExperimentalThreadPage() {
               {replies.map((reply, idx) => {
                 const config = TONE_CONFIG[reply.tone];
                 const isCopied = copied === reply.tone;
+                const outcome = simulatedOutcomes[reply.tone];
+                const isBest = !!outcome && outcome.confidence === bestOutcomeConfidence;
                 return (
                   <button
                     key={reply.tone}
@@ -784,6 +962,16 @@ export default function ExperimentalThreadPage() {
                         <div className="flex items-center gap-2.5 mb-2.5">
                           <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
                           <span className="text-white/25 text-[11px]">{reply.text.split(' ').length}w</span>
+                          {outcome && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${outcome.confidence >= 75 ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20' : outcome.confidence >= 60 ? 'text-amber-300 bg-amber-500/10 border-amber-500/20' : 'text-rose-300 bg-rose-500/10 border-rose-500/20'}`}>
+                              {outcome.confidence}%
+                            </span>
+                          )}
+                          {isBest && (
+                            <span className="text-[10px] font-black text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded">
+                              BEST BRANCH
+                            </span>
+                          )}
                           {isPro && (
                             <span className="text-[10px] font-bold text-emerald-500/60 bg-emerald-500/10 px-2 py-0.5 rounded">
                               v2
@@ -796,6 +984,9 @@ export default function ExperimentalThreadPage() {
                           </span>
                         </div>
                         <p className="text-white/90 text-[15px] font-medium leading-relaxed">{reply.text}</p>
+                        {outcome && (
+                          <p className="mt-2 text-[11px] text-white/45 font-medium">{outcome.branch}</p>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -809,7 +1000,7 @@ export default function ExperimentalThreadPage() {
         {thread.length === 0 && replies.length === 0 && !decodeResult && (
           <div className="text-center pt-10 pb-6 space-y-4">
             <p className="text-white/40 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
-              Paste what they said, get replies, mark what you sent, keep going.
+              Paste what they said, set your goal, get strategy-shaped replies, then run the thread like a tactician.
             </p>
             <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/25">
               <span>them</span>
@@ -828,11 +1019,16 @@ export default function ExperimentalThreadPage() {
       {/* /x-only theme overrides for rapid dark/light experimentation */}
       <style jsx global>{`
         .x-v4-light {
+          color-scheme: light;
           color: #0f172a;
         }
 
         .x-v4-light [class*='text-white'] {
-          color: rgba(15, 23, 42, 0.9) !important;
+          color: rgba(15, 23, 42, 0.92) !important;
+        }
+
+        .x-v4-light [class*='placeholder-white'] {
+          color: rgba(30, 41, 59, 0.45) !important;
         }
 
         .x-v4-light [class*='text-violet-300'] {
@@ -850,15 +1046,24 @@ export default function ExperimentalThreadPage() {
         .x-v4-light [class*='bg-white/[0.0'],
         .x-v4-light [class*='bg-white/[0.1'],
         .x-v4-light [class*='bg-white/[0.2'] {
-          background-color: rgba(15, 23, 42, 0.06) !important;
+          background-color: rgba(255, 255, 255, 0.62) !important;
+          backdrop-filter: blur(12px);
         }
 
         .x-v4-light [class*='border-white'] {
-          border-color: rgba(15, 23, 42, 0.14) !important;
+          border-color: rgba(148, 163, 184, 0.34) !important;
+        }
+
+        .x-v4-light [class*='bg-black/20'] {
+          background-color: rgba(15, 23, 42, 0.08) !important;
         }
 
         .x-v4-light [class*='from-violet-600'][class*='to-fuchsia-600'] {
-          box-shadow: 0 8px 28px rgba(79, 70, 229, 0.2);
+          box-shadow: 0 14px 34px rgba(79, 70, 229, 0.22);
+        }
+
+        .x-v4-light [class*='from-emerald-500'][class*='to-cyan-500'] {
+          box-shadow: 0 14px 34px rgba(6, 182, 212, 0.2);
         }
       `}</style>
     </div>
