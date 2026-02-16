@@ -176,7 +176,7 @@ export default function PricingPage() {
                   </li>
                   <li className="flex items-center gap-3 text-white">
                     <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0" />
-                    Unlimited decodes &amp; openers
+                    Unlimited decodes, openers &amp; revives
                   </li>
                 </ul>
                 <p className="text-white/60 text-sm mb-4">
@@ -215,7 +215,7 @@ export default function PricingPage() {
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2 mt-2">7-Day Free Trial</h3>
                 <p className="text-green-100 mb-1">Full Pro access — no credit card needed</p>
-                <p className="text-green-200/70 text-sm mb-6">Try unlimited replies, Strategy Mode, and V2 Verified free for 7 days</p>
+                <p className="text-green-200/70 text-sm mb-6">Try unlimited replies, Strategy Mode, Revive Mode, and V2 Verified free for 7 days</p>
                 <button
                   onClick={() => handleCheckout('weekly', true)}
                   disabled={loading === 'trial'}
@@ -259,7 +259,7 @@ export default function PricingPage() {
                 </li>
                 <li className="flex items-center gap-3 text-gray-700">
                   <Check className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  Unlimited decodes & openers
+                  Unlimited decodes, openers & revives
                 </li>
                 <li className="flex items-center gap-3 text-gray-700">
                   <Check className="h-5 w-5 text-green-500 flex-shrink-0" />

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FEATURES = [
@@ -127,6 +127,54 @@ const FEATURES = [
     },
   },
   {
+    id: 'revive-mode',
+    badge: 'New',
+    badgeColor: 'bg-cyan-500',
+    icon: RefreshCw,
+    iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-600',
+    title: 'Revive Mode',
+    tagline: 'Bring dead conversations back to life.',
+    description: 'Conversation died? She left you on read? Revive Mode analyzes what went wrong and generates 3 re-engagement messages that feel natural — not thirsty. Never send "hey stranger" again. Free users get 1 revive per day. Pro users get unlimited.',
+    howItWorks: [
+      'Switch to Revive Mode and paste the old conversation (or upload a screenshot)',
+      'Pick the context — crush, ex, friend, etc.',
+      'Hit Revive and get an AI analysis of why the convo died',
+      'Choose from 3 messages: Smooth (callback), Bold (playful), or Warm (genuine)',
+    ],
+    example: {
+      input: 'Stale convo — last message was "The same" 2 weeks ago',
+      outputs: [
+        { tone: 'Smooth', text: 'did you ever try that place you were talking about', emoji: '🎯' },
+        { tone: 'Bold', text: 'you fell off the earth huh', emoji: '🔥' },
+        { tone: 'Warm', text: 'saw something that reminded me of our convo', emoji: '💚' },
+      ],
+    },
+  },
+  {
+    id: 'screenshot-briefing',
+    badge: 'New',
+    badgeColor: 'bg-emerald-500',
+    icon: Camera,
+    iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+    title: 'Screenshot Briefing',
+    tagline: 'Upload. Get strategy + replies. Zero typing.',
+    description: 'Upload a screenshot of any conversation and get an instant tactical briefing — strategy coaching, momentum analysis, and 3 ready-to-send replies. Works with iMessage, WhatsApp, Instagram, Tinder, Bumble, Hinge, Facebook Dating, Messenger, and Snapchat.',
+    howItWorks: [
+      'Take a screenshot of any conversation',
+      'Upload it in Reply Mode — AI reads every message',
+      'Get instant strategy coaching (momentum, balance, energy)',
+      'Pick from 3 energy-matched replies and send',
+    ],
+    example: {
+      input: 'Screenshot from Facebook Dating — 4 messages',
+      outputs: [
+        { tone: 'Strategy', text: 'Declining momentum. They\'re giving you nothing. Don\'t reward it.', emoji: '📉' },
+        { tone: 'Shorter', text: 'Bet.', emoji: '⚡' },
+        { tone: 'Spicier', text: 'Figures.', emoji: '🔥' },
+      ],
+    },
+  },
+  {
     id: 'saved-threads',
     badge: 'Free',
     badgeColor: 'bg-blue-500',
@@ -151,7 +199,7 @@ const FEATURES = [
     iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
     title: 'Screenshot Upload',
     tagline: 'Screenshot it. We\'ll read it.',
-    description: 'Take a screenshot of any conversation — iMessage, WhatsApp, Instagram, Tinder, Bumble, Hinge — and upload it. Our AI reads the entire thread, identifies who said what, and fills it in automatically. Free for everyone.',
+    description: 'Take a screenshot of any conversation — iMessage, WhatsApp, Instagram, Tinder, Bumble, Hinge, Facebook Dating, Messenger, Snapchat — and upload it. Our AI reads the entire thread, identifies who said what, and fills it in automatically. Works in all modes: Reply, Decode, Opener, and Revive.', 
     howItWorks: [
       'Screenshot any conversation on your phone',
       'Tap Upload Screenshot in the app',
@@ -206,7 +254,7 @@ export default function FeaturesPage() {
       <section className="container mx-auto px-4 pt-8 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30 mb-6">
           <Sparkles className="h-4 w-4" />
-          v{CURRENT_VERSION} — Thread Mode + Strategy Coaching
+          v{CURRENT_VERSION} — Revive Mode + Screenshot Briefing
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
           Not just replies.

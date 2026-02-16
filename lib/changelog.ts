@@ -10,6 +10,21 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '3.2.0',
+    date: '2026-02-15',
+    title: 'Revive Mode, Screenshot Briefing & Energy Matching',
+    description: 'New Revive mode for dead conversations, instant Screenshot Briefing with strategy coaching, smarter energy-matching replies, and expanded platform support.',
+    type: 'feature',
+    highlights: [
+      'Revive Mode — re-engage dead/stale conversations with 3 strategic messages (smooth, bold, warm) plus AI analysis of why the convo died',
+      'Screenshot Briefing — upload a screenshot in Reply mode and get instant strategy coaching + 3 replies without typing anything',
+      'Energy Matching — replies now match the other person\'s effort level. Short messages get short replies, slang gets slang back',
+      'Facebook Dating & Messenger support — screenshot extraction now recognizes FB Dating, Messenger, and Snapchat',
+      'Screenshot upload in Opener mode — upload a profile screenshot for context before generating openers',
+      'Low-effort detection — Strategy Mode now flags stalling conversations and auto-applies no-questions + keep-short constraints',
+    ],
+  },
+  {
     version: '3.0.0',
     date: '2026-02-15',
     title: 'V3 — Conversational Intelligence',

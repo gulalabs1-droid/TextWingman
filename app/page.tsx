@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, Eye } from "lucide-react";
+import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, Eye, RefreshCw } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export default function HomePage() {
@@ -37,9 +37,9 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           {/* Headline + Sub */}
           <div className="text-center space-y-5 mb-12 md:mb-16">
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-500/20">
-              <Target className="h-3.5 w-3.5" />
-              V3 — Strategy Coaching is here
+            <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full text-xs font-bold border border-cyan-500/20">
+              <RefreshCw className="h-3.5 w-3.5" />
+              V3.2 — Revive Mode + Screenshot Briefing
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
               Your sharp friend
@@ -49,7 +49,7 @@ export default function HomePage() {
               Text Wingman reads your whole conversation, tells you the move, and writes the reply. Like having a sharp friend reading over your shoulder.
             </p>
             <p className="text-sm text-white/30 font-medium">
-              Free. No card. Threads + replies + decode + openers every day.
+              Free. No card. Threads + replies + decode + openers + revive every day.
             </p>
           </div>
 
@@ -211,8 +211,8 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════ */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Two ways in. Both fast.</h2>
-          <p className="text-white/50">Screenshot for instant analysis. Thread for ongoing coaching.</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Four modes. Every situation covered.</h2>
+          <p className="text-white/50">Reply, Decode, Revive dead convos, or generate Openers — all from screenshots or text.</p>
         </div>
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-5">
           {/* Screenshot Path */}
@@ -341,7 +341,7 @@ export default function HomePage() {
                 <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> Screenshot Briefing
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
-                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> 1 decode + 1 opener / day
+                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> 1 decode + 1 opener + 1 revive / day
               </li>
               <li className="flex items-center gap-3 text-white/30 text-sm">
                 <X className="h-4 w-4 text-white/15 flex-shrink-0" /> Strategy Mode
@@ -383,7 +383,7 @@ export default function HomePage() {
                 <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Thread-aware AI conversations
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
-                <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited decodes &amp; openers
+                <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited decodes, openers &amp; revives
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
                 <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Cancel anytime
