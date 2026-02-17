@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -88,6 +88,8 @@ const ENERGY_CONFIG: Record<string, { emoji: string; bg: string; color: string }
   cold:             { emoji: '🧊', bg: 'bg-blue-100', color: 'text-blue-700' },
   warm:             { emoji: '☀️', bg: 'bg-amber-100', color: 'text-amber-700' },
 };
+
+const PowerPulse = lazy(() => import('@/components/PowerPulse'));
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -739,6 +741,23 @@ export default function ExperimentalThreadPage() {
               {strategyData.move.constraints.push_meetup && <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white/[0.08] text-white/60">push meetup</span>}
             </div>
           </div>
+        )}
+
+        {/* ══════════ POWER PULSE ══════════ */}
+        {thread.length > 0 && (
+          <Suspense fallback={null}>
+            <PowerPulse
+              momentum={tactical.momentum as 'theirs' | 'yours' | 'balanced'}
+              healthScore={tactical.healthScore}
+              riskScore={tactical.riskScore}
+              themCount={tactical.themCount}
+              youCount={tactical.youCount}
+              threadLength={thread.length}
+              strategyMomentum={strategyData?.momentum}
+              strategyEnergy={strategyData?.move?.energy}
+              isLight={isLight}
+            />
+          </Suspense>
         )}
 
         {/* ══════════ THREAD VIEW ══════════ */}
