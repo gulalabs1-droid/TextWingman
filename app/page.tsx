@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, TrendingUp, Eye, RefreshCw, Pencil } from "lucide-react";
+import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, TrendingUp, Eye, RefreshCw, Pencil, ChevronDown, Users, Heart, Briefcase, MessageSquare, HelpCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export default function HomePage() {
@@ -38,18 +38,18 @@ export default function HomePage() {
           {/* Headline + Sub */}
           <div className="text-center space-y-5 mb-12 md:mb-16">
             <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full text-xs font-bold border border-cyan-500/20">
-              <RefreshCw className="h-3.5 w-3.5" />
-              V3.3 — Edit + Polish, Regenerate & Smarter Context
+              <Sparkles className="h-3.5 w-3.5" />
+              V3.4 — Vibe Check + Tone Translator
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
               Your sharp friend
               <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">for every conversation.</span>
             </h1>
             <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-              Text Wingman reads your whole conversation, tells you the move, writes the reply — and now lets you edit and polish it your way. Like having a sharp friend reading over your shoulder.
+              Text Wingman reads your conversation, coaches the move, writes the reply — and now checks your vibe before you hit send. Like having a sharp friend reading over your shoulder.
             </p>
             <p className="text-sm text-white/30 font-medium">
-              Free. No card. Threads + replies + edit & polish + decode + openers + revive every day.
+              Free. No card. Vibe check + tone translator + threads + decode + openers + revive.
             </p>
           </div>
 
@@ -127,14 +127,31 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Edit + Polish hint */}
-                <div className="bg-violet-500/[0.08] border border-violet-500/20 rounded-xl p-3 mb-5">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Pencil className="h-3 w-3 text-violet-400" />
-                    <span className="text-violet-300 text-[10px] font-bold uppercase tracking-widest">Edit + Polish</span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300">New</span>
+                {/* Vibe Check + Tone Translator demo */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-5">
+                  <div className="bg-emerald-500/[0.06] border border-emerald-500/20 rounded-xl p-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-sm leading-none">🟢</span>
+                      <span className="text-emerald-300 text-[10px] font-bold uppercase tracking-widest">Vibe Check</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">New</span>
+                    </div>
+                    <p className="text-emerald-400/80 text-[11px] font-bold">confident & direct</p>
+                    <p className="text-white/40 text-[11px]">Perfect energy, send it. 9/10</p>
                   </div>
-                  <p className="text-white/50 text-xs">Don&apos;t like a reply? Edit it, add your own ideas, and hit Polish — AI smooths it out while keeping your additions.</p>
+                  <div className="bg-violet-500/[0.06] border border-violet-500/20 rounded-xl p-3">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Sparkles className="h-3 w-3 text-violet-400" />
+                      <span className="text-violet-300 text-[10px] font-bold uppercase tracking-widest">Tone Translator</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300">New</span>
+                    </div>
+                    <div className="flex gap-1 flex-wrap">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-500/15 text-pink-300">😏 Flirty</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300">😎 Chill</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300">🔥 Bold</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300">⚡ Witty</span>
+                    </div>
+                    <p className="text-white/40 text-[11px] mt-1.5">Rewrite any message in a different energy</p>
+                  </div>
                 </div>
 
                 {/* CTA Row */}
@@ -326,6 +343,85 @@ export default function HomePage() {
           <Link href="/features" className="text-emerald-400 hover:text-white text-sm font-medium transition-colors inline-flex items-center gap-1">
             See all features <ArrowRight className="h-3.5 w-3.5" />
           </Link>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════ */}
+      {/* 5. WHO IT'S FOR — Scenario Cards        */}
+      {/* ═══════════════════════════════════════ */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Built for real situations.</h2>
+          <p className="text-white/50">Whether it&apos;s a crush, an ex, or your boss — Wingman adapts.</p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          {[
+            { emoji: '💘', title: 'The crush you can\'t read', desc: 'She left you on delivered for 6 hours then replied "lol sorry I fell asleep." What do you say?', color: 'border-pink-500/20 hover:border-pink-500/30' },
+            { emoji: '💔', title: 'The ex who texted back', desc: '"Hey, been thinking about you" at 1am. You need the perfect response — not too eager, not too cold.', color: 'border-red-500/20 hover:border-red-500/30' },
+            { emoji: '✨', title: 'New match, first message', desc: 'You matched on Hinge. Her bio says "take me somewhere I\'ve never been." What\'s your opener?', color: 'border-violet-500/20 hover:border-violet-500/30' },
+            { emoji: '💼', title: 'Work text you can\'t mess up', desc: 'Your manager sent a passive-aggressive "Per my last message..." and you need to reply professionally.', color: 'border-blue-500/20 hover:border-blue-500/30' },
+            { emoji: '👻', title: 'The convo that died', desc: 'You were talking every day, then she stopped replying. It\'s been 4 days. Revive Mode handles this.', color: 'border-cyan-500/20 hover:border-cyan-500/30' },
+            { emoji: '🤝', title: 'Friend drama', desc: '"Are you mad at me?" — your friend is upset and you don\'t want to make it worse. Get the right tone.', color: 'border-green-500/20 hover:border-green-500/30' },
+          ].map((scenario, i) => (
+            <div key={i} className={`bg-white/[0.03] border ${scenario.color} rounded-2xl p-5 transition-all hover:bg-white/[0.05]`}>
+              <span className="text-2xl mb-3 block">{scenario.emoji}</span>
+              <h3 className="font-bold text-white text-sm mb-2">{scenario.title}</h3>
+              <p className="text-white/40 text-xs leading-relaxed">{scenario.desc}</p>
+            </div>
+          ))}
+        </div>
+        <div className="text-center mt-8">
+          <Button asChild className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-lg shadow-violet-600/20 px-8 h-12">
+            <Link href="/app">Handle it now &mdash; free <ArrowRight className="h-4 w-4 ml-2" /></Link>
+          </Button>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════ */}
+      {/* 6. FAQ — Kill Objections                */}
+      {/* ═══════════════════════════════════════ */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Questions?</h2>
+          <p className="text-white/50">The stuff everyone asks before they try it.</p>
+        </div>
+        <div className="max-w-2xl mx-auto space-y-3">
+          {[
+            {
+              q: 'Is it actually free?',
+              a: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial expiration. Pro unlocks unlimited everything + strategy coaching + the verified pipeline.',
+            },
+            {
+              q: 'Can you see my conversations?',
+              a: 'No. Messages are processed in real-time and never stored. We don\'t have accounts linked to messaging apps — you paste or screenshot what you want help with, and that\'s it.',
+            },
+            {
+              q: 'What apps does it work with?',
+              a: 'All of them. iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Messenger, Telegram, LinkedIn — anything with text. Screenshot upload auto-detects the platform.',
+            },
+            {
+              q: 'How is this different from just asking ChatGPT?',
+              a: 'ChatGPT gives you a paragraph that sounds like a robot wrote it. Wingman gives you 3 short, casual options under 18 words — verified by a 3-agent pipeline. Plus strategy coaching, vibe checking, tone translation, and thread context that ChatGPT can\'t do.',
+            },
+            {
+              q: 'Will people know I\'m using AI?',
+              a: 'No. Every reply is designed to sound like a real person texting — lowercase, casual, no emojis, no formal sentences. The 18-word limit keeps it natural. Plus you can edit any reply and add your own ideas.',
+            },
+            {
+              q: 'What\'s the Vibe Check?',
+              a: 'As you type your own message, AI analyzes it in real-time and tells you how it reads — "too eager", "perfectly unbothered", "a bit needy" — with a score out of 10 and a one-line tip. Like Grammarly for your texting game.',
+            },
+          ].map((faq, i) => (
+            <details key={i} className="group bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.05] transition-all">
+              <summary className="flex items-center justify-between p-5 cursor-pointer list-none">
+                <span className="font-bold text-white text-sm pr-4">{faq.q}</span>
+                <ChevronDown className="h-4 w-4 text-white/30 shrink-0 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="px-5 pb-5 -mt-1">
+                <p className="text-white/50 text-sm leading-relaxed">{faq.a}</p>
+              </div>
+            </details>
+          ))}
         </div>
       </section>
 
