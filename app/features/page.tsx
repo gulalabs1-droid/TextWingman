@@ -2,34 +2,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw, Pencil, Activity, Eye, Gauge } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw, Pencil, Eye } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FEATURES = [
-  {
-    id: 'v4-thread-engine',
-    badge: 'V4',
-    badgeColor: 'bg-gradient-to-r from-violet-500 to-fuchsia-500',
-    icon: Activity,
-    iconBg: 'bg-gradient-to-br from-violet-500 to-fuchsia-600',
-    title: 'V4 Thread Engine',
-    tagline: 'Your texting command center.',
-    description: 'The /x page has been completely rebuilt as a futuristic Thread Engine. Split-panel layout with the conversation on the left and tactical intelligence on the right. Glassmorphic UI with neon glow effects, animated reactive backgrounds, and a dark/light toggle. Tap any incoming message to instantly decode its subtext right in the thread.',
-    howItWorks: [
-      'Open the Thread Engine at /x and paste or upload a conversation',
-      'See tactical intelligence: health ring, momentum, risk score, wait timer, and guardrails',
-      'Tap any "them" message to decode subtext, intent, and energy inline',
-      'Each reply shows a predicted outcome — confidence score and likely response',
-    ],
-    example: {
-      input: 'Full thread with inline decode + tactical sidebar',
-      outputs: [
-        { tone: 'Health', text: '78 — momentum rising, balanced conversation', emoji: '💚' },
-        { tone: 'Decode', text: '"wateveerr" = playful/coy, not dismissive', emoji: '🧠' },
-        { tone: 'Guardrail', text: 'Safe to advance — no chase risk detected', emoji: '✅' },
-      ],
-    },
-  },
   {
     id: 'subtext-intelligence',
     badge: 'New',
@@ -343,14 +319,14 @@ export default function FeaturesPage() {
       <section className="container mx-auto px-4 pt-8 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30 mb-6">
           <Sparkles className="h-4 w-4" />
-          v{CURRENT_VERSION} — V4 Thread Engine + Subtext Intelligence
+          v{CURRENT_VERSION} — Subtext Intelligence + Vibe Check + Tone Translator
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
           Not just replies.
-          <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">Conversational intelligence.</span>
+          <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">Conversations.</span>
         </h1>
         <p className="text-lg text-white/60 max-w-2xl mx-auto mb-8">
-          Text Wingman reads your full conversation, decodes what they really mean, coaches the move, writes the reply — and now reads between the lines on playful, coy, and sarcastic messages.
+          Text Wingman tracks the full conversation, coaches you on the right move, generates replies that fit the flow — and now reads between the lines on playful, coy, and sarcastic messages.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           {FEATURES.map(f => (

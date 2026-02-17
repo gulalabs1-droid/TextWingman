@@ -10,7 +10,7 @@ const jsonLd = {
   name: 'Text Wingman',
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web',
-  description: 'AI-powered texting companion with a futuristic Thread Engine that reads your conversation, coaches the move, writes the reply, reads between the lines, and checks your vibe before you send.',
+  description: 'AI-powered texting companion that reads your conversation, coaches the move, writes the reply, reads between the lines, and checks your vibe before you send.',
   url: 'https://textwingman.com',
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
@@ -18,9 +18,8 @@ const jsonLd = {
     { '@type': 'Offer', price: '99.99', priceCurrency: 'USD', description: 'Pro Annual — Best Value' },
   ],
   featureList: [
-    'V4 Thread Engine — glassmorphic split-panel UI with inline decode and tactical intelligence',
-    'Subtext Intelligence — AI reads between the lines on playful, coy, and sarcastic messages',
     'AI reply generation in 3 tones',
+    'Subtext Intelligence — AI reads between the lines on playful, coy, and sarcastic messages',
     'Vibe Check — real-time draft analysis',
     'Tone Translator — rewrite messages in different energy',
     'Screenshot briefing — upload a screenshot, get instant replies',
@@ -84,17 +83,17 @@ export default function HomePage() {
           <div className="text-center space-y-5 mb-12 md:mb-16">
             <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full text-xs font-bold border border-cyan-500/20">
               <Sparkles className="h-3.5 w-3.5" />
-              V4 — Thread Engine + Subtext Intelligence
+              V3.5 — Subtext Intelligence + Vibe Check + Tone Translator
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
               Your sharp friend
               <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">for every conversation.</span>
             </h1>
             <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-              Text Wingman reads your full conversation, decodes what they really mean, coaches the move, writes the reply — and now reads between the lines on playful texts like &ldquo;wateveerr&rdquo; and &ldquo;suuure&rdquo;. Like having a sharp friend who actually gets people.
+              Text Wingman reads your conversation, coaches the move, writes the reply, checks your vibe before you send — and now reads between the lines on playful texts like &ldquo;wateveerr&rdquo; and &ldquo;suuure&rdquo;. Like having a sharp friend who actually gets texting.
             </p>
             <p className="text-sm text-white/30 font-medium">
-              Free. No card. Thread Engine + inline decode + vibe check + tone translator + openers + revive.
+              Free. No card. Vibe check + tone translator + subtext intelligence + threads + decode + openers + revive.
             </p>
           </div>
 
@@ -384,7 +383,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="text-center mt-6">
-          <p className="text-white/25 text-xs mb-4">Plus: V4 Thread Engine, subtext intelligence, 3-agent verified pipeline, ≤18 word enforcement, inline decode, outcome simulation</p>
+          <p className="text-white/25 text-xs mb-4">Plus: subtext intelligence, 3-agent verified pipeline, ≤18 word enforcement, regenerate for fresh options, tone confidence scoring</p>
           <Link href="/features" className="text-emerald-400 hover:text-white text-sm font-medium transition-colors inline-flex items-center gap-1">
             See all features <ArrowRight className="h-3.5 w-3.5" />
           </Link>
