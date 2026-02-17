@@ -3070,8 +3070,10 @@ export default function AppPage() {
                           <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
                           <span className="text-white/25 text-[11px]">{reply.text ? reply.text.split(' ').length : 0}w</span>
                           {isPro && (
-                            <span className="text-[10px] font-bold text-emerald-500/60 bg-emerald-500/10 px-2 py-0.5 rounded">
-                              v2
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              useV2 ? 'text-emerald-500/60 bg-emerald-500/10' : 'text-violet-400/60 bg-violet-500/10'
+                            }`}>
+                              {useV2 ? 'v2' : 'v1'}
                             </span>
                           )}
                           {v2Meta && v2Meta.toneChecks[reply.tone] && (
