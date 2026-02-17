@@ -241,6 +241,11 @@ export default function AppPage() {
   const [editingReply, setEditingReply] = useState<string | null>(null); // tone being edited
   const [editText, setEditText] = useState('');
   const [refining, setRefining] = useState(false);
+  const [vibeCheck, setVibeCheck] = useState<{ energy: string; vibe: string; tip: string; score: number } | null>(null);
+  const [vibeLoading, setVibeLoading] = useState(false);
+  const vibeTimer = useRef<NodeJS.Timeout | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [showToneBar, setShowToneBar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
@@ -669,6 +674,75 @@ export default function AppPage() {
     }
     setEditingReply(null);
     setEditText('');
+  };
+
+  // ── Vibe Check — real-time feedback on user's draft ──
+  const runVibeCheck = async (draft: string) => {
+    if (draft.trim().length < 8 || vibeLoading) return;
+    setVibeLoading(true);
+    try {
+      const lastThem = [...thread].reverse().find(m => m.role === 'them');
+      const res = await fetch('/api/vibe-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draft: draft.trim(),
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+          lastReceived: lastThem?.text || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVibeCheck(data);
+      }
+    } catch {
+      // Silent fail — don't interrupt typing
+    } finally {
+      setVibeLoading(false);
+    }
+  };
+
+  // Debounced vibe check on typing
+  const handleMessageChange = (value: string) => {
+    setMessage(value);
+    if (value.trim()) setShowExamples(false);
+    setVibeCheck(null);
+
+    if (vibeTimer.current) clearTimeout(vibeTimer.current);
+    if (value.trim().length >= 8 && appMode === 'reply') {
+      vibeTimer.current = setTimeout(() => runVibeCheck(value), 1500);
+    }
+  };
+
+  // ── Tone Translator — rewrite draft in a different energy ──
+  const handleTranslateTone = async (tone: string) => {
+    if (!message.trim() || translating) return;
+    setTranslating(true);
+    try {
+      const res = await fetch('/api/translate-tone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draft: message.trim(),
+          tone,
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.translated) {
+        setMessage(data.translated);
+        setVibeCheck(null);
+        toast({ title: `🎭 Rewritten as ${tone}`, description: data.translated });
+      } else {
+        toast({ title: 'Translation failed', description: data.error || 'Try again', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Translation failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleCopy = async (text: string, tone: string) => {
@@ -1843,10 +1917,7 @@ export default function AppPage() {
             <div className="relative">
               <textarea
                 value={message}
-                onChange={(e) => {
-                  setMessage(e.target.value);
-                  if (e.target.value.trim()) setShowExamples(false);
-                }}
+                onChange={(e) => handleMessageChange(e.target.value)}
                 placeholder={
                   thread.length === 0
                     ? "What did they send you?"
@@ -1864,6 +1935,85 @@ export default function AppPage() {
                 {charCount}/2000
               </div>
             </div>
+
+            {/* ══════════ VIBE CHECK — real-time draft feedback ══════════ */}
+            {appMode === 'reply' && message.trim().length >= 8 && (vibeCheck || vibeLoading) && (
+              <div className="animate-in fade-in slide-in-from-top-1 duration-300">
+                {vibeLoading ? (
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                    <Loader2 className="h-3 w-3 animate-spin text-violet-400" />
+                    <span className="text-[11px] text-white/30 font-medium">Checking vibe...</span>
+                  </div>
+                ) : vibeCheck && (
+                  <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all ${
+                    vibeCheck.score >= 8 ? 'bg-emerald-500/[0.06] border-emerald-500/20' :
+                    vibeCheck.score >= 5 ? 'bg-amber-500/[0.06] border-amber-500/20' :
+                    'bg-red-500/[0.06] border-red-500/20'
+                  }`}>
+                    <div className={`text-lg leading-none ${
+                      vibeCheck.score >= 8 ? 'grayscale-0' : vibeCheck.score >= 5 ? 'grayscale-0' : 'grayscale-0'
+                    }`}>
+                      {vibeCheck.score >= 8 ? '🟢' : vibeCheck.score >= 5 ? '🟡' : '🔴'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-bold ${
+                          vibeCheck.score >= 8 ? 'text-emerald-400' :
+                          vibeCheck.score >= 5 ? 'text-amber-400' :
+                          'text-red-400'
+                        }`}>
+                          {vibeCheck.vibe}
+                        </span>
+                        <span className="text-[10px] text-white/20">·</span>
+                        <span className="text-[10px] text-white/30 font-medium">{vibeCheck.score}/10</span>
+                      </div>
+                      <p className="text-[11px] text-white/50 truncate">{vibeCheck.tip}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══════════ TONE TRANSLATOR — rewrite draft in different energy ══════════ */}
+            {appMode === 'reply' && message.trim().length >= 3 && (
+              <div className="animate-in fade-in duration-200">
+                {!showToneBar ? (
+                  <button
+                    onClick={() => setShowToneBar(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white/25 hover:text-white/50 text-[11px] font-medium transition-colors"
+                  >
+                    <Sparkles className="h-3 w-3" /> Rewrite in a different tone
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider mr-1">Rewrite as:</span>
+                    {[
+                      { key: 'flirty', label: '😏 Flirty', color: 'hover:bg-pink-500/15 hover:border-pink-500/30 hover:text-pink-300' },
+                      { key: 'chill', label: '😎 Chill', color: 'hover:bg-blue-500/15 hover:border-blue-500/30 hover:text-blue-300' },
+                      { key: 'bold', label: '🔥 Bold', color: 'hover:bg-orange-500/15 hover:border-orange-500/30 hover:text-orange-300' },
+                      { key: 'witty', label: '⚡ Witty', color: 'hover:bg-purple-500/15 hover:border-purple-500/30 hover:text-purple-300' },
+                      { key: 'warm', label: '💚 Warm', color: 'hover:bg-green-500/15 hover:border-green-500/30 hover:text-green-300' },
+                      { key: 'pro', label: '💼 Pro', color: 'hover:bg-slate-500/15 hover:border-slate-500/30 hover:text-slate-300' },
+                    ].map(t => (
+                      <button
+                        key={t.key}
+                        onClick={() => handleTranslateTone(t.key)}
+                        disabled={translating}
+                        className={`px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/40 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30 ${t.color}`}
+                      >
+                        {translating ? '...' : t.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setShowToneBar(false)}
+                      className="p-1.5 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Quick add to thread buttons (for double texts / non-generated messages) */}
             {thread.length > 0 && (

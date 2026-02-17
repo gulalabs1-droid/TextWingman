@@ -10,6 +10,19 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '3.4.0',
+    date: '2026-02-16',
+    title: 'Vibe Check & Tone Translator',
+    description: 'Two new AI tools: get real-time feedback on your draft before you send it, and instantly rewrite any message in a different energy.',
+    type: 'feature',
+    highlights: [
+      'Vibe Check — as you type, AI analyzes your draft and shows energy level (🟢🟡🔴), a vibe label, score out of 10, and a one-line coaching tip',
+      'Tone Translator — wrote your own message? Tap "Rewrite in a different tone" and pick Flirty, Chill, Bold, Witty, Warm, or Pro to instantly transform it',
+      'Vibe Check auto-runs 1.5s after you stop typing (8+ characters) — no button needed',
+      'Tone Translator preserves your intent and details while changing the energy',
+    ],
+  },
+  {
     version: '3.3.2',
     date: '2026-02-16',
     title: 'V1/V2 Mode Toggle for Pro',
