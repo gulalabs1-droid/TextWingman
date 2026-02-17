@@ -58,6 +58,9 @@ export default function HomePage() {
               <Link href="/features">Features</Link>
             </Button>
             <Button asChild variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl hidden sm:flex">
+              <Link href="/guides">Guides</Link>
+            </Button>
+            <Button asChild variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl hidden sm:flex">
               <Link href="#pricing">Pricing</Link>
             </Button>
             <Button asChild variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl text-sm">
@@ -594,6 +597,9 @@ export default function HomePage() {
               Your AI texting companion — reads the conversation, coaches the move, writes the reply, and lets you make it yours.
             </p>
             <div className="flex gap-6 text-sm text-white/30">
+              <Link href="/guides" className="hover:text-white/60 transition">
+                Guides
+              </Link>
               <Link href="/terms" className="hover:text-white/60 transition">
                 Terms
               </Link>
