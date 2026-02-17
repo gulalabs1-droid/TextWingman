@@ -6,9 +6,9 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Text Wingman - AI-Powered Text Replies",
-  description: "Never text alone again. Get 3 perfect AI-generated replies for any message instantly. Choose from Shorter, Spicier, or Softer tones.",
-  keywords: ["AI text replies", "message generator", "text assistant", "AI wingman", "dating app helper"],
+  title: "Text Wingman — Your Sharp Friend for Every Conversation",
+  description: "AI reads your conversation, coaches the move, writes the reply, and checks your vibe before you send. Free — Vibe Check, Tone Translator, Screenshot AI, Strategy Coach.",
+  keywords: ["AI text replies", "what to text back", "texting help", "AI wingman", "dating app reply", "how to reply to text", "vibe check", "tone translator", "text message assistant"],
   authors: [{ name: "Gula Labs" }],
   creator: "Gula Labs",
   publisher: "Gula Labs",
@@ -26,16 +26,16 @@ export const metadata: Metadata = {
     'mobile-web-app-capable': 'yes',
   },
   openGraph: {
-    title: "Text Wingman - AI-Powered Text Replies",
-    description: "Never text alone again. Get 3 perfect AI-generated replies for any message instantly.",
+    title: "Text Wingman — Your Sharp Friend for Every Conversation",
+    description: "AI reads your conversation, coaches the move, writes the reply, and checks your vibe before you send. Free.",
     type: "website",
     locale: "en_US",
     siteName: "Text Wingman",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Text Wingman - AI-Powered Text Replies",
-    description: "Never text alone again. Get 3 perfect AI-generated replies instantly.",
+    title: "Text Wingman — AI Texting Companion",
+    description: "AI reads your conversation, coaches the move, writes the reply, and checks your vibe before you send.",
     creator: "@gulalabs",
   },
   robots: {

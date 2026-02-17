@@ -4,9 +4,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, TrendingUp, Eye, RefreshCw, Pencil, ChevronDown, Users, Heart, Briefcase, MessageSquare, HelpCircle } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Text Wingman',
+  applicationCategory: 'LifestyleApplication',
+  operatingSystem: 'Web',
+  description: 'AI-powered texting companion that reads your conversation, coaches the move, writes the reply, and checks your vibe before you send.',
+  url: 'https://textwingman.com',
+  offers: [
+    { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
+    { '@type': 'Offer', price: '9.99', priceCurrency: 'USD', description: 'Pro Weekly — Unlimited' },
+    { '@type': 'Offer', price: '99.99', priceCurrency: 'USD', description: 'Pro Annual — Best Value' },
+  ],
+  featureList: [
+    'AI reply generation in 3 tones',
+    'Vibe Check — real-time draft analysis',
+    'Tone Translator — rewrite messages in different energy',
+    'Screenshot briefing — upload a screenshot, get instant replies',
+    'Strategy coaching — AI analyzes conversation dynamics',
+    'Decode mode — understand what their message really means',
+    'Conversation Revive — re-engage dead threads',
+    'Opener generator — first messages for any situation',
+  ],
+  creator: { '@type': 'Organization', name: 'Gula Labs', url: 'https://textwingman.com' },
+};
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'Is Text Wingman free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial expiration. Pro unlocks unlimited everything + strategy coaching + the verified pipeline.' } },
+    { '@type': 'Question', name: 'Can Text Wingman see my conversations?', acceptedAnswer: { '@type': 'Answer', text: 'No. Messages are processed in real-time and never stored. We don\'t have accounts linked to messaging apps.' } },
+    { '@type': 'Question', name: 'What apps does Text Wingman work with?', acceptedAnswer: { '@type': 'Answer', text: 'All of them — iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Messenger, Telegram, LinkedIn, and more.' } },
+    { '@type': 'Question', name: 'How is Text Wingman different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'ChatGPT gives you a paragraph that sounds robotic. Wingman gives you 3 short, casual options under 18 words — verified by a 3-agent pipeline. Plus strategy coaching, vibe checking, tone translation, and thread context.' } },
+    { '@type': 'Question', name: 'Will people know I\'m using AI?', acceptedAnswer: { '@type': 'Answer', text: 'No. Every reply sounds like a real person texting — lowercase, casual, no emojis, no formal sentences. The 18-word limit keeps it natural.' } },
+  ],
+};
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       {/* Header/Navbar */}
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
