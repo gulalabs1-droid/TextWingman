@@ -2,13 +2,61 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw, Pencil } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw, Pencil, Activity, Eye, Gauge } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FEATURES = [
   {
-    id: 'thread-mode',
+    id: 'v4-thread-engine',
+    badge: 'V4',
+    badgeColor: 'bg-gradient-to-r from-violet-500 to-fuchsia-500',
+    icon: Activity,
+    iconBg: 'bg-gradient-to-br from-violet-500 to-fuchsia-600',
+    title: 'V4 Thread Engine',
+    tagline: 'Your texting command center.',
+    description: 'The /x page has been completely rebuilt as a futuristic Thread Engine. Split-panel layout with the conversation on the left and tactical intelligence on the right. Glassmorphic UI with neon glow effects, animated reactive backgrounds, and a dark/light toggle. Tap any incoming message to instantly decode its subtext right in the thread.',
+    howItWorks: [
+      'Open the Thread Engine at /x and paste or upload a conversation',
+      'See tactical intelligence: health ring, momentum, risk score, wait timer, and guardrails',
+      'Tap any "them" message to decode subtext, intent, and energy inline',
+      'Each reply shows a predicted outcome — confidence score and likely response',
+    ],
+    example: {
+      input: 'Full thread with inline decode + tactical sidebar',
+      outputs: [
+        { tone: 'Health', text: '78 — momentum rising, balanced conversation', emoji: '💚' },
+        { tone: 'Decode', text: '"wateveerr" = playful/coy, not dismissive', emoji: '🧠' },
+        { tone: 'Guardrail', text: 'Safe to advance — no chase risk detected', emoji: '✅' },
+      ],
+    },
+  },
+  {
+    id: 'subtext-intelligence',
     badge: 'New',
+    badgeColor: 'bg-amber-500',
+    icon: Eye,
+    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
+    title: 'Subtext Intelligence',
+    tagline: 'AI that reads between the lines.',
+    description: 'The AI now understands that "wateveerr" is playful, not a literal dismissal. Stretched words like "heyyyy" = excited, "ughhhh" = dramatic/funny, and one-word sarcastic replies like "suuure" are banter invitations. It reads the FEELING behind the words, not just the dictionary definition.',
+    howItWorks: [
+      'Works automatically in all reply generation (V1 and V2)',
+      'AI reads the full conversation arc to understand emotional context',
+      'Dismissive-sounding words in flirty convos are interpreted as coy teasing',
+      'Replies match the actual feeling — playful gets playful back, not interrogation',
+    ],
+    example: {
+      input: 'Flirty convo → they say "missed u" → you say "missed you too" → they say "wateveerr"',
+      outputs: [
+        { tone: 'Reading', text: 'They\'re being coy/shy about admitting feelings', emoji: '🎯' },
+        { tone: 'Good', text: '"mhm sure you didn\'t" — plays along warmly', emoji: '✅' },
+        { tone: 'Bad', text: '"You did, didn\'t you?" — sounds like interrogation', emoji: '❌' },
+      ],
+    },
+  },
+  {
+    id: 'thread-mode',
+    badge: 'Core',
     badgeColor: 'bg-emerald-500',
     icon: MessageCircle,
     iconBg: 'bg-gradient-to-br from-violet-500 to-fuchsia-600',
@@ -257,9 +305,9 @@ const FEATURES = [
     iconBg: 'bg-gradient-to-br from-green-500 to-teal-600',
     title: 'V2 Verified Mode',
     tagline: '3-agent pipeline. Every reply verified before you see it.',
-    description: 'V2 Mode runs every reply through a 3-step AI pipeline: Draft → Rule-Check (≤18 words, no emojis, no needy text) → Tone-Verify. If a reply fails any check, it gets auto-revised up to 2 times. You only see replies that passed all checks.',
+    description: 'V2 Mode runs every reply through a 3-step AI pipeline: Draft → Rule-Check (≤18 words, no emojis, no needy text) → Tone-Verify. If a reply fails any check, it gets auto-revised up to 2 times. Pro users can toggle between V2 Verified and V1 Fast Mode for quicker replies.',
     howItWorks: [
-      'Always on for Pro users (no toggle needed)',
+      'Default for Pro users — toggle to V1 Fast Mode anytime for speed',
       'Agent 1 drafts three replies',
       'Agent 2 checks rules: word count, no emojis, no desperate language',
       'Agent 3 verifies each reply matches the selected tone',
@@ -295,14 +343,14 @@ export default function FeaturesPage() {
       <section className="container mx-auto px-4 pt-8 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30 mb-6">
           <Sparkles className="h-4 w-4" />
-          v{CURRENT_VERSION} — Edit + Polish, Regenerate & Smarter Context
+          v{CURRENT_VERSION} — V4 Thread Engine + Subtext Intelligence
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
           Not just replies.
-          <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">Conversations.</span>
+          <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">Conversational intelligence.</span>
         </h1>
         <p className="text-lg text-white/60 max-w-2xl mx-auto mb-8">
-          Text Wingman tracks the full conversation, coaches you on the right move, generates replies that fit the flow — and now lets you edit any reply and make it yours.
+          Text Wingman reads your full conversation, decodes what they really mean, coaches the move, writes the reply — and now reads between the lines on playful, coy, and sarcastic messages.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           {FEATURES.map(f => (

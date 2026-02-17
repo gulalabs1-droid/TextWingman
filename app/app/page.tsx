@@ -1411,14 +1411,18 @@ export default function AppPage() {
 
   const handleDeleteThread = async (id: string) => {
     try {
-      await fetch(`/api/threads?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/threads?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
       setSavedThreads(prev => prev.filter(t => t.id !== id));
       if (activeThreadId === id) {
         setActiveThreadId(null);
         setActiveThreadName(null);
         setThread([]);
       }
-    } catch {}
+      toast({ title: '✓ Thread deleted' });
+    } catch {
+      toast({ title: 'Failed to delete thread', variant: 'destructive' });
+    }
   };
 
   const handleNewThread = () => {

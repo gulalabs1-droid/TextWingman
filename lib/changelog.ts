@@ -10,6 +10,34 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.0.0',
+    date: '2026-02-17',
+    title: 'V4 Thread Engine — Command Center Redesign',
+    description: 'The /x page has been completely rebuilt as a futuristic Thread Engine with glassmorphic UI, animated backgrounds, inline decode, tactical intelligence sidebar, and the AI now reads between the lines.',
+    type: 'milestone',
+    highlights: [
+      'V4 Thread Engine — split-panel layout with thread-first design, floating input, and animated reactive background with neon orbs',
+      'Inline Decode — tap any "them" message to instantly decode subtext, intent, and energy right in the thread',
+      'Tactical Intelligence sidebar — health ring, momentum tracking, risk score, wait timer, and guardrails (desktop)',
+      'Power Pulse — animated emotional heartbeat strip that reacts to conversation health and momentum',
+      'Subtext & Emotional Intelligence — AI now reads between the lines: "wateveerr" = playful, "heyyyy" = excited, stretched words = tone markers',
+      'Reply outcome simulation — each reply card shows predicted confidence score and likely response',
+      'Glass HUD aesthetic — aggressive glassmorphism, neon glow accents, scanline effects, and dark/light toggle',
+    ],
+  },
+  {
+    version: '3.4.1',
+    date: '2026-02-17',
+    title: 'V1/V2 Badge Fix & Delete Thread Feedback',
+    description: 'Reply cards now correctly show v1 or v2 based on which mode you actually used, and deleting a thread now shows confirmation.',
+    type: 'fix',
+    highlights: [
+      'V1/V2 badge — reply cards now correctly show "v1" (purple) or "v2" (green) based on your toggle, not just Pro status',
+      'Delete thread — red trash button now shows a toast confirmation on success and an error on failure',
+      'Tone ✓ badge correctly hidden when using V1 mode (no V2 meta available)',
+    ],
+  },
+  {
     version: '3.4.0',
     date: '2026-02-16',
     title: 'Vibe Check & Tone Translator',
