@@ -53,18 +53,18 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 // ── Glass panel component ──────────────────────────────────
 function Glass({ children, className = '', glow = false, neonColor = 'violet' }: { children: React.ReactNode; className?: string; glow?: boolean; neonColor?: string }) {
   const glowMap: Record<string, string> = {
-    violet: '0 0 30px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
-    cyan: '0 0 30px rgba(34,211,238,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
-    emerald: '0 0 30px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
-    rose: '0 0 30px rgba(251,113,133,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
-    amber: '0 0 30px rgba(251,191,36,0.12), inset 0 1px 0 rgba(255,255,255,0.05)',
+    violet: '0 0 30px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.1), inset 0 1px 0 rgba(255,255,255,0.08)',
+    cyan: '0 0 30px rgba(34,211,238,0.35), 0 0 60px rgba(34,211,238,0.1), inset 0 1px 0 rgba(255,255,255,0.08)',
+    emerald: '0 0 30px rgba(52,211,153,0.35), 0 0 60px rgba(52,211,153,0.1), inset 0 1px 0 rgba(255,255,255,0.08)',
+    rose: '0 0 30px rgba(251,113,133,0.35), 0 0 60px rgba(251,113,133,0.1), inset 0 1px 0 rgba(255,255,255,0.08)',
+    amber: '0 0 30px rgba(251,191,36,0.3), 0 0 60px rgba(251,191,36,0.08), inset 0 1px 0 rgba(255,255,255,0.08)',
   };
   return (
     <div
-      className={`relative rounded-2xl border border-white/[0.08] backdrop-blur-xl ${className}`}
+      className={`relative rounded-2xl border border-white/[0.12] backdrop-blur-2xl ${className}`}
       style={{
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-        boxShadow: glow ? glowMap[neonColor] || glowMap.violet : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)',
+        boxShadow: glow ? glowMap[neonColor] || glowMap.violet : '0 0 1px rgba(255,255,255,0.1), inset 0 1px 0 rgba(255,255,255,0.06)',
       }}
     >
       {children}
@@ -255,18 +255,18 @@ export default function ExperimentalThreadPage() {
       <div className="fixed inset-0 pointer-events-none z-0">
         {/* Animated gradient orbs */}
         <motion.div className="absolute w-[600px] h-[600px] rounded-full" style={{ filter: 'blur(160px)', top: '-15%', left: '-10%' }}
-          animate={{ backgroundColor: [isLight ? 'rgba(99,102,241,0.2)' : 'rgba(139,92,246,0.08)', isLight ? 'rgba(34,211,238,0.2)' : 'rgba(217,70,239,0.06)', isLight ? 'rgba(99,102,241,0.2)' : 'rgba(139,92,246,0.08)'] }}
+          animate={{ backgroundColor: [isLight ? 'rgba(99,102,241,0.25)' : 'rgba(139,92,246,0.22)', isLight ? 'rgba(34,211,238,0.25)' : 'rgba(217,70,239,0.18)', isLight ? 'rgba(99,102,241,0.25)' : 'rgba(139,92,246,0.22)'] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />
         <motion.div className="absolute w-[500px] h-[500px] rounded-full" style={{ filter: 'blur(160px)', bottom: '-10%', right: '-10%' }}
-          animate={{ backgroundColor: [isLight ? 'rgba(167,139,250,0.15)' : 'rgba(236,72,153,0.06)', isLight ? 'rgba(52,211,153,0.15)' : 'rgba(34,211,238,0.04)', isLight ? 'rgba(167,139,250,0.15)' : 'rgba(236,72,153,0.06)'] }}
+          animate={{ backgroundColor: [isLight ? 'rgba(167,139,250,0.2)' : 'rgba(236,72,153,0.18)', isLight ? 'rgba(52,211,153,0.2)' : 'rgba(34,211,238,0.14)', isLight ? 'rgba(167,139,250,0.2)' : 'rgba(236,72,153,0.18)'] }}
           transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }} />
         {/* Grid overlay */}
         {!isLight && (
-          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
         )}
         {/* Scanline */}
         {!isLight && thread.length > 0 && (
-          <motion.div className="absolute left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-violet-500/20 to-transparent"
+          <motion.div className="absolute left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-violet-500/40 to-transparent"
             animate={{ top: ['0%', '100%'] }} transition={{ duration: 6, repeat: Infinity, ease: 'linear' }} />
         )}
       </div>
@@ -280,7 +280,7 @@ export default function ExperimentalThreadPage() {
         <div className="flex-1 flex flex-col h-full min-w-0">
 
           {/* ── NAV BAR ── */}
-          <div className="shrink-0 px-4 md:px-6 py-3 flex items-center justify-between border-b border-white/[0.06]" style={{ background: isLight ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.01)', backdropFilter: 'blur(40px) saturate(180%)' }}>
+          <div className="shrink-0 px-4 md:px-6 py-3 flex items-center justify-between border-b border-white/[0.06]" style={{ background: isLight ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.04)', backdropFilter: 'blur(40px) saturate(180%)' }}>
             <div className="flex items-center gap-3">
               <Link href="/dashboard" className="group w-9 h-9 rounded-2xl border border-white/[0.08] flex items-center justify-center transition-all hover:border-violet-500/30 hover:shadow-[0_0_20px_rgba(139,92,246,0.15)] active:scale-90" style={{ background: 'rgba(255,255,255,0.04)' }}>
                 <ArrowLeft className="h-4 w-4 text-white/40 group-hover:text-violet-400 transition-colors" />
@@ -450,8 +450,8 @@ export default function ExperimentalThreadPage() {
                         <div onClick={() => isThem && handleInlineDecode(i)} className={`max-w-[80%] relative group ${isThem ? 'cursor-pointer' : ''}`}>
                           <div className={`px-4 py-3 text-[14px] leading-relaxed font-medium ${
                             isThem
-                              ? `rounded-2xl rounded-bl-md border transition-all ${decode ? 'border-amber-500/25 bg-amber-500/[0.04]' : 'border-white/[0.06] bg-white/[0.04]'} text-white/85 hover:border-amber-500/20`
-                              : 'rounded-2xl rounded-br-md text-white bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 shadow-[0_4px_30px_rgba(139,92,246,0.25)]'
+                              ? `rounded-2xl rounded-bl-md border transition-all ${decode ? 'border-amber-500/30 bg-amber-500/[0.08]' : 'border-white/[0.10] bg-white/[0.06]'} text-white/90 hover:border-amber-500/25 backdrop-blur-sm`
+                              : 'rounded-2xl rounded-br-md text-white bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 shadow-[0_4px_30px_rgba(139,92,246,0.4)]'
                           }`}>
                             {msg.text}
                           </div>
@@ -577,7 +577,7 @@ export default function ExperimentalThreadPage() {
           </div>
 
           {/* ══ FLOATING INPUT ══ */}
-          <div className="shrink-0 px-4 md:px-6 py-3 border-t border-white/[0.06]" style={{ background: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.01)', backdropFilter: 'blur(40px) saturate(180%)' }}>
+          <div className="shrink-0 px-4 md:px-6 py-3 border-t border-white/[0.06]" style={{ background: isLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.04)', backdropFilter: 'blur(40px) saturate(180%)' }}>
             <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshot} className="hidden" />
             {screenshotPreview && (
               <div className="mb-2 relative rounded-xl overflow-hidden border border-white/10 max-h-20">
@@ -586,7 +586,7 @@ export default function ExperimentalThreadPage() {
               </div>
             )}
             <div className="flex items-end gap-2.5">
-              <div className="flex-1 rounded-2xl border border-white/[0.08] focus-within:border-violet-500/30 focus-within:shadow-[0_0_20px_rgba(139,92,246,0.1)] transition-all overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="flex-1 rounded-2xl border border-white/[0.08] focus-within:border-violet-500/30 focus-within:shadow-[0_0_20px_rgba(139,92,246,0.1)] transition-all overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <textarea value={input} onChange={e => setInput(e.target.value)} placeholder={thread.length === 0 ? 'Paste what they said...' : 'Their reply...'} rows={1}
                   className="w-full bg-transparent text-white placeholder-white/20 resize-none focus:outline-none text-sm font-medium leading-relaxed px-4 py-3 max-h-32" maxLength={2000}
                   onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate(); }}
@@ -648,12 +648,12 @@ export default function ExperimentalThreadPage() {
         <AnimatePresence>
           {intelOpen && (
             <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 360, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }} className="hidden md:block h-full overflow-hidden border-l border-white/[0.06]">
-              <div className="w-[360px] h-full overflow-y-auto p-6 space-y-6" style={{ background: isLight ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.01)', backdropFilter: 'blur(40px) saturate(180%)' }}>
+              <div className="w-[360px] h-full overflow-y-auto p-6 space-y-6" style={{ background: isLight ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.04)', backdropFilter: 'blur(40px) saturate(180%)' }}>
 
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black tracking-[0.15em] border ${isPro ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_12px_rgba(52,211,153,0.1)]' : 'bg-violet-500/10 text-violet-300 border-violet-500/20 shadow-[0_0_12px_rgba(139,92,246,0.1)]'}`}>{isPro ? 'PRO \u00B7 V2' : 'FREE \u00B7 V1'}</span>
-                  <span className="text-white/10 text-[8px] font-mono font-bold tracking-[0.5em]">INTEL</span>
+                  <span className="text-white/20 text-[8px] font-mono font-bold tracking-[0.5em]">INTEL</span>
                 </div>
 
                 {/* Health Ring */}
@@ -661,14 +661,14 @@ export default function ExperimentalThreadPage() {
                   <div className="relative w-36 h-36">
                     <svg viewBox="0 0 144 144" className="w-full h-full">
                       {/* Track */}
-                      <circle cx="72" cy="72" r="62" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="4" />
-                      <circle cx="72" cy="72" r="52" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="3" />
+                      <circle cx="72" cy="72" r="62" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
+                      <circle cx="72" cy="72" r="52" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
                       {/* Health arc */}
                       <motion.circle cx="72" cy="72" r="62" fill="none" strokeWidth="4" strokeLinecap="round" stroke={pulseColor}
                         initial={{ strokeDasharray: '0 389.6' }}
                         animate={{ strokeDasharray: `${healthPct * 389.6} 389.6` }}
                         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-                        transform="rotate(-90 72 72)" style={{ filter: `drop-shadow(0 0 8px ${pulseColor}60)` }} />
+                        transform="rotate(-90 72 72)" style={{ filter: `drop-shadow(0 0 12px ${pulseColor}90)` }} />
                       {/* Reciprocity arc */}
                       <motion.circle cx="72" cy="72" r="52" fill="none" strokeWidth="3" strokeLinecap="round" stroke="rgba(139,92,246,0.4)"
                         initial={{ strokeDasharray: '0 326.7' }}
@@ -696,7 +696,7 @@ export default function ExperimentalThreadPage() {
                     { label: 'YOU', value: tactical.youCount, color: 'text-white/60' },
                   ].map(s => (
                     <Glass key={s.label} className="p-3 text-center">
-                      <p className="text-white/15 text-[7px] font-mono font-bold tracking-[0.4em]">{s.label}</p>
+                      <p className="text-white/30 text-[7px] font-mono font-bold tracking-[0.4em]">{s.label}</p>
                       <p className={`text-xl font-black mt-1 ${s.color}`}>{s.value}</p>
                     </Glass>
                   ))}
@@ -724,23 +724,23 @@ export default function ExperimentalThreadPage() {
                     </div>
                     <p className="text-white/85 text-sm font-semibold leading-relaxed">&ldquo;{strategyData.move.one_liner}&rdquo;</p>
                     <div className="flex flex-wrap gap-1.5">
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.03] text-white/30 border border-white/[0.05]">{strategyData.momentum}</span>
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.03] text-white/30 border border-white/[0.05]">{strategyData.balance}</span>
-                      {strategyData.move.constraints.keep_short && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.03] text-white/30 border border-white/[0.05]">KEEP SHORT</span>}
-                      {strategyData.move.constraints.no_questions && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.03] text-white/30 border border-white/[0.05]">NO Q&apos;S</span>}
-                      {strategyData.move.constraints.add_tease && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.03] text-white/30 border border-white/[0.05]">TEASE</span>}
-                      {strategyData.move.constraints.push_meetup && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.03] text-white/30 border border-white/[0.05]">MEETUP</span>}
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.06] text-white/40 border border-white/[0.08]">{strategyData.momentum}</span>
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.06] text-white/40 border border-white/[0.08]">{strategyData.balance}</span>
+                      {strategyData.move.constraints.keep_short && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.06] text-white/40 border border-white/[0.08]">KEEP SHORT</span>}
+                      {strategyData.move.constraints.no_questions && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.06] text-white/40 border border-white/[0.08]">NO Q&apos;S</span>}
+                      {strategyData.move.constraints.add_tease && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.06] text-white/40 border border-white/[0.08]">TEASE</span>}
+                      {strategyData.move.constraints.push_meetup && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.06] text-white/40 border border-white/[0.08]">MEETUP</span>}
                     </div>
                   </Glass>
                 )}
 
                 {/* Context */}
                 <div>
-                  <p className="text-white/10 text-[8px] font-mono font-bold tracking-[0.5em] mb-3">CONTEXT</p>
+                  <p className="text-white/25 text-[8px] font-mono font-bold tracking-[0.5em] mb-3">CONTEXT</p>
                   <div className="flex flex-wrap gap-2">
                     {CONTEXT_OPTIONS.map(ctx => (
                       <motion.button key={ctx.value} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }} onClick={() => setSelectedContext(ctx.value)} title={ctx.label}
-                        className={`w-11 h-11 rounded-2xl text-lg flex items-center justify-center transition-all border ${selectedContext === ctx.value ? 'bg-white/[0.06] border-violet-500/30 shadow-[0_0_20px_rgba(139,92,246,0.15)]' : 'bg-white/[0.02] border-white/[0.05] hover:border-white/[0.12]'}`}
+                        className={`w-11 h-11 rounded-2xl text-lg flex items-center justify-center transition-all border ${selectedContext === ctx.value ? 'bg-white/[0.10] border-violet-500/40 shadow-[0_0_20px_rgba(139,92,246,0.25)]' : 'bg-white/[0.04] border-white/[0.08] hover:border-white/[0.15]'}`}
                       >{ctx.emoji}</motion.button>
                     ))}
                   </div>
@@ -748,11 +748,11 @@ export default function ExperimentalThreadPage() {
 
                 {/* Goal */}
                 <div>
-                  <p className="text-white/10 text-[8px] font-mono font-bold tracking-[0.5em] mb-3">MISSION</p>
+                  <p className="text-white/25 text-[8px] font-mono font-bold tracking-[0.5em] mb-3">MISSION</p>
                   <div className="flex flex-wrap gap-2">
                     {GOAL_OPTIONS.map(g => (
                       <motion.button key={g.value} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setSelectedGoal(g.value)}
-                        className={`h-8 px-3 rounded-xl text-[10px] font-bold tracking-wider flex items-center gap-1.5 transition-all border ${selectedGoal === g.value ? 'bg-violet-500/12 text-violet-300 border-violet-500/25 shadow-[0_0_12px_rgba(139,92,246,0.1)]' : 'bg-white/[0.02] text-white/25 border-white/[0.05] hover:border-white/[0.12]'}`}
+                        className={`h-8 px-3 rounded-xl text-[10px] font-bold tracking-wider flex items-center gap-1.5 transition-all border ${selectedGoal === g.value ? 'bg-violet-500/20 text-violet-300 border-violet-500/35 shadow-[0_0_15px_rgba(139,92,246,0.15)]' : 'bg-white/[0.04] text-white/35 border-white/[0.08] hover:border-white/[0.15]'}`}
                       ><span>{g.emoji}</span>{g.label}</motion.button>
                     ))}
                   </div>
