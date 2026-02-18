@@ -38,29 +38,44 @@ export async function POST(request: NextRequest) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
           content: `You are a conversation extraction assistant for a messaging reply app. The user will upload a screenshot of a text/DM conversation.
 
 Your job:
-1. Extract the FULL conversation visible in the screenshot — every message you can read, in order from oldest (top) to newest (bottom).
+1. Extract the FULL conversation visible in the screenshot — EVERY SINGLE MESSAGE you can read, from the very top to the very bottom. Do NOT skip any messages. Even if a message at the top is partially cut off, include what you can read with "[partial]" at the start.
 2. Identify which messages were SENT by the user and which were RECEIVED from the other person.
-   - In iMessage: sent messages are blue/green bubbles on the right, received are gray on the left.
-   - In WhatsApp: sent messages are green/right, received are white/left.
-   - In Instagram DMs: sent messages are blue/right, received are gray/left.
-   - In Tinder/Bumble/Hinge: sent messages are typically on the right, received on the left.
-   - In Facebook Dating: sent messages are blue/purple bubbles on the RIGHT side, received messages are gray bubbles on the LEFT side. Ignore photos, match guide prompts, safety tips, and date headers — only extract actual chat messages.
-   - In Facebook Messenger: sent messages are blue/purple on the right, received are gray on the left.
-   - In Snapchat: sent messages are on the right (blue/red), received on the left (gray).
-   - In other apps: sent messages are typically on the right, received on the left or a different color.
+
+PLATFORM-SPECIFIC SENDER IDENTIFICATION:
+   - In iMessage: SENT = blue or green bubbles aligned to the RIGHT side. RECEIVED = gray bubbles aligned to the LEFT side.
+   - In WhatsApp: SENT = green/right. RECEIVED = white/left.
+   - In Instagram DMs: SENT = blue/purple/right. RECEIVED = gray/left.
+   - In Tinder/Bumble/Hinge: SENT = right side. RECEIVED = left side.
+   - In Facebook Dating: SENT = blue/purple RIGHT side. RECEIVED = gray LEFT side. Ignore photos, match guide prompts, safety tips, date headers.
+   - In Facebook Messenger: SENT = blue/purple right. RECEIVED = gray left.
+   - In Snapchat: SENT = right (blue/red). RECEIVED = left (gray).
+   - In other apps: SENT = right side. RECEIVED = left side or different color.
+
 3. Identify the LAST message that was RECEIVED (the one the user needs to reply to).
 4. If the image is not a conversation screenshot, say so.
 
-IMPORTANT:
-- ONLY extract actual chat messages. Skip date/time headers, system messages, prompts ("Wondering how to start..."), safety warnings, and UI elements.
-- Get the sender RIGHT. Double-check: right-side bubbles = user SENT (prefix "You:"), left-side bubbles = RECEIVED from the other person (prefix "Them:").
+CRITICAL — SENDER ACCURACY:
+- Look at the HORIZONTAL POSITION and COLOR of each bubble individually.
+- RIGHT-aligned or colored (blue/green/purple) = "You:" (user SENT this)
+- LEFT-aligned or gray = "Them:" (user RECEIVED this)
+- Do NOT assume alternating speakers. Two consecutive messages can be from the same person.
+- DOUBLE-CHECK every single message's alignment before assigning You: or Them:.
+
+CRITICAL — COMPLETENESS:
+- Extract EVERY message visible in the screenshot, starting from the very top.
+- If a message is partially cut off at the top of the screen, include what you can read: "[partial] ...visible text here"
+- Count your messages. If the conversation looks long, make sure you have them ALL.
+- Do NOT summarize or skip "less important" messages. Every message matters.
+
+OTHER RULES:
+- ONLY extract actual chat messages. Skip date/time headers, system messages, prompts, safety warnings, UI elements, and notification badges.
 - Keep the EXACT wording from the screenshot. Do not paraphrase or clean up slang/abbreviations.
 - If you see timestamps between messages (e.g., "Dec 8 at 11:00 AM"), include them as a note in parentheses after the message like: "You: cooolin and u (Dec 8)"
 
@@ -97,14 +112,14 @@ If you cannot extract messages:
               type: 'image_url',
               image_url: {
                 url: image,
-                detail: 'auto',
+                detail: 'high',
               },
             },
           ],
         },
       ],
       temperature: 0.1,
-      max_tokens: 800,
+      max_tokens: 1500,
       response_format: { type: 'json_object' },
     });
 
