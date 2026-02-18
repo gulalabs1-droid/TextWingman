@@ -229,6 +229,7 @@ export default function AppPage() {
   const [savingThread, setSavingThread] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [activeThreadName, setActiveThreadName] = useState<string | null>(null);
+  const [editingThreadName, setEditingThreadName] = useState(false);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [showThread, setShowThread] = useState(true);
   const [selectedThreadMsg, setSelectedThreadMsg] = useState<number | null>(null);
@@ -1067,15 +1068,20 @@ export default function AppPage() {
         }
 
         if (scanReplies.length > 0) {
-          setScanResult({
-            platform: data.platform || 'unknown',
-            messageCount: msgCount,
-            confidence: data.confidence || 'medium',
-            fullConversation: data.full_conversation || data.extracted_text,
-            lastReceived: data.last_received || '',
-            strategy: scanStrategy,
-            replies: scanReplies,
-          });
+          // Auto-populate thread with extracted messages so user sees the conversation immediately
+          const convoText = data.full_conversation || data.extracted_text;
+          const convoLines = convoText.split('\n').filter((l: string) => l.trim());
+          const threadMsgs: ThreadMessage[] = convoLines.map((line: string) => ({
+            role: line.startsWith('You:') ? 'you' as const : 'them' as const,
+            text: line.replace(/^(Them|You):\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim(),
+            timestamp: Date.now(),
+          }));
+
+          setThread(threadMsgs);
+          setReplies(scanReplies);
+          setStrategyData(scanStrategy);
+          setExtractedPlatform(data.platform || null);
+          setShowThread(true);
           setShowExamples(false);
 
           // Track usage
@@ -1088,8 +1094,8 @@ export default function AppPage() {
 
           setScreenshotPreview(null);
           toast({
-            title: '📷 Briefing ready',
-            description: `${msgCount} messages scanned — your move is below`,
+            title: `📷 ${msgCount} messages loaded — replies ready`,
+            description: data.platform !== 'unknown' ? `From ${data.platform} · thread auto-saved` : 'Thread auto-saved',
           });
         } else {
           // Fallback: put text in textarea like before
@@ -1422,6 +1428,33 @@ export default function AppPage() {
       toast({ title: '✓ Thread deleted' });
     } catch {
       toast({ title: 'Failed to delete thread', variant: 'destructive' });
+    }
+  };
+
+  const handleRenameThread = async (newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed || !activeThreadId) {
+      setEditingThreadName(false);
+      return;
+    }
+    setActiveThreadName(trimmed);
+    setEditingThreadName(false);
+    try {
+      await fetch('/api/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeThreadId,
+          name: trimmed,
+          messages: thread.map(m => ({ role: m.role, text: m.text, timestamp: new Date(m.timestamp).toISOString() })),
+          context: selectedContext,
+          platform: extractedPlatform,
+        }),
+      });
+      fetchThreads();
+      toast({ title: '✓ Thread renamed' });
+    } catch {
+      toast({ title: 'Rename failed', variant: 'destructive' });
     }
   };
 
@@ -2265,7 +2298,21 @@ export default function AppPage() {
                 {activeThreadName && (
                   <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 min-w-0">
                     <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shrink-0" />
-                    <span className="text-violet-300 text-xs font-semibold truncate">{activeThreadName}</span>
+                    {editingThreadName ? (
+                      <input
+                        autoFocus
+                        defaultValue={activeThreadName}
+                        className="bg-transparent text-violet-300 text-xs font-semibold outline-none border-b border-violet-400/40 w-full"
+                        onBlur={(e) => handleRenameThread(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleRenameThread((e.target as HTMLInputElement).value); if (e.key === 'Escape') setEditingThreadName(false); }}
+                      />
+                    ) : (
+                      <span
+                        onClick={() => setEditingThreadName(true)}
+                        className="text-violet-300 text-xs font-semibold truncate cursor-pointer hover:text-violet-200 transition-colors"
+                        title="Tap to rename"
+                      >{activeThreadName}</span>
+                    )}
                     {saving && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 ml-auto text-violet-400" />}
                   </div>
                 )}
