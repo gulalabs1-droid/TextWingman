@@ -10,6 +10,23 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.1.0',
+    date: '2026-02-19',
+    title: 'Unified History + Coach-Only UI',
+    description: 'Coach is now the only interface — no tabs, no modes. All your sessions auto-save and appear in a unified History page. Resume any conversation with one tap.',
+    type: 'feature',
+    highlights: [
+      'Coach-only UI — removed all tabs (Reply, Decode, Opener, Revive). Scenario chips handle everything.',
+      'Auto-save coach sessions — every coach conversation is saved to your history automatically',
+      'Unified History page (/history) — search, filter by Coach/Thread/Replies, tap to resume any session',
+      'Deep-link from History — tap any session to jump back into the conversation in /app',
+      'Dashboard updated — "Recent Wins" replaced with unified History showing threads + coach sessions',
+      'Profile page — History section now shows all saved sessions alongside quick reply history',
+      'Duplicate scenario chips removed from app page for cleaner UI',
+      'Homepage redesigned — new hero, social proof bar, stronger CTAs, Coach-first messaging',
+    ],
+  },
+  {
     version: '4.0.0',
     date: '2026-02-19',
     title: 'V4 — Coach Mode: Your AI Texting Coach',

@@ -261,7 +261,7 @@ export default async function DashboardPage() {
                 <Sparkles className="h-3.5 w-3.5 text-violet-400" />
                 <span className="text-[10px] font-bold text-white/30 uppercase tracking-[0.15em]">History</span>
               </div>
-              <Link href="/profile" className="text-[10px] text-violet-400/50 hover:text-violet-400 font-bold transition-colors">View all →</Link>
+              <Link href="/history" className="text-[10px] text-violet-400/50 hover:text-violet-400 font-bold transition-colors">View all →</Link>
             </div>
             <div className="divide-y divide-white/[0.05]">
               {/* Saved threads + coach sessions */}

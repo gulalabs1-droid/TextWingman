@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -186,6 +187,7 @@ const CONTEXT_OPTIONS = [
 ] as const;
 
 export default function AppPage() {
+  const searchParams = useSearchParams();
   const [message, setMessage] = useState('');
   const [replies, setReplies] = useState<Reply[]>([]);
   const [loading, setLoading] = useState(false);
@@ -331,6 +333,20 @@ export default function AppPage() {
       setTimeout(fetchUsage, 1000);
     }
   }, [toast]);
+
+  // Auto-load session from ?load= query param (from /history deep link)
+  useEffect(() => {
+    const loadId = searchParams.get('load');
+    if (loadId && savedThreads.length > 0) {
+      const found = savedThreads.find(t => t.id === loadId);
+      if (found) {
+        handleLoadThread(found);
+        // Clean up URL
+        window.history.replaceState({}, '', '/app');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedThreads]);
 
   // Rotate taglines every 3 seconds
   useEffect(() => {
@@ -2028,24 +2044,6 @@ export default function AppPage() {
                       </div>
                     )}
                     <div ref={threadEndRef} />
-                  </div>
-                )}
-
-                {/* Suggestion chips — empty state */}
-                {strategyChatHistory.length === 0 && !strategyChatLoading && (
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { label: '📱 Read this convo', prompt: 'Read this convo and tell me where I stand' },
-                      { label: '💬 What should I say?', prompt: 'What should I say next?' },
-                      { label: '🔍 Decode their message', prompt: 'Decode their message for me' },
-                      { label: '✨ Write me an opener', prompt: 'Write me a great opener' },
-                      { label: '🔥 Revive a dead chat', prompt: 'Help me revive a dead conversation' },
-                      { label: '🎯 Am I being played?', prompt: 'Am I being played or are they genuinely interested?' },
-                    ].map(chip => (
-                      <button key={chip.label} onClick={() => setStrategyChatInput(chip.prompt)} className="px-3.5 py-2 rounded-2xl bg-white/[0.05] border border-white/[0.09] text-white/50 text-[12px] font-medium hover:bg-white/[0.09] hover:text-white/80 transition-all active:scale-95">
-                        {chip.label}
-                      </button>
-                    ))}
                   </div>
                 )}
 
