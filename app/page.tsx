@@ -10,7 +10,7 @@ const jsonLd = {
   name: 'Text Wingman',
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web',
-  description: 'AI-powered texting companion that reads your conversation, coaches the move, writes the reply, reads between the lines, and checks your vibe before you send.',
+  description: 'AI-powered texting companion that reads your conversation, detects sarcasm and power dynamics, coaches the move, writes the reply in your style, and checks your vibe before you send.',
   url: 'https://textwingman.com',
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
@@ -19,6 +19,9 @@ const jsonLd = {
   ],
   featureList: [
     'AI reply generation in 3 tones',
+    'Sarcasm detection — distinguishes playful sarcasm from low investment, kidding from serious',
+    'Power dynamics — tracks who is chasing, who is investing more, flags imbalance',
+    'Personal style matching — replies shaped by your own reply history',
     'Subtext Intelligence — AI reads between the lines on playful, coy, and sarcastic messages',
     'Vibe Check — real-time draft analysis',
     'Tone Translator — rewrite messages in different energy',
@@ -83,17 +86,17 @@ export default function HomePage() {
           <div className="text-center space-y-5 mb-12 md:mb-16">
             <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full text-xs font-bold border border-cyan-500/20">
               <Sparkles className="h-3.5 w-3.5" />
-              V3.5 — Subtext Intelligence + Vibe Check + Tone Translator
+              V3.7 — Sarcasm Detection + Power Dynamics + Style Matching
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
               Your sharp friend
               <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">for every conversation.</span>
             </h1>
             <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-              Text Wingman reads your conversation, coaches the move, writes the reply, checks your vibe before you send — and now reads between the lines on playful texts like &ldquo;wateveerr&rdquo; and &ldquo;suuure&rdquo;. Like having a sharp friend who actually gets texting.
+              Text Wingman reads your conversation, coaches the move, writes the reply — and now detects sarcasm vs low investment, power dynamics, who&apos;s chasing, and matches your personal texting style. Like having a sharp friend who actually gets people.
             </p>
             <p className="text-sm text-white/30 font-medium">
-              Free. No card. Vibe check + tone translator + subtext intelligence + threads + decode + openers + revive.
+              Free. No card. Sarcasm detection + power dynamics + vibe check + tone translator + threads + decode + openers + revive.
             </p>
           </div>
 
@@ -365,7 +368,7 @@ export default function HomePage() {
               <Target className="h-6 w-6 text-emerald-400" />
             </div>
             <h3 className="font-bold text-white mb-2">Coaches you on the move</h3>
-            <p className="text-white/50 text-sm leading-relaxed">StrategyAgent tells you who&apos;s chasing, the momentum, and what to do next — before you see the replies.</p>
+            <p className="text-white/50 text-sm leading-relaxed">StrategyAgent detects sarcasm, power dynamics, who&apos;s chasing, and the energy level — then shapes every reply around the right move.</p>
           </div>
           <div className="bg-white/[0.03] border border-violet-500/10 rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-violet-500/15 flex items-center justify-center">
@@ -383,7 +386,7 @@ export default function HomePage() {
           </div>
         </div>
         <div className="text-center mt-6">
-          <p className="text-white/25 text-xs mb-4">Plus: subtext intelligence, 3-agent verified pipeline, ≤18 word enforcement, regenerate for fresh options, tone confidence scoring</p>
+          <p className="text-white/25 text-xs mb-4">Plus: sarcasm detection, power dynamics, personal style matching, 3-agent verified pipeline, ≤18 word enforcement, vibe check, tone translator</p>
           <Link href="/features" className="text-emerald-400 hover:text-white text-sm font-medium transition-colors inline-flex items-center gap-1">
             See all features <ArrowRight className="h-3.5 w-3.5" />
           </Link>

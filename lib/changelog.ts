@@ -10,6 +10,25 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '3.7.0',
+    date: '2026-02-19',
+    title: 'Deep AI Upgrade — Sarcasm Detection, Power Dynamics & Style Matching',
+    description: 'Every AI agent in the pipeline got a major brain upgrade. The system now detects sarcasm vs low investment, kidding vs serious, power dynamics, and matches your personal texting style from your reply history.',
+    type: 'milestone',
+    highlights: [
+      'Sarcasm detection — StrategyAgent now distinguishes playful sarcasm ("wateveerr", "suuure") from genuine low investment, and flags it for DraftAgent to mirror correctly',
+      'Kidding vs serious — AI detects when they\'re joking ("i hate you lol") vs actually upset ("i hate this") and replies match the real tone',
+      'Power dynamics — StrategyAgent now tracks who\'s investing more, who initiates, who asks more questions, and flags "User chasing" when the balance is off',
+      'Energy level classification — conversations now get a vibe label: High flirt, Playful, Warm, Polite, Dry, or Cold — shapes every reply',
+      'Risk flags — StrategyAgent surfaces specific signals (frame testing, over-investing, sarcasm likely playful) so DraftAgent knows what to watch for',
+      'Personal style matching — DraftAgent now fetches your last 8 replies and uses them as style examples so replies sound more like you',
+      'Vibe Check upgraded — now scores confidence level, neediness risk, sarcasm risk, and frame strength on top of energy and vibe',
+      'DecodeAgent upgraded — now explicitly detects sarcasm, kidding, low investment, and power dynamics in messages you paste',
+      'Strategy alignment — RuleCheckAgent and ToneVerifyAgent now receive strategy context and check that replies match the recommended move',
+      'Core principles added to all agents — never needy, assume positive intent, distinguish sarcasm from low investment, respect power balance',
+    ],
+  },
+  {
     version: '3.6.0',
     date: '2026-02-18',
     title: 'Screenshot Auto-Thread & Rename',

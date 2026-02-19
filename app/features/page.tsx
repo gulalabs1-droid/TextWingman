@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw, Pencil, Eye } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw, Pencil, Eye, Activity } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FEATURES = [
@@ -27,6 +27,30 @@ const FEATURES = [
         { tone: 'Reading', text: 'They\'re being coy/shy about admitting feelings', emoji: '🎯' },
         { tone: 'Good', text: '"mhm sure you didn\'t" — plays along warmly', emoji: '✅' },
         { tone: 'Bad', text: '"You did, didn\'t you?" — sounds like interrogation', emoji: '❌' },
+      ],
+    },
+  },
+  {
+    id: 'vibe-check',
+    badge: 'New',
+    badgeColor: 'bg-emerald-500',
+    icon: Activity,
+    iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+    title: 'Vibe Check',
+    tagline: 'Know how your message reads before you send it.',
+    description: 'As you type your own message, Vibe Check analyzes it in real-time and tells you exactly how it reads — energy level, confidence, neediness risk, sarcasm risk, and frame strength. Like Grammarly for your texting game. Upgraded in v3.7 with 4 new dimensions beyond just energy.',
+    howItWorks: [
+      'Type your own draft in the Vibe Check box (8+ characters)',
+      'AI analyzes it automatically after 1.5 seconds',
+      'See energy (too eager → too cold), vibe label, confidence level, neediness risk, sarcasm risk, and frame strength',
+      'Get a one-line sharp-friend tip: "Drop the question mark, make it a statement."',
+    ],
+    example: {
+      input: '"hey I was just thinking about you, hope you\'re doing well, would love to catch up sometime if you\'re free"',
+      outputs: [
+        { tone: 'Energy', text: 'too_eager — over-investing, seeking validation', emoji: '🔴' },
+        { tone: 'Neediness Risk', text: 'High — apologetic tone, double question, over-explaining', emoji: '⚠️' },
+        { tone: 'Tip', text: 'Cut it in half. "been thinking about you" is enough.', emoji: '💡' },
       ],
     },
   },
@@ -62,18 +86,18 @@ const FEATURES = [
     iconBg: 'bg-gradient-to-br from-emerald-500 to-cyan-600',
     title: 'Strategy Mode',
     tagline: 'AI coaching for every conversation.',
-    description: 'StrategyAgent analyzes your full thread and gives you a tactical coaching card before you reply. See the conversation momentum, who\'s investing more, and get a recommended move — all in under 2 seconds. The strategy also shapes your generated replies automatically.',
+    description: 'StrategyAgent analyzes your full thread and gives you a deep tactical coaching card before you reply. It now detects sarcasm vs low investment, power dynamics (who\'s chasing), energy level (High flirt → Cold), and risk flags like frame testing or over-investing. The strategy shapes every reply automatically.',
     howItWorks: [
-      'Build a thread with 4+ messages back and forth',
-      'Hit Generate — StrategyAgent runs alongside reply generation',
-      'See your coaching card: momentum, balance, energy, and constraints',
-      'Your replies are automatically shaped by the strategy recommendation',
+      'Build a thread with 3+ messages — StrategyAgent runs automatically on Generate',
+      'See your coaching card: momentum, balance, energy level, sarcasm detection, and risk flags',
+      'Get a sharp one-liner from your AI friend: "You\'re chasing. Let them come to you."',
+      'Your replies are shaped by the strategy — sarcasm mirrored, constraints enforced, power balance respected',
     ],
     example: {
-      input: '6-message thread with declining energy',
+      input: '6-message thread — user sending longer messages, they\'re giving short replies',
       outputs: [
         { tone: 'Momentum', text: 'Declining — their messages are getting shorter', emoji: '📉' },
-        { tone: 'Balance', text: 'You leading — you\'re investing more right now', emoji: '⚖️' },
+        { tone: 'Balance', text: 'User chasing — you\'re investing 2x more than them', emoji: '⚖️' },
         { tone: 'Coach', text: 'Pull back. Keep it short. Let them come to you.', emoji: '🎯' },
       ],
     },
@@ -110,18 +134,18 @@ const FEATURES = [
     iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
     title: 'Message Decoder',
     tagline: '"What do they actually mean?"',
-    description: 'Ever stare at a text wondering what they really mean? The Decoder analyzes the subtext, intent, and emotional energy behind any message. Free users get 1 decode per day. Pro users get unlimited.',
+    description: 'Ever stare at a text wondering what they really mean? The Decoder now detects sarcasm vs low investment, kidding vs serious, and power dynamics — not just surface intent. Paste any message or full thread and get a sharp breakdown of what\'s actually happening. Free users get 1 decode per day. Pro users get unlimited.',
     howItWorks: [
       'Paste a message (or full conversation thread)',
       'Hit the 🧠 Decode button',
-      'See the intent, subtext, energy level, and flags',
-      'Get a Coach Tip on exactly how to respond',
+      'See intent, subtext, energy, sarcasm detection, and red/green/yellow flags',
+      'Get a Coach Tip in sharp-friend voice: "Don\'t ask that — hold frame"',
     ],
     example: {
       input: '"lol ok well lmk"',
       outputs: [
         { tone: 'Intent', text: 'They\'re giving you one last chance to commit before they move on', emoji: '🎯' },
-        { tone: 'Energy', text: 'Pulling away — low effort response signals fading interest', emoji: '🚪' },
+        { tone: 'Energy', text: 'Pulling away — low effort, no question back, flat tone', emoji: '🚪' },
         { tone: 'Coach Tip', text: 'Don\'t match their energy. Be specific: suggest a plan with a time and place.', emoji: '💡' },
       ],
     },
@@ -281,12 +305,12 @@ const FEATURES = [
     iconBg: 'bg-gradient-to-br from-green-500 to-teal-600',
     title: 'V2 Verified Mode',
     tagline: '3-agent pipeline. Every reply verified before you see it.',
-    description: 'V2 Mode runs every reply through a 3-step AI pipeline: Draft → Rule-Check (≤18 words, no emojis, no needy text) → Tone-Verify. If a reply fails any check, it gets auto-revised up to 2 times. Pro users can toggle between V2 Verified and V1 Fast Mode for quicker replies.',
+    description: 'V2 Mode runs every reply through a 3-step AI pipeline: Draft → Rule-Check → Tone-Verify. Every agent now receives the full strategy context — sarcasm detected, power balance, energy level — so rules and tone are checked against the recommended move, not just generic standards. If a reply fails, it auto-revises up to 2 times.',
     howItWorks: [
       'Default for Pro users — toggle to V1 Fast Mode anytime for speed',
-      'Agent 1 drafts three replies',
-      'Agent 2 checks rules: word count, no emojis, no desperate language',
-      'Agent 3 verifies each reply matches the selected tone',
+      'Agent 1 (Draft): generates 3 replies shaped by strategy, sarcasm flags, and your style history',
+      'Agent 2 (Rule-Check): enforces ≤18 words, no emojis, no needy language, no dead-ends, strategy alignment',
+      'Agent 3 (Tone-Verify): confirms each reply matches its tone AND the recommended strategy move',
     ],
     example: null,
   },
@@ -319,14 +343,14 @@ export default function FeaturesPage() {
       <section className="container mx-auto px-4 pt-8 pb-16 text-center">
         <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30 mb-6">
           <Sparkles className="h-4 w-4" />
-          v{CURRENT_VERSION} — Subtext Intelligence + Vibe Check + Tone Translator
+          v{CURRENT_VERSION} — Sarcasm Detection + Power Dynamics + Style Matching
         </div>
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
           Not just replies.
           <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">Conversations.</span>
         </h1>
         <p className="text-lg text-white/60 max-w-2xl mx-auto mb-8">
-          Text Wingman tracks the full conversation, coaches you on the right move, generates replies that fit the flow — and now reads between the lines on playful, coy, and sarcastic messages.
+          Text Wingman tracks the full conversation, detects sarcasm vs low investment, reads power dynamics, coaches the move, and generates replies that sound like you — not a robot.
         </p>
         <div className="flex flex-wrap gap-3 justify-center">
           {FEATURES.map(f => (
