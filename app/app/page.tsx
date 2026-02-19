@@ -219,7 +219,7 @@ export default function AppPage() {
   const [extracting, setExtracting] = useState(false);
   const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
   const [showFeatureSpotlight, setShowFeatureSpotlight] = useState(false);
-  const [appMode, setAppMode] = useState<AppMode>('reply');
+  const [appMode, setAppMode] = useState<AppMode>('coach');
   const [decodeResult, setDecodeResult] = useState<DecodeResult>(null);
   const [decoding, setDecoding] = useState(false);
   const [openers, setOpeners] = useState<Opener[]>([]);
@@ -1829,6 +1829,15 @@ export default function AppPage() {
             {/* Mode Tabs */}
             <div className="flex items-center gap-0.5 bg-white/[0.06] rounded-2xl p-1 mb-4 border border-white/[0.08]">
               <button
+                onClick={() => { setAppMode('coach'); setReplies([]); setDecodeResult(null); setOpeners([]); setReviveMessages([]); }}
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appMode === 'coach' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
+                }`}
+              >
+                <MessageCircle className="h-3 w-3 shrink-0" />
+                Coach
+              </button>
+              <button
                 onClick={() => { setAppMode('reply'); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
                 className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
                   appMode === 'reply' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
@@ -1863,15 +1872,6 @@ export default function AppPage() {
               >
                 <RefreshCw className="h-3 w-3 shrink-0" />
                 Revive
-              </button>
-              <button
-                onClick={() => { setAppMode('coach'); setReplies([]); setDecodeResult(null); setOpeners([]); setReviveMessages([]); }}
-                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
-                  appMode === 'coach' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
-                }`}
-              >
-                <MessageCircle className="h-3 w-3 shrink-0" />
-                Coach
               </button>
             </div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
