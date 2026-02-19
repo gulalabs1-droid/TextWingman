@@ -1831,116 +1831,57 @@ export default function AppPage() {
           }}
         />
 
-        {/* Input Section */}
+        {/* ── COACH SECTION ── */}
         <div className="mb-8 rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
-          <div className="pb-4 pt-6 px-6">
-            {/* Mode Tabs */}
-            <div className="flex items-center gap-0.5 bg-white/[0.06] rounded-2xl p-1 mb-4 border border-white/[0.08]">
-              <button
-                onClick={() => { setAppMode('coach'); setReplies([]); setDecodeResult(null); setOpeners([]); setReviveMessages([]); }}
-                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
-                  appMode === 'coach' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
-                }`}
-              >
-                <Sparkles className="h-3 w-3 shrink-0" />
+          {/* Coach header + scenario chips */}
+          <div className="pt-6 pb-4 px-6 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-violet-400" />
                 Coach
-              </button>
-              <button
-                onClick={() => { setAppMode('reply'); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
-                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
-                  appMode === 'reply' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
-                }`}
-              >
-                <MessageCircle className="h-3 w-3 shrink-0" />
-                Reply
-              </button>
-              <button
-                onClick={() => { setAppMode('decode'); setReplies([]); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
-                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
-                  appMode === 'decode' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
-                }`}
-              >
-                <Brain className="h-3 w-3 shrink-0" />
-                Decode
-              </button>
-              <button
-                onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); setReviveMessages([]); }}
-                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
-                  appMode === 'opener' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
-                }`}
-              >
-                <Send className="h-3 w-3 shrink-0" />
-                Opener
-              </button>
-              <button
-                onClick={() => { setAppMode('revive'); setReplies([]); setDecodeResult(null); setOpeners([]); }}
-                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
-                  appMode === 'revive' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
-                }`}
-              >
-                <RefreshCw className="h-3 w-3 shrink-0" />
-                Revive
-              </button>
+              </h2>
+              {isPro && (
+                <button
+                  onClick={() => setUseV2(v => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                    useV2 ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20' : 'bg-violet-500/10 border-violet-500/25 text-violet-400 hover:bg-violet-500/20'
+                  }`}
+                >
+                  {useV2 ? <Shield className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+                  {useV2 ? 'V2 On' : 'V1 On'}
+                </button>
+              )}
             </div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              {appMode === 'reply' && (
-                <>
-                  <MessageCircle className="h-5 w-5 text-violet-400" />
-                  What&apos;d they say?
-                </>
-              )}
-              {appMode === 'decode' && (
-                <>
-                  <Brain className="h-5 w-5 text-amber-400" />
-                  What do they really mean?
-                </>
-              )}
-              {appMode === 'opener' && (
-                <>
-                  <Send className="h-5 w-5 text-pink-400" />
-                  Start the conversation
-                </>
-              )}
-              {appMode === 'revive' && (
-                <>
-                  <RefreshCw className="h-5 w-5 text-cyan-400" />
-                  Revive a dead convo
-                </>
-              )}
-              {appMode === 'coach' && (
-                <>
-                  <Sparkles className="h-5 w-5 text-violet-400" />
-                  Ask your coach
-                </>
-              )}
-            </h2>
-            <p className="text-sm text-white/40 font-medium">
-              {appMode === 'reply' && 'Paste the text and we\'ll handle the rest'}
-              {appMode === 'decode' && 'Paste any message \u2014 we\'ll reveal the intent, subtext, and flags'}
-              {appMode === 'opener' && 'Generate the perfect opening line for any situation'}
-              {appMode === 'revive' && 'Paste or screenshot the stale convo \u2014 we\'ll craft the perfect re-engagement'}
-              {appMode === 'coach' && 'Drop a screenshot, paste a message, or ask anything'}
-            </p>
+            <p className="text-sm text-white/40 mb-4">Drop a screenshot, paste a message, or pick a scenario</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { emoji: '💬', label: "What'd they say?", prompt: 'Help me reply to this message' },
+                { emoji: '🔍', label: 'What do they mean?', prompt: 'Decode their message for me' },
+                { emoji: '✨', label: 'Start the convo', prompt: 'Write me a great opener' },
+                { emoji: '🔥', label: 'Revive a dead chat', prompt: 'Help me revive a dead conversation' },
+                { emoji: '🎯', label: 'Am I being played?', prompt: 'Am I being played or are they genuinely interested?' },
+                { emoji: '📊', label: 'Read the situation', prompt: 'Read this convo and tell me where I stand' },
+              ].map(chip => (
+                <button
+                  key={chip.label}
+                  onClick={() => setStrategyChatInput(chip.prompt)}
+                  className="px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all active:scale-95 bg-white/[0.07] text-white/60 border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/85"
+                >
+                  <span className="mr-1.5">{chip.emoji}</span>{chip.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="space-y-4 px-6 pb-6">
-            {/* Global Screenshot Input — always in DOM for all modes */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp"
-              onChange={handleScreenshotUpload}
-              className="hidden"
-              aria-label="Upload screenshot"
-            />
+          <div className="space-y-4 px-6 pb-6 pt-4">
+            {/* Hidden file inputs */}
+            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
 
-            {/* ===== COACH MODE ===== */}
-            {appMode === 'coach' && (
-              <div className="space-y-3">
-                <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
-
+            {/* ===== COACH CHAT ===== */}
+            <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
+            <div className="space-y-3">
                 {/* Chat history */}
                 {strategyChatHistory.length > 0 && (
-                  <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  <div className="space-y-4 max-h-[560px] overflow-y-auto pr-1">
                     {strategyChatHistory.map((msg, i) => (
                       <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -2070,9 +2011,8 @@ export default function AppPage() {
                   </div>
                 )}
               </div>
-            )}
 
-            {/* ===== REPLY MODE ===== */}
+            {/* ===== REPLY MODE (hidden, logic preserved) ===== */}
             {appMode === 'reply' && (<>
             {/* Context Selector */}
             <div className="space-y-3">
