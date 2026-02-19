@@ -258,6 +258,8 @@ export default function AppPage() {
   const [translating, setTranslating] = useState(false);
   const [showToneBar, setShowToneBar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coachFileInputRef = useRef<HTMLInputElement>(null);
+  const [coachScreenshotExtracting, setCoachScreenshotExtracting] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
@@ -1492,6 +1494,29 @@ export default function AppPage() {
     setUserIntent('');
     setStrategyChatHistory([]);
     setStrategyChatInput('');
+  };
+
+  const handleCoachScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoachScreenshotExtracting(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.fullConversation) {
+        const contextMsg = `Here's additional context from a screenshot:\n${data.fullConversation}`;
+        setStrategyChatInput(prev => prev ? `${prev}\n${contextMsg}` : contextMsg);
+      } else {
+        toast({ title: 'Could not read screenshot', description: 'Try a clearer image', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Upload failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setCoachScreenshotExtracting(false);
+      if (coachFileInputRef.current) coachFileInputRef.current.value = '';
+    }
   };
 
   const handleStrategyChatSend = async () => {
@@ -3232,13 +3257,32 @@ export default function AppPage() {
                 {/* Input row */}
                 <div className="px-3 py-3 flex items-center gap-2 border-t border-white/[0.06]">
                   <input
+                    ref={coachFileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleCoachScreenshotUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => coachFileInputRef.current?.click()}
+                    disabled={coachScreenshotExtracting || strategyChatLoading}
+                    className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30 shrink-0"
+                    title="Upload screenshot for context"
+                  >
+                    {coachScreenshotExtracting ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <input
                     type="text"
                     value={strategyChatInput}
                     onChange={(e) => setStrategyChatInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
-                    placeholder="Ask anything — &quot;should I ask what happened?&quot; or add context..."
+                    placeholder="Ask anything or add context..."
                     maxLength={300}
-                    disabled={strategyChatLoading}
+                    disabled={strategyChatLoading || coachScreenshotExtracting}
                     className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/20 text-[13px] focus:outline-none focus:border-violet-500/30 transition-all disabled:opacity-50"
                   />
                   <button
