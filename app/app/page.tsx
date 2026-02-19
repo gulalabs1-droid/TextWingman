@@ -116,6 +116,12 @@ type StrategyData = {
   latencyMs: number;
 } | null;
 
+type StrategyChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+  draft?: { shorter?: string; spicier?: string; softer?: string } | null;
+};
+
 type ScanResult = {
   platform: string;
   messageCount: number;
@@ -238,6 +244,9 @@ export default function AppPage() {
   const [customSent, setCustomSent] = useState('');
   const [showCustomSent, setShowCustomSent] = useState(false);
   const [strategyData, setStrategyData] = useState<StrategyData>(null);
+  const [strategyChatHistory, setStrategyChatHistory] = useState<StrategyChatMessage[]>([]);
+  const [strategyChatInput, setStrategyChatInput] = useState('');
+  const [strategyChatLoading, setStrategyChatLoading] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [saving, setSaving] = useState(false);
   const [editingReply, setEditingReply] = useState<string | null>(null); // tone being edited
@@ -1481,6 +1490,38 @@ export default function AppPage() {
     setReviveMessages([]);
     setReviveAnalysis('');
     setUserIntent('');
+    setStrategyChatHistory([]);
+    setStrategyChatInput('');
+  };
+
+  const handleStrategyChatSend = async () => {
+    if (!strategyChatInput.trim() || strategyChatLoading) return;
+    const userMsg = strategyChatInput.trim();
+    setStrategyChatInput('');
+    const newHistory: StrategyChatMessage[] = [...strategyChatHistory, { role: 'user', content: userMsg }];
+    setStrategyChatHistory(newHistory);
+    setStrategyChatLoading(true);
+    try {
+      const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
+      const res = await fetch('/api/strategy-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          threadContext,
+          strategy: strategyData,
+          context: selectedContext || 'crush',
+          chatHistory: newHistory.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+          userMessage: userMsg,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+    } catch {
+      setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Couldn't reach the coach right now. Try again." }]);
+    } finally {
+      setStrategyChatLoading(false);
+    }
   };
 
   const handleTryAgain = () => {
@@ -3111,7 +3152,126 @@ export default function AppPage() {
                   )}
                 </div>
               </div>
-            ) : !isPro && replies.length > 0 ? (
+            ) : null}
+
+            {/* ══════════ STRATEGY CHAT ══════════ */}
+            {isPro && strategyData && (
+              <div className="mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Header */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
+                  <div className="w-5 h-5 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                    <MessageCircle className="h-3 w-3 text-violet-400" />
+                  </div>
+                  <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Ask your coach</span>
+                  <span className="text-[10px] text-white/20 ml-auto">Thread context always in background</span>
+                </div>
+
+                {/* Chat history */}
+                {strategyChatHistory.length > 0 && (
+                  <div className="px-4 py-3 space-y-3 max-h-72 overflow-y-auto">
+                    {strategyChatHistory.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+                          <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
+                            msg.role === 'user'
+                              ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-br-md'
+                              : 'bg-white/[0.07] text-white/85 border border-white/[0.06] rounded-bl-md'
+                          }`}>
+                            <p className="font-medium whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                          {/* Draft replies from coach */}
+                          {msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
+                            <div className="w-full space-y-1.5 mt-1">
+                              <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach draft</p>
+                              {msg.draft.shorter && (
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '✓ Copied' }); }}
+                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-white/80 text-[13px] font-medium hover:bg-emerald-500/[0.14] transition-all active:scale-[0.98] group"
+                                >
+                                  <span className="text-[10px] text-emerald-400/60 font-bold block mb-0.5">Shorter</span>
+                                  {msg.draft.shorter}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                </button>
+                              )}
+                              {msg.draft.spicier && (
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }}
+                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-orange-500/[0.08] border border-orange-500/20 text-white/80 text-[13px] font-medium hover:bg-orange-500/[0.14] transition-all active:scale-[0.98] group"
+                                >
+                                  <span className="text-[10px] text-orange-400/60 font-bold block mb-0.5">Spicier</span>
+                                  {msg.draft.spicier}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                </button>
+                              )}
+                              {msg.draft.softer && (
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }}
+                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-white/80 text-[13px] font-medium hover:bg-blue-500/[0.14] transition-all active:scale-[0.98] group"
+                                >
+                                  <span className="text-[10px] text-blue-400/60 font-bold block mb-0.5">Softer</span>
+                                  {msg.draft.softer}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {strategyChatLoading && (
+                      <div className="flex justify-start">
+                        <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.06] flex items-center gap-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                          <span className="text-[12px] text-white/40 font-medium">Thinking...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Input row */}
+                <div className="px-3 py-3 flex items-center gap-2 border-t border-white/[0.06]">
+                  <input
+                    type="text"
+                    value={strategyChatInput}
+                    onChange={(e) => setStrategyChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
+                    placeholder="Ask anything — &quot;should I ask what happened?&quot; or add context..."
+                    maxLength={300}
+                    disabled={strategyChatLoading}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/20 text-[13px] focus:outline-none focus:border-violet-500/30 transition-all disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleStrategyChatSend}
+                    disabled={!strategyChatInput.trim() || strategyChatLoading}
+                    className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* Suggestion chips — only when no history yet */}
+                {strategyChatHistory.length === 0 && !strategyChatLoading && (
+                  <div className="px-3 pb-3 flex flex-wrap gap-1.5">
+                    {[
+                      'Should I ask what happened?',
+                      'Is this a good time to check in?',
+                      'How do I bring up plans?',
+                    ].map((chip) => (
+                      <button
+                        key={chip}
+                        onClick={() => { setStrategyChatInput(chip); }}
+                        className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/35 text-[11px] font-medium hover:bg-white/[0.08] hover:text-white/60 transition-all active:scale-95"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isPro && !strategyData && replies.length > 0 ? null : !isPro && replies.length > 0 ? (
               <button
                 onClick={() => setShowPaywall(true)}
                 className="w-full mb-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all flex items-center gap-3 group"
