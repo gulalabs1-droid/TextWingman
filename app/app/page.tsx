@@ -368,7 +368,11 @@ export default function AppPage() {
       return;
     }
 
-    if (!message.trim()) {
+    // If textarea is empty but last thread message is from 'them', use that
+    const lastThemInThread = [...thread].reverse().find(m => m.role === 'them');
+    const effectiveMessage = message.trim() || (lastThemInThread ? lastThemInThread.text : '');
+
+    if (!effectiveMessage) {
       toast({
         title: "Empty message",
         description: "Please paste a message first",
@@ -377,8 +381,10 @@ export default function AppPage() {
       return;
     }
 
-    // Add their message to thread
-    addToThread('them', message.trim());
+    // Only add to thread if user typed a new message in the textarea
+    if (message.trim()) {
+      addToThread('them', message.trim());
+    }
 
     setLoading(true);
     setReplies([]); // Clear previous replies
@@ -391,7 +397,7 @@ export default function AppPage() {
       const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
       
       // Build full conversation context for smarter replies
-      const fullContext = buildThreadContext(message.trim());
+      const fullContext = buildThreadContext(effectiveMessage);
       
       // Show progress steps for V2
       if (isPro && useV2) {
@@ -405,7 +411,7 @@ export default function AppPage() {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: fullContext,
           context: selectedContext || 'crush',
           customContext: customContext.trim() || undefined,
@@ -1933,6 +1939,17 @@ export default function AppPage() {
                                 }`}>
                                 <p className="font-medium">{msg.text}</p>
                               </div>
+                              {/* Generate reply chip on last 'them' message when textarea is empty */}
+                              {msg.role === 'them' && i === thread.length - 1 && !message.trim() && replies.length === 0 && !loading && (
+                                <div className="mt-1.5 animate-in fade-in duration-300">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/25 transition-all active:scale-95"
+                                  >
+                                    <Sparkles className="h-3 w-3" /> Generate reply
+                                  </button>
+                                </div>
+                              )}
                               {isSelected && (
                                 <div className={`absolute top-full mt-1 z-10 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-1 duration-150 ${msg.role === 'you' ? 'right-0' : 'left-0'}`}>
                                   <button
@@ -2275,7 +2292,7 @@ export default function AppPage() {
             <div className="space-y-3">
               <Button
                 onClick={handleGenerate}
-                disabled={loading || !message.trim()}
+                disabled={loading || !(message.trim() || (thread.length > 0 && thread[thread.length - 1]?.role === 'them'))}
                 className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed ${
                   isPro
                     ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/30'
