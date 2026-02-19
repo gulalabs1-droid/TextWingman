@@ -14,6 +14,12 @@ import {
 // ── Types ──────────────────────────────────────────────────
 type Reply = { tone: 'shorter' | 'spicier' | 'softer'; text: string };
 type ThreadMessage = { role: 'them' | 'you'; text: string; timestamp: number };
+type CoachMessage = {
+  role: 'user' | 'coach';
+  content: string;
+  replies?: { shorter?: string; spicier?: string; softer?: string } | null;
+  strategy?: { momentum?: string; balance?: string; one_liner?: string; energy?: string; no_questions?: boolean; keep_short?: boolean } | null;
+};
 type SavedThread = { id: string; name: string; context: string | null; updated_at: string; message_count: number; last_message: { role: string; text: string } | null };
 type DecodeResult = { intent: string; subtext: string; energy: string; flags: { type: 'green' | 'red' | 'yellow'; text: string }[]; coach_tip: string } | null;
 type StrategyData = { momentum: string; balance: string; move: { energy: string; one_liner: string; constraints: { no_questions: boolean; keep_short: boolean; add_tease: boolean; push_meetup: boolean }; risk: string }; latencyMs?: number } | null;
@@ -98,7 +104,14 @@ export default function ExperimentalThreadPage() {
   const [mobileSheet, setMobileSheet] = useState(false);
   const [decodingIdx, setDecodingIdx] = useState<number | null>(null);
   const [inlineDecodes, setInlineDecodes] = useState<Record<number, DecodeResult>>({});
+  const [xMode, setXMode] = useState<'thread' | 'coach'>('coach');
+  const [coachHistory, setCoachHistory] = useState<CoachMessage[]>([]);
+  const [coachInput, setCoachInput] = useState('');
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [coachExtracting, setCoachExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coachFileInputRef = useRef<HTMLInputElement>(null);
+  const coachEndRef = useRef<HTMLDivElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
@@ -239,6 +252,65 @@ export default function ExperimentalThreadPage() {
   const handleNewThread = () => { setThread([]); setReplies([]); setStrategyData(null); setInput(''); setDecodeResult(null); setPendingSent(null); setActiveThreadId(null); setActiveThreadName(null); setShowRecent(false); };
   const handleReset = () => { setThread([]); setReplies([]); setStrategyData(null); setInput(''); setDecodeResult(null); setPendingSent(null); setActiveThreadId(null); setActiveThreadName(null); toast({ title: 'Cleared' }); };
 
+  const handleCoachSend = async (overrideMsg?: string) => {
+    const msg = (overrideMsg ?? coachInput).trim();
+    if (!msg || coachLoading) return;
+    setCoachInput('');
+    const userMsg: CoachMessage = { role: 'user', content: msg };
+    const newHistory = [...coachHistory, userMsg];
+    setCoachHistory(newHistory);
+    setCoachLoading(true);
+    setTimeout(() => coachEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    try {
+      const res = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatHistory: newHistory.slice(0, -1).map(m => ({ role: m.role === 'coach' ? 'assistant' : 'user', content: m.content })),
+          userMessage: msg,
+          context: selectedContext,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      const coachMsg: CoachMessage = { role: 'coach', content: data.reply, replies: data.replies, strategy: data.strategy };
+      setCoachHistory(prev => [...prev, coachMsg]);
+      setTimeout(() => coachEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    } catch {
+      setCoachHistory(prev => [...prev, { role: 'coach', content: "Couldn't connect. Try again." }]);
+    } finally {
+      setCoachLoading(false);
+    }
+  };
+
+  const handleCoachScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setCoachExtracting(true);
+    try {
+      const results = await Promise.all(files.map(async (file) => {
+        const fd = new FormData(); fd.append('image', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: fd });
+        const data = await res.json();
+        return data.fullConversation || null;
+      }));
+      const extracted = results.filter(Boolean);
+      if (extracted.length > 0) {
+        const contextMsg = extracted.length === 1
+          ? `Here's the conversation from a screenshot:\n${extracted[0]}`
+          : `Here are ${extracted.length} screenshots:\n${extracted.map((t, i) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
+        await handleCoachSend(contextMsg);
+      } else {
+        toast({ title: 'Could not read screenshot', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Upload failed', variant: 'destructive' });
+    } finally {
+      setCoachExtracting(false);
+      if (coachFileInputRef.current) coachFileInputRef.current.value = '';
+    }
+  };
+
   // ── Derived visuals ───────────────────────────────────
   const pulseColor = tactical.riskLevel === 'high' ? '#f43f5e' : tactical.momentum === 'theirs' ? '#10b981' : tactical.momentum === 'yours' ? '#f59e0b' : '#8b5cf6';
   const riskNeon = tactical.riskLevel === 'high' ? 'rose' : tactical.riskLevel === 'medium' ? 'amber' : 'emerald';
@@ -304,6 +376,11 @@ export default function ExperimentalThreadPage() {
             </div>
 
             <div className="flex items-center gap-1.5">
+              {/* Mode toggle */}
+              <div className="h-8 p-0.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-0.5">
+                <button onClick={() => setXMode('coach')} className={`h-7 px-3 rounded-lg text-[10px] font-black tracking-wider transition-all ${xMode === 'coach' ? 'bg-violet-500/80 text-white shadow-[0_0_12px_rgba(139,92,246,0.4)]' : 'text-white/25 hover:text-white/50'}`}>COACH</button>
+                <button onClick={() => setXMode('thread')} className={`h-7 px-3 rounded-lg text-[10px] font-black tracking-wider transition-all ${xMode === 'thread' ? 'bg-violet-500/80 text-white shadow-[0_0_12px_rgba(139,92,246,0.4)]' : 'text-white/25 hover:text-white/50'}`}>THREAD</button>
+              </div>
               {/* Recent */}
               <button onClick={() => setShowRecent(!showRecent)} className={`h-8 px-2.5 rounded-xl text-[10px] font-bold tracking-wider flex items-center gap-1.5 transition-all border ${showRecent ? 'bg-violet-500/15 text-violet-300 border-violet-500/25 shadow-[0_0_15px_rgba(139,92,246,0.15)]' : 'bg-white/[0.03] text-white/35 border-white/[0.06] hover:border-white/[0.12]'}`}>
                 <Radio className="h-3 w-3" />{savedThreads.length || ''}
@@ -323,6 +400,169 @@ export default function ExperimentalThreadPage() {
               <button onClick={handleReset} className="h-8 w-8 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white/20 hover:text-white/50 transition-all active:scale-90"><RotateCcw className="h-3 w-3" /></button>
             </div>
           </div>
+
+          {/* ══ COACH MODE ══ */}
+          {xMode === 'coach' && (
+            <div className="flex-1 flex flex-col min-h-0">
+              <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshot} className="hidden" />
+
+              {/* Chat area */}
+              <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 space-y-4">
+                {coachHistory.length === 0 && !coachLoading ? (
+                  /* Empty state */
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="h-full flex flex-col items-center justify-center text-center space-y-6 max-w-sm mx-auto">
+                    <motion.div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center"
+                      animate={{ boxShadow: ['0 0 40px rgba(139,92,246,0.3)', '0 0 70px rgba(139,92,246,0.5)', '0 0 40px rgba(139,92,246,0.3)'] }}
+                      transition={{ duration: 3, repeat: Infinity }}>
+                      <MessageCircle className="h-9 w-9 text-white" />
+                    </motion.div>
+                    <div className="space-y-2">
+                      <h2 className="text-white/90 font-black text-xl tracking-tight">Your Coach</h2>
+                      <p className="text-white/30 text-sm leading-relaxed">Tell me what&apos;s going on. Drop a screenshot. Ask me anything.</p>
+                    </div>
+                    {/* Suggestion chips */}
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {[
+                        { label: '📸 Drop a screenshot', msg: '' },
+                        { label: 'She said this...', msg: 'She said: "' },
+                        { label: 'Should I text first?', msg: 'Should I text first?' },
+                        { label: 'What does this mean?', msg: 'What does this mean: "' },
+                        { label: 'How do I bring up plans?', msg: 'How do I bring up plans?' },
+                        { label: 'Am I chasing?', msg: 'Am I chasing? Here\'s the thread: ' },
+                      ].map((chip) => (
+                        chip.label === '📸 Drop a screenshot'
+                          ? <button key={chip.label} onClick={() => coachFileInputRef.current?.click()} className="px-3 py-2 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 text-[12px] font-bold hover:bg-violet-500/25 transition-all active:scale-95">{chip.label}</button>
+                          : <button key={chip.label} onClick={() => setCoachInput(chip.msg)} className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/40 text-[12px] font-medium hover:bg-white/[0.08] hover:text-white/60 transition-all active:scale-95">{chip.label}</button>
+                      ))}
+                    </div>
+                    {/* Context selector */}
+                    <div className="space-y-2">
+                      <p className="text-white/15 text-[9px] font-mono font-bold tracking-[0.4em]">WHO IS THIS?</p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {CONTEXT_OPTIONS.map(ctx => (
+                          <motion.button key={ctx.value} whileTap={{ scale: 0.92 }} onClick={() => setSelectedContext(ctx.value)} title={ctx.label}
+                            className={`w-10 h-10 rounded-2xl text-base flex items-center justify-center transition-all border ${selectedContext === ctx.value ? 'bg-white/[0.10] border-violet-500/40 shadow-[0_0_15px_rgba(139,92,246,0.2)]' : 'bg-white/[0.03] border-white/[0.06] hover:border-white/[0.12]'}`}
+                          >{ctx.emoji}</motion.button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <>
+                    {coachHistory.map((msg, i) => (
+                      <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+                        className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                          {/* Bubble */}
+                          {msg.content && (
+                            <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed font-medium ${
+                              msg.role === 'user'
+                                ? 'bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 text-white rounded-br-md shadow-[0_4px_20px_rgba(139,92,246,0.3)]'
+                                : 'bg-white/[0.07] border border-white/[0.10] text-white/90 rounded-bl-md backdrop-blur-sm'
+                            }`}>
+                              <p className="whitespace-pre-wrap">{msg.content}</p>
+                            </div>
+                          )}
+                          {/* Strategy badge */}
+                          {msg.strategy && msg.strategy.one_liner && (
+                            <Glass className="w-full p-3 space-y-1.5" glow neonColor="emerald">
+                              <div className="flex items-center gap-1.5">
+                                <Target className="h-3 w-3 text-emerald-400" />
+                                <span className="text-emerald-400/60 text-[9px] font-mono font-bold tracking-[0.3em]">STRATEGY</span>
+                                {msg.strategy.momentum && <span className="ml-auto text-[9px] font-bold text-white/30 bg-white/[0.06] px-1.5 py-0.5 rounded-md">{msg.strategy.momentum}</span>}
+                              </div>
+                              <p className="text-white/85 text-sm font-semibold">&ldquo;{msg.strategy.one_liner}&rdquo;</p>
+                              <div className="flex flex-wrap gap-1">
+                                {msg.strategy.balance && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.05] text-white/35 border border-white/[0.08]">{msg.strategy.balance}</span>}
+                                {msg.strategy.energy && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-violet-500/10 text-violet-300/60 border border-violet-500/15">{msg.strategy.energy.replace('_', ' ')}</span>}
+                                {msg.strategy.no_questions && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.05] text-white/35 border border-white/[0.08]">NO Q&apos;S</span>}
+                                {msg.strategy.keep_short && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.05] text-white/35 border border-white/[0.08]">KEEP SHORT</span>}
+                              </div>
+                            </Glass>
+                          )}
+                          {/* Reply options */}
+                          {msg.replies && (msg.replies.shorter || msg.replies.spicier || msg.replies.softer) && (
+                            <div className="w-full space-y-2">
+                              <p className="text-white/20 text-[9px] font-mono font-bold tracking-[0.4em] px-1">SEND ONE OF THESE</p>
+                              {(['shorter', 'spicier', 'softer'] as const).map(tone => {
+                                const text = msg.replies![tone];
+                                if (!text) return null;
+                                const cfg = TONE_CONFIG[tone];
+                                return (
+                                  <motion.button key={tone} whileTap={{ scale: 0.97 }}
+                                    onClick={() => { navigator.clipboard.writeText(text); toast({ title: '✓ Copied!' }); }}
+                                    className="w-full text-left group active:scale-[0.98]">
+                                    <Glass className="p-3.5 transition-all hover:border-white/20" glow={false} neonColor={cfg.neon}>
+                                      <div className="flex items-start gap-3">
+                                        <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center shrink-0 text-sm`} style={{ boxShadow: cfg.glow }}>{cfg.emoji}</div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <span className="text-[9px] font-black tracking-[0.2em] text-white/40">{cfg.label}</span>
+                                            <span className="text-white/15 text-[9px] font-mono">{text.split(' ').length}W</span>
+                                            <span className="ml-auto text-[10px] text-white/20 group-hover:text-white/40 transition-colors flex items-center gap-1"><Copy className="h-2.5 w-2.5" /> tap to copy</span>
+                                          </div>
+                                          <p className="text-white/90 text-[14px] font-medium leading-relaxed">{text}</p>
+                                        </div>
+                                      </div>
+                                    </Glass>
+                                  </motion.button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                    {/* Loading bubble */}
+                    {coachLoading && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+                        <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.10] flex items-center gap-2.5">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                          <span className="text-white/30 text-[12px] font-medium font-mono tracking-wider">THINKING...</span>
+                        </div>
+                      </motion.div>
+                    )}
+                    <div ref={coachEndRef} />
+                  </>
+                )}
+              </div>
+
+              {/* Input bar */}
+              <div className="shrink-0 px-4 md:px-6 py-3 border-t border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(40px) saturate(180%)' }}>
+                <div className="flex items-end gap-2">
+                  <button onClick={() => coachFileInputRef.current?.click()} disabled={coachExtracting || coachLoading}
+                    className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white/25 hover:text-white/50 hover:border-white/[0.12] transition-all active:scale-90 disabled:opacity-20 shrink-0">
+                    {coachExtracting ? <Loader2 className="h-4 w-4 animate-spin text-violet-400" /> : <Camera className="h-4 w-4" />}
+                  </button>
+                  <div className="flex-1 rounded-2xl border border-white/[0.08] focus-within:border-violet-500/30 focus-within:shadow-[0_0_20px_rgba(139,92,246,0.1)] transition-all overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <textarea value={coachInput} onChange={e => setCoachInput(e.target.value)} placeholder="Tell me what's going on..." rows={1} maxLength={1000}
+                      disabled={coachLoading || coachExtracting}
+                      className="w-full bg-transparent text-white placeholder-white/20 resize-none focus:outline-none text-sm font-medium leading-relaxed px-4 py-3 max-h-32 disabled:opacity-50"
+                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCoachSend(); }}
+                      onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 128) + 'px'; }} />
+                  </div>
+                  <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }} onClick={() => handleCoachSend()} disabled={coachLoading || coachExtracting || !coachInput.trim()}
+                    className="h-10 px-5 rounded-xl font-black text-xs tracking-wider flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-[0_4px_25px_rgba(139,92,246,0.35)] disabled:opacity-20 transition-all shrink-0">
+                    {coachLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-3.5 w-3.5" />SEND</>}
+                  </motion.button>
+                </div>
+                {/* Context chips when chat is active */}
+                {coachHistory.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-0.5">
+                    {CONTEXT_OPTIONS.map(ctx => (
+                      <button key={ctx.value} onClick={() => setSelectedContext(ctx.value)}
+                        className={`shrink-0 w-7 h-7 rounded-lg text-sm flex items-center justify-center transition-all border ${selectedContext === ctx.value ? 'bg-white/[0.08] border-violet-500/30' : 'bg-white/[0.02] border-white/[0.05] opacity-50'}`}
+                      >{ctx.emoji}</button>
+                    ))}
+                    <button onClick={() => { setCoachHistory([]); setCoachInput(''); }} className="shrink-0 h-7 px-2.5 rounded-lg bg-white/[0.02] border border-white/[0.05] text-white/20 hover:text-white/40 text-[9px] font-mono font-bold tracking-wider transition-all ml-auto">CLEAR</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── THREAD MODE ── */}
+          {xMode === 'thread' && (<>
 
           {/* ── PULSE STRIP ── */}
           {thread.length > 0 && (
@@ -640,6 +880,7 @@ export default function ExperimentalThreadPage() {
               </motion.div>
             )}
           </AnimatePresence>
+          </>)}
         </div>
 
         {/* ═══════════════════════════════════════════════
