@@ -4,7 +4,11 @@ import { z } from 'zod';
 // ── Schema ───────────────────────────────────────────────
 export const StrategySchema = z.object({
   momentum: z.enum(['Rising', 'Flat', 'Declining', 'Stalling', 'Unknown']),
-  balance: z.enum(['You leading', 'They leading', 'Balanced', 'Unknown']),
+  balance: z.enum(['You leading', 'They leading', 'Balanced', 'User chasing', 'Unknown']),
+  energy_level: z.enum(['High flirt', 'Playful', 'Warm', 'Polite', 'Dry', 'Cold']).optional(),
+  sarcasm_detected: z.boolean().optional(),
+  is_kidding: z.boolean().optional(),
+  risk_flags: z.array(z.string()).optional(),
   move: z.object({
     energy: z.enum(['pull_back', 'match', 'escalate', 'clarify', 'logistics']),
     one_liner: z.string().max(100),
@@ -117,7 +121,14 @@ export function computeMetrics(threadText: string): ThreadMetrics {
 }
 
 // ── Strategy prompt ──────────────────────────────────────
-const STRATEGY_PROMPT = `You are the user's sharp friend reading over their shoulder during a text conversation. You see what's really happening and you tell them the move — direct, visceral, no sugarcoating.
+const STRATEGY_PROMPT = `You are Text Wingman's elite StrategyAgent. Analyze the full conversation thread and output deep strategic insights.
+
+Core Principles (never violate):
+- Always assume positive intent unless clear evidence of disrespect.
+- Distinguish sarcasm/playful teasing from low-investment dryness.
+- Never suggest needy, over-eager, or double-text energy.
+- Respect power balance: if user is investing more, recommend pull-back.
+- Keep all advice confident, concise, non-judgmental, and actionable.
 
 OUTPUT: Strict JSON only. No extra text, no markdown, no explanation.
 
@@ -146,10 +157,46 @@ EXAMPLES OF BAD one_liners (never write these):
 - "Match their energy level." (generic, forgettable)
 - "The investment ratio is unbalanced." (robotic)
 
+KEY DETECTION SKILLS:
+
+1. SARCASM vs LOW INVESTMENT:
+   - Playful sarcasm has: emojis, questions back, callbacks, exaggeration + "lol"/"haha", context mismatch (saying something negative in a clearly positive convo). Set sarcasm_detected=true.
+   - Low investment is: short, delayed, one-word, no questions, no personal sharing, flat tone.
+   - "wateveerr" in a flirty convo = sarcasm (playful). "whatever" after being ignored = low investment.
+
+2. KIDDING vs SERIOUS:
+   - Kidding has: exaggeration, "lol", "jk", follow-up softening, stretched words. Set is_kidding=true.
+   - Serious has: flat tone, repetition, no softening, direct + short.
+   - "i hate you lol" = kidding. "i hate this" = serious.
+
+3. POWER DYNAMICS:
+   - Who initiates more? Who uses longer messages? Who asks more questions?
+   - If user sends 2x more chars than them = "User chasing"
+   - If they're matching effort = "Balanced"
+   - If they're writing novels while user is chill = "They leading"
+
+4. ENERGY TRAJECTORY:
+   - Rising = faster replies, more emojis/questions, longer messages, callbacks to earlier topics
+   - Stable = consistent effort both sides
+   - Declining = delays + shorter replies + fewer questions
+   - Stalling = convo is dying, just filler
+
+5. EMOTIONAL SIGNALS (detect these):
+   - Testing frame: they say something provocative to see how you react
+   - Pulling away: shorter replies, longer gaps, avoiding plans
+   - High interest: questions, re-initiation, personal sharing, flirty teasing
+   - Comfortable flirting: playful banter, teasing, callbacks, stretched words
+   - Polite disengagement: polite but closed responses, no hooks for continuation
+   - Note these in risk_flags array.
+
 JSON SCHEMA:
 {
   "momentum": "Rising" | "Flat" | "Declining" | "Stalling" | "Unknown",
-  "balance": "You leading" | "They leading" | "Balanced" | "Unknown",
+  "balance": "You leading" | "They leading" | "Balanced" | "User chasing" | "Unknown",
+  "energy_level": "High flirt" | "Playful" | "Warm" | "Polite" | "Dry" | "Cold",
+  "sarcasm_detected": true | false,
+  "is_kidding": true | false,
+  "risk_flags": ["Sarcasm likely playful", "Testing frame", "User over-investing"],
   "move": {
     "energy": "pull_back" | "match" | "escalate" | "clarify" | "logistics",
     "one_liner": string,
@@ -165,9 +212,11 @@ JSON SCHEMA:
 
 READING THE THREAD:
 - momentum: Rising = they're leaning in, getting warmer. Flat = autopilot. Declining = pulling away, shorter replies. Stalling = this is dying.
-- balance: Who's trying harder? Who's carrying the convo? "You leading" = you're doing too much.
+- balance: Who's trying harder? Who's carrying the convo? "You leading" = you're doing too much. "User chasing" = they're clearly not matching your effort.
+- energy_level: Read the OVERALL vibe. High flirt = sexual tension. Playful = fun banter. Warm = genuine connection. Polite = surface level. Dry = barely engaging. Cold = hostile or checked out.
 - energy: pull_back = you're overexposed, create space. match = vibe is right, stay in pocket. escalate = they're into it, turn up the heat. clarify = something's off, address it. logistics = it's time to make plans.
 - risk: low = safe play. medium = bold but justified. high = could blow up in their face.
+- risk_flags: 1-3 short strings noting what you detected (sarcasm, frame testing, over-investing, etc.)
 - constraints: set these based on what would PROTECT the user. no_questions=true if asking will look needy. keep_short=true if they're writing novels. add_tease=true if the convo needs spark. push_meetup=true if it's time to get off the phone.
 
 CONSERVATIVE RULE: If <3 total messages, set momentum and balance to "Unknown" and give safe defaults.
@@ -213,7 +262,7 @@ export async function analyzeStrategy(
         },
       ],
       temperature: 0.3,
-      max_tokens: 300,
+      max_tokens: 450,
       response_format: { type: 'json_object' },
     });
 
@@ -239,8 +288,14 @@ export function formatStrategyForDraft(strategy: StrategyResult, metrics?: Threa
   if (c.add_tease) rules.push('Add a playful tease or callback.');
   if (c.push_meetup) rules.push('Steer toward making plans to meet.');
 
+  // Sarcasm/kidding hints from strategy
+  const detectionHints: string[] = [];
+  if (strategy.sarcasm_detected) detectionHints.push('SARCASM DETECTED: Their message is playful sarcasm, not serious. Mirror it lightly — play along, don\'t take it literally.');
+  if (strategy.is_kidding) detectionHints.push('KIDDING DETECTED: They\'re joking/exaggerating. Match the playful energy, don\'t respond seriously.');
+  if (strategy.energy_level) detectionHints.push(`VIBE: ${strategy.energy_level}`);
+  if (strategy.risk_flags && strategy.risk_flags.length > 0) detectionHints.push(`WATCH FOR: ${strategy.risk_flags.join(', ')}`);
+
   // Energy-matching hint based on their message lengths
-  // Prioritize LAST message over average — their current energy matters more than history
   let energyHint = '';
   if (metrics) {
     if (metrics.lastReceivedLength <= 15 && !metrics.lastMessageSubstantive && !metrics.theyReinitiated && metrics.theirRecentQuestions === 0) {
@@ -255,7 +310,8 @@ export function formatStrategyForDraft(strategy: StrategyResult, metrics?: Threa
   return [
     `STRATEGY (your sharp friend says):`,
     `"${strategy.move.one_liner}"`,
-    `Energy: ${strategy.move.energy} | Risk: ${strategy.move.risk}`,
+    `Momentum: ${strategy.momentum} | Balance: ${strategy.balance} | Energy: ${strategy.move.energy} | Risk: ${strategy.move.risk}`,
+    detectionHints.length > 0 ? detectionHints.join('\n') : '',
     rules.length > 0 ? `RULES:\n${rules.map(r => `- ${r}`).join('\n')}` : '',
     energyHint,
   ].filter(Boolean).join('\n');

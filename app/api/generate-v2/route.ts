@@ -34,8 +34,22 @@ function containsHarmfulContent(message: string): boolean {
 const DraftAgent = new Agent({
   name: "DraftAgent",
   instructions: `
-You generate 3 text replies: shorter, spicier, softer.
-Keep them natural and realistic. No explanations.
+You are the DraftAgent for Text Wingman. Generate 3 text replies: shorter, spicier, softer.
+
+Core Principles (never violate):
+- Always assume positive intent unless clear evidence of disrespect.
+- Distinguish sarcasm/playful teasing from low-investment dryness.
+- Never suggest needy, over-eager, or double-text energy.
+- Respect power balance: if user is investing more, recommend pull-back.
+- Always sound like a confident, high-value person — never needy.
+
+STRATEGY CONSTRAINTS (FOLLOW EXACTLY):
+- If you see a STRATEGY section in the input, incorporate the recommended_strategy exactly.
+- If SARCASM DETECTED: include light sarcasm/playful mirroring in your replies.
+- If KIDDING DETECTED: match the playful energy, don't respond seriously.
+- If low investment detected (keep_short=true, no_questions=true), make replies shorter and lower energy.
+- Never add emojis.
+- Strictly ≤18 words unless STRATEGY explicitly allows more.
 
 CONVERSATION THREADS:
 - The message may contain a full conversation history in this format:
@@ -72,7 +86,6 @@ ENERGY MATCHING (CRITICAL):
 - Match the other person's effort level. If their last message is genuinely low-effort (1-4 words like "ok", "lol", "nm") AND they didn't ask you anything AND they didn't share anything personal, keep it short.
 - But if their last message shares something real (even casually), that's NOT low-effort — that's an opening. Engage with it.
 - Mirror their vibe. If they text in slang ("shawty", "wya", "cooolin"), reply in that same register. Don't code-switch to formal English.
-- If you see a STRATEGY section in the input, follow its constraints — but ALWAYS prioritize engaging with the actual content of their message over abstract strategy rules.
 - When their energy is genuinely low (no questions, no sharing, just filler), the "shorter" reply should be 2-4 words max.
 
 SHORT ≠ BORING (THIS IS CRITICAL):
@@ -97,20 +110,25 @@ Return JSON with keys: shorter, spicier, softer.
 const RuleAgent = new Agent({
   name: "RuleCheckAgent",
   instructions: `
-You enforce these rules STRICTLY:
-- <= 18 words (count carefully)
-- no emojis (none at all)
-- no needy language (e.g., "please", "sorry", "i miss you", "why you not", "can you", "would you")
-- no double questions (only one ? allowed)
+You are the strict VerifyAgent. Check each draft against ALL rules. Revise only if violation. Keep original tone and voice.
 
-For EACH reply, check if it passes ALL rules.
-If a reply fails ANY rule, rewrite it to pass while keeping the intent.
+Hard Rules (fail if broken):
+1. Word count ≤18 (count carefully)
+2. No emojis (none at all)
+3. No needy language ("please", "sorry", "i miss you", "why you not", "can you", "would you", "just checking", "hope you")
+4. No double questions (only one ? allowed)
+5. No dead-end phrases ("lol", "idk", "maybe", "we'll see", "same", "ok") unless the STRATEGY explicitly flagged playful/sarcasm context
+6. Must invite continuation or hold frame — the reply should either open a door for them to respond or make a confident statement that holds position
+7. Must match the recommended_strategy from STRATEGY section if provided
+
+If a reply fails ANY rule, rewrite it ONCE minimally to pass while keeping the intent.
 
 Return JSON:
 {
   "fixed": { "shorter": "...", "spicier": "...", "softer": "..." },
   "passes": { "shorter": true/false, "spicier": true/false, "softer": true/false },
-  "violations": { "shorter": ["rule1"], "spicier": [], "softer": ["rule2"] }
+  "violations": { "shorter": ["rule1"], "spicier": [], "softer": ["rule2"] },
+  "strategy_alignment": "Perfect" | "Good" | "Needs tweak"
 }
 `,
 });
@@ -119,7 +137,7 @@ Return JSON:
 const ToneAgent = new Agent({
   name: "ToneVerifyAgent",
   instructions: `
-Check if each reply matches its intended tone:
+Check if each reply matches its intended tone AND the strategy:
 - shorter = minimal, confident, direct (few words, no fluff)
 - spicier = more assertive, playful tension, slight edge or flirtation
 - softer = warmer, considerate, gentle, understanding
@@ -127,10 +145,17 @@ Check if each reply matches its intended tone:
 Rate confidence 0-100 based on how well each reply matches its tone.
 80+ = strong match, 60-79 = acceptable, <60 = weak match
 
+Also check strategy alignment:
+- If STRATEGY says pull_back, replies should NOT be over-eager or escalating
+- If STRATEGY says escalate, replies should NOT be withdrawn or cold
+- If STRATEGY says sarcasm_detected, replies should include playful mirroring
+- If STRATEGY says keep_short, shorter reply should be very brief
+
 Return JSON:
 {
   "passes": { "shorter": true/false, "spicier": true/false, "softer": true/false },
-  "confidence": { "shorter": 0-100, "spicier": 0-100, "softer": 0-100 }
+  "confidence": { "shorter": 0-100, "spicier": 0-100, "softer": 0-100 },
+  "strategy_alignment": "Perfect" | "Good" | "Needs tweak"
 }
 `,
 });
@@ -194,17 +219,51 @@ export async function POST(req: Request) {
       console.error('Strategy analysis failed, using defaults:', e);
     }
 
-    // Step 1: Draft (with strategy constraints + energy metrics injected)
+    // Step 0.5: Fetch user's recent reply history for few-shot style matching
+    let fewShotsHint = '';
+    try {
+      const supabaseAdmin = getSupabaseAdmin();
+      if (supabaseAdmin && user) {
+        const { data: recentReplies } = await supabaseAdmin
+          .from('reply_history')
+          .select('generated_replies')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(8);
+
+        if (recentReplies && recentReplies.length > 0) {
+          const examples = recentReplies
+            .map(r => {
+              try {
+                const replies = typeof r.generated_replies === 'string' ? JSON.parse(r.generated_replies) : r.generated_replies;
+                if (Array.isArray(replies)) return replies.map((x: any) => x.text).filter(Boolean).join(' | ');
+                return null;
+              } catch { return null; }
+            })
+            .filter(Boolean)
+            .slice(0, 6);
+
+          if (examples.length > 0) {
+            fewShotsHint = `\nUSER'S STYLE (match this voice — these are replies they've used before):\n${examples.map(e => `- ${e}`).join('\n')}`;
+          }
+        }
+      }
+    } catch (e) {
+      // Non-critical — skip if fetch fails
+    }
+
+    // Step 1: Draft (with strategy constraints + energy metrics + few-shots injected)
     const strategyHint = formatStrategyForDraft(strategy, stratMetrics);
     const customHint = customContext ? `\nUser's situation details: ${customContext}` : '';
-    const draftRes = await run(DraftAgent, `Context: ${context}${customHint}\n${strategyHint}\nMessage: ${message}`);
+    const draftRes = await run(DraftAgent, `Context: ${context}${customHint}${fewShotsHint}\n${strategyHint}\nMessage: ${message}`);
     drafts = safeJson(draftRes.finalOutput);
 
-    // Step 2: Rule check with revise loop (max 2 attempts)
+    // Step 2: Rule check with revise loop (max 2 attempts) — inject strategy for alignment checking
     let currentDrafts = drafts;
+    const strategyContext = `STRATEGY: ${JSON.stringify({ momentum: strategy.momentum, balance: strategy.balance, energy: strategy.move.energy, sarcasm_detected: strategy.sarcasm_detected, is_kidding: strategy.is_kidding, constraints: strategy.move.constraints })}`;
     
     while (reviseAttempts < MAX_REVISE_ATTEMPTS && !allPassed) {
-      const ruleRes = await run(RuleAgent, JSON.stringify(currentDrafts));
+      const ruleRes = await run(RuleAgent, `${strategyContext}\nDRAFTS: ${JSON.stringify(currentDrafts)}`);
       rule = safeJson(ruleRes.finalOutput);
       
       // Check if all pass
@@ -221,8 +280,8 @@ export async function POST(req: Request) {
 
     fixed = rule.fixed ?? currentDrafts;
 
-    // Step 3: Tone verify
-    const toneRes = await run(ToneAgent, JSON.stringify(fixed));
+    // Step 3: Tone verify (with strategy context for alignment checking)
+    const toneRes = await run(ToneAgent, `${strategyContext}\nREPLIES: ${JSON.stringify(fixed)}`);
     tone = safeJson(toneRes.finalOutput);
 
   } catch (error) {

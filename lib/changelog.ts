@@ -10,6 +10,20 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '3.6.0',
+    date: '2026-02-18',
+    title: 'Screenshot Auto-Thread & Rename',
+    description: 'Upload a screenshot and your full conversation instantly appears in the thread with replies ready — no extra steps. Plus inline thread renaming so you can name threads anything you want.',
+    type: 'improvement',
+    highlights: [
+      'Screenshot auto-thread — uploading a screenshot now instantly populates the thread with all extracted messages and shows replies, no "Continue in Thread" button needed',
+      'Thread auto-saves immediately after screenshot load — pick up where you left off anytime',
+      'Inline thread rename — tap the purple thread name to rename it (e.g. "spa girl", "dating app match") and it saves instantly',
+      'Screenshot extraction upgraded to gpt-4o with high-detail mode — captures every message in the screenshot including ones near the top, with correct sender sides',
+      'Fixed sender swap bug — messages you sent (right/blue) now correctly show as "You", not "Them"',
+    ],
+  },
+  {
     version: '3.5.0',
     date: '2026-02-17',
     title: 'Subtext Intelligence & Quality Fixes',
