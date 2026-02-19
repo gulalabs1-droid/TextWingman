@@ -1497,19 +1497,25 @@ export default function AppPage() {
   };
 
   const handleCoachScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     setCoachScreenshotExtracting(true);
     try {
-      const formData = new FormData();
-      formData.append('image', file);
-      const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (data.fullConversation) {
-        const contextMsg = `Here's additional context from a screenshot:\n${data.fullConversation}`;
+      const results = await Promise.all(files.map(async (file) => {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+        const data = await res.json();
+        return data.fullConversation || null;
+      }));
+      const extracted = results.filter(Boolean);
+      if (extracted.length > 0) {
+        const contextMsg = extracted.length === 1
+          ? `Here's additional context from a screenshot:\n${extracted[0]}`
+          : `Here's additional context from ${extracted.length} screenshots:\n${extracted.map((t, i) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
         setStrategyChatInput(prev => prev ? `${prev}\n${contextMsg}` : contextMsg);
       } else {
-        toast({ title: 'Could not read screenshot', description: 'Try a clearer image', variant: 'destructive' });
+        toast({ title: 'Could not read screenshots', description: 'Try clearer images', variant: 'destructive' });
       }
     } catch {
       toast({ title: 'Upload failed', description: 'Try again', variant: 'destructive' });
@@ -3260,6 +3266,7 @@ export default function AppPage() {
                     ref={coachFileInputRef}
                     type="file"
                     accept="image/png,image/jpeg,image/jpg,image/webp"
+                    multiple
                     onChange={handleCoachScreenshotUpload}
                     className="hidden"
                   />
