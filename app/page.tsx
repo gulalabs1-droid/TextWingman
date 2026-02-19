@@ -68,7 +68,7 @@ export default function HomePage() {
               <Link href="#pricing">Pricing</Link>
             </Button>
             <Button asChild variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl text-sm">
-              <Link href="/login">Login</Link>
+              <Link href="/login?mode=signin">Login</Link>
             </Button>
             <Button asChild size="sm" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-semibold shadow-lg shadow-violet-600/20">
               <Link href="/app">Try Free</Link>

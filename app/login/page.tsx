@@ -15,9 +15,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
-  const [mode, setMode] = useState<'signin' | 'signup'>('signup')
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [mode, setMode] = useState<'signin' | 'signup'>(searchParams.get('mode') === 'signin' ? 'signin' : 'signup')
   const supabase = createClient()
   
   // Get redirect URL from query params (for checkout flow)
