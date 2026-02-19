@@ -11,6 +11,7 @@ const supabase = createClient();
 
 type User = { id: string; email: string };
 type HistoryItem = { id: string; their_message: string; generated_replies: { tone: string; text: string }[]; created_at: string };
+type SavedThread = { id: string; name: string; type: string; updated_at: string; message_count: number; last_message: any };
 type Subscription = { plan_type: 'weekly' | 'monthly' | 'annual'; status: 'active' | 'trialing' | 'canceled' | 'past_due'; current_period_end: string } | null;
 type Entitlement = { tier: 'free' | 'pro' | 'elite'; source: string } | null;
 
@@ -24,6 +25,7 @@ export default function ProfilePage() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
   const [suggestion, setSuggestion] = useState('');
   const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
   const [suggestionSubmitted, setSuggestionSubmitted] = useState(false);
@@ -73,6 +75,7 @@ export default function ProfilePage() {
       if (user) {
         setUser({ id: user.id, email: user.email || '' });
         fetchHistory(user.id);
+        fetchSavedThreads();
         fetchSubscription(user.id);
         fetchEntitlement(user.id);
       }
@@ -100,6 +103,16 @@ export default function ProfilePage() {
       if (error) throw error;
       setHistory(data || []);
     } catch { console.error('Error fetching history'); }
+  };
+
+  const fetchSavedThreads = async () => {
+    try {
+      const res = await fetch('/api/threads');
+      if (res.ok) {
+        const data = await res.json();
+        setSavedThreads(data.threads || []);
+      }
+    } catch { console.error('Error fetching threads'); }
   };
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -262,35 +275,64 @@ export default function ProfilePage() {
               </a>
             </div>
 
-            {/* Reply History */}
+            {/* Unified History — saved threads + coach sessions */}
             <div className="space-y-3">
-              <p className="text-white/25 text-[9px] font-mono font-bold tracking-[0.4em] px-1 flex items-center gap-2"><Clock className="h-3 w-3" />REPLY HISTORY</p>
-              {history.length === 0 ? (
+              <p className="text-white/25 text-[9px] font-mono font-bold tracking-[0.4em] px-1 flex items-center gap-2"><Clock className="h-3 w-3" />HISTORY</p>
+              {savedThreads.length === 0 && history.length === 0 ? (
                 <div className="rounded-2xl border border-white/[0.08] p-8 text-center space-y-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <MessageCircle className="h-8 w-8 text-white/15 mx-auto" />
                   <p className="text-white/40 text-sm font-medium">No history yet</p>
-                  <Link href="/app" className="inline-block px-4 py-2 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 text-xs font-bold hover:bg-violet-500/25 transition-all">Start Generating</Link>
+                  <Link href="/app" className="inline-block px-4 py-2 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 text-xs font-bold hover:bg-violet-500/25 transition-all">Start a session</Link>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {history.map((item) => {
-                    let parsedReplies: Array<{tone: string; text: string}> = [];
-                    try { const r = item.generated_replies; parsedReplies = typeof r === 'string' ? JSON.parse(r) : Array.isArray(r) ? r : []; } catch { parsedReplies = []; }
+                  {/* Saved threads + coach sessions */}
+                  {savedThreads.map((t) => {
+                    const isCoach = t.type === 'coach';
+                    const lastMsg = t.last_message;
+                    const preview = lastMsg?.content || lastMsg?.text || null;
                     return (
-                      <div key={item.id} className="rounded-2xl border border-white/[0.08] p-4 space-y-2.5" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                        <p className="text-white/50 text-xs font-medium bg-white/[0.05] px-3 py-2 rounded-xl">{item.their_message}</p>
-                        <div className="space-y-1.5">
-                          {parsedReplies.slice(0, 3).map((reply, idx) => (
-                            <div key={idx} className="flex items-start gap-2">
-                              <span className="text-[9px] font-black text-violet-400/60 uppercase mt-0.5 shrink-0 w-10">{reply.tone}</span>
-                              <p className="text-white/70 text-xs leading-relaxed">{reply.text}</p>
-                            </div>
-                          ))}
+                      <Link key={t.id} href="/app" className="block rounded-2xl border border-white/[0.08] p-4 space-y-2 hover:bg-white/[0.04] transition-all active:scale-[0.99]" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${isCoach ? 'bg-violet-500/20' : 'bg-white/[0.07]'}`}>
+                            {isCoach
+                              ? <Sparkles className="h-3 w-3 text-violet-400" />
+                              : <MessageCircle className="h-3 w-3 text-white/40" />
+                            }
+                          </div>
+                          <span className={`text-[9px] font-black uppercase tracking-widest ${isCoach ? 'text-violet-400/70' : 'text-white/30'}`}>{isCoach ? 'Coach' : 'Thread'}</span>
+                          <span className="text-white/15 text-[9px] ml-auto">{new Date(t.updated_at).toLocaleDateString()}</span>
                         </div>
-                        <p className="text-white/20 text-[10px] font-mono">{new Date(item.created_at).toLocaleDateString()}</p>
-                      </div>
+                        <p className="text-white/75 text-sm font-semibold truncate">{t.name}</p>
+                        {preview && <p className="text-white/35 text-xs truncate">{preview}</p>}
+                        <p className="text-white/20 text-[10px]">{t.message_count} messages</p>
+                      </Link>
                     );
                   })}
+                  {/* Reply history (quick generations without a thread) */}
+                  {history.length > 0 && (
+                    <>
+                      <p className="text-white/15 text-[9px] font-mono font-bold tracking-[0.3em] px-1 pt-2">QUICK REPLIES</p>
+                      {history.map((item) => {
+                        let parsedReplies: Array<{tone: string; text: string}> = [];
+                        try { const r = item.generated_replies; parsedReplies = typeof r === 'string' ? JSON.parse(r) : Array.isArray(r) ? r : []; } catch { parsedReplies = []; }
+                        return (
+                          <div key={item.id} className="rounded-2xl border border-white/[0.08] p-4 space-y-2.5" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                            <p className="text-white/50 text-xs font-medium bg-white/[0.05] px-3 py-2 rounded-xl truncate">{item.their_message}</p>
+                            <div className="space-y-1.5">
+                              {parsedReplies.slice(0, 3).map((reply, idx) => (
+                                <div key={idx} className="flex items-start gap-2">
+                                  <span className="text-[9px] font-black text-violet-400/60 uppercase mt-0.5 shrink-0 w-10">{reply.tone}</span>
+                                  <p className="text-white/70 text-xs leading-relaxed">{reply.text}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-white/20 text-[10px] font-mono">{new Date(item.created_at).toLocaleDateString()}</p>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               )}
             </div>
