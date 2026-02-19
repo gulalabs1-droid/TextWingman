@@ -41,6 +41,13 @@ export default async function DashboardPage() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
+
+  const { data: recentThreads } = await adminSupabase
+    .from('saved_threads')
+    .select('id, name, type, updated_at, messages')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false })
+    .limit(4)
   const { data: entitlement } = await adminSupabase
     .from('entitlements').select('tier, source, expires_at').eq('user_id', user.id).single()
 
@@ -246,18 +253,41 @@ export default async function DashboardPage() {
           </Link>
         )}
 
-        {/* Recent Wins */}
-        {recentReplies && recentReplies.length > 0 && (
+        {/* History — saved threads + coach sessions + recent replies */}
+        {((recentThreads && recentThreads.length > 0) || (recentReplies && recentReplies.length > 0)) && (
           <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-[10px] font-bold text-white/30 uppercase tracking-[0.15em]">Recent Wins</span>
+                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                <span className="text-[10px] font-bold text-white/30 uppercase tracking-[0.15em]">History</span>
               </div>
               <Link href="/profile" className="text-[10px] text-violet-400/50 hover:text-violet-400 font-bold transition-colors">View all →</Link>
             </div>
             <div className="divide-y divide-white/[0.05]">
-              {recentReplies.map((reply) => {
+              {/* Saved threads + coach sessions */}
+              {(recentThreads || []).map((t) => {
+                const isCoach = t.type === 'coach'
+                const msgs = Array.isArray(t.messages) ? t.messages : []
+                const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null
+                const preview = lastMsg?.content || lastMsg?.text || null
+                return (
+                  <Link key={t.id} href="/app" className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors">
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isCoach ? 'bg-violet-500/20' : 'bg-white/[0.07]'}`}>
+                      {isCoach
+                        ? <Sparkles className="h-3 w-3 text-violet-400" />
+                        : <MessageCircle className="h-3 w-3 text-white/40" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white/65 text-sm font-medium truncate">{t.name}</p>
+                      {preview && <p className="text-white/25 text-[10px] truncate">{preview}</p>}
+                    </div>
+                    <span className={`text-[9px] font-bold uppercase shrink-0 ${isCoach ? 'text-violet-400/50' : 'text-white/20'}`}>{isCoach ? 'Coach' : 'Thread'}</span>
+                  </Link>
+                )
+              })}
+              {/* Quick reply history */}
+              {(recentReplies || []).slice(0, 2).map((reply) => {
                 let parsedReplies: Array<{tone: string; text: string}> = []
                 try {
                   const raw = reply.generated_replies
