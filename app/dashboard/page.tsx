@@ -164,13 +164,13 @@ export default async function DashboardPage() {
               <div>
                 <p className="text-white/90 font-black text-lg">
                   {isAdmin ? 'Owner Mode — Elite access'
-                    : isPro ? 'Verified replies. Never overthink a text.'
-                    : 'Paste any message. Get 3 perfect replies.'}
+                    : isPro ? 'Coach Mode — never overthink a text.'
+                    : 'Open Coach — get the perfect reply.'}
                 </p>
                 <p className="text-white/35 text-sm mt-1 font-medium">
                   {isAdmin ? 'Full access to all features'
-                    : isPro ? 'Draft → Rule-Check → Tone-Verify'
-                    : 'AI-powered, tone-matched, strategy-aware'}
+                    : isPro ? 'Strategy + Intel + Verified pipeline'
+                    : 'AI coach + strategy + 3 reply options'}
                 </p>
               </div>
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
@@ -237,8 +237,8 @@ export default async function DashboardPage() {
                   <Crown className="h-4 w-4 text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-white/70 font-bold text-sm group-hover:text-white transition-colors">Unlock unlimited replies</p>
-                  <p className="text-white/25 text-xs">Strategy coaching + V2 verified pipeline</p>
+                  <p className="text-white/70 font-bold text-sm group-hover:text-white transition-colors">Unlock Coach Mode + Intel</p>
+                  <p className="text-white/25 text-xs">Unlimited replies + Strategy + Verified pipeline</p>
                 </div>
               </div>
               <span className="text-violet-400/50 text-xs font-bold hidden sm:block">$9.99/wk →</span>

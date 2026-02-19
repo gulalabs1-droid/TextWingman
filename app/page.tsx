@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Camera, Target, TrendingUp, Pencil, ChevronDown } from "lucide-react";
+import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Camera, Target, TrendingUp, Pencil, ChevronDown, Crosshair, Activity, Brain } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 const jsonLd = {
@@ -8,7 +8,7 @@ const jsonLd = {
   name: 'Text Wingman',
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web',
-  description: 'AI-powered texting companion that reads your conversation, detects sarcasm and power dynamics, coaches the move, writes the reply in your style, and checks your vibe before you send.',
+  description: 'AI texting coach that reads your conversation, gives strategy, generates replies, decodes messages, writes openers, and revives dead threads — all from one chat interface.',
   url: 'https://textwingman.com',
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
@@ -16,18 +16,18 @@ const jsonLd = {
     { '@type': 'Offer', price: '99.99', priceCurrency: 'USD', description: 'Pro Annual — Best Value' },
   ],
   featureList: [
-    'AI reply generation in 3 tones',
-    'Sarcasm detection — distinguishes playful sarcasm from low investment, kidding from serious',
-    'Power dynamics — tracks who is chasing, who is investing more, flags imbalance',
-    'Personal style matching — replies shaped by your own reply history',
-    'Subtext Intelligence — AI reads between the lines on playful, coy, and sarcastic messages',
-    'Vibe Check — real-time draft analysis',
-    'Tone Translator — rewrite messages in different energy',
-    'Screenshot briefing — upload a screenshot, get instant replies',
+    'Coach Mode — conversational AI texting coach as the primary interface',
+    'AI reply generation in 3 tones (Quick, Spicy, Soft)',
+    'Intel Sidebar — real-time health ring, risk score, timing, strategy',
+    'Sarcasm detection — distinguishes playful sarcasm from low investment',
+    'Power dynamics — tracks who is chasing, who is investing more',
+    'Screenshot multi-upload — upload screenshots for instant coaching',
     'Strategy coaching — AI analyzes conversation dynamics',
     'Decode mode — understand what their message really means',
     'Conversation Revive — re-engage dead threads',
     'Opener generator — first messages for any situation',
+    'Edit + Polish — make any reply yours',
+    'Thread Mode — full conversation tracking with auto-save',
   ],
   creator: { '@type': 'Organization', name: 'Gula Labs', url: 'https://textwingman.com' },
 };
@@ -39,7 +39,7 @@ const faqJsonLd = {
     { '@type': 'Question', name: 'Is Text Wingman free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial expiration. Pro unlocks unlimited everything + strategy coaching + the verified pipeline.' } },
     { '@type': 'Question', name: 'Can Text Wingman see my conversations?', acceptedAnswer: { '@type': 'Answer', text: 'No. Messages are processed in real-time and never stored. We don\'t have accounts linked to messaging apps.' } },
     { '@type': 'Question', name: 'What apps does Text Wingman work with?', acceptedAnswer: { '@type': 'Answer', text: 'All of them — iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Messenger, Telegram, LinkedIn, and more.' } },
-    { '@type': 'Question', name: 'How is Text Wingman different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'ChatGPT gives you a paragraph that sounds robotic. Wingman gives you 3 short, casual options under 18 words — verified by a 3-agent pipeline. Plus strategy coaching, vibe checking, tone translation, and thread context.' } },
+    { '@type': 'Question', name: 'How is Text Wingman different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'ChatGPT gives you a paragraph that sounds robotic. Wingman has Coach Mode — a conversational AI coach that reads your full situation, gives strategy, and generates 3 verified replies under 18 words. Plus an Intel sidebar with real-time health scores, risk analysis, and timing guidance.' } },
     { '@type': 'Question', name: 'Will people know I\'m using AI?', acceptedAnswer: { '@type': 'Answer', text: 'No. Every reply sounds like a real person texting — lowercase, casual, no emojis, no formal sentences. The 18-word limit keeps it natural.' } },
   ],
 };
@@ -72,123 +72,104 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           {/* Headline + Sub */}
           <div className="text-center space-y-5 mb-12 md:mb-16">
-            <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full text-xs font-bold border border-cyan-500/20">
+            <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
               <Sparkles className="h-3.5 w-3.5" />
-              V3.7 — Sarcasm Detection + Power Dynamics + Style Matching
+              V4.0 — Coach Mode + Intel Sidebar + Dark Glass UI
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white">
-              Your sharp friend
-              <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">for every conversation.</span>
+              Your AI texting coach.
+              <span className="block bg-gradient-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent mt-1">Ask anything. Send with confidence.</span>
             </h1>
             <p className="text-lg md:text-xl text-white/50 max-w-xl mx-auto leading-relaxed">
-              Reads the full conversation, detects sarcasm and power dynamics, coaches the move, writes the reply. Like a sharp friend who actually gets people.
+              Coach reads your full conversation, gives you the strategy, writes the reply, decodes their messages, and revives dead threads. One chat interface.
             </p>
           </div>
 
-          {/* Live Demo — Thread + Strategy + Reply */}
+          {/* Live Demo — Coach Conversation */}
           <div className="max-w-3xl mx-auto">
             <Link href="/app" className="block group">
-              <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-3xl p-5 sm:p-8 hover:bg-white/[0.06] transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-emerald-500/5 group-hover:border-white/[0.12]">
-                
-                {/* Mini Thread */}
-                <div className="mb-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <MessageCircle className="h-3.5 w-3.5 text-violet-400" />
-                    <span className="text-[11px] font-bold text-white/30 uppercase tracking-wider">Conversation</span>
-                    <span className="text-[10px] text-white/20 ml-auto">6 messages</span>
+              <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-3xl p-5 sm:p-8 hover:bg-white/[0.06] transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-violet-500/5 group-hover:border-white/[0.12]">
+
+                {/* Coach header */}
+                <div className="flex items-center gap-2.5 mb-5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                    <Crosshair className="h-4 w-4 text-white" />
                   </div>
-                  <div className="space-y-1.5">
-                    <div className="flex justify-start">
-                      <div className="bg-white/[0.07] border border-white/[0.06] rounded-2xl rounded-bl-md px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white/70 text-xs">&ldquo;wyd tonight&rdquo;</p>
-                      </div>
+                  <div>
+                    <span className="text-white/80 text-sm font-bold">Coach</span>
+                    <span className="text-white/20 text-[10px] ml-2 font-mono">V4</span>
+                  </div>
+                  <div className="ml-auto flex gap-1.5">
+                    <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-violet-500/15 text-violet-300 border border-violet-500/20">COACH</span>
+                    <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.04] text-white/25 border border-white/[0.06]">THREAD</span>
+                  </div>
+                </div>
+
+                {/* User message */}
+                <div className="flex justify-end mb-3">
+                  <div className="bg-violet-500/20 border border-violet-500/15 rounded-2xl rounded-br-md px-4 py-2.5 max-w-[85%]">
+                    <p className="text-white/85 text-xs leading-relaxed">she said &ldquo;my friends bailed on me lol&rdquo; after I said I&apos;m staying in. what do I say?</p>
+                  </div>
+                </div>
+
+                {/* Coach response */}
+                <div className="flex justify-start mb-4">
+                  <div className="max-w-[90%] space-y-2.5">
+                    <div className="bg-white/[0.06] border border-white/[0.10] rounded-2xl rounded-bl-md px-4 py-3">
+                      <p className="text-white/80 text-xs leading-relaxed">She&apos;s hinting hard. &ldquo;I got nothing to do&rdquo; = she wants you to invite her. This is your window — make a move. Don&apos;t ask, suggest.</p>
                     </div>
-                    <div className="flex justify-end">
-                      <div className="bg-gradient-to-r from-violet-600/80 to-fuchsia-600/80 rounded-2xl rounded-br-md px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white text-xs">&ldquo;probably just staying in, you?&rdquo;</p>
-                      </div>
+
+                    {/* Strategy badges */}
+                    <div className="flex flex-wrap gap-1.5 px-1">
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 flex items-center gap-1"><TrendingUp className="h-2.5 w-2.5" />Rising</span>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-white/[0.06] text-white/40 border border-white/[0.08]">Balanced</span>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400/60 border border-emerald-500/15">escalate</span>
                     </div>
-                    <div className="flex justify-start">
-                      <div className="bg-white/[0.07] border border-white/[0.06] rounded-2xl rounded-bl-md px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white/70 text-xs">&ldquo;my friends bailed on me lol&rdquo;</p>
+
+                    {/* Reply cards */}
+                    <div className="space-y-1.5">
+                      <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3 flex items-start gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shrink-0"><span className="text-[11px]">⚡</span></div>
+                        <div className="flex-1"><span className="text-[9px] font-black tracking-wider text-white/35">QUICK</span><p className="text-white/80 text-xs mt-0.5">&ldquo;come through then&rdquo;</p></div>
+                        <span className="text-[9px] font-bold text-emerald-400/60 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/15">80%</span>
                       </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <div className="bg-gradient-to-r from-violet-600/80 to-fuchsia-600/80 rounded-2xl rounded-br-md px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white text-xs">&ldquo;that&apos;s weak of them&rdquo;</p>
+                      <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3 flex items-start gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center shrink-0"><span className="text-[11px]">🔥</span></div>
+                        <div className="flex-1"><span className="text-[9px] font-black tracking-wider text-white/35">SPICY</span><p className="text-white/80 text-xs mt-0.5">&ldquo;sounds like you need a rescue&rdquo;</p></div>
+                        <span className="text-[9px] font-bold text-emerald-400/60 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/15">84%</span>
                       </div>
-                    </div>
-                    <div className="flex justify-start">
-                      <div className="bg-white/[0.07] border border-white/[0.06] rounded-2xl rounded-bl-lg px-3.5 py-2 max-w-[75%]">
-                        <p className="text-white/70 text-xs">&ldquo;right? now I got nothing to do&rdquo;</p>
+                      <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3 flex items-start gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shrink-0"><span className="text-[11px]">💚</span></div>
+                        <div className="flex-1"><span className="text-[9px] font-black tracking-wider text-white/35">SOFT</span><p className="text-white/80 text-xs mt-0.5">&ldquo;their loss. come chill with me&rdquo;</p></div>
+                        <span className="text-[9px] font-bold text-amber-400/60 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/15">72%</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Strategy Card */}
-                <div className="bg-gradient-to-r from-emerald-500/[0.08] to-cyan-500/[0.08] border border-emerald-500/20 rounded-2xl p-4 mb-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className="h-3.5 w-3.5 text-emerald-400" />
-                    <span className="text-emerald-300 text-[10px] font-bold uppercase tracking-widest">Your sharp friend says</span>
+                {/* Intel mini bar */}
+                <div className="grid grid-cols-4 gap-2 mb-5">
+                  <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-2 text-center">
+                    <p className="text-white/20 text-[7px] font-mono font-bold tracking-widest">HEALTH</p>
+                    <p className="text-emerald-400 text-lg font-black">82</p>
                   </div>
-                  <p className="text-white/90 text-sm font-semibold mb-2.5">&ldquo;She&apos;s hinting. This is your window — make a move.&rdquo;</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center gap-1">
-                      <TrendingUp className="h-2.5 w-2.5" /> Rising
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.08] text-white/50">Balanced</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">escalate</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[0.06] text-white/30">push meetup</span>
+                  <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-2 text-center">
+                    <p className="text-white/20 text-[7px] font-mono font-bold tracking-widest">RISK</p>
+                    <p className="text-emerald-400 text-lg font-black">15</p>
                   </div>
-                </div>
-
-                {/* Shaped Replies with Edit hint */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-3">
-                  <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-white/40 mb-1">⚡ Shorter</p>
-                    <p className="text-white/80 text-xs">&ldquo;come through then&rdquo;</p>
+                  <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-2 text-center">
+                    <p className="text-white/20 text-[7px] font-mono font-bold tracking-widest">WAIT</p>
+                    <p className="text-cyan-300 text-[11px] font-bold mt-1">5-15min</p>
                   </div>
-                  <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-white/40 mb-1">🔥 Spicier</p>
-                    <p className="text-white/80 text-xs">&ldquo;sounds like you need a rescue&rdquo;</p>
-                  </div>
-                  <div className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-white/40 mb-1">💚 Softer</p>
-                    <p className="text-white/80 text-xs">&ldquo;their loss. come chill with me&rdquo;</p>
-                  </div>
-                </div>
-
-                {/* Vibe Check + Tone Translator demo */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-5">
-                  <div className="bg-emerald-500/[0.06] border border-emerald-500/20 rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-sm leading-none">🟢</span>
-                      <span className="text-emerald-300 text-[10px] font-bold uppercase tracking-widest">Vibe Check</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">New</span>
-                    </div>
-                    <p className="text-emerald-400/80 text-[11px] font-bold">confident & direct</p>
-                    <p className="text-white/40 text-[11px]">Perfect energy, send it. 9/10</p>
-                  </div>
-                  <div className="bg-violet-500/[0.06] border border-violet-500/20 rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Sparkles className="h-3 w-3 text-violet-400" />
-                      <span className="text-violet-300 text-[10px] font-bold uppercase tracking-widest">Tone Translator</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300">New</span>
-                    </div>
-                    <div className="flex gap-1 flex-wrap">
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-500/15 text-pink-300">😏 Flirty</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300">😎 Chill</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300">🔥 Bold</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300">⚡ Witty</span>
-                    </div>
-                    <p className="text-white/40 text-[11px] mt-1.5">Rewrite any message in a different energy</p>
+                  <div className="bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-2 text-center">
+                    <p className="text-emerald-400/50 text-[7px] font-mono font-bold tracking-widest">STATUS</p>
+                    <p className="text-emerald-400 text-[11px] font-bold mt-1">✅ SAFE</p>
                   </div>
                 </div>
 
                 {/* CTA Row */}
                 <div className="flex items-center justify-between">
-                  <p className="text-white/25 text-xs sm:text-sm">Upload a screenshot or build a conversation</p>
+                  <p className="text-white/25 text-xs sm:text-sm">Ask anything. Upload screenshots. Get the move.</p>
                   <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-violet-600/20 group-hover:scale-105 transition-transform shrink-0 ml-4">
                     Try Free
                     <ArrowRight className="h-4 w-4" />
@@ -266,35 +247,35 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════ */}
-      {/* 3. HOW IT WORKS — Two Paths             */}
+      {/* 3. HOW IT WORKS — Two Modes              */}
       {/* ═══════════════════════════════════════ */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Two ways in. Every situation covered.</h2>
-          <p className="text-white/50">Screenshot a conversation or build a thread — Reply, Decode, Revive, Opener all included.</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Two modes. Every situation covered.</h2>
+          <p className="text-white/50">Coach handles the thinking. Thread tracks the conversation.</p>
         </div>
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-5">
-          {/* Screenshot Path */}
-          <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 hover:bg-white/[0.05] transition-all">
+          {/* Coach Path */}
+          <div className="bg-white/[0.03] border border-violet-500/15 rounded-3xl p-6 hover:bg-white/[0.05] transition-all">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                <Camera className="h-5 w-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                <Crosshair className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Screenshot Briefing</h3>
-                <p className="text-white/40 text-xs">Fastest path — one upload</p>
+                <h3 className="text-white font-bold">Coach Mode</h3>
+                <p className="text-white/40 text-xs">Your AI texting coach — the face of V4</p>
               </div>
             </div>
             <div className="space-y-3">
               {[
-                { n: '1', text: 'Upload a screenshot of the conversation' },
-                { n: '2', text: 'AI reads every message and identifies who said what' },
-                { n: '3', text: 'Get instant briefing — strategy + 3 replies' },
-                { n: '4', text: 'Edit any reply to add your ideas, Polish it, then send' },
+                { n: '1', text: 'Ask anything — "read this convo", "what should I say?", "decode this"' },
+                { n: '2', text: 'Upload screenshots for instant context — multi-upload supported' },
+                { n: '3', text: 'Get strategy + 3 reply options inline with confidence scores' },
+                { n: '4', text: 'Tap USE on any reply — it flows straight to your thread' },
               ].map((step) => (
                 <div key={step.n} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-cyan-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-[11px] font-black text-cyan-400">{step.n}</span>
+                  <div className="w-6 h-6 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-[11px] font-black text-violet-400">{step.n}</span>
                   </div>
                   <p className="text-white/60 text-sm">{step.text}</p>
                 </div>
@@ -305,24 +286,24 @@ export default function HomePage() {
           {/* Thread Path */}
           <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 hover:bg-white/[0.05] transition-all">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
                 <MessageCircle className="h-5 w-5 text-white" />
               </div>
               <div>
                 <h3 className="text-white font-bold">Thread Mode</h3>
-                <p className="text-white/40 text-xs">Ongoing coaching companion</p>
+                <p className="text-white/40 text-xs">Track the conversation, generate replies</p>
               </div>
             </div>
             <div className="space-y-3">
               {[
-                { n: '1', text: 'Paste what they sent and hit Generate' },
-                { n: '2', text: 'Pick a reply and tap "I sent this" — or type your own' },
-                { n: '3', text: 'Paste their next message — AI sees the full thread' },
-                { n: '4', text: 'Edit replies, regenerate for fresh options, or keep going' },
+                { n: '1', text: 'Paste their message or upload a screenshot to load the thread' },
+                { n: '2', text: 'Get 3 replies with confidence scores — pick one, edit, or regenerate' },
+                { n: '3', text: 'Tap "I sent this" — paste their reply — keep the loop going' },
+                { n: '4', text: 'Intel sidebar shows health, risk, timing, and strategy in real-time' },
               ].map((step) => (
                 <div key={step.n} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-[11px] font-black text-violet-400">{step.n}</span>
+                  <div className="w-6 h-6 rounded-lg bg-cyan-500/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-[11px] font-black text-cyan-400">{step.n}</span>
                   </div>
                   <p className="text-white/60 text-sm">{step.text}</p>
                 </div>
@@ -341,33 +322,33 @@ export default function HomePage() {
           <p className="text-white/50">Not a chatbot. Not a template. A competitive advantage.</p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
-          <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
+          <div className="bg-white/[0.03] border border-violet-500/15 rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-violet-500/15 flex items-center justify-center">
-              <MessageCircle className="h-6 w-6 text-violet-400" />
+              <Crosshair className="h-6 w-6 text-violet-400" />
             </div>
-            <h3 className="font-bold text-white mb-2">Reads the whole conversation</h3>
-            <p className="text-white/50 text-sm leading-relaxed">Thread-Aware AI sees every message — theirs and yours. Replies fit the flow, not just the last text.</p>
+            <h3 className="font-bold text-white mb-2">One coach for everything</h3>
+            <p className="text-white/50 text-sm leading-relaxed">No tabs, no menus. Just ask — Coach handles replies, decodes, openers, revives, and strategy in one chat.</p>
           </div>
           <div className="bg-white/[0.03] border border-emerald-500/10 rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-              <Target className="h-6 w-6 text-emerald-400" />
+              <Activity className="h-6 w-6 text-emerald-400" />
             </div>
-            <h3 className="font-bold text-white mb-2">Coaches you on the move</h3>
-            <p className="text-white/50 text-sm leading-relaxed">StrategyAgent detects sarcasm, power dynamics, who&apos;s chasing, and the energy level — then shapes every reply around the right move.</p>
+            <h3 className="font-bold text-white mb-2">Intel sidebar — real-time</h3>
+            <p className="text-white/50 text-sm leading-relaxed">Health score, risk level, timing window, strategy card — live analytics on your conversation as it happens.</p>
           </div>
           <div className="bg-white/[0.03] border border-violet-500/10 rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-violet-500/15 flex items-center justify-center">
-              <Pencil className="h-6 w-6 text-violet-400" />
+              <Brain className="h-6 w-6 text-violet-400" />
             </div>
-            <h3 className="font-bold text-white mb-2">Edit + Polish any reply</h3>
-            <p className="text-white/50 text-sm leading-relaxed">Add your own ideas to any reply, then hit Polish — AI smooths it out while keeping your words tight.</p>
+            <h3 className="font-bold text-white mb-2">Reads the full conversation</h3>
+            <p className="text-white/50 text-sm leading-relaxed">Detects sarcasm, power dynamics, who&apos;s chasing, energy level — every reply is shaped by the full thread.</p>
           </div>
           <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-6 text-center hover:bg-white/[0.05] transition-all">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-cyan-500/15 flex items-center justify-center">
               <Camera className="h-6 w-6 text-cyan-400" />
             </div>
-            <h3 className="font-bold text-white mb-2">Screenshot to briefing</h3>
-            <p className="text-white/50 text-sm leading-relaxed">Upload a screenshot. Get strategy analysis + 3 replies in seconds. No typing. No pasting.</p>
+            <h3 className="font-bold text-white mb-2">Screenshot multi-upload</h3>
+            <p className="text-white/50 text-sm leading-relaxed">Upload multiple screenshots at once. AI reads every message, loads the thread, gives you the move.</p>
           </div>
         </div>
         <div className="text-center mt-6">
@@ -420,7 +401,7 @@ export default function HomePage() {
           {[
             {
               q: 'Is it actually free?',
-              a: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial expiration. Pro unlocks unlimited everything + strategy coaching + the verified pipeline.',
+              a: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial expiration. Pro unlocks unlimited everything + Coach Mode + Intel sidebar + the verified pipeline.',
             },
             {
               q: 'Can you see my conversations?',
@@ -432,15 +413,15 @@ export default function HomePage() {
             },
             {
               q: 'How is this different from just asking ChatGPT?',
-              a: 'ChatGPT gives you a paragraph that sounds like a robot wrote it. Wingman gives you 3 short, casual options under 18 words — verified by a 3-agent pipeline. Plus strategy coaching, vibe checking, tone translation, and thread context that ChatGPT can\'t do.',
+              a: 'ChatGPT gives you a paragraph that sounds robotic. Wingman has Coach Mode — a conversational AI coach that reads your full situation, gives strategy, and generates 3 verified replies under 18 words. Plus an Intel sidebar with real-time health scores, risk analysis, and timing guidance.',
             },
             {
               q: 'Will people know I\'m using AI?',
               a: 'No. Every reply is designed to sound like a real person texting — lowercase, casual, no emojis, no formal sentences. The 18-word limit keeps it natural. Plus you can edit any reply and add your own ideas.',
             },
             {
-              q: 'What\'s the Vibe Check?',
-              a: 'As you type your own message, AI analyzes it in real-time and tells you how it reads — "too eager", "perfectly unbothered", "a bit needy" — with a score out of 10 and a one-line tip. Like Grammarly for your texting game.',
+              q: 'What\'s Coach Mode?',
+              a: 'Coach Mode is the new primary interface in V4. It\'s a conversational AI coach you can ask anything — "read this convo", "what should I say?", "decode their message", "write me an opener", "revive this dead chat". It gives strategy, generates reply options, and shows real-time conversation intel.',
             },
           ].map((faq, i) => (
             <details key={i} className="group bg-white/[0.03] border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.05] transition-all">
@@ -479,10 +460,10 @@ export default function HomePage() {
                 <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> 5 replies per day
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
-                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> Thread Mode
+                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> Coach + Thread Mode
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
-                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> Screenshot Briefing + Edit & Polish
+                <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> Screenshot upload + Edit & Polish
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
                 <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" /> 1 decode + 1 opener + 1 revive / day
@@ -513,13 +494,13 @@ export default function HomePage() {
             </div>
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3 text-white text-sm font-medium">
-                <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited replies
+                <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited replies + Coach Mode
               </li>
               <li className="flex items-center gap-3 text-white text-sm font-medium">
-                <Target className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Strategy Mode — AI coaching
+                <Target className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Intel sidebar — health, risk, timing
               </li>
               <li className="flex items-center gap-3 text-white text-sm font-medium">
-                <Shield className="h-4 w-4 text-emerald-400 flex-shrink-0" /> V2 Verified pipeline
+                <Shield className="h-4 w-4 text-emerald-400 flex-shrink-0" /> V2 Verified pipeline + Strategy
               </li>
               <li className="flex items-center gap-3 text-white/70 text-sm">
                 <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Edit + Polish — make any reply yours
@@ -576,7 +557,7 @@ export default function HomePage() {
           <div className="flex flex-col items-center space-y-6">
             <Logo size="lg" showText={true} />
             <p className="text-sm text-white/40 text-center max-w-md">
-              Your AI texting companion — reads the conversation, coaches the move, writes the reply, and lets you make it yours.
+              Your AI texting coach — reads the conversation, gives strategy, writes the reply, and lets you make it yours.
             </p>
             <div className="flex gap-6 text-sm text-white/30">
               <Link href="/guides" className="hover:text-white/60 transition">

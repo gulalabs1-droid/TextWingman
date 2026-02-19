@@ -1,0 +1,3595 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
+import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
+import { Logo } from '@/components/Logo';
+import { CURRENT_VERSION } from '@/lib/changelog';
+import FeatureTour from '@/components/FeatureTour';
+import ContextualHints from '@/components/ContextualHints';
+
+type Reply = {
+  tone: 'shorter' | 'spicier' | 'softer';
+  text: string;
+};
+
+type V2Meta = {
+  ruleChecks: Record<string, boolean>;
+  toneChecks: Record<string, boolean>;
+  confidence: Record<string, number>;
+  notes?: string;
+} | null;
+
+const TONE_CONFIG = {
+  shorter: {
+    label: 'Shorter',
+    description: 'Brief & casual',
+    color: 'bg-blue-500',
+    gradient: 'from-blue-500 to-cyan-500',
+    lightBg: 'bg-blue-50',
+    icon: Zap,
+    emoji: '⚡',
+  },
+  spicier: {
+    label: 'Spicier',
+    description: 'Playful & flirty',
+    color: 'bg-red-500',
+    gradient: 'from-rose-500 to-pink-500',
+    lightBg: 'bg-rose-50',
+    icon: Sparkles,
+    emoji: '🔥',
+  },
+  softer: {
+    label: 'Softer',
+    description: 'Warm & genuine',
+    color: 'bg-green-500',
+    gradient: 'from-green-500 to-emerald-500',
+    lightBg: 'bg-green-50',
+    icon: Heart,
+    emoji: '💚',
+  },
+};
+
+const EXAMPLE_MESSAGES = [
+  "Hey, what are you doing this weekend?",
+  "Want to grab coffee sometime?",
+  "Sorry I missed your call earlier",
+  "That's actually pretty funny lol"
+];
+
+const TAGLINES = [
+  "Flirt smarter, not harder 💘",
+  "Replies smoother than silk 🎯",
+  "Built for game, not games 🔥",
+  "Your secret weapon for perfect texts ⚡",
+  "Never fumble a reply again 💯",
+  "Text like a pro, every time 🌟"
+];
+
+type DecodeResult = {
+  intent: string;
+  subtext: string;
+  energy: string;
+  flags: { type: 'green' | 'red' | 'yellow'; text: string }[];
+  coach_tip: string;
+} | null;
+
+type Opener = {
+  tone: string;
+  text: string;
+  why: string;
+};
+
+type SavedThread = {
+  id: string;
+  name: string;
+  context: string | null;
+  platform: string | null;
+  updated_at: string;
+  message_count: number;
+  last_message: any;
+};
+
+type ThreadMessage = {
+  role: 'them' | 'you';
+  text: string;
+  timestamp: number;
+};
+
+type StrategyData = {
+  momentum: string;
+  balance: string;
+  move: {
+    energy: string;
+    one_liner: string;
+    constraints: {
+      no_questions: boolean;
+      keep_short: boolean;
+      add_tease: boolean;
+      push_meetup: boolean;
+    };
+    risk: string;
+  };
+  latencyMs: number;
+} | null;
+
+type StrategyChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+  draft?: { shorter?: string; spicier?: string; softer?: string } | null;
+};
+
+type ScanResult = {
+  platform: string;
+  messageCount: number;
+  confidence: string;
+  fullConversation: string;
+  lastReceived: string;
+  strategy: StrategyData;
+  replies: Reply[];
+} | null;
+
+type AppMode = 'reply' | 'decode' | 'opener' | 'revive';
+
+type ReviveMessage = {
+  tone: string;
+  text: string;
+  why: string;
+};
+
+const OPENER_CONTEXTS = [
+  { value: 'dating-app', label: 'Dating App', emoji: '💘', description: 'Tinder, Hinge, Bumble' },
+  { value: 'instagram-dm', label: 'Instagram DM', emoji: '📸', description: 'Slide into DMs' },
+  { value: 'cold-text', label: 'Cold Text', emoji: '📱', description: 'Got their number' },
+  { value: 'reconnect', label: 'Reconnect', emoji: '👋', description: 'Haven\'t talked in a while' },
+  { value: 'networking', label: 'Networking', emoji: '💼', description: 'Professional intro' },
+] as const;
+
+const OPENER_TONE_CONFIG: Record<string, { label: string; emoji: string; gradient: string; lightBg: string }> = {
+  bold: { label: 'Bold', emoji: '🎯', gradient: 'from-red-500 to-orange-500', lightBg: 'bg-red-50' },
+  witty: { label: 'Witty', emoji: '⚡', gradient: 'from-purple-500 to-pink-500', lightBg: 'bg-purple-50' },
+  warm: { label: 'Warm', emoji: '💚', gradient: 'from-green-500 to-emerald-500', lightBg: 'bg-green-50' },
+};
+
+const REVIVE_TONE_CONFIG: Record<string, { label: string; emoji: string; gradient: string }> = {
+  smooth: { label: 'Smooth', emoji: '🎯', gradient: 'from-cyan-500 to-blue-500' },
+  bold: { label: 'Bold', emoji: '🔥', gradient: 'from-orange-500 to-red-500' },
+  warm: { label: 'Warm', emoji: '💚', gradient: 'from-green-500 to-emerald-500' },
+};
+
+const ENERGY_CONFIG: Record<string, { emoji: string; color: string; bg: string }> = {
+  interested: { emoji: '💚', color: 'text-green-400', bg: 'bg-green-500/20' },
+  testing: { emoji: '🧪', color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+  neutral: { emoji: '😐', color: 'text-gray-400', bg: 'bg-gray-500/20' },
+  'pulling-away': { emoji: '🚪', color: 'text-red-400', bg: 'bg-red-500/20' },
+  flirty: { emoji: '😏', color: 'text-pink-400', bg: 'bg-pink-500/20' },
+  confrontational: { emoji: '⚡', color: 'text-orange-400', bg: 'bg-orange-500/20' },
+  anxious: { emoji: '😰', color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
+  playful: { emoji: '😜', color: 'text-purple-400', bg: 'bg-purple-500/20' },
+  cold: { emoji: '🥶', color: 'text-blue-400', bg: 'bg-blue-500/20' },
+  warm: { emoji: '🤗', color: 'text-green-400', bg: 'bg-green-500/20' },
+};
+
+type ContextType = 'crush' | 'friend' | 'colleague' | 'family' | 'ex' | 'new_match' | null;
+
+const CONTEXT_OPTIONS = [
+  { value: 'crush', label: 'Crush/Dating', emoji: '💘', description: 'Someone you\'re into' },
+  { value: 'friend', label: 'Friend', emoji: '🤝', description: 'Close friend' },
+  { value: 'colleague', label: 'Work', emoji: '💼', description: 'Professional' },
+  { value: 'family', label: 'Family', emoji: '👪', description: 'Family member' },
+  { value: 'ex', label: 'Ex', emoji: '💔', description: 'Complicated' },
+  { value: 'new_match', label: 'New Match', emoji: '✨', description: 'First messages' },
+] as const;
+
+export default function AppPage() {
+  const [message, setMessage] = useState('');
+  const [replies, setReplies] = useState<Reply[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [showExamples, setShowExamples] = useState(true);
+  const [currentTagline, setCurrentTagline] = useState(0);
+  const [showCraftedMessage, setShowCraftedMessage] = useState(false);
+  const [selectedContext, setSelectedContext] = useState<ContextType>(null);
+  const [customContext, setCustomContext] = useState('');
+  const [userIntent, setUserIntent] = useState('');
+  const [sharing, setSharing] = useState<string | null>(null);
+  const [shareMenuOpen, setShareMenuOpen] = useState<string | null>(null);
+  const [vpnBlocked, setVpnBlocked] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
+  const [remainingReplies, setRemainingReplies] = useState(5);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [usageLimit, setUsageLimit] = useState(5);
+  const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
+  const [decodeUsed, setDecodeUsed] = useState(0);
+  const [decodeLimit, setDecodeLimit] = useState(1);
+  const [openerUsed, setOpenerUsed] = useState(0);
+  const [openerLimit, setOpenerLimit] = useState(1);
+  const [isPro, setIsPro] = useState(false);
+  const [useV2, setUseV2] = useState(true); // Pro users default to V2, can toggle to V1 for speed
+  const [v2Meta, setV2Meta] = useState<V2Meta>(null);
+  const [v2Step, setV2Step] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
+  const [showFeatureSpotlight, setShowFeatureSpotlight] = useState(false);
+  const [appMode, setAppMode] = useState<AppMode>('reply');
+  const [decodeResult, setDecodeResult] = useState<DecodeResult>(null);
+  const [decoding, setDecoding] = useState(false);
+  const [openers, setOpeners] = useState<Opener[]>([]);
+  const [openerContext, setOpenerContext] = useState<string>('dating-app');
+  const [openerDescription, setOpenerDescription] = useState('');
+  const [loadingOpeners, setLoadingOpeners] = useState(false);
+  const [reviveMessages, setReviveMessages] = useState<ReviveMessage[]>([]);
+  const [reviveAnalysis, setReviveAnalysis] = useState('');
+  const [loadingRevive, setLoadingRevive] = useState(false);
+  const [reviveUsed, setReviveUsed] = useState(0);
+  const [reviveLimit, setReviveLimit] = useState(1);
+  const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
+  const [showThreads, setShowThreads] = useState(false);
+  const [savingThread, setSavingThread] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeThreadName, setActiveThreadName] = useState<string | null>(null);
+  const [editingThreadName, setEditingThreadName] = useState(false);
+  const [thread, setThread] = useState<ThreadMessage[]>([]);
+  const [showThread, setShowThread] = useState(true);
+  const [selectedThreadMsg, setSelectedThreadMsg] = useState<number | null>(null);
+  const [pendingSent, setPendingSent] = useState<Reply | null>(null);
+  const [customSent, setCustomSent] = useState('');
+  const [showCustomSent, setShowCustomSent] = useState(false);
+  const [strategyData, setStrategyData] = useState<StrategyData>(null);
+  const [strategyChatHistory, setStrategyChatHistory] = useState<StrategyChatMessage[]>([]);
+  const [strategyChatInput, setStrategyChatInput] = useState('');
+  const [strategyChatLoading, setStrategyChatLoading] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult>(null);
+  const [saving, setSaving] = useState(false);
+  const [editingReply, setEditingReply] = useState<string | null>(null); // tone being edited
+  const [editText, setEditText] = useState('');
+  const [refining, setRefining] = useState(false);
+  const [vibeCheck, setVibeCheck] = useState<{ energy: string; vibe: string; tip: string; score: number } | null>(null);
+  const [vibeLoading, setVibeLoading] = useState(false);
+  const vibeTimer = useRef<NodeJS.Timeout | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [showToneBar, setShowToneBar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const coachFileInputRef = useRef<HTMLInputElement>(null);
+  const [coachScreenshotExtracting, setCoachScreenshotExtracting] = useState(false);
+  const threadEndRef = useRef<HTMLDivElement>(null);
+  const inputAreaRef = useRef<HTMLDivElement>(null);
+  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
+  
+  const charCount = message.length;
+
+  // Show one-time feature spotlight for screenshot upload
+  useEffect(() => {
+    const dismissed = localStorage.getItem('tw_spotlight_screenshot_v1');
+    if (!dismissed) {
+      // Small delay so the page renders first
+      const timer = setTimeout(() => setShowFeatureSpotlight(true), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const dismissSpotlight = () => {
+    setShowFeatureSpotlight(false);
+    localStorage.setItem('tw_spotlight_screenshot_v1', 'true');
+  };
+
+  // Load usage and Pro status from server on mount
+  useEffect(() => {
+    const fetchUsage = async () => {
+      try {
+        const res = await fetch('/api/usage');
+        if (res.ok) {
+          const data = await res.json();
+          setUsageCount(data.usageCount);
+          setRemainingReplies(data.remaining);
+          if (data.limit) setUsageLimit(data.limit);
+          // Store user info for checkout
+          if (data.userId) setUserId(data.userId);
+          if (data.userEmail) setUserEmail(data.userEmail);
+          // Check if user is Pro (unlimited or has active subscription)
+          if (data.isPro) {
+            setIsPro(true);
+          }
+          if (data.decodeUsed !== undefined) setDecodeUsed(data.decodeUsed);
+          if (data.decodeLimit !== undefined) setDecodeLimit(data.decodeLimit);
+          if (data.openerUsed !== undefined) setOpenerUsed(data.openerUsed);
+          if (data.openerLimit !== undefined) setOpenerLimit(data.openerLimit);
+          if (data.trialDaysLeft !== undefined && data.trialDaysLeft !== null) {
+            setTrialDaysLeft(data.trialDaysLeft);
+          }
+          if (data.userName) setUserName(data.userName);
+        }
+      } catch (error) {
+        console.error('Failed to fetch usage:', error);
+      }
+    };
+    fetchUsage();
+    fetchThreads();
+    
+    // Check for successful payment redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+      toast({
+        title: "🎉 Welcome to Pro!",
+        description: "You now have unlimited verified replies. Let's go!",
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/app');
+      // Refetch to get updated Pro status
+      setTimeout(fetchUsage, 1000);
+    }
+  }, [toast]);
+
+  // Rotate taglines every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTagline((prev) => (prev + 1) % TAGLINES.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-scroll thread view
+  useEffect(() => {
+    threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [thread]);
+
+  // Auto-save thread after 2+ messages (1.5s debounce)
+  useEffect(() => {
+    if (thread.length < 2) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      autoSaveThread();
+    }, 1500);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thread]);
+
+  // Log usage to server
+  const incrementUsage = async () => {
+    try {
+      const res = await fetch('/api/usage', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setUsageCount(data.usageCount);
+        setRemainingReplies(data.remaining);
+        return true;
+      } else if (res.status === 429) {
+        setShowPaywall(true);
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to log usage:', error);
+    }
+    return true;
+  };
+
+  const handleGenerate = async () => {
+    // Check if user has reached free limit
+    if (usageCount >= usageLimit) {
+      setShowPaywall(true);
+      return;
+    }
+
+    // If textarea is empty but last thread message is from 'them', use that
+    const lastThemInThread = [...thread].reverse().find(m => m.role === 'them');
+    const effectiveMessage = message.trim() || (lastThemInThread ? lastThemInThread.text : '');
+
+    if (!effectiveMessage) {
+      toast({
+        title: "Empty message",
+        description: "Please paste a message first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Only add to thread if user typed a new message in the textarea
+    if (message.trim()) {
+      addToThread('them', message.trim());
+    }
+
+    setLoading(true);
+    setReplies([]); // Clear previous replies
+    setV2Meta(null); // Clear previous V2 meta
+    setV2Step(null);
+    setPendingSent(null);
+    
+    try {
+      // Use V2 API if enabled (Pro-only)
+      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
+      
+      // Build full conversation context for smarter replies
+      const fullContext = buildThreadContext(effectiveMessage);
+      
+      // Show progress steps for V2
+      if (isPro && useV2) {
+        setV2Step('drafting');
+        await new Promise(r => setTimeout(r, 800));
+        setV2Step('rule-checking');
+        await new Promise(r => setTimeout(r, 600));
+        setV2Step('tone-verifying');
+      }
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: fullContext,
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+          userIntent: userIntent.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Check if VPN abuse detected
+          if (data.error === 'vpn_abuse_detected') {
+            setVpnBlocked(true);
+          } else {
+            setShowPaywall(true);
+          }
+        } else {
+          throw new Error(data.error || 'Failed to generate replies');
+        }
+        return;
+      }
+      
+      // Handle V2 response format
+      if (isPro && useV2 && data.shorter && data.spicier && data.softer) {
+        const v2Replies: Reply[] = [
+          { tone: 'shorter', text: data.shorter },
+          { tone: 'spicier', text: data.spicier },
+          { tone: 'softer', text: data.softer },
+        ];
+        setReplies(v2Replies);
+        if (data.meta) {
+          setV2Meta(data.meta);
+        }
+        if (data.strategy) {
+          setStrategyData(data.strategy);
+        }
+      }
+      // Handle V1 response format
+      else if (Array.isArray(data.replies) && data.replies.length > 0) {
+        // Ensure all replies have required properties
+        const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
+        
+        if (validReplies.length > 0) {
+          setReplies(validReplies);
+        } else {
+          throw new Error('Invalid reply format received');
+        }
+      } else {
+        throw new Error('No replies received from server');
+      }
+      
+      // Refresh usage count from server
+      const usageRes = await fetch('/api/usage');
+      if (usageRes.ok) {
+        const usageData = await usageRes.json();
+        setUsageCount(usageData.usageCount);
+        setRemainingReplies(usageData.remaining);
+      }
+
+      // Clear input (it's now in the thread)
+      setMessage('');
+      setShowExamples(false);
+
+      // Show "crafted with care" message
+      setShowCraftedMessage(true);
+      setTimeout(() => setShowCraftedMessage(false), 3000);
+
+      toast({
+        title: (isPro && useV2) ? "✅ Verified replies ready!" : "✨ Replies generated!",
+        description: "Copy one and tap 'I sent this' to keep the thread going",
+      });
+    } catch (error) {
+      console.error('Generation error:', error);
+      toast({
+        title: "Oops! Something went wrong",
+        description: error instanceof Error ? error.message : "Failed to generate replies. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setV2Step(null);
+    }
+  };
+
+  // Regenerate replies (regular flow) — re-calls API with same thread context, no re-add
+  const handleRegenerate = async () => {
+    if (loading) return;
+    
+    // Get last "them" message from thread to rebuild context
+    const lastThem = [...thread].reverse().find(m => m.role === 'them');
+    if (!lastThem) return;
+
+    setLoading(true);
+    setReplies([]);
+    setV2Meta(null);
+    setV2Step(null);
+    setStrategyData(null);
+    setPendingSent(null);
+
+    try {
+      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
+      const fullContext = buildThreadContext(lastThem.text);
+
+      if (isPro && useV2) {
+        setV2Step('drafting');
+        await new Promise(r => setTimeout(r, 800));
+        setV2Step('rule-checking');
+        await new Promise(r => setTimeout(r, 600));
+        setV2Step('tone-verifying');
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: fullContext,
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to regenerate');
+
+      if (isPro && useV2 && data.shorter && data.spicier && data.softer) {
+        setReplies([
+          { tone: 'shorter', text: data.shorter },
+          { tone: 'spicier', text: data.spicier },
+          { tone: 'softer', text: data.softer },
+        ]);
+        if (data.meta) setV2Meta(data.meta);
+        if (data.strategy) setStrategyData(data.strategy);
+      } else if (Array.isArray(data.replies) && data.replies.length > 0) {
+        const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
+        if (validReplies.length > 0) setReplies(validReplies);
+      }
+
+      toast({ title: '🔄 Fresh replies generated', description: 'New options for the same message' });
+    } catch (error) {
+      toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+      setV2Step(null);
+    }
+  };
+
+  // Regenerate replies for screenshot briefing — re-calls API with same extracted conversation
+  const handleRegenerateScan = async () => {
+    if (loading || !scanResult) return;
+
+    setLoading(true);
+
+    try {
+      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
+      const genRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: scanResult.fullConversation,
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+        }),
+      });
+
+      const genData = await genRes.json();
+      if (!genRes.ok) throw new Error(genData.error || 'Regeneration failed');
+
+      let newReplies: Reply[] = [];
+      let newStrategy: StrategyData = null;
+
+      if (isPro && useV2 && genData.shorter && genData.spicier && genData.softer) {
+        newReplies = [
+          { tone: 'shorter', text: genData.shorter },
+          { tone: 'spicier', text: genData.spicier },
+          { tone: 'softer', text: genData.softer },
+        ];
+        if (genData.strategy) newStrategy = genData.strategy;
+      } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
+        newReplies = genData.replies.filter((r: any) => r && r.tone && r.text);
+      }
+
+      if (newReplies.length > 0) {
+        setScanResult({
+          ...scanResult,
+          replies: newReplies,
+          strategy: newStrategy,
+        });
+        toast({ title: '🔄 Fresh replies generated', description: 'New options for the same conversation' });
+      }
+    } catch (error) {
+      toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Edit + Refine reply inline
+  const handleStartEdit = (tone: string, currentText: string) => {
+    setEditingReply(tone);
+    setEditText(currentText);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReply(null);
+    setEditText('');
+  };
+
+  const handleRefine = async (tone: string, originalText: string, isScan = false) => {
+    if (!editText.trim() || refining) return;
+    setRefining(true);
+
+    try {
+      const res = await fetch('/api/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          original: originalText,
+          edited: editText.trim(),
+          tone,
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Refine failed');
+
+      if (data.refined) {
+        if (isScan && scanResult) {
+          // Update the scanResult replies
+          setScanResult({
+            ...scanResult,
+            replies: scanResult.replies.map(r =>
+              r.tone === tone ? { ...r, text: data.refined } : r
+            ),
+          });
+        } else {
+          // Update the regular replies
+          setReplies(prev => prev.map(r =>
+            r.tone === tone ? { ...r, text: data.refined } : r
+          ));
+        }
+        toast({ title: '✨ Reply polished', description: 'Your edit has been refined' });
+      }
+    } catch (error) {
+      toast({ title: 'Refine failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setRefining(false);
+      setEditingReply(null);
+      setEditText('');
+    }
+  };
+
+  // Use raw edit without AI polish
+  const handleUseRawEdit = (tone: string, isScan = false) => {
+    if (!editText.trim()) return;
+    if (isScan && scanResult) {
+      setScanResult({
+        ...scanResult,
+        replies: scanResult.replies.map(r =>
+          r.tone === tone ? { ...r, text: editText.trim() } : r
+        ),
+      });
+    } else {
+      setReplies(prev => prev.map(r =>
+        r.tone === tone ? { ...r, text: editText.trim() } : r
+      ));
+    }
+    setEditingReply(null);
+    setEditText('');
+  };
+
+  // ── Vibe Check — real-time feedback on user's draft ──
+  const runVibeCheck = async (draft: string) => {
+    if (draft.trim().length < 8 || vibeLoading) return;
+    setVibeLoading(true);
+    try {
+      const lastThem = [...thread].reverse().find(m => m.role === 'them');
+      const res = await fetch('/api/vibe-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draft: draft.trim(),
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+          lastReceived: lastThem?.text || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVibeCheck(data);
+      }
+    } catch {
+      // Silent fail — don't interrupt typing
+    } finally {
+      setVibeLoading(false);
+    }
+  };
+
+  // Debounced vibe check on typing
+  const handleMessageChange = (value: string) => {
+    setMessage(value);
+    if (value.trim()) setShowExamples(false);
+    setVibeCheck(null);
+
+    if (vibeTimer.current) clearTimeout(vibeTimer.current);
+    if (value.trim().length >= 8 && appMode === 'reply') {
+      vibeTimer.current = setTimeout(() => runVibeCheck(value), 1500);
+    }
+  };
+
+  // ── Tone Translator — rewrite draft in a different energy ──
+  const handleTranslateTone = async (tone: string) => {
+    if (!message.trim() || translating) return;
+    setTranslating(true);
+    try {
+      const res = await fetch('/api/translate-tone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draft: message.trim(),
+          tone,
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.translated) {
+        setMessage(data.translated);
+        setVibeCheck(null);
+        toast({ title: `🎭 Rewritten as ${tone}`, description: data.translated });
+      } else {
+        toast({ title: 'Translation failed', description: data.error || 'Try again', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Translation failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleCopy = async (text: string, tone: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(tone);
+      setPendingSent({ tone: tone as Reply['tone'], text });
+      toast({
+        title: (isPro && useV2) ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
+        description: "Tap 'I sent this' to continue the thread",
+      });
+      
+      // Log which tone was copied (for personalization data)
+      fetch('/api/log-copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tone, isV2: isPro }),
+      }).catch(() => {}); // Fire and forget
+      
+      setTimeout(() => setCopied(null), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Share: Copy link
+  const handleShareLink = async (reply: Reply) => {
+    setSharing(reply.tone);
+    try {
+      const response = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          theirMessage: message.substring(0, 100),
+          myReply: reply.text,
+          tone: reply.tone,
+        }),
+      });
+      const data = await response.json();
+      if (data.slug) {
+        const shareUrl = `${window.location.origin}/share/${data.slug}`;
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: "🔗 Share link copied!", description: "Paste on TikTok, Instagram, or Twitter" });
+      }
+    } catch (err) {
+      const encoded = btoa(JSON.stringify({ theirMessage: message.substring(0, 100), myReply: reply.text, tone: reply.tone }));
+      await navigator.clipboard.writeText(`${window.location.origin}/share/${encoded}`);
+      toast({ title: "🔗 Share link copied!" });
+    }
+    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
+  };
+
+  // Share: Download image
+  const handleDownloadImage = async (reply: Reply) => {
+    setSharing(reply.tone);
+    try {
+      const imageUrl = `/api/share/image?their=${encodeURIComponent(message.substring(0, 100))}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
+      const res = await fetch(imageUrl);
+      if (!res.ok) throw new Error('Failed to generate image');
+      const blob = await res.blob();
+      if (blob.size === 0) throw new Error('Empty image');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `textwingman-${reply.tone}.png`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      toast({ title: "📥 Image downloaded!", description: "Share it anywhere" });
+    } catch (err) {
+      console.error('Download error:', err);
+      toast({ title: "Failed to download", description: "Please try again", variant: "destructive" });
+    }
+    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
+  };
+
+  // Share: Copy image to clipboard
+  const handleCopyImage = async (reply: Reply) => {
+    setSharing(reply.tone);
+    try {
+      const imageUrl = `/api/share/image?their=${encodeURIComponent(message.substring(0, 100))}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
+      const res = await fetch(imageUrl);
+      if (!res.ok) throw new Error('Failed to generate image');
+      const blob = await res.blob();
+      if (blob.size === 0) throw new Error('Empty image');
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      toast({ title: "📋 Image copied!", description: "Paste it in any app" });
+    } catch (err) {
+      console.error('Copy image error:', err);
+      toast({ title: "Failed to copy image", description: "Try downloading instead", variant: "destructive" });
+    }
+    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
+  };
+
+  // Compress image client-side to avoid size issues with iPhone screenshots
+  const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Screenshot upload & extraction
+  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please upload an image file (PNG, JPEG, WebP)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Compress image client-side (handles large iPhone screenshots)
+    let base64: string;
+    try {
+      base64 = await compressImage(file);
+    } catch {
+      toast({
+        title: 'Could not process image',
+        description: 'Try a different screenshot',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setScreenshotPreview(base64);
+    setExtracting(true);
+    setExtractedPlatform(null);
+
+    try {
+      // Step 1: Extract conversation from screenshot
+      const res = await fetch('/api/extract-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 }),
+      });
+
+      const data = await res.json();
+
+      if (data.error && !data.extracted_text) {
+        toast({
+          title: '📷 Could not read screenshot',
+          description: data.error || 'Try a clearer screenshot of the conversation',
+          variant: 'destructive',
+        });
+        setScreenshotPreview(null);
+        return;
+      }
+
+      if (data.extracted_text) {
+        setExtractedPlatform(data.platform);
+        const msgCount = data.message_count || 1;
+
+        // For Decode, Opener, and Revive modes: just extract text into textarea, don't auto-generate replies
+        if (appMode === 'decode' || appMode === 'opener' || appMode === 'revive') {
+          setMessage(appMode === 'revive' ? (data.full_conversation || data.extracted_text) : (data.last_received || data.extracted_text));
+          setShowExamples(false);
+          setScreenshotPreview(null);
+          toast({
+            title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'}`,
+            description: appMode === 'decode'
+              ? 'Now hit Decode to analyze it'
+              : appMode === 'revive'
+              ? 'Conversation loaded — hit Revive to generate re-engagement messages'
+              : 'Text extracted — use it for your opener',
+          });
+          return;
+        }
+
+        // Smart Thread Update: if a thread already exists, compare and add only new messages
+        if (thread.length > 0 && data.full_conversation) {
+          const extractedLines = data.full_conversation.split('\n').filter((l: string) => l.trim());
+          const extractedMsgs = extractedLines.map((line: string) => ({
+            role: line.startsWith('You:') ? 'you' as const : 'them' as const,
+            text: line.replace(/^(Them|You):\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim(),
+          }));
+
+          // Normalize text for comparison (lowercase, strip punctuation/whitespace)
+          const normalize = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const existingNormalized = thread.map(m => normalize(m.text));
+
+          // Find messages in the extracted list that aren't in the existing thread
+          // Walk from the end of the extracted messages backward to find where our thread ends
+          let matchEnd = -1;
+          for (let i = extractedMsgs.length - 1; i >= 0; i--) {
+            const idx = existingNormalized.lastIndexOf(normalize(extractedMsgs[i].text));
+            if (idx !== -1 && idx === thread.length - 1) {
+              matchEnd = i;
+              break;
+            }
+          }
+
+          // If we couldn't find an exact tail match, try matching the last few thread messages sequentially
+          if (matchEnd === -1) {
+            for (let start = extractedMsgs.length - 1; start >= 0; start--) {
+              let threadIdx = thread.length - 1;
+              let extIdx = start;
+              let matched = false;
+              while (extIdx >= 0 && threadIdx >= 0) {
+                if (normalize(extractedMsgs[extIdx].text) === existingNormalized[threadIdx]) {
+                  if (threadIdx === thread.length - 1) {
+                    matchEnd = extIdx;
+                    matched = true;
+                  }
+                  threadIdx--;
+                }
+                extIdx--;
+              }
+              if (matched) break;
+            }
+          }
+
+          const newMessages = matchEnd !== -1
+            ? extractedMsgs.slice(matchEnd + 1)
+            : [];
+
+          if (newMessages.length > 0) {
+            const newThreadMsgs: ThreadMessage[] = newMessages.map((m: { role: 'you' | 'them'; text: string }) => ({
+              role: m.role,
+              text: m.text,
+              timestamp: Date.now(),
+            }));
+
+            setThread(prev => [...prev, ...newThreadMsgs]);
+            setScreenshotPreview(null);
+            setShowExamples(false);
+
+            const youCount = newMessages.filter((m: { role: string }) => m.role === 'you').length;
+            const themCount = newMessages.filter((m: { role: string }) => m.role === 'them').length;
+            const parts = [];
+            if (youCount > 0) parts.push(`${youCount} from you`);
+            if (themCount > 0) parts.push(`${themCount} from them`);
+
+            toast({
+              title: `📷 Thread updated — ${newMessages.length} new message${newMessages.length !== 1 ? 's' : ''}`,
+              description: parts.join(' and ') + ' added. Delete any that are wrong.',
+            });
+
+            // If the last new message is from them, set it in the textarea for easy generation
+            const lastNew = newMessages[newMessages.length - 1];
+            if (lastNew.role === 'them') {
+              setMessage(lastNew.text);
+            }
+
+            return;
+          } else {
+            // No new messages found — tell the user
+            setScreenshotPreview(null);
+            toast({
+              title: '📷 No new messages detected',
+              description: 'This screenshot looks the same as your current thread. Send a new screenshot with more messages.',
+            });
+            return;
+          }
+        }
+
+        // Reply mode: auto-generate replies via Screenshot Briefing
+        toast({
+          title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'} — generating replies...`,
+          description: data.platform !== 'unknown' ? `From ${data.platform}` : 'Reading your conversation',
+        });
+
+        // Step 2: Auto-generate replies using the extracted conversation
+        const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
+        const genRes = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: data.extracted_text,
+            context: selectedContext || 'crush',
+            customContext: customContext.trim() || undefined,
+          }),
+        });
+
+        const genData = await genRes.json();
+
+        if (!genRes.ok) {
+          throw new Error(genData.error || 'Generation failed');
+        }
+
+        // Parse replies from response
+        let scanReplies: Reply[] = [];
+        let scanStrategy: StrategyData = null;
+
+        if (isPro && useV2 && genData.shorter && genData.spicier && genData.softer) {
+          scanReplies = [
+            { tone: 'shorter', text: genData.shorter },
+            { tone: 'spicier', text: genData.spicier },
+            { tone: 'softer', text: genData.softer },
+          ];
+          if (genData.strategy) {
+            scanStrategy = genData.strategy;
+          }
+        } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
+          scanReplies = genData.replies.filter((r: any) => r && r.tone && r.text);
+        }
+
+        if (scanReplies.length > 0) {
+          // Auto-populate thread with extracted messages so user sees the conversation immediately
+          const convoText = data.full_conversation || data.extracted_text;
+          const convoLines = convoText.split('\n').filter((l: string) => l.trim());
+          const threadMsgs: ThreadMessage[] = convoLines.map((line: string) => ({
+            role: line.startsWith('You:') ? 'you' as const : 'them' as const,
+            text: line.replace(/^(Them|You):\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim(),
+            timestamp: Date.now(),
+          }));
+
+          setThread(threadMsgs);
+          setReplies(scanReplies);
+          setStrategyData(scanStrategy);
+          setExtractedPlatform(data.platform || null);
+          setShowThread(true);
+          setShowExamples(false);
+
+          // Track usage
+          const usageRes = await fetch('/api/usage');
+          if (usageRes.ok) {
+            const usageData = await usageRes.json();
+            setUsageCount(usageData.usageCount);
+            setRemainingReplies(usageData.remaining);
+          }
+
+          setScreenshotPreview(null);
+          toast({
+            title: `📷 ${msgCount} messages loaded — replies ready`,
+            description: data.platform !== 'unknown' ? `From ${data.platform} · thread auto-saved` : 'Thread auto-saved',
+          });
+        } else {
+          // Fallback: put text in textarea like before
+          setMessage(data.extracted_text);
+          setScreenshotPreview(null);
+          toast({
+            title: `📷 ${msgCount > 1 ? `${msgCount} messages extracted` : 'Message extracted'}`,
+            description: 'Hit Generate to get replies',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Screenshot extraction error:', error);
+      toast({
+        title: 'Scan failed',
+        description: 'Something went wrong. Try pasting the message instead.',
+        variant: 'destructive',
+      });
+      setScreenshotPreview(null);
+    } finally {
+      setExtracting(false);
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const clearScreenshot = () => {
+    setScreenshotPreview(null);
+    setExtractedPlatform(null);
+  };
+
+  // Continue in Thread from a scan result — hydrate thread with extracted messages
+  const handleContinueInThread = () => {
+    if (!scanResult) return;
+    const lines = scanResult.fullConversation.split('\n').filter(l => l.trim());
+    const newThread: ThreadMessage[] = lines.map(line => ({
+      role: line.startsWith('You:') ? 'you' as const : 'them' as const,
+      text: line.replace(/^(Them|You):\s*/, ''),
+      timestamp: Date.now(),
+    }));
+    setThread(newThread);
+    setReplies(scanResult.replies);
+    setStrategyData(scanResult.strategy);
+    setScanResult(null);
+    setScreenshotPreview(null);
+    setShowThread(true);
+    setShowExamples(false);
+    toast({ title: '✓ Loaded into thread', description: 'Pick a reply or keep the conversation going' });
+  };
+
+  // Decode message — "What Do They Mean?"
+  const handleDecode = async () => {
+    if (!message.trim()) {
+      toast({ title: 'No message to decode', description: 'Paste or type a message first', variant: 'destructive' });
+      return;
+    }
+    if (!isPro && decodeUsed >= decodeLimit) {
+      setShowPaywall(true);
+      toast({ title: '🔒 Daily decode used', description: 'Upgrade to Pro for unlimited decodes', variant: 'destructive' });
+      return;
+    }
+    setDecoding(true);
+    setDecodeResult(null);
+    try {
+      const res = await fetch('/api/decode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message.trim(), context: selectedContext || 'crush', customContext: customContext.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (res.status === 429) {
+        setShowPaywall(true);
+        toast({ title: '🔒 Daily decode used', description: 'Upgrade to Pro for unlimited decodes', variant: 'destructive' });
+        setDecodeUsed(decodeLimit);
+        return;
+      }
+      if (data.error && !data.intent) {
+        toast({ title: 'Decode failed', description: data.error, variant: 'destructive' });
+        return;
+      }
+      setDecodeResult(data);
+      setDecodeUsed(prev => prev + 1);
+    } catch {
+      toast({ title: 'Decode failed', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setDecoding(false);
+    }
+  };
+
+  // Generate opening lines
+  const handleGenerateOpeners = async () => {
+    if (!isPro && openerUsed >= openerLimit) {
+      setShowPaywall(true);
+      toast({ title: '🔒 Daily opener used', description: 'Upgrade to Pro for unlimited openers', variant: 'destructive' });
+      return;
+    }
+    setLoadingOpeners(true);
+    setOpeners([]);
+    try {
+      const res = await fetch('/api/generate-opener', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context: openerContext,
+          description: openerDescription.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 429) {
+        setShowPaywall(true);
+        toast({ title: '🔒 Daily opener used', description: 'Upgrade to Pro for unlimited openers', variant: 'destructive' });
+        setOpenerUsed(openerLimit);
+        return;
+      }
+      if (data.error) {
+        toast({ title: 'Failed to generate openers', description: data.error, variant: 'destructive' });
+        return;
+      }
+      setOpeners(data.openers || []);
+      setOpenerUsed(prev => prev + 1);
+      toast({ title: '✨ Openers ready!', description: 'Pick your favorite and send it' });
+    } catch {
+      toast({ title: 'Failed to generate openers', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setLoadingOpeners(false);
+    }
+  };
+
+  // Revive a dead conversation
+  const handleGenerateRevive = async () => {
+    if (!message.trim()) {
+      toast({ title: 'No conversation to revive', description: 'Paste the conversation or upload a screenshot first', variant: 'destructive' });
+      return;
+    }
+    if (!isPro && reviveUsed >= reviveLimit) {
+      setShowPaywall(true);
+      toast({ title: '🔒 Daily revive used', description: 'Upgrade to Pro for unlimited revives', variant: 'destructive' });
+      return;
+    }
+    setLoadingRevive(true);
+    setReviveMessages([]);
+    setReviveAnalysis('');
+    try {
+      const res = await fetch('/api/generate-revive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message.trim(),
+          context: selectedContext || 'crush',
+          customContext: customContext.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 429) {
+        setShowPaywall(true);
+        toast({ title: '🔒 Daily revive used', description: 'Upgrade to Pro for unlimited revives', variant: 'destructive' });
+        setReviveUsed(reviveLimit);
+        return;
+      }
+      if (data.error && !data.revives) {
+        toast({ title: 'Revive failed', description: data.error, variant: 'destructive' });
+        return;
+      }
+      setReviveMessages(data.revives || []);
+      setReviveAnalysis(data.analysis || '');
+      setReviveUsed(prev => prev + 1);
+      toast({ title: '✨ Revive messages ready!', description: 'Pick the one that feels right' });
+    } catch {
+      toast({ title: 'Revive failed', description: 'Please try again', variant: 'destructive' });
+    } finally {
+      setLoadingRevive(false);
+    }
+  };
+
+  // ── Thread helpers ──────────────────────────────────────
+  const buildThreadContext = (extraMessage?: string) => {
+    const lines = thread.map(m => `${m.role === 'them' ? 'Them' : 'You'}: ${m.text}`);
+    if (extraMessage) lines.push(`Them: ${extraMessage}`);
+    return lines.join('\n');
+  };
+
+  const addToThread = (role: 'them' | 'you', text: string) => {
+    setThread(prev => [...prev, { role, text, timestamp: Date.now() }]);
+  };
+
+  const handleMarkSent = (reply: Reply) => {
+    addToThread('you', reply.text);
+    setPendingSent(null);
+    setCustomSent('');
+    setShowCustomSent(false);
+    setReplies([]);
+    setDecodeResult(null);
+    setStrategyData(null);
+    setMessage('');
+    setShowExamples(false);
+    setShowThread(true);
+    toast({ title: '✓ Added to thread', description: 'Now paste what they said back' });
+    setTimeout(() => {
+      inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  };
+
+  const handleCustomSentSubmit = () => {
+    if (!customSent.trim()) return;
+    addToThread('you', customSent.trim());
+    setPendingSent(null);
+    setCustomSent('');
+    setShowCustomSent(false);
+    setReplies([]);
+    setDecodeResult(null);
+    setStrategyData(null);
+    setMessage('');
+    setShowExamples(false);
+    setShowThread(true);
+    toast({ title: '✓ Added to thread', description: 'Now paste what they said back' });
+    setTimeout(() => {
+      inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  };
+
+  // Add "them" message to thread WITHOUT generating (for double texts)
+  const handleAddTheirMessage = () => {
+    if (!message.trim()) return;
+    addToThread('them', message.trim());
+    setMessage('');
+    setShowThread(true);
+    toast({ title: '✓ Added to thread', description: 'Add more or hit Generate when ready' });
+  };
+
+  // Add "you" message to thread directly (for when you sent something not from suggestions)
+  const handleAddMyMessage = () => {
+    if (!message.trim()) return;
+    addToThread('you', message.trim());
+    setMessage('');
+    setShowThread(true);
+    toast({ title: '✓ Your message added', description: 'Now paste what they said back' });
+  };
+
+  const handleDeleteThreadMessage = (index: number) => {
+    setThread(prev => prev.filter((_, i) => i !== index));
+    setSelectedThreadMsg(null);
+    toast({ title: '✓ Message removed', description: 'You can re-add it with the correct sender' });
+  };
+
+  // ── Saved threads ─────────────────────────────────────
+  const fetchThreads = async () => {
+    try {
+      const res = await fetch('/api/threads');
+      if (res.ok) {
+        const data = await res.json();
+        setSavedThreads(data.threads || []);
+      }
+    } catch {}
+  };
+
+  const autoSaveThread = async () => {
+    if (thread.length < 2) return;
+    setSaving(true);
+    try {
+      const firstThem = thread.find(m => m.role === 'them');
+      const autoName = activeThreadName || (firstThem ? firstThem.text.slice(0, 40) + (firstThem.text.length > 40 ? '...' : '') : 'Conversation');
+
+      const res = await fetch('/api/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeThreadId || undefined,
+          name: autoName,
+          messages: thread.map(m => ({ role: m.role, text: m.text, timestamp: new Date(m.timestamp).toISOString() })),
+          context: selectedContext,
+          platform: extractedPlatform,
+        }),
+      });
+      const data = await res.json();
+      if (data.thread) {
+        if (!activeThreadId) {
+          setActiveThreadId(data.thread.id);
+          setActiveThreadName(autoName);
+        }
+        fetchThreads();
+      }
+    } catch {} finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLoadThread = async (saved: SavedThread) => {
+    try {
+      const res = await fetch(`/api/threads?id=${saved.id}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const fullThread = data.thread;
+
+      if (fullThread?.messages) {
+        const messages: ThreadMessage[] = (fullThread.messages as any[]).map((m: any) => ({
+          role: m.role === 'you' ? 'you' as const : 'them' as const,
+          text: m.text || '',
+          timestamp: m.timestamp ? new Date(m.timestamp).getTime() : Date.now(),
+        }));
+        setThread(messages);
+      }
+
+      setActiveThreadId(saved.id);
+      setActiveThreadName(saved.name);
+      if (saved.context) setSelectedContext(saved.context as ContextType);
+      setReplies([]);
+      setDecodeResult(null);
+      setPendingSent(null);
+      setMessage('');
+      setShowThreads(false);
+      setShowExamples(false);
+      toast({ title: 'Thread loaded', description: saved.name });
+    } catch {
+      toast({ title: 'Failed to load thread', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteThread = async (id: string) => {
+    try {
+      const res = await fetch(`/api/threads?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      setSavedThreads(prev => prev.filter(t => t.id !== id));
+      if (activeThreadId === id) {
+        setActiveThreadId(null);
+        setActiveThreadName(null);
+        setThread([]);
+      }
+      toast({ title: '✓ Thread deleted' });
+    } catch {
+      toast({ title: 'Failed to delete thread', variant: 'destructive' });
+    }
+  };
+
+  const handleRenameThread = async (newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed || !activeThreadId) {
+      setEditingThreadName(false);
+      return;
+    }
+    setActiveThreadName(trimmed);
+    setEditingThreadName(false);
+    try {
+      await fetch('/api/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeThreadId,
+          name: trimmed,
+          messages: thread.map(m => ({ role: m.role, text: m.text, timestamp: new Date(m.timestamp).toISOString() })),
+          context: selectedContext,
+          platform: extractedPlatform,
+        }),
+      });
+      fetchThreads();
+      toast({ title: '✓ Thread renamed' });
+    } catch {
+      toast({ title: 'Rename failed', variant: 'destructive' });
+    }
+  };
+
+  const handleNewThread = () => {
+    setThread([]);
+    setReplies([]);
+    setStrategyData(null);
+    setScanResult(null);
+    setMessage('');
+    setDecodeResult(null);
+    setPendingSent(null);
+    setActiveThreadId(null);
+    setActiveThreadName(null);
+    setShowThreads(false);
+    setShowExamples(true);
+    setReviveMessages([]);
+    setReviveAnalysis('');
+    setUserIntent('');
+    setStrategyChatHistory([]);
+    setStrategyChatInput('');
+  };
+
+  const handleCoachScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setCoachScreenshotExtracting(true);
+    try {
+      const results = await Promise.all(files.map(async (file) => {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+        const data = await res.json();
+        return data.fullConversation || null;
+      }));
+      const extracted = results.filter(Boolean);
+      if (extracted.length > 0) {
+        const contextMsg = extracted.length === 1
+          ? `Here's additional context from a screenshot:\n${extracted[0]}`
+          : `Here's additional context from ${extracted.length} screenshots:\n${extracted.map((t, i) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
+        setStrategyChatInput(prev => prev ? `${prev}\n${contextMsg}` : contextMsg);
+      } else {
+        toast({ title: 'Could not read screenshots', description: 'Try clearer images', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Upload failed', description: 'Try again', variant: 'destructive' });
+    } finally {
+      setCoachScreenshotExtracting(false);
+      if (coachFileInputRef.current) coachFileInputRef.current.value = '';
+    }
+  };
+
+  const handleStrategyChatSend = async () => {
+    if (!strategyChatInput.trim() || strategyChatLoading) return;
+    const userMsg = strategyChatInput.trim();
+    setStrategyChatInput('');
+    const newHistory: StrategyChatMessage[] = [...strategyChatHistory, { role: 'user', content: userMsg }];
+    setStrategyChatHistory(newHistory);
+    setStrategyChatLoading(true);
+    try {
+      const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
+      const res = await fetch('/api/strategy-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          threadContext,
+          strategy: strategyData,
+          context: selectedContext || 'crush',
+          chatHistory: newHistory.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+          userMessage: userMsg,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+    } catch {
+      setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Couldn't reach the coach right now. Try again." }]);
+    } finally {
+      setStrategyChatLoading(false);
+    }
+  };
+
+  const handleTryAgain = () => {
+    setMessage('');
+    setReplies([]);
+    setCopied(null);
+    setShowExamples(true);
+    setScreenshotPreview(null);
+    setExtractedPlatform(null);
+    setDecodeResult(null);
+    setOpeners([]);
+    setReviveMessages([]);
+    setReviveAnalysis('');
+  };
+
+  const handleExampleClick = (example: string) => {
+    setMessage(example);
+    setShowExamples(false);
+  };
+
+  // Handle Stripe checkout
+  const handleCheckout = async (plan: 'weekly' | 'monthly' | 'annual') => {
+    // Require login before checkout
+    if (!userId) {
+      toast({
+        title: 'Account Required',
+        description: 'Please sign up or log in first to subscribe',
+      });
+      window.location.href = `/login?redirect=/pricing&plan=${plan}`;
+      return;
+    }
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan, userId, userEmail }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to start checkout',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Something went wrong',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // VPN Abuse Block Modal
+  if (vpnBlocked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-white/95 backdrop-blur rounded-3xl overflow-hidden">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto">
+              <span className="text-3xl">🛡️</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Unusual Activity Detected</h2>
+              <p className="text-gray-600">We noticed multiple connections from different locations.</p>
+              <p className="text-sm text-gray-400 mt-2">This can happen with VPNs or shared networks.</p>
+            </div>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => handleCheckout('weekly')}
+                className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl"
+              >
+                Unlock Pro - No Limits
+              </Button>
+              <p className="text-xs text-gray-500">Pro users get unlimited access from anywhere</p>
+            </div>
+            <button onClick={() => setVpnBlocked(false)} className="text-sm text-gray-400 hover:text-gray-600">
+              Try again later
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Paywall Modal
+  if (showPaywall) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-white/95 backdrop-blur rounded-3xl overflow-hidden">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto">
+              <Crown className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;ve used all 3 free replies</h2>
+              <p className="text-gray-600">Unlock unlimited replies + full style control</p>
+              <p className="text-sm text-gray-400 mt-2">Free replies reset in 24 hours</p>
+            </div>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => handleCheckout('annual')}
+                className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl relative"
+              >
+                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">Best Value</span>
+                Unlock Pro - $99.99/year
+              </Button>
+              <Button 
+                onClick={() => handleCheckout('weekly')}
+                variant="outline"
+                className="w-full h-12 border-2 border-purple-300 text-purple-700 font-semibold rounded-2xl hover:bg-purple-50"
+              >
+                $9.99/week
+              </Button>
+              <p className="text-xs text-gray-500">Cancel anytime</p>
+            </div>
+            <button onClick={() => setShowPaywall(false)} className="text-sm text-gray-400 hover:text-gray-600">
+              Wait for reset
+            </button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Ambient background mesh */}
+      <div className="fixed inset-0 pointer-events-none hidden md:block">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/8 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/8 blur-[120px]" />
+        <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
+      </div>
+      <div className="fixed inset-0 pointer-events-none md:hidden">
+        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] rounded-full bg-violet-600/6 blur-[80px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
+      </div>
+
+      <div className={`relative z-10 mx-auto px-5 py-6 pb-14 max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Link href="/dashboard" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            <ArrowLeft className="h-5 w-5 text-white/70" />
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="transition-transform hover:scale-105">
+              <Logo size="sm" showText={true} />
+            </Link>
+            <Link href="/changelog" className="px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[10px] font-bold text-white/50 hover:text-white/80 transition-colors">
+              v{CURRENT_VERSION}
+            </Link>
+          </div>
+          <Link href="/profile" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            <Crown className="h-5 w-5 text-white/70" />
+          </Link>
+        </div>
+
+        {/* Trial Banner - shows for invite/beta trial users */}
+        {isPro && trialDaysLeft !== null && (
+          <div className={`mb-4 p-4 rounded-2xl backdrop-blur border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+            trialDaysLeft <= 1 
+              ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30'
+              : trialDaysLeft <= 3
+                ? 'bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border-orange-500/30'
+                : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                trialDaysLeft <= 1 ? 'bg-red-500' : trialDaysLeft <= 3 ? 'bg-orange-500' : 'bg-purple-500'
+              }`}>
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-white font-bold text-sm">
+                  {trialDaysLeft <= 0 
+                    ? 'Your free trial expires today!' 
+                    : trialDaysLeft === 1 
+                      ? '1 day left on your free trial' 
+                      : `${trialDaysLeft} days left on your free trial`}
+                </p>
+                <p className="text-white/50 text-xs">Unlimited V2 verified replies</p>
+              </div>
+            </div>
+            {trialDaysLeft <= 3 && (
+              <Button asChild size="sm" className="bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs">
+                <Link href="/pricing">Keep Pro</Link>
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Pro Status Badge - Compact */}
+        {isPro && (
+          <div className={`mb-5 px-4 py-3 rounded-2xl flex items-center justify-center gap-2.5 ${
+            useV2 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-violet-500/10 border border-violet-500/20'
+          }`}>
+            {useV2 ? <Shield className="h-4 w-4 text-emerald-400" /> : <Zap className="h-4 w-4 text-violet-400" />}
+            <span className={`text-xs font-bold ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>{useV2 ? 'V2 Verified' : 'V1 Fast Mode'}</span>
+            <span className="text-white/15">·</span>
+            <span className={`text-xs ${useV2 ? 'text-emerald-400/60' : 'text-violet-400/60'}`}>{useV2 ? '≤18 words · No emojis · Tone-checked' : 'Quick replies · No strategy overhead'}</span>
+          </div>
+        )}
+
+        {/* Usage Bar - Hidden for Pro users */}
+        {usageCount > 0 && !isPro && (
+          <div className={`fixed top-0 left-0 right-0 z-50 text-white animate-in slide-in-from-top duration-300 ${
+            usageCount >= usageLimit 
+              ? 'bg-[#1a0a0f] border-b border-red-500/30' 
+              : 'bg-[#0f0a1a] border-b border-violet-500/20'
+          }`}>
+            <div className="mx-auto px-5 py-2.5">
+              <div className="flex items-center justify-between max-w-2xl mx-auto">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-lg">{usageCount >= usageLimit ? '🚫' : '⚡'}</span>
+                  <div>
+                    <p className="text-sm font-bold">
+                      {usageCount >= usageLimit 
+                        ? 'Free limit reached' 
+                        : `${remainingReplies} free ${remainingReplies === 1 ? 'reply' : 'replies'} left today`}
+                    </p>
+                    <p className="text-xs text-white/60">
+                      {Math.min(usageCount, usageLimit)}/{usageLimit} used
+                    </p>
+                  </div>
+                </div>
+                {usageCount >= usageLimit - 1 && (
+                  <Button 
+                    asChild
+                    size="sm" 
+                    className="bg-white/10 border border-white/20 text-white hover:bg-white/20 font-bold rounded-xl text-xs h-8"
+                  >
+                    <Link href="/#pricing">Upgrade</Link>
+                  </Button>
+                )}
+                {usageCount < usageLimit - 1 && (
+                  <div className="flex gap-1">
+                    {Array.from({ length: usageLimit }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-1.5 h-1.5 rounded-full transition-all ${
+                          i < usageCount ? 'bg-white/80' : 'bg-white/25'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Feature Tour — shows once on first visit */}
+        <FeatureTour />
+
+        {/* Contextual Discovery Hints */}
+        <ContextualHints
+          hasMessage={!!message.trim()}
+          hasReplies={replies.length > 0}
+          appMode={appMode}
+          onAction={(hintId) => {
+            if (hintId === 'decode') handleDecode();
+            if (hintId === 'opener') setAppMode('opener');
+            if (hintId === 'save') { fetchThreads(); setShowThreads(true); }
+            if (hintId === 'screenshot') fileInputRef.current?.click();
+          }}
+        />
+
+        {/* Input Section */}
+        <div className="mb-8 rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+          <div className="pb-4 pt-6 px-6">
+            {/* Mode Tabs */}
+            <div className="flex items-center gap-0.5 bg-white/[0.06] rounded-2xl p-1 mb-4 border border-white/[0.08]">
+              <button
+                onClick={() => { setAppMode('reply'); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appMode === 'reply' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
+                }`}
+              >
+                <MessageCircle className="h-3 w-3 shrink-0" />
+                Reply
+              </button>
+              <button
+                onClick={() => { setAppMode('decode'); setReplies([]); setOpeners([]); setReviveMessages([]); setReviveAnalysis(''); }}
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appMode === 'decode' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
+                }`}
+              >
+                <Brain className="h-3 w-3 shrink-0" />
+                Decode
+              </button>
+              <button
+                onClick={() => { setAppMode('opener'); setReplies([]); setDecodeResult(null); setReviveMessages([]); }}
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appMode === 'opener' ? 'bg-pink-500/20 text-pink-300 border border-pink-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
+                }`}
+              >
+                <Send className="h-3 w-3 shrink-0" />
+                Opener
+              </button>
+              <button
+                onClick={() => { setAppMode('revive'); setReplies([]); setDecodeResult(null); setOpeners([]); }}
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appMode === 'revive' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
+                }`}
+              >
+                <RefreshCw className="h-3 w-3 shrink-0" />
+                Revive
+              </button>
+            </div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              {appMode === 'reply' && (
+                <>
+                  <MessageCircle className="h-5 w-5 text-violet-400" />
+                  What&apos;d they say?
+                </>
+              )}
+              {appMode === 'decode' && (
+                <>
+                  <Brain className="h-5 w-5 text-amber-400" />
+                  What do they really mean?
+                </>
+              )}
+              {appMode === 'opener' && (
+                <>
+                  <Send className="h-5 w-5 text-pink-400" />
+                  Start the conversation
+                </>
+              )}
+              {appMode === 'revive' && (
+                <>
+                  <RefreshCw className="h-5 w-5 text-cyan-400" />
+                  Revive a dead convo
+                </>
+              )}
+            </h2>
+            <p className="text-sm text-white/40 font-medium">
+              {appMode === 'reply' && 'Paste the text and we\'ll handle the rest'}
+              {appMode === 'decode' && 'Paste any message \u2014 we\'ll reveal the intent, subtext, and flags'}
+              {appMode === 'opener' && 'Generate the perfect opening line for any situation'}
+              {appMode === 'revive' && 'Paste or screenshot the stale convo \u2014 we\'ll craft the perfect re-engagement'}
+            </p>
+          </div>
+          <div className="space-y-4 px-6 pb-6">
+            {/* Global Screenshot Input — always in DOM for all modes */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              onChange={handleScreenshotUpload}
+              className="hidden"
+              aria-label="Upload screenshot"
+            />
+
+            {/* ===== REPLY MODE ===== */}
+            {appMode === 'reply' && (<>
+            {/* Context Selector */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+                Who is this?
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {CONTEXT_OPTIONS.map((context) => (
+                  <button
+                    key={context.value}
+                    onClick={() => setSelectedContext(selectedContext === context.value ? null : context.value as ContextType)}
+                    className={`px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all active:scale-95 ${
+                      selectedContext === context.value
+                        ? 'bg-white/[0.16] text-white border border-white/[0.22] shadow-lg shadow-white/5'
+                        : 'bg-white/[0.07] text-white/60 border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/80'
+                    }`}
+                  >
+                    <span className="mr-1.5">{context.emoji}</span>{context.label}
+                  </button>
+                ))}
+              </div>
+              {selectedContext && (
+                <p className="text-xs text-violet-400/80 font-medium animate-in fade-in duration-200">
+                  Replies will be optimized for {CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label}
+                </p>
+              )}
+              {/* Custom context input */}
+              <div className="relative animate-in fade-in duration-200">
+                <input
+                  type="text"
+                  value={customContext}
+                  onChange={(e) => setCustomContext(e.target.value)}
+                  placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
+                  maxLength={200}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/25 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
+                />
+                {customContext && (
+                  <button
+                    onClick={() => setCustomContext('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Scroll target for after "I sent this" */}
+            <div ref={inputAreaRef} />
+
+            {/* ══════════ THREAD VIEW ══════════ */}
+            {thread.length > 0 && (
+              <div className="mb-1">
+                <button
+                  onClick={() => setShowThread(!showThread)}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/[0.04] border border-white/[0.08] border-b-0 transition-colors hover:bg-white/[0.06]"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                      <MessageCircle className="h-3 w-3 text-violet-400" />
+                    </div>
+                    <span className="text-white/60 text-xs font-bold">
+                      {thread.length} message{thread.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {showThread ? <ChevronUp className="h-3.5 w-3.5 text-white/25" /> : <ChevronDown className="h-3.5 w-3.5 text-white/25" />}
+                </button>
+
+                {showThread && (
+                  <div className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto" onClick={() => setSelectedThreadMsg(null)}>
+                    <div className="space-y-1">
+                      {thread.map((msg, i) => {
+                        const prevRole = i > 0 ? thread[i - 1].role : null;
+                        const nextRole = i < thread.length - 1 ? thread[i + 1].role : null;
+                        const isGroupStart = prevRole !== msg.role;
+                        const isGroupEnd = nextRole !== msg.role;
+                        const isSelected = selectedThreadMsg === i;
+                        return (
+                          <div key={i} className={`flex ${msg.role === 'you' ? 'justify-end' : 'justify-start'} ${isGroupStart && i > 0 ? 'mt-3' : ''}`}>
+                            <div className="relative max-w-[80%]">
+                              <div
+                                onClick={(e) => { e.stopPropagation(); setSelectedThreadMsg(isSelected ? null : i); }}
+                                className={`px-4 py-2 text-[13px] leading-relaxed cursor-pointer transition-all ${
+                                  isSelected ? 'ring-1 ring-red-400/40 ' : ''
+                                }${
+                                  msg.role === 'them'
+                                    ? `bg-white/[0.07] text-white/80 border border-white/[0.06] ${
+                                        isGroupStart && isGroupEnd ? 'rounded-2xl rounded-bl-lg' :
+                                        isGroupStart ? 'rounded-2xl rounded-bl-md' :
+                                        isGroupEnd ? 'rounded-2xl rounded-tl-md rounded-bl-lg' :
+                                        'rounded-xl rounded-l-md'
+                                      }`
+                                    : `bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/10 ${
+                                        isGroupStart && isGroupEnd ? 'rounded-2xl rounded-br-lg' :
+                                        isGroupStart ? 'rounded-2xl rounded-br-md' :
+                                        isGroupEnd ? 'rounded-2xl rounded-tr-md rounded-br-lg' :
+                                        'rounded-xl rounded-r-md'
+                                      }`
+                                }`}>
+                                <p className="font-medium">{msg.text}</p>
+                              </div>
+                              {/* Generate reply chip on last 'them' message when textarea is empty */}
+                              {msg.role === 'them' && i === thread.length - 1 && !message.trim() && replies.length === 0 && !loading && (
+                                <div className="mt-1.5 animate-in fade-in duration-300">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/25 transition-all active:scale-95"
+                                  >
+                                    <Sparkles className="h-3 w-3" /> Generate reply
+                                  </button>
+                                </div>
+                              )}
+                              {isSelected && (
+                                <div className={`absolute top-full mt-1 z-10 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-1 duration-150 ${msg.role === 'you' ? 'right-0' : 'left-0'}`}>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteThreadMessage(i); }}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[11px] font-bold hover:bg-red-500/30 transition-all active:scale-95"
+                                  >
+                                    <X className="h-3 w-3" /> Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div ref={threadEndRef} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="relative">
+              <textarea
+                value={message}
+                onChange={(e) => handleMessageChange(e.target.value)}
+                placeholder={
+                  thread.length === 0
+                    ? "What did they send you?"
+                    : thread[thread.length - 1]?.role === 'you'
+                      ? "What did they say back?"
+                      : "Add the next message, or generate a reply"
+                }
+                className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-violet-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                maxLength={2000}
+                aria-label="Message input"
+              />
+              <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
+                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/30'
+              }`}>
+                {charCount}/2000
+              </div>
+            </div>
+
+            {/* ══════════ VIBE CHECK — real-time draft feedback ══════════ */}
+            {appMode === 'reply' && message.trim().length >= 8 && (vibeCheck || vibeLoading) && (
+              <div className="animate-in fade-in slide-in-from-top-1 duration-300">
+                {vibeLoading ? (
+                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                    <Loader2 className="h-3 w-3 animate-spin text-violet-400" />
+                    <span className="text-[11px] text-white/30 font-medium">Checking vibe...</span>
+                  </div>
+                ) : vibeCheck && (
+                  <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all ${
+                    vibeCheck.score >= 8 ? 'bg-emerald-500/[0.06] border-emerald-500/20' :
+                    vibeCheck.score >= 5 ? 'bg-amber-500/[0.06] border-amber-500/20' :
+                    'bg-red-500/[0.06] border-red-500/20'
+                  }`}>
+                    <div className={`text-lg leading-none ${
+                      vibeCheck.score >= 8 ? 'grayscale-0' : vibeCheck.score >= 5 ? 'grayscale-0' : 'grayscale-0'
+                    }`}>
+                      {vibeCheck.score >= 8 ? '🟢' : vibeCheck.score >= 5 ? '🟡' : '🔴'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-bold ${
+                          vibeCheck.score >= 8 ? 'text-emerald-400' :
+                          vibeCheck.score >= 5 ? 'text-amber-400' :
+                          'text-red-400'
+                        }`}>
+                          {vibeCheck.vibe}
+                        </span>
+                        <span className="text-[10px] text-white/20">·</span>
+                        <span className="text-[10px] text-white/30 font-medium">{vibeCheck.score}/10</span>
+                      </div>
+                      <p className="text-[11px] text-white/50 truncate">{vibeCheck.tip}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══════════ TONE TRANSLATOR — rewrite draft in different energy ══════════ */}
+            {appMode === 'reply' && message.trim().length >= 3 && (
+              <div className="animate-in fade-in duration-200">
+                {!showToneBar ? (
+                  <button
+                    onClick={() => setShowToneBar(true)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white/25 hover:text-white/50 text-[11px] font-medium transition-colors"
+                  >
+                    <Sparkles className="h-3 w-3" /> Rewrite in a different tone
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider mr-1">Rewrite as:</span>
+                    {[
+                      { key: 'flirty', label: '😏 Flirty', color: 'hover:bg-pink-500/15 hover:border-pink-500/30 hover:text-pink-300' },
+                      { key: 'chill', label: '😎 Chill', color: 'hover:bg-blue-500/15 hover:border-blue-500/30 hover:text-blue-300' },
+                      { key: 'bold', label: '🔥 Bold', color: 'hover:bg-orange-500/15 hover:border-orange-500/30 hover:text-orange-300' },
+                      { key: 'witty', label: '⚡ Witty', color: 'hover:bg-purple-500/15 hover:border-purple-500/30 hover:text-purple-300' },
+                      { key: 'warm', label: '💚 Warm', color: 'hover:bg-green-500/15 hover:border-green-500/30 hover:text-green-300' },
+                      { key: 'pro', label: '💼 Pro', color: 'hover:bg-slate-500/15 hover:border-slate-500/30 hover:text-slate-300' },
+                    ].map(t => (
+                      <button
+                        key={t.key}
+                        onClick={() => handleTranslateTone(t.key)}
+                        disabled={translating}
+                        className={`px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/40 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30 ${t.color}`}
+                      >
+                        {translating ? '...' : t.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setShowToneBar(false)}
+                      className="p-1.5 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══════════ USER INTENT — optional direction for replies ══════════ */}
+            <div className="animate-in fade-in duration-200">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={userIntent}
+                  onChange={(e) => setUserIntent(e.target.value)}
+                  placeholder="What do you want to say? (optional) — e.g. ask what happened subtly"
+                  maxLength={120}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 placeholder-white/20 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
+                />
+                {userIntent && (
+                  <button
+                    onClick={() => setUserIntent('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick add to thread buttons (for double texts / non-generated messages) */}
+            {thread.length > 0 && (
+              <div className="flex gap-2 animate-in fade-in duration-200">
+                <button
+                  onClick={handleAddTheirMessage}
+                  disabled={!message.trim()}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/40 hover:bg-white/[0.08] hover:text-white/60 text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-white/[0.04] disabled:hover:text-white/40"
+                >
+                  <Plus className="h-3 w-3" /> Add as their message
+                </button>
+                <button
+                  onClick={handleAddMyMessage}
+                  disabled={!message.trim()}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300/60 hover:bg-violet-500/15 hover:text-violet-300 text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-violet-500/10 disabled:hover:text-violet-300/60"
+                >
+                  <Plus className="h-3 w-3" /> Add as my message
+                </button>
+              </div>
+            )}
+
+            {/* Screenshot Preview */}
+            {screenshotPreview && (
+              <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
+                  <img 
+                    src={screenshotPreview} 
+                    alt="Screenshot preview" 
+                    className="w-full max-h-48 object-cover opacity-90"
+                  />
+                  {extracting && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                        <span className="text-sm font-bold text-white/80">Reading screenshot...</span>
+                      </div>
+                    </div>
+                  )}
+                  {!extracting && (
+                    <button
+                      onClick={clearScreenshot}
+                      className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </button>
+                  )}
+                  {!extracting && extractedPlatform && extractedPlatform !== 'unknown' && (
+                    <div className="absolute bottom-2 left-2 px-3 py-1 bg-black/60 rounded-full text-xs text-white font-medium capitalize">
+                      {extractedPlatform} detected
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Upload Screenshot / Paste Divider */}
+            <div className="relative flex items-center gap-3">
+              {/* Feature Spotlight — shows once per device */}
+              {showFeatureSpotlight && (
+                <div className="absolute -top-[88px] left-0 right-0 z-50 animate-in fade-in slide-in-from-bottom-3 duration-500">
+                  <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl p-4 shadow-2xl shadow-purple-500/30">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                        <Camera className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm">New: Screenshot Upload</p>
+                        <p className="text-xs text-white/80 mt-0.5">Take a screenshot of any convo and we&apos;ll read it for you. No more copy-pasting!</p>
+                      </div>
+                      <button 
+                        onClick={dismissSpotlight}
+                        className="text-white/60 hover:text-white text-lg leading-none shrink-0 -mt-1"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    {/* Arrow pointing down */}
+                    <div className="absolute -bottom-2 left-12 w-4 h-4 bg-gradient-to-br from-purple-600 to-pink-600 rotate-45" />
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  dismissSpotlight();
+                  fileInputRef.current?.click();
+                }}
+                disabled={extracting}
+                className={`flex-1 p-3 rounded-xl transition-all text-white/60 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
+                  showFeatureSpotlight 
+                    ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300' 
+                    : 'bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/80'
+                }`}
+              >
+                {extracting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Reading...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-4 w-4" />
+                    Upload Screenshot
+                  </>
+                )}
+              </button>
+              {!message && (
+                <button
+                  onClick={() => setShowExamplesDrawer(!showExamplesDrawer)}
+                  className="p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] transition-all text-white/40 hover:text-white/70 font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  <Lightbulb className="h-4 w-4" />
+                  Examples
+                </button>
+              )}
+            </div>
+
+            {/* Examples Drawer */}
+            {showExamplesDrawer && !message && (
+              <div className="space-y-2 animate-in slide-in-from-top duration-300 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white/60">
+                    <Sparkles className="h-4 w-4 text-violet-400" />
+                    <span>Try these examples:</span>
+                  </div>
+                  <button 
+                    onClick={() => setShowExamplesDrawer(false)}
+                    className="text-white/20 hover:text-white/50 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {EXAMPLE_MESSAGES.map((example, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleExampleClick(example)}
+                      className="text-left text-sm p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all text-white/70 font-medium"
+                    >
+                      <span className="text-violet-400 font-bold mr-2">{idx + 1}.</span>
+                      &ldquo;{example}&rdquo;
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* V2/V1 Toggle — Pro users can switch between verified (V2) and fast (V1) */}
+            {isPro ? (
+              <button
+                onClick={() => setUseV2(!useV2)}
+                className={`flex items-center gap-2.5 p-3.5 rounded-2xl w-full text-left transition-all ${
+                  useV2
+                    ? 'bg-emerald-500/10 border border-emerald-500/20'
+                    : 'bg-violet-500/10 border border-violet-500/20'
+                }`}
+              >
+                {useV2 ? (
+                  <Shield className="h-5 w-5 text-emerald-400" />
+                ) : (
+                  <Zap className="h-5 w-5 text-violet-400" />
+                )}
+                <div className="flex-1">
+                  <p className={`text-sm font-bold ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>
+                    {useV2 ? 'V2 Verified' : 'V1 Fast Mode'}
+                  </p>
+                  <p className={`text-xs ${useV2 ? 'text-emerald-400/60' : 'text-violet-400/60'}`}>
+                    {useV2 ? 'Strategy + 3-agent pipeline • Tap for V1' : 'Quick replies, no strategy • Tap for V2'}
+                  </p>
+                </div>
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                  useV2
+                    ? 'text-emerald-400 bg-emerald-500/15'
+                    : 'text-violet-300 bg-violet-500/15'
+                }`}>
+                  {useV2 ? 'V2' : 'V1'}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setShowPaywall(true);
+                  toast({ title: "🔒 V2 is Pro-only", description: "Upgrade to unlock 3-agent verified replies" });
+                }}
+                className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 w-full text-left hover:border-violet-500/30 transition-colors"
+              >
+                <Shield className="h-5 w-5 text-violet-400" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-white/80">V2 Verified Mode <span className="text-xs font-normal text-white/40">(Pro)</span></p>
+                  <p className="text-xs text-white/40">3-agent pipeline • ≤18 words • Tone-verified</p>
+                </div>
+                <span className="text-xs font-bold text-violet-300 bg-violet-500/15 px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <Lock className="h-3 w-3" /> Upgrade
+                </span>
+              </button>
+            )}
+
+            <div className="space-y-3">
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !(message.trim() || (thread.length > 0 && thread[thread.length - 1]?.role === 'them'))}
+                className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed ${
+                  isPro
+                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/30'
+                    : 'bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-violet-600/50'
+                }`}
+                size="lg"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {isPro ? (
+                      v2Step === 'drafting' ? 'Drafting...' :
+                      v2Step === 'rule-checking' ? 'Checking...' :
+                      v2Step === 'tone-verifying' ? 'Verifying...' :
+                      'Finalizing...'
+                    ) : 'Generating...'}
+                  </>
+                ) : (
+                  <>
+                    {isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                    {isPro ? 'Generate Verified' : 'Generate'}
+                  </>
+                )}
+              </Button>
+
+              {/* Thread bar: Recent / New / Active indicator */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={() => { fetchThreads(); setShowThreads(!showThreads); }}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all active:scale-95 ${
+                    showThreads
+                      ? 'bg-violet-500/25 text-violet-300 border border-violet-500/30'
+                      : 'bg-white/[0.08] text-white/60 border border-white/[0.12] hover:bg-white/[0.14] hover:text-white/80'
+                  }`}
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  Recent{savedThreads.length > 0 ? ` (${savedThreads.length})` : ''}
+                </button>
+                <button
+                  onClick={handleNewThread}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-white/60 hover:bg-white/[0.14] hover:text-white/80 text-xs font-bold transition-all active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" /> New
+                </button>
+                {activeThreadName && (
+                  <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 min-w-0">
+                    <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shrink-0" />
+                    {editingThreadName ? (
+                      <input
+                        autoFocus
+                        defaultValue={activeThreadName}
+                        className="bg-transparent text-violet-300 text-xs font-semibold outline-none border-b border-violet-400/40 w-full"
+                        onBlur={(e) => handleRenameThread(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleRenameThread((e.target as HTMLInputElement).value); if (e.key === 'Escape') setEditingThreadName(false); }}
+                      />
+                    ) : (
+                      <span
+                        onClick={() => setEditingThreadName(true)}
+                        className="text-violet-300 text-xs font-semibold truncate cursor-pointer hover:text-violet-200 transition-colors"
+                        title="Tap to rename"
+                      >{activeThreadName}</span>
+                    )}
+                    {saving && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 ml-auto text-violet-400" />}
+                  </div>
+                )}
+                {!activeThreadName && saving && (
+                  <div className="flex items-center gap-1.5 px-3 py-2.5 text-violet-400 text-[11px] font-medium">
+                    <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" /> syncing
+                  </div>
+                )}
+              </div>
+
+              {!loading && !replies.length && !thread.length && (
+                <p className="text-center text-xs text-white/30 font-medium animate-fade-in transition-opacity duration-500">
+                  {TAGLINES[currentTagline]}
+                </p>
+              )}
+            </div>
+
+            {/* Recent Threads Drawer */}
+            {showThreads && (
+              <div className="animate-in fade-in slide-in-from-top-3 duration-300">
+                <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 space-y-2">
+                  <div className="flex items-center justify-between px-1 mb-2">
+                    <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Conversations</span>
+                    <button onClick={() => setShowThreads(false)} className="text-white/20 hover:text-white/50 transition-colors">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  {savedThreads.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
+                        <MessageCircle className="h-5 w-5 text-white/20" />
+                      </div>
+                      <p className="text-white/25 text-xs">Start a thread and it&apos;ll appear here</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1 max-h-60 overflow-y-auto">
+                      {savedThreads.map(t => (
+                        <button
+                          key={t.id}
+                          onClick={() => handleLoadThread(t)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all group text-left active:scale-[0.98] ${
+                            activeThreadId === t.id
+                              ? 'bg-violet-500/15 border border-violet-500/20'
+                              : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                            activeThreadId === t.id ? 'bg-violet-500/20' : 'bg-white/[0.05]'
+                          }`}>
+                            <MessageCircle className={`h-3.5 w-3.5 ${activeThreadId === t.id ? 'text-violet-400' : 'text-white/30'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white/80 text-sm font-semibold truncate">{t.name}</p>
+                            <p className="text-white/25 text-[10px] mt-0.5">
+                              {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all"
+                          >
+                            <Trash2 className="h-3 w-3 text-red-400" />
+                          </button>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            </>)}
+
+            {/* ===== DECODE MODE ===== */}
+            {appMode === 'decode' && (<>
+            <div className="relative">
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Paste their message here — what did they really mean?"
+                className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-amber-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                maxLength={2000}
+                aria-label="Message to decode"
+              />
+              <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
+                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/30'
+              }`}>
+                {charCount}/2000
+              </div>
+            </div>
+
+            {/* Screenshot Preview for Decode */}
+            {screenshotPreview && (
+              <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
+                  <img src={screenshotPreview} alt="Screenshot preview" className="w-full max-h-48 object-cover opacity-90" />
+                  {extracting && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-amber-400" />
+                        <span className="text-sm font-bold text-white/80">Reading screenshot...</span>
+                      </div>
+                    </div>
+                  )}
+                  {!extracting && (
+                    <button onClick={clearScreenshot} className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors">
+                      <X className="h-4 w-4 text-white" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={extracting}
+                className="flex-1 p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] transition-all text-white/60 hover:text-white/80 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+              >
+                <Camera className="h-4 w-4" />
+                Upload Screenshot
+              </button>
+            </div>
+
+            <Button
+              onClick={handleDecode}
+              disabled={decoding || !message.trim() || (!isPro && decodeUsed >= decodeLimit)}
+              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
+                !isPro && decodeUsed >= decodeLimit
+                  ? 'bg-white/[0.08] text-white/30'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/30'
+              }`}
+              size="lg"
+            >
+              {decoding ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Decoding...</>
+              ) : !isPro && decodeUsed >= decodeLimit ? (
+                <><Lock className="mr-2 h-5 w-5" /> Decode Used — Upgrade</>
+              ) : (
+                <><Brain className="mr-2 h-5 w-5" /> Decode Message</>
+              )}
+            </Button>
+            {!isPro && (
+              <p className="text-center text-xs text-white/30 font-medium">
+                {decodeUsed >= decodeLimit ? '0' : `${decodeLimit - decodeUsed}`}/{decodeLimit} free decode{decodeLimit === 1 ? '' : 's'} remaining today
+              </p>
+            )}
+            </>)}
+
+            {/* ===== OPENER MODE ===== */}
+            {appMode === 'opener' && (<>
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+                What kind of opener?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {OPENER_CONTEXTS.map((ctx) => (
+                  <button
+                    key={ctx.value}
+                    onClick={() => setOpenerContext(ctx.value)}
+                    className={`p-3 rounded-2xl border transition-all duration-200 text-left ${
+                      openerContext === ctx.value
+                        ? 'bg-pink-500/15 border-pink-500/30 text-pink-300'
+                        : 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12]'
+                    }`}
+                  >
+                    <div className="text-lg mb-1">{ctx.emoji}</div>
+                    <div className="text-xs font-bold text-white/80">{ctx.label}</div>
+                    <div className="text-[10px] text-white/30">{ctx.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="relative">
+              <textarea
+                value={openerDescription}
+                onChange={(e) => setOpenerDescription(e.target.value)}
+                placeholder="Optional: describe them (e.g., 'loves hiking, has a golden retriever, funny bio about pizza')"
+                className="w-full min-h-[80px] p-4 pb-6 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-pink-500/30 transition-all text-sm"
+                maxLength={300}
+              />
+              <div className={`absolute bottom-2 right-3 text-xs ${openerDescription.length > 250 ? 'text-red-400' : 'text-white/30'}`}>
+                {openerDescription.length}/300
+              </div>
+            </div>
+            {/* Screenshot upload for opener */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white/50 hover:bg-white/[0.08] hover:text-white/70 transition-all text-sm font-semibold"
+            >
+              <Camera className="h-4 w-4" />
+              {extracting ? 'Reading screenshot...' : 'Upload screenshot for context'}
+            </button>
+            <Button
+              onClick={handleGenerateOpeners}
+              disabled={loadingOpeners || (!isPro && openerUsed >= openerLimit)}
+              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
+                !isPro && openerUsed >= openerLimit
+                  ? 'bg-white/[0.08] text-white/30'
+                  : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30'
+              }`}
+              size="lg"
+            >
+              {loadingOpeners ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Crafting openers...</>
+              ) : !isPro && openerUsed >= openerLimit ? (
+                <><Lock className="mr-2 h-5 w-5" /> Opener Used — Upgrade</>
+              ) : (
+                <><Send className="mr-2 h-5 w-5" /> Generate Openers</>
+              )}
+            </Button>
+            {!isPro && (
+              <p className="text-center text-xs text-white/30 font-medium">
+                {openerUsed >= openerLimit ? '0' : `${openerLimit - openerUsed}`}/{openerLimit} free opener{openerLimit === 1 ? '' : 's'} remaining today
+              </p>
+            )}
+            </>)}
+
+            {/* ===== REVIVE MODE ===== */}
+            {appMode === 'revive' && (<>
+            {/* Context Selector */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+                Who is this?
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {CONTEXT_OPTIONS.map((context) => (
+                  <button
+                    key={context.value}
+                    onClick={() => setSelectedContext(selectedContext === context.value ? null : context.value as ContextType)}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95 ${
+                      selectedContext === context.value
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
+                        : 'bg-white/[0.06] text-white/55 border border-white/[0.10] hover:bg-white/[0.10] hover:text-white/70'
+                    }`}
+                  >
+                    <span>{context.emoji}</span>
+                    <span>{context.label}</span>
+                  </button>
+                ))}
+              </div>
+              {/* Custom context input */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={customContext}
+                  onChange={(e) => setCustomContext(e.target.value)}
+                  placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
+                  maxLength={200}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/25 text-xs focus:outline-none focus:border-cyan-500/30 transition-all"
+                />
+                {customContext && (
+                  <button
+                    onClick={() => setCustomContext('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Conversation input */}
+            <div className="relative">
+              <textarea
+                ref={inputAreaRef as any}
+                value={message}
+                onChange={(e) => { setMessage(e.target.value); setShowExamples(false); }}
+                placeholder="Paste the conversation thread here (or upload a screenshot below)..."
+                className="w-full min-h-[120px] p-4 pb-12 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-cyan-500/30 transition-all text-sm leading-relaxed"
+                maxLength={3000}
+              />
+              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.14] transition-all text-xs font-bold"
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  {extracting ? 'Reading...' : 'Screenshot'}
+                </button>
+                <span className={`text-xs ${message.length > 2500 ? 'text-red-400' : 'text-white/30'}`}>
+                  {message.length}/3000
+                </span>
+              </div>
+            </div>
+            {/* Screenshot preview */}
+            {screenshotPreview && (
+              <div className="relative rounded-2xl overflow-hidden border border-cyan-500/20">
+                <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-40 object-cover opacity-70" />
+                <button
+                  onClick={clearScreenshot}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-all"
+                >
+                  <X className="h-3.5 w-3.5 text-white" />
+                </button>
+                {extracting && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+                  </div>
+                )}
+              </div>
+            )}
+            <Button
+              onClick={handleGenerateRevive}
+              disabled={loadingRevive || !message.trim() || (!isPro && reviveUsed >= reviveLimit)}
+              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
+                !isPro && reviveUsed >= reviveLimit
+                  ? 'bg-white/[0.08] text-white/30'
+                  : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
+              }`}
+              size="lg"
+            >
+              {loadingRevive ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Crafting revive messages...</>
+              ) : !isPro && reviveUsed >= reviveLimit ? (
+                <><Lock className="mr-2 h-5 w-5" /> Revive Used — Upgrade</>
+              ) : (
+                <><RefreshCw className="mr-2 h-5 w-5" /> Revive This Convo</>
+              )}
+            </Button>
+            {!isPro && (
+              <p className="text-center text-xs text-white/30 font-medium">
+                {reviveUsed >= reviveLimit ? '0' : `${reviveLimit - reviveUsed}`}/{reviveLimit} free revive{reviveLimit === 1 ? '' : 's'} remaining today
+              </p>
+            )}
+            </>)}
+          </div>
+        </div>
+
+        {/* Decode Results Panel */}
+        {decodeResult && (
+          <div className="mb-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="rounded-3xl bg-white/[0.04] border border-amber-500/15 p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                    <Brain className="h-3.5 w-3.5 text-amber-400" />
+                  </div>
+                  <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">decoded</span>
+                </div>
+                <button onClick={() => setDecodeResult(null)} className="w-7 h-7 rounded-xl bg-white/[0.05] flex items-center justify-center hover:bg-white/10 transition-all">
+                  <X className="h-3 w-3 text-white/30" />
+                </button>
+              </div>
+              {/* Energy Badge */}
+              <div className="inline-flex">
+                <span className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border border-white/[0.06] ${
+                  decodeResult.energy === 'positive' ? 'bg-emerald-500/15 text-emerald-400' :
+                  decodeResult.energy === 'negative' ? 'bg-red-500/15 text-red-400' :
+                  decodeResult.energy === 'mixed' ? 'bg-yellow-500/15 text-yellow-400' :
+                  'bg-white/[0.06] text-white/50'
+                }`}>
+                  {(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).emoji} {decodeResult.energy.replace('-', ' ')}
+                </span>
+              </div>
+              {/* Intent */}
+              <div className="rounded-2xl bg-amber-500/5 border border-amber-500/10 p-4">
+                <p className="text-amber-400/60 text-[10px] font-bold uppercase tracking-widest mb-1.5">what they mean</p>
+                <p className="text-white/80 text-sm font-medium leading-relaxed">{decodeResult.intent}</p>
+              </div>
+              {/* Subtext */}
+              <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
+                <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-1.5">between the lines</p>
+                <p className="text-white/60 text-xs leading-relaxed">{decodeResult.subtext}</p>
+              </div>
+              {/* Flags */}
+              {decodeResult.flags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {decodeResult.flags.map((flag, i) => (
+                    <span key={i} className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border ${
+                      flag.type === 'green' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                      flag.type === 'red' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                    }`}>
+                      {flag.text}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* Coach Tip */}
+              <div className="rounded-2xl bg-violet-500/5 border border-violet-500/10 p-4">
+                <p className="text-violet-400/60 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" /> coach tip
+                </p>
+                <p className="text-white/70 text-xs font-medium leading-relaxed">{decodeResult.coach_tip}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Opener Results */}
+        {openers.length > 0 && (
+          <div className="animate-in fade-in duration-400 mb-8">
+            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your opening lines</p>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
+              {openers.map((opener, idx) => {
+                const config = OPENER_TONE_CONFIG[opener.tone] || OPENER_TONE_CONFIG.bold;
+                const label = ['A', 'B', 'C'][idx];
+                const isCopied = copied === opener.tone;
+                return (
+                  <div
+                    key={idx}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
+                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                        </div>
+                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-2">{opener.text}</p>
+                        <p className="text-white/30 text-xs italic mb-3">{opener.why}</p>
+                        <button
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(opener.text);
+                            setCopied(opener.tone);
+                            toast({ title: '✓ Copied!', description: 'Paste it and send' });
+                            setTimeout(() => setCopied(null), 2000);
+                          }}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                            isCopied
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                          }`}
+                        >
+                          {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-center pt-5">
+              <button onClick={() => setOpeners([])} className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95">
+                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" /> Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Revive Results */}
+        {reviveMessages.length > 0 && (
+          <div className="animate-in fade-in duration-400 mb-8">
+            {/* Analysis */}
+            {reviveAnalysis && (
+              <div className="mb-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />
+                  <span className="text-cyan-400/80 text-[10px] font-bold uppercase tracking-widest">convo analysis</span>
+                </div>
+                <p className="text-white/70 text-sm leading-relaxed">{reviveAnalysis}</p>
+              </div>
+            )}
+            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your revive messages</p>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
+              {reviveMessages.map((msg, idx) => {
+                const config = REVIVE_TONE_CONFIG[msg.tone] || REVIVE_TONE_CONFIG.smooth;
+                const label = ['A', 'B', 'C'][idx];
+                const isCopied = copied === msg.tone;
+                return (
+                  <div
+                    key={idx}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
+                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                        </div>
+                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-2">{msg.text}</p>
+                        <p className="text-white/30 text-xs italic mb-3">{msg.why}</p>
+                        <button
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(msg.text);
+                            setCopied(msg.tone);
+                            toast({ title: '✓ Copied!', description: 'Send it and see what happens' });
+                            setTimeout(() => setCopied(null), 2000);
+                          }}
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                            isCopied
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                          }`}
+                        >
+                          {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="text-center pt-5">
+              <button onClick={() => { setReviveMessages([]); setReviveAnalysis(''); }} className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95">
+                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" /> Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════ SCREENSHOT BRIEFING CARD ══════════ */}
+        {scanResult && (
+          <div className="animate-in fade-in slide-in-from-bottom-3 duration-400 mb-8">
+            {/* Context header */}
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <Camera className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-white/80 text-sm font-bold">Screenshot Briefing</p>
+                <p className="text-white/35 text-[11px]">
+                  {scanResult.messageCount} message{scanResult.messageCount !== 1 ? 's' : ''} from {scanResult.platform !== 'unknown' ? scanResult.platform : 'conversation'}
+                  {scanResult.confidence === 'high' && ' • high confidence'}
+                </p>
+              </div>
+              <button
+                onClick={() => { setScanResult(null); setScreenshotPreview(null); }}
+                className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white/30 hover:text-white/60 hover:bg-white/[0.10] transition-all"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Strategy card (Pro only) */}
+            {scanResult.strategy && (
+              <div className="mb-4 rounded-2xl bg-gradient-to-r from-emerald-500/[0.08] to-cyan-500/[0.08] border border-emerald-500/20 p-4">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <Target className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="text-emerald-300 text-[11px] font-bold uppercase tracking-widest">Your sharp friend says</span>
+                  {scanResult.strategy.move.risk !== 'low' && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      scanResult.strategy.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
+                    }`}>
+                      {scanResult.strategy.move.risk} risk
+                    </span>
+                  )}
+                </div>
+                <p className="text-white/90 text-sm font-semibold leading-relaxed mb-3">
+                  {scanResult.strategy.move.one_liner}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    scanResult.strategy.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
+                    scanResult.strategy.momentum === 'Declining' || scanResult.strategy.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
+                    'bg-white/[0.08] text-white/50'
+                  }`}>
+                    {scanResult.strategy.momentum === 'Rising' ? <TrendingUp className="h-3 w-3" /> :
+                     scanResult.strategy.momentum === 'Declining' || scanResult.strategy.momentum === 'Stalling' ? <TrendingDown className="h-3 w-3" /> :
+                     <Minus className="h-3 w-3" />}
+                    {scanResult.strategy.momentum}
+                  </span>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">
+                    {scanResult.strategy.balance}
+                  </span>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    scanResult.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
+                    scanResult.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
+                    'bg-violet-500/15 text-violet-300'
+                  }`}>
+                    {scanResult.strategy.move.energy.replace('_', ' ')}
+                  </span>
+                  {scanResult.strategy.move.constraints.keep_short && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">keep short</span>
+                  )}
+                  {scanResult.strategy.move.constraints.no_questions && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">no questions</span>
+                  )}
+                  {scanResult.strategy.move.constraints.add_tease && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">add tease</span>
+                  )}
+                  {scanResult.strategy.move.constraints.push_meetup && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">push meetup</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Reply options */}
+            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your replies</p>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden mb-4">
+              {scanResult.replies.map((reply, idx) => {
+                const config = TONE_CONFIG[reply.tone];
+                const isCopied = copied === reply.tone;
+                const label = ['A', 'B', 'C'][idx];
+                return (
+                  <div
+                    key={reply.tone}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
+                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                          <span className="text-white/25 text-[11px]">{reply.text.split(' ').length}w</span>
+                        </div>
+                        {editingReply === `scan-${reply.tone}` ? (
+                          <div className="space-y-2.5 mb-3">
+                            <textarea
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-violet-500/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/50 transition-all min-h-[60px] text-sm leading-relaxed"
+                              placeholder="Edit this reply, add your ideas..."
+                              autoFocus
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => handleRefine(reply.tone, reply.text, true)}
+                                disabled={refining || !editText.trim()}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                              >
+                                {refining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                {refining ? 'Polishing...' : 'Polish'}
+                              </button>
+                              <button
+                                onClick={() => handleUseRawEdit(reply.tone, true)}
+                                disabled={!editText.trim()}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30"
+                              >
+                                <Check className="h-3 w-3" /> Use as is
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/30 hover:text-white/50 transition-all"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
+                        )}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleCopy(reply.text, reply.tone)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                              isCopied
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                            }`}
+                          >
+                            {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                          </button>
+                          {editingReply !== `scan-${reply.tone}` && (
+                            <button
+                              onClick={() => handleStartEdit(`scan-${reply.tone}`, reply.text)}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
+                            >
+                              <MessageCircle className="h-3 w-3" /> Edit
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleContinueInThread}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-violet-500/15 border border-violet-500/25 text-violet-300 hover:bg-violet-500/25 text-xs font-bold transition-all active:scale-95"
+              >
+                <MessageCircle className="h-3.5 w-3.5" /> Continue in Thread
+              </button>
+              <button
+                onClick={handleRegenerateScan}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.10] text-xs font-bold transition-all active:scale-95 disabled:opacity-40"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Retry
+              </button>
+              <button
+                onClick={() => { setScanResult(null); setScreenshotPreview(null); }}
+                className="px-4 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.10] text-xs font-bold transition-all active:scale-95"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Replies Section */}
+        {replies.length > 0 && (
+          <div className="animate-in fade-in duration-400">
+            {/* ══════════ STRATEGY COACH CARD ══════════ */}
+            {isPro && strategyData ? (
+              <div className="mb-4 rounded-2xl bg-gradient-to-r from-emerald-500/[0.08] to-cyan-500/[0.08] border border-emerald-500/20 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <Target className="h-3.5 w-3.5 text-emerald-400" />
+                  </div>
+                  <span className="text-emerald-300 text-[11px] font-bold uppercase tracking-widest">Strategy</span>
+                  {strategyData.move.risk !== 'low' && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      strategyData.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
+                    }`}>
+                      {strategyData.move.risk} risk
+                    </span>
+                  )}
+                </div>
+                <p className="text-white/90 text-sm font-semibold leading-relaxed mb-3">
+                  {strategyData.move.one_liner}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
+                    strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
+                    'bg-white/[0.08] text-white/50'
+                  }`}>
+                    {strategyData.momentum === 'Rising' ? <TrendingUp className="h-3 w-3" /> :
+                     strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? <TrendingDown className="h-3 w-3" /> :
+                     <Minus className="h-3 w-3" />}
+                    {strategyData.momentum}
+                  </span>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">
+                    {strategyData.balance}
+                  </span>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
+                    strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
+                    'bg-violet-500/15 text-violet-300'
+                  }`}>
+                    {strategyData.move.energy.replace('_', ' ')}
+                  </span>
+                  {strategyData.move.constraints.keep_short && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">keep short</span>
+                  )}
+                  {strategyData.move.constraints.no_questions && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">no questions</span>
+                  )}
+                  {strategyData.move.constraints.add_tease && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">add tease</span>
+                  )}
+                  {strategyData.move.constraints.push_meetup && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">push meetup</span>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* ══════════ STRATEGY CHAT ══════════ */}
+            {isPro && strategyData && (
+              <div className="mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                {/* Header */}
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
+                  <div className="w-5 h-5 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                    <MessageCircle className="h-3 w-3 text-violet-400" />
+                  </div>
+                  <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Ask your coach</span>
+                  <span className="text-[10px] text-white/20 ml-auto">Thread context always in background</span>
+                </div>
+
+                {/* Chat history */}
+                {strategyChatHistory.length > 0 && (
+                  <div className="px-4 py-3 space-y-3 max-h-72 overflow-y-auto">
+                    {strategyChatHistory.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+                          <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
+                            msg.role === 'user'
+                              ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-br-md'
+                              : 'bg-white/[0.07] text-white/85 border border-white/[0.06] rounded-bl-md'
+                          }`}>
+                            <p className="font-medium whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                          {/* Draft replies from coach */}
+                          {msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
+                            <div className="w-full space-y-1.5 mt-1">
+                              <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach draft</p>
+                              {msg.draft.shorter && (
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '✓ Copied' }); }}
+                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-white/80 text-[13px] font-medium hover:bg-emerald-500/[0.14] transition-all active:scale-[0.98] group"
+                                >
+                                  <span className="text-[10px] text-emerald-400/60 font-bold block mb-0.5">Shorter</span>
+                                  {msg.draft.shorter}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                </button>
+                              )}
+                              {msg.draft.spicier && (
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }}
+                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-orange-500/[0.08] border border-orange-500/20 text-white/80 text-[13px] font-medium hover:bg-orange-500/[0.14] transition-all active:scale-[0.98] group"
+                                >
+                                  <span className="text-[10px] text-orange-400/60 font-bold block mb-0.5">Spicier</span>
+                                  {msg.draft.spicier}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                </button>
+                              )}
+                              {msg.draft.softer && (
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }}
+                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-white/80 text-[13px] font-medium hover:bg-blue-500/[0.14] transition-all active:scale-[0.98] group"
+                                >
+                                  <span className="text-[10px] text-blue-400/60 font-bold block mb-0.5">Softer</span>
+                                  {msg.draft.softer}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {strategyChatLoading && (
+                      <div className="flex justify-start">
+                        <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.06] flex items-center gap-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                          <span className="text-[12px] text-white/40 font-medium">Thinking...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Input row */}
+                <div className="px-3 py-3 flex items-center gap-2 border-t border-white/[0.06]">
+                  <input
+                    ref={coachFileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    multiple
+                    onChange={handleCoachScreenshotUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => coachFileInputRef.current?.click()}
+                    disabled={coachScreenshotExtracting || strategyChatLoading}
+                    className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30 shrink-0"
+                    title="Upload screenshot for context"
+                  >
+                    {coachScreenshotExtracting ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <input
+                    type="text"
+                    value={strategyChatInput}
+                    onChange={(e) => setStrategyChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
+                    placeholder="Ask anything or add context..."
+                    maxLength={300}
+                    disabled={strategyChatLoading || coachScreenshotExtracting}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/20 text-[13px] focus:outline-none focus:border-violet-500/30 transition-all disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleStrategyChatSend}
+                    disabled={!strategyChatInput.trim() || strategyChatLoading}
+                    className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* Suggestion chips — only when no history yet */}
+                {strategyChatHistory.length === 0 && !strategyChatLoading && (
+                  <div className="px-3 pb-3 flex flex-wrap gap-1.5">
+                    {[
+                      'Should I ask what happened?',
+                      'Is this a good time to check in?',
+                      'How do I bring up plans?',
+                    ].map((chip) => (
+                      <button
+                        key={chip}
+                        onClick={() => { setStrategyChatInput(chip); }}
+                        className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/35 text-[11px] font-medium hover:bg-white/[0.08] hover:text-white/60 transition-all active:scale-95"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isPro && !strategyData && replies.length > 0 ? null : !isPro && replies.length > 0 ? (
+              <button
+                onClick={() => setShowPaywall(true)}
+                className="w-full mb-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all flex items-center gap-3 group"
+              >
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <Target className="h-4 w-4 text-emerald-400/50" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-white/40 text-xs font-bold">Strategy Mode</p>
+                  <p className="text-white/20 text-[10px]">AI coaching for every reply — Pro only</p>
+                </div>
+                <Lock className="h-3.5 w-3.5 text-white/20 group-hover:text-white/40 transition-colors" />
+              </button>
+            ) : null}
+
+            <div className="mb-4">
+              {showCraftedMessage && (
+                <p className={`text-[11px] font-bold uppercase tracking-widest mb-2 ${
+                  isPro ? 'text-emerald-400/60' : 'text-violet-400/60'
+                }`}>
+                  {isPro ? '✅ 3-agent verified • Safe to send' : 'Crafted with care'}
+                </p>
+              )}
+              <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em]">
+                {isPro ? 'Your verified replies' : 'Pick your reply'}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
+              {replies.map((reply, idx) => {
+                const config = TONE_CONFIG[reply.tone];
+                const isCopied = copied === reply.tone;
+                const label = ['A', 'B', 'C'][idx];
+                return (
+                  <div
+                    key={reply.tone}
+                    style={{ animationDelay: `${idx * 60}ms` }}
+                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
+                      isCopied
+                        ? 'bg-emerald-500/[0.08]'
+                        : 'hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    <div className="flex gap-4 px-5 py-5">
+                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
+                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                      } transition-opacity`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2.5 mb-2.5">
+                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
+                          <span className="text-white/25 text-[11px]">{reply.text ? reply.text.split(' ').length : 0}w</span>
+                          {isPro && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                              useV2 ? 'text-emerald-500/60 bg-emerald-500/10' : 'text-violet-400/60 bg-violet-500/10'
+                            }`}>
+                              {useV2 ? 'v2' : 'v1'}
+                            </span>
+                          )}
+                          {v2Meta && v2Meta.toneChecks[reply.tone] && (
+                            <span className="text-[10px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded">
+                              tone ✓
+                            </span>
+                          )}
+                        </div>
+                        {editingReply === reply.tone ? (
+                          <div className="space-y-2.5 mb-3">
+                            <textarea
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-violet-500/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/50 transition-all min-h-[60px] text-sm leading-relaxed"
+                              placeholder="Edit this reply, add your ideas..."
+                              autoFocus
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => handleRefine(reply.tone, reply.text)}
+                                disabled={refining || !editText.trim()}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                              >
+                                {refining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                {refining ? 'Polishing...' : 'Polish'}
+                              </button>
+                              <button
+                                onClick={() => handleUseRawEdit(reply.tone)}
+                                disabled={!editText.trim()}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30"
+                              >
+                                <Check className="h-3 w-3" /> Use as is
+                              </button>
+                              <button
+                                onClick={handleCancelEdit}
+                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/30 hover:text-white/50 transition-all"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
+                        )}
+                        
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() => handleCopy(reply.text, reply.tone)}
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                              isCopied 
+                                ? 'bg-emerald-500/20 text-emerald-400' 
+                                : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
+                            }`}
+                          >
+                            {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
+                          </button>
+                          <button
+                            onClick={() => handleMarkSent(reply)}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-violet-500/15 border border-violet-500/25 text-violet-300 hover:bg-violet-500/25 transition-all active:scale-95"
+                          >
+                            <Send className="h-3.5 w-3.5" /> I sent this
+                          </button>
+                          {editingReply !== reply.tone && (
+                            <button
+                              onClick={() => handleStartEdit(reply.tone, reply.text)}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
+                            >
+                              <MessageCircle className="h-3 w-3" /> Edit
+                            </button>
+                          )}
+                          <div className="relative">
+                            <button
+                              onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
+                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                                sharing === reply.tone
+                                  ? 'bg-violet-500/20 text-violet-400'
+                                  : 'bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/70 hover:bg-white/[0.10]'
+                              }`}
+                            >
+                              {sharing === reply.tone ? '✓ Shared' : <><Sparkles className="h-3.5 w-3.5" /> Share</>}
+                            </button>
+                            {shareMenuOpen === reply.tone && (
+                              <div className="absolute bottom-full mb-2 left-0 right-0 min-w-[180px] rounded-xl bg-[#1a1a2e] border border-white/[0.12] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                <button
+                                  onClick={() => handleShareLink(reply)}
+                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2 border-b border-white/[0.06]"
+                                >
+                                  🔗 Copy Share Link
+                                </button>
+                                <button
+                                  onClick={() => handleDownloadImage(reply)}
+                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2 border-b border-white/[0.06]"
+                                >
+                                  📥 Download Image
+                                </button>
+                                <button
+                                  onClick={() => handleCopyImage(reply)}
+                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2"
+                                >
+                                  📋 Copy Image
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Regenerate + custom input */}
+            <div className="pt-3 space-y-2">
+              <button
+                onClick={handleRegenerate}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl bg-white/[0.04] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.08] text-xs font-bold transition-all active:scale-95 disabled:opacity-40"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Generating...' : 'Generate different replies'}
+              </button>
+              {!showCustomSent ? (
+                <button
+                  onClick={() => setShowCustomSent(true)}
+                  className="w-full p-3.5 rounded-2xl bg-white/[0.04] border border-dashed border-white/[0.12] hover:bg-white/[0.08] hover:border-white/[0.18] transition-all text-white/40 hover:text-white/60 text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  I said something else...
+                </button>
+              ) : (
+                <div className="rounded-2xl bg-white/[0.04] border border-violet-500/20 p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <p className="text-violet-300 text-xs font-bold">What did you actually send?</p>
+                  <textarea
+                    value={customSent}
+                    onChange={(e) => setCustomSent(e.target.value)}
+                    placeholder="Type what you sent them..."
+                    className="w-full p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/30 transition-all min-h-[60px] text-sm"
+                    maxLength={500}
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCustomSentSubmit}
+                      disabled={!customSent.trim()}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                    >
+                      <Send className="h-3.5 w-3.5" /> Add to thread
+                    </button>
+                    <button
+                      onClick={() => { setShowCustomSent(false); setCustomSent(''); }}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 transition-all active:scale-95"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Try Again Button */}
+            <div className="text-center pt-4 animate-in fade-in duration-500 delay-300">
+              <button
+                onClick={handleTryAgain}
+                className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95"
+              >
+                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" />
+                Try Another Message
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden animate-in fade-in duration-300">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex gap-4 px-5 py-5">
+                <div className="w-1 shrink-0 self-stretch rounded-full bg-violet-500/20 animate-pulse" />
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-4 w-20 bg-white/[0.06] rounded-lg animate-pulse" />
+                    <div className="h-3 w-8 bg-white/[0.04] rounded animate-pulse" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-white/[0.06] rounded-lg animate-pulse" />
+                    <div className="h-4 w-4/5 bg-white/[0.04] rounded-lg animate-pulse" />
+                  </div>
+                  <div className="h-8 w-20 bg-white/[0.04] rounded-xl animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && replies.length === 0 && message === '' && (
+          <div className="text-center pt-10 pb-6 space-y-4 animate-in fade-in duration-500">
+            <p className="text-white/40 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
+              Paste what they said above and we&apos;ll craft the perfect reply.
+            </p>
+            <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/25">
+              <span>them</span>
+              <span>→</span>
+              <span className="text-violet-400/40">you</span>
+              <span>→</span>
+              <span>send</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

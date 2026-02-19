@@ -10,6 +10,32 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.0.0',
+    date: '2026-02-19',
+    title: 'V4 — Coach Mode: Your AI Texting Coach',
+    description: 'The biggest redesign yet. Coach Mode is now the face of Text Wingman — a conversational AI coach that reads your situation, gives strategy, generates replies, decodes messages, writes openers, and revives dead threads. All from one chat interface.',
+    type: 'milestone',
+    highlights: [
+      'Coach Mode — conversational AI texting coach as the primary interface. Ask anything: "read this convo", "what should I say?", "decode this", "write me an opener", "revive this dead chat"',
+      'Reply cards inline — Coach suggests 3 replies (Quick, Spicy, Soft) with one-tap USE to send to your thread',
+      'Strategy badges — momentum, balance, and energy analysis shown inline on every Coach response',
+      'Intel Sidebar (desktop) — real-time health ring, risk score, timing window, strategy card, context & goal selectors',
+      'Mobile Intel Sheet — expandable panel showing health, risk, timing, strategy, and selectors on mobile',
+      'Screenshot multi-upload — upload multiple screenshots at once in Coach mode for full context',
+      'Suggestion chips — empty state shows quick-start options: Read convo, What should I say, Decode, Opener, Revive',
+      'Thread Mode preserved as secondary view — toggle COACH/THREAD in header',
+      'Inline decode — hover any "them" message in thread to decode it instantly',
+      'Simulated outcomes — % confidence score on each reply with BEST badge',
+      'Edit + Polish preserved — tap Edit on any reply, add your ideas, hit Polish',
+      'Regenerate button — REFRESH for fresh reply options without re-entering anything',
+      'Dark glass UI throughout — Glass component with neon glow options, animated gradient background',
+      'Paywall redesigned in dark glass to match the rest of the app',
+      'Removed tab bar (Reply/Decode/Opener/Revive) — Coach handles all modes naturally',
+      'Removed standalone Strategy Chat — Coach IS the strategy chat now',
+      'Page size reduced from ~3,600 lines to ~1,100 lines',
+    ],
+  },
+  {
     version: '3.7.0',
     date: '2026-02-19',
     title: 'Deep AI Upgrade — Sarcasm Detection, Power Dynamics & Style Matching',

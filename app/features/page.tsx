@@ -1,25 +1,26 @@
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Target, RefreshCw, Pencil, Eye, Activity, Zap, Lock } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Target, RefreshCw, Pencil, Eye, Activity, Zap, Lock, Crosshair, PanelRightOpen } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FREE_FEATURES = [
-  { icon: MessageCircle, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Reply Generator', tagline: 'Paste their message. Get 3 perfect replies.', bullets: ['3 tones: Shorter, Spicier, Softer', 'Thread-aware — reads the full convo', '5 replies/day free'] },
-  { icon: Eye, color: 'text-amber-400', bg: 'bg-amber-500/10', title: 'Subtext Intelligence', tagline: 'AI that reads between the lines.', bullets: ['"wateveerr" = coy, not dismissive', 'Stretched words, sarcasm, banter detected', 'Replies match the feeling, not just the words'] },
-  { icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Vibe Check', tagline: 'Know how your message reads before you send.', bullets: ['Real-time draft analysis as you type', 'Energy, neediness risk, frame strength', 'Sharp-friend tip: "Cut the question mark"'] },
-  { icon: Brain, color: 'text-orange-400', bg: 'bg-orange-500/10', title: 'Message Decoder', tagline: '"What do they actually mean?"', bullets: ['Paste any message or full thread', 'Intent, subtext, sarcasm, power dynamics', '1 decode/day free · unlimited Pro'] },
-  { icon: Send, color: 'text-pink-400', bg: 'bg-pink-500/10', title: 'Opener Generator', tagline: 'First messages that actually land.', bullets: ['Dating apps, Instagram, cold texts', 'Personalized to their bio or situation', '1 opener/day free · unlimited Pro'] },
-  { icon: RefreshCw, color: 'text-cyan-400', bg: 'bg-cyan-500/10', title: 'Revive Mode', tagline: 'Bring dead conversations back to life.', bullets: ['Analyzes why the convo died', 'Smooth, Bold, or Warm re-engagement', '1 revive/day free · unlimited Pro'] },
-  { icon: Camera, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Screenshot Briefing', tagline: 'Upload. Get strategy + replies. Zero typing.', bullets: ['Works with iMessage, WhatsApp, IG, Tinder, Hinge + more', 'AI reads every message, identifies who said what', 'Instant strategy + 3 replies'] },
-  { icon: Pencil, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Edit + Polish', tagline: 'Make any reply yours.', bullets: ['Add your own ideas to any reply', 'Polish keeps your words, tightens the rest', 'Works in Thread Mode and Screenshot Briefing'] },
-  { icon: RefreshCw, color: 'text-white/40', bg: 'bg-white/[0.06]', title: 'Regenerate', tagline: 'Not feeling it? Get fresh options.', bullets: ['Tap "Generate different replies" anytime', 'Same context, completely different replies', 'No re-uploading or re-entering needed'] },
-  { icon: BookmarkCheck, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Auto-Save Threads', tagline: 'Never lose context.', bullets: ['Conversations auto-save after 2+ messages', 'Load any thread and keep going', 'Full context preserved across sessions'] },
+  { icon: Crosshair, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Coach Mode', tagline: 'Your AI texting coach — the face of V4.', bullets: ['Ask anything: "read this convo", "what should I say?", "decode this"', 'Gets strategy + 3 reply options inline with confidence scores', 'Handles replies, decodes, openers, and revives in one chat'] },
+  { icon: MessageCircle, color: 'text-cyan-400', bg: 'bg-cyan-500/10', title: 'Thread Mode', tagline: 'Track the full conversation. Generate replies.', bullets: ['Paste messages or upload screenshots to build the thread', '3 tones: Quick, Spicy, Soft with confidence scores', 'Inline decode on any "them" message'] },
+  { icon: Camera, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Screenshot Multi-Upload', tagline: 'Upload screenshots. Get instant coaching.', bullets: ['Upload multiple screenshots at once in Coach mode', 'AI reads every message, identifies who said what', 'Works with iMessage, WhatsApp, IG, Tinder, Hinge + more'] },
+  { icon: Brain, color: 'text-orange-400', bg: 'bg-orange-500/10', title: 'Message Decoder', tagline: '"What do they actually mean?"', bullets: ['Inline decode on any message in the thread', 'Intent, subtext, sarcasm, power dynamics, flags', '1 decode/day free · unlimited Pro'] },
+  { icon: Send, color: 'text-pink-400', bg: 'bg-pink-500/10', title: 'Opener Generator', tagline: 'First messages that actually land.', bullets: ['Ask Coach: "write me an opener"', 'Personalized to their bio or situation', '1 opener/day free · unlimited Pro'] },
+  { icon: RefreshCw, color: 'text-cyan-400', bg: 'bg-cyan-500/10', title: 'Revive Mode', tagline: 'Bring dead conversations back to life.', bullets: ['Ask Coach: "revive this dead chat"', 'Smooth, Bold, or Warm re-engagement options', '1 revive/day free · unlimited Pro'] },
+  { icon: Pencil, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Edit + Polish', tagline: 'Make any reply yours.', bullets: ['Tap Edit on any reply, add your ideas', 'Polish keeps your words, tightens the rest', 'Works in Thread Mode and Coach replies'] },
+  { icon: RefreshCw, color: 'text-white/40', bg: 'bg-white/[0.06]', title: 'Regenerate', tagline: 'Not feeling it? Get fresh options.', bullets: ['REFRESH button for new reply options', 'Same context, completely different replies', 'No re-uploading or re-entering needed'] },
+  { icon: BookmarkCheck, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Auto-Save Threads', tagline: 'Never lose context.', bullets: ['Conversations auto-save after 2+ messages', 'Load, rename, or delete any saved thread', 'Full context preserved across sessions'] },
 ];
 
 const PRO_FEATURES = [
+  { icon: PanelRightOpen, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Intel Sidebar', tagline: 'Real-time conversation intelligence.', bullets: ['Health ring — animated score showing conversation health', 'Risk level, timing window, strategy card', 'Context and goal selectors on desktop', 'Mobile Intel Sheet — expandable on phone'] },
   { icon: Target, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Strategy Mode', tagline: 'AI coaching before every reply.', bullets: ['Detects sarcasm vs low investment', 'Tracks power dynamics — who\'s chasing', 'Sharp one-liner: "Pull back. Let them come to you."', 'Shapes every reply around the right move'] },
   { icon: Shield, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'V2 Verified Pipeline', tagline: '3-agent pipeline. Every reply verified.', bullets: ['Draft → Rule-Check → Tone-Verify', '≤18 words enforced, no needy language', 'Strategy-aligned tone verification', 'Auto-revises up to 2x if a reply fails'] },
-  { icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Unlimited Everything', tagline: 'No daily limits. Ever.', bullets: ['Unlimited replies, decodes, openers, revives', 'Full reply history saved', 'Strategy Mode on every generation'] },
+  { icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Simulated Outcomes', tagline: 'Confidence scores on every reply.', bullets: ['% confidence score on each reply option', 'BEST badge highlights the top-scoring reply', 'Branch prediction — see likely outcomes'] },
+  { icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Unlimited Everything', tagline: 'No daily limits. Ever.', bullets: ['Unlimited replies, decodes, openers, revives', 'Full thread history saved', 'Strategy + Intel on every generation'] },
 ];
 
 export default function FeaturesPage() {
@@ -49,15 +50,15 @@ export default function FeaturesPage() {
 
         {/* Hero */}
         <div className="text-center pt-8 pb-14 space-y-4">
-          <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full text-xs font-bold border border-cyan-500/20">
+          <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
             <Sparkles className="h-3.5 w-3.5" />
-            v{CURRENT_VERSION} — Sarcasm Detection + Power Dynamics + Style Matching
+            v{CURRENT_VERSION} — Coach Mode + Intel Sidebar + Dark Glass UI
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-white">
             Everything Wingman can do.
           </h1>
           <p className="text-white/40 text-lg max-w-xl mx-auto">
-            Free features. Pro features. All in one place.
+            Coach Mode is the face. Thread Mode tracks the convo. Intel keeps you sharp.
           </p>
         </div>
 
