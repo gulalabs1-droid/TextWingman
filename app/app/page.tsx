@@ -188,6 +188,7 @@ export default function AppPage() {
   const [showCraftedMessage, setShowCraftedMessage] = useState(false);
   const [selectedContext, setSelectedContext] = useState<ContextType>(null);
   const [customContext, setCustomContext] = useState('');
+  const [userIntent, setUserIntent] = useState('');
   const [sharing, setSharing] = useState<string | null>(null);
   const [shareMenuOpen, setShareMenuOpen] = useState<string | null>(null);
   const [vpnBlocked, setVpnBlocked] = useState(false);
@@ -408,6 +409,7 @@ export default function AppPage() {
           message: fullContext,
           context: selectedContext || 'crush',
           customContext: customContext.trim() || undefined,
+          userIntent: userIntent.trim() || undefined,
         }),
       });
 
@@ -1472,6 +1474,7 @@ export default function AppPage() {
     setShowExamples(true);
     setReviveMessages([]);
     setReviveAnalysis('');
+    setUserIntent('');
   };
 
   const handleTryAgain = () => {
@@ -2051,6 +2054,28 @@ export default function AppPage() {
                 )}
               </div>
             )}
+
+            {/* ══════════ USER INTENT — optional direction for replies ══════════ */}
+            <div className="animate-in fade-in duration-200">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={userIntent}
+                  onChange={(e) => setUserIntent(e.target.value)}
+                  placeholder="What do you want to say? (optional) — e.g. ask what happened subtly"
+                  maxLength={120}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 placeholder-white/20 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
+                />
+                {userIntent && (
+                  <button
+                    onClick={() => setUserIntent('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
 
             {/* Quick add to thread buttons (for double texts / non-generated messages) */}
             {thread.length > 0 && (

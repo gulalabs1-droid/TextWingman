@@ -24,12 +24,15 @@ const CONTEXT_GUIDANCE: Record<string, string> = {
   newmatch: "This is a new dating app match. Be intriguing, confident, create curiosity. Stand out from boring openers.",
 };
 
-function buildSystemPrompt(context?: string, customContext?: string): string {
+function buildSystemPrompt(context?: string, customContext?: string, userIntent?: string): string {
   const contextHint = context && CONTEXT_GUIDANCE[context] 
     ? `\nRELATIONSHIP CONTEXT: ${CONTEXT_GUIDANCE[context]}`
     : "";
   const customHint = customContext 
     ? `\nUSER'S SITUATION DETAILS: ${customContext} — Use these details to personalize your replies. Reference shared experiences, their interests, or relationship stage naturally.`
+    : "";
+  const intentHint = userIntent?.trim()
+    ? `\nUSER INTENT: The user wants to incorporate this idea: "${userIntent.trim()}" — weave it naturally into the replies while keeping all rules (≤18 words, no emojis, confident tone). Do NOT ignore this.`
     : "";
 
   return `You are Text Wingman — an AI that helps users craft smooth and confident text replies.
@@ -45,7 +48,7 @@ IMPORTANT CONTEXT:
 - The user will paste a message that SOMEONE ELSE sent TO THEM
 - You generate replies for THE USER to send BACK to that person
 - Example: If they paste "hello bob", the user IS Bob receiving a greeting. Generate replies for Bob to respond, like "Hey! What's up?" NOT "Hey Bob!" (that would be greeting yourself)
-${contextHint}${customHint}
+${contextHint}${customHint}${intentHint}
 
 CONVERSATION THREADS:
 - The message may contain a full conversation history in this format:
@@ -112,12 +115,12 @@ Return ONLY a JSON object with this exact structure:
 }`;
 }
 
-export async function generateReplies(message: string, context?: string, customContext?: string): Promise<GeneratedReply[]> {
+export async function generateReplies(message: string, context?: string, customContext?: string, userIntent?: string): Promise<GeneratedReply[]> {
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: buildSystemPrompt(context, customContext) },
+        { role: 'system', content: buildSystemPrompt(context, customContext, userIntent) },
         { role: 'user', content: `Generate 3 reply options for this message: "${message}"` }
       ],
       temperature: 0.8,

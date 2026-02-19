@@ -162,7 +162,7 @@ Return JSON:
 
 export async function POST(req: Request) {
   const startTime = Date.now();
-  const { message, context, customContext } = await req.json();
+  const { message, context, customContext, userIntent } = await req.json();
   
   // Get user info from headers for logging
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
@@ -255,7 +255,8 @@ export async function POST(req: Request) {
     // Step 1: Draft (with strategy constraints + energy metrics + few-shots injected)
     const strategyHint = formatStrategyForDraft(strategy, stratMetrics);
     const customHint = customContext ? `\nUser's situation details: ${customContext}` : '';
-    const draftRes = await run(DraftAgent, `Context: ${context}${customHint}${fewShotsHint}\n${strategyHint}\nMessage: ${message}`);
+    const intentHint = userIntent?.trim() ? `\nUSER INTENT: The user wants to incorporate this idea into their reply: "${userIntent.trim()}" — weave this in naturally across the 3 tones while still respecting all strategy constraints and word limits. Do NOT ignore this.` : '';
+    const draftRes = await run(DraftAgent, `Context: ${context}${customHint}${fewShotsHint}${intentHint}\n${strategyHint}\nMessage: ${message}`);
     drafts = safeJson(draftRes.finalOutput);
 
     // Step 2: Rule check with revise loop (max 2 attempts) — inject strategy for alignment checking
