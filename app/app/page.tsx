@@ -132,7 +132,7 @@ type ScanResult = {
   replies: Reply[];
 } | null;
 
-type AppMode = 'reply' | 'decode' | 'opener' | 'revive';
+type AppMode = 'reply' | 'decode' | 'opener' | 'revive' | 'coach';
 
 type ReviveMessage = {
   tone: string;
@@ -1864,6 +1864,15 @@ export default function AppPage() {
                 <RefreshCw className="h-3 w-3 shrink-0" />
                 Revive
               </button>
+              <button
+                onClick={() => { setAppMode('coach'); setReplies([]); setDecodeResult(null); setOpeners([]); setReviveMessages([]); }}
+                className={`flex-1 flex items-center justify-center gap-1 py-2 px-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appMode === 'coach' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30' : 'text-white/40 hover:text-white/60 border border-transparent'
+                }`}
+              >
+                <MessageCircle className="h-3 w-3 shrink-0" />
+                Coach
+              </button>
             </div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               {appMode === 'reply' && (
@@ -1890,12 +1899,19 @@ export default function AppPage() {
                   Revive a dead convo
                 </>
               )}
+              {appMode === 'coach' && (
+                <>
+                  <MessageCircle className="h-5 w-5 text-violet-400" />
+                  Ask your coach
+                </>
+              )}
             </h2>
             <p className="text-sm text-white/40 font-medium">
               {appMode === 'reply' && 'Paste the text and we\'ll handle the rest'}
               {appMode === 'decode' && 'Paste any message \u2014 we\'ll reveal the intent, subtext, and flags'}
               {appMode === 'opener' && 'Generate the perfect opening line for any situation'}
               {appMode === 'revive' && 'Paste or screenshot the stale convo \u2014 we\'ll craft the perfect re-engagement'}
+              {appMode === 'coach' && 'Paste your thread or ask anything — thread context always in background'}
             </p>
           </div>
           <div className="space-y-4 px-6 pb-6">
@@ -1908,6 +1924,116 @@ export default function AppPage() {
               className="hidden"
               aria-label="Upload screenshot"
             />
+
+            {/* ===== COACH MODE ===== */}
+            {appMode === 'coach' && (
+              <div className="space-y-3">
+                {/* Coach screenshot upload */}
+                <input
+                  ref={coachFileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  multiple
+                  onChange={handleCoachScreenshotUpload}
+                  className="hidden"
+                />
+                {/* Chat history */}
+                {strategyChatHistory.length > 0 && (
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {strategyChatHistory.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
+                          <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
+                            msg.role === 'user'
+                              ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-br-md'
+                              : 'bg-white/[0.07] text-white/85 border border-white/[0.06] rounded-bl-md'
+                          }`}>
+                            <p className="font-medium whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                          {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
+                            <div className="w-full space-y-1.5 mt-1">
+                              <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach draft</p>
+                              {msg.draft.shorter && (
+                                <button onClick={() => { setMessage(msg.draft!.shorter!); setAppMode('reply'); }} className="w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-white/80 text-[13px] font-medium hover:bg-emerald-500/[0.14] transition-all active:scale-[0.98] group">
+                                  <span className="text-[10px] text-emerald-400/60 font-bold block mb-0.5">Shorter</span>
+                                  {msg.draft.shorter}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to use</span>
+                                </button>
+                              )}
+                              {msg.draft.spicier && (
+                                <button onClick={() => { setMessage(msg.draft!.spicier!); setAppMode('reply'); }} className="w-full text-left px-3.5 py-2.5 rounded-xl bg-orange-500/[0.08] border border-orange-500/20 text-white/80 text-[13px] font-medium hover:bg-orange-500/[0.14] transition-all active:scale-[0.98] group">
+                                  <span className="text-[10px] text-orange-400/60 font-bold block mb-0.5">Spicier</span>
+                                  {msg.draft.spicier}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to use</span>
+                                </button>
+                              )}
+                              {msg.draft.softer && (
+                                <button onClick={() => { setMessage(msg.draft!.softer!); setAppMode('reply'); }} className="w-full text-left px-3.5 py-2.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-white/80 text-[13px] font-medium hover:bg-blue-500/[0.14] transition-all active:scale-[0.98] group">
+                                  <span className="text-[10px] text-blue-400/60 font-bold block mb-0.5">Softer</span>
+                                  {msg.draft.softer}
+                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to use</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {strategyChatLoading && (
+                      <div className="flex justify-start">
+                        <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.06] flex items-center gap-2">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                          <span className="text-[12px] text-white/40 font-medium">Thinking...</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* Suggestion chips */}
+                {strategyChatHistory.length === 0 && !strategyChatLoading && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      'Read this convo',
+                      'What should I say?',
+                      'Decode their message',
+                      'Write me an opener',
+                      'Revive a dead chat',
+                    ].map(chip => (
+                      <button key={chip} onClick={() => setStrategyChatInput(chip)} className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/35 text-[11px] font-medium hover:bg-white/[0.08] hover:text-white/60 transition-all active:scale-95">
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* Input row */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => coachFileInputRef.current?.click()}
+                    className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.10] transition-all active:scale-95 shrink-0"
+                    title="Upload screenshot"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                  </button>
+                  <input
+                    type="text"
+                    value={strategyChatInput}
+                    onChange={(e) => setStrategyChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
+                    placeholder="Ask anything or paste their message..."
+                    maxLength={500}
+                    disabled={strategyChatLoading}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/20 text-[13px] focus:outline-none focus:border-violet-500/30 transition-all disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleStrategyChatSend}
+                    disabled={!strategyChatInput.trim() || strategyChatLoading}
+                    className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ===== REPLY MODE ===== */}
             {appMode === 'reply' && (<>
