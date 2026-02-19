@@ -88,6 +88,7 @@ type SavedThread = {
   name: string;
   context: string | null;
   platform: string | null;
+  type: 'thread' | 'coach';
   updated_at: string;
   message_count: number;
   last_message: any;
@@ -263,6 +264,8 @@ export default function AppPage() {
   const threadEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const coachSaveTimer = useRef<NodeJS.Timeout | null>(null);
+  const [activeCoachSessionId, setActiveCoachSessionId] = useState<string | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -352,6 +355,17 @@ export default function AppPage() {
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thread]);
+
+  // Auto-save coach session after 2+ messages (2s debounce)
+  useEffect(() => {
+    if (strategyChatHistory.length < 2) return;
+    if (coachSaveTimer.current) clearTimeout(coachSaveTimer.current);
+    coachSaveTimer.current = setTimeout(() => {
+      autoSaveCoachSession();
+    }, 2000);
+    return () => { if (coachSaveTimer.current) clearTimeout(coachSaveTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [strategyChatHistory]);
 
   // Log usage to server
   const incrementUsage = async () => {
@@ -1403,6 +1417,35 @@ export default function AppPage() {
     }
   };
 
+  const autoSaveCoachSession = async () => {
+    if (strategyChatHistory.length < 2) return;
+    setSaving(true);
+    try {
+      const firstUserMsg = strategyChatHistory.find(m => m.role === 'user');
+      const autoName = firstUserMsg ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '') : 'Coach session';
+
+      const res = await fetch('/api/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: activeCoachSessionId || undefined,
+          name: autoName,
+          messages: strategyChatHistory.map(m => ({ role: m.role, content: m.content, draft: m.draft || null })),
+          type: 'coach',
+        }),
+      });
+      const data = await res.json();
+      if (data.thread) {
+        if (!activeCoachSessionId) {
+          setActiveCoachSessionId(data.thread.id);
+        }
+        fetchThreads();
+      }
+    } catch {} finally {
+      setSaving(false);
+    }
+  };
+
   const handleLoadThread = async (saved: SavedThread) => {
     try {
       const res = await fetch(`/api/threads?id=${saved.id}`);
@@ -1410,6 +1453,27 @@ export default function AppPage() {
       const data = await res.json();
       const fullThread = data.thread;
 
+      // Coach session — restore coach chat history
+      if ((saved.type || fullThread?.type) === 'coach') {
+        if (fullThread?.messages) {
+          const coachMsgs: StrategyChatMessage[] = (fullThread.messages as any[]).map((m: any) => ({
+            role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+            content: m.content || '',
+            draft: m.draft || null,
+          }));
+          setStrategyChatHistory(coachMsgs);
+        }
+        setActiveCoachSessionId(saved.id);
+        setActiveThreadId(null);
+        setActiveThreadName(null);
+        setThread([]);
+        setReplies([]);
+        setShowThreads(false);
+        toast({ title: 'Coach session loaded', description: saved.name });
+        return;
+      }
+
+      // Regular thread — restore thread messages
       if (fullThread?.messages) {
         const messages: ThreadMessage[] = (fullThread.messages as any[]).map((m: any) => ({
           role: m.role === 'you' ? 'you' as const : 'them' as const,
@@ -1421,6 +1485,8 @@ export default function AppPage() {
 
       setActiveThreadId(saved.id);
       setActiveThreadName(saved.name);
+      setActiveCoachSessionId(null);
+      setStrategyChatHistory([]);
       if (saved.context) setSelectedContext(saved.context as ContextType);
       setReplies([]);
       setDecodeResult(null);
@@ -1430,7 +1496,7 @@ export default function AppPage() {
       setShowExamples(false);
       toast({ title: 'Thread loaded', description: saved.name });
     } catch {
-      toast({ title: 'Failed to load thread', variant: 'destructive' });
+      toast({ title: 'Failed to load', variant: 'destructive' });
     }
   };
 
@@ -1444,7 +1510,12 @@ export default function AppPage() {
         setActiveThreadName(null);
         setThread([]);
       }
-      toast({ title: '✓ Thread deleted' });
+      if (activeCoachSessionId === id) {
+        setActiveCoachSessionId(null);
+        setStrategyChatHistory([]);
+        setStrategyChatInput('');
+      }
+      toast({ title: '✓ Deleted' });
     } catch {
       toast({ title: 'Failed to delete thread', variant: 'destructive' });
     }
@@ -1494,6 +1565,7 @@ export default function AppPage() {
     setUserIntent('');
     setStrategyChatHistory([]);
     setStrategyChatInput('');
+    setActiveCoachSessionId(null);
   };
 
   const handleCoachScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2566,25 +2638,31 @@ export default function AppPage() {
                     </div>
                   ) : (
                     <div className="space-y-1 max-h-60 overflow-y-auto">
-                      {savedThreads.map(t => (
+                      {savedThreads.map(t => {
+                        const isCoach = t.type === 'coach';
+                        const isActive = isCoach ? activeCoachSessionId === t.id : activeThreadId === t.id;
+                        return (
                         <button
                           key={t.id}
                           onClick={() => handleLoadThread(t)}
                           className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all group text-left active:scale-[0.98] ${
-                            activeThreadId === t.id
+                            isActive
                               ? 'bg-violet-500/15 border border-violet-500/20'
                               : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
                           }`}
                         >
                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                            activeThreadId === t.id ? 'bg-violet-500/20' : 'bg-white/[0.05]'
+                            isActive ? 'bg-violet-500/20' : 'bg-white/[0.05]'
                           }`}>
-                            <MessageCircle className={`h-3.5 w-3.5 ${activeThreadId === t.id ? 'text-violet-400' : 'text-white/30'}`} />
+                            {isCoach
+                              ? <Sparkles className={`h-3.5 w-3.5 ${isActive ? 'text-violet-400' : 'text-white/30'}`} />
+                              : <MessageCircle className={`h-3.5 w-3.5 ${isActive ? 'text-violet-400' : 'text-white/30'}`} />
+                            }
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white/80 text-sm font-semibold truncate">{t.name}</p>
                             <p className="text-white/25 text-[10px] mt-0.5">
-                              {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
+                              {isCoach ? 'Coach' : 'Thread'} · {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
                             </p>
                           </div>
                           <button
@@ -2594,7 +2672,8 @@ export default function AppPage() {
                             <Trash2 className="h-3 w-3 text-red-400" />
                           </button>
                         </button>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

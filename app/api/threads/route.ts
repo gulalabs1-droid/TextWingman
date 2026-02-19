@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (threadId) {
       const { data, error } = await adminSupabase
         .from('saved_threads')
-        .select('id, name, context, platform, updated_at, messages')
+        .select('id, name, context, platform, type, updated_at, messages')
         .eq('id', threadId)
         .eq('user_id', user.id)
         .single();
@@ -39,12 +39,15 @@ export async function GET(request: NextRequest) {
     }
 
     // List all threads — lightweight (no full messages)
-    const { data, error } = await adminSupabase
+    const typeFilter = searchParams.get('type');
+    let query = adminSupabase
       .from('saved_threads')
-      .select('id, name, context, platform, updated_at, messages')
-      .eq('user_id', user.id)
+      .select('id, name, context, platform, type, updated_at, messages')
+      .eq('user_id', user.id);
+    if (typeFilter) query = query.eq('type', typeFilter);
+    const { data, error } = await query
       .order('updated_at', { ascending: false })
-      .limit(20);
+      .limit(30);
 
     if (error) throw error;
 
@@ -54,6 +57,7 @@ export async function GET(request: NextRequest) {
       name: t.name,
       context: t.context,
       platform: t.platform,
+      type: t.type || 'thread',
       updated_at: t.updated_at,
       message_count: Array.isArray(t.messages) ? t.messages.length : 0,
       last_message: Array.isArray(t.messages) && t.messages.length > 0 
@@ -76,7 +80,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, name, messages, context, platform } = await request.json();
+    const { id, name, messages, context, platform, type } = await request.json();
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json({ error: 'Thread name is required' }, { status: 400 });
@@ -91,6 +95,7 @@ export async function POST(request: NextRequest) {
           messages: messages || [],
           context: context || null,
           platform: platform || null,
+          ...(type ? { type } : {}),
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
@@ -111,6 +116,7 @@ export async function POST(request: NextRequest) {
         messages: messages || [],
         context: context || null,
         platform: platform || null,
+        type: type || 'thread',
       })
       .select()
       .single();
