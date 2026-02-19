@@ -1502,11 +1502,19 @@ export default function AppPage() {
     setCoachScreenshotExtracting(true);
     try {
       const results = await Promise.all(files.map(async (file) => {
-        const formData = new FormData();
-        formData.append('image', file);
-        const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const res = await fetch('/api/extract-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64 }),
+        });
         const data = await res.json();
-        return data.fullConversation || null;
+        return data.full_conversation || null;
       }));
       const extracted = results.filter(Boolean);
       if (extracted.length > 0) {
