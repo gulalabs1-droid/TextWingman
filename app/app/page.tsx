@@ -639,26 +639,25 @@ export default function AppPage() {
               <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4">
                 {/* Empty state */}
                 {coachHistory.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center space-y-6 py-12">
-                    <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-                      <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-600 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-[0_0_40px_rgba(139,92,246,0.3)]">
-                        <Crosshair className="h-9 w-9 text-white" />
-                      </div>
-                    </motion.div>
-                    <div>
-                      <h2 className="text-white/90 text-lg font-black mb-1">Your texting coach</h2>
-                      <p className="text-white/30 text-sm max-w-xs">Paste a conversation, upload a screenshot, or ask anything about your situation.</p>
+                  <div className="flex flex-col items-center justify-center h-full text-center space-y-5 py-12">
+                    <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center">
+                      <MessageCircle className="h-6 w-6 text-violet-400" />
                     </div>
-                    <div className="flex flex-wrap justify-center gap-2">
+                    <div>
+                      <h2 className="text-white/80 text-base font-bold mb-1">Ask your coach</h2>
+                      <p className="text-white/25 text-sm max-w-xs">Paste a conversation, upload a screenshot, or ask anything about your situation.</p>
+                      <p className="text-[10px] text-white/15 mt-2">Thread context always in background</p>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-1.5">
                       {[
-                        { label: 'Read this convo', emoji: '📱' },
-                        { label: 'What should I say?', emoji: '💬' },
-                        { label: 'Decode their message', emoji: '🧠' },
-                        { label: 'Write me an opener', emoji: '✨' },
-                        { label: 'Revive a dead chat', emoji: '🔄' },
+                        'Read this convo',
+                        'What should I say?',
+                        'Decode their message',
+                        'Write me an opener',
+                        'Revive a dead chat',
                       ].map(chip => (
-                        <button key={chip.label} onClick={() => setCoachInput(chip.label)} className="px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/40 text-xs font-semibold hover:bg-white/[0.08] hover:text-white/60 hover:border-white/[0.12] transition-all flex items-center gap-1.5 active:scale-95">
-                          <span>{chip.emoji}</span>{chip.label}
+                        <button key={chip} onClick={() => setCoachInput(chip)} className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/35 text-[11px] font-medium hover:bg-white/[0.08] hover:text-white/60 transition-all active:scale-95">
+                          {chip}
                         </button>
                       ))}
                     </div>
@@ -667,51 +666,78 @@ export default function AppPage() {
 
                 {/* Coach messages */}
                 {coachHistory.map((msg, idx) => (
-                  <div key={idx} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] ${msg.role === 'user' ? '' : ''}`}>
-                      {msg.role === 'user' ? (
-                        <div className="px-4 py-3 rounded-2xl rounded-br-md bg-violet-500/20 border border-violet-500/15">
-                          <p className="text-white/85 text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-2.5">
-                          <Glass className="px-4 py-3" glow={!!msg.strategy} neonColor={msg.strategy ? 'emerald' : 'violet'}>
-                            <p className="text-white/80 text-sm font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                          </Glass>
+                  <div key={idx} className={`mb-3 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] flex flex-col gap-1.5`}>
+                      <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-br-md'
+                          : 'bg-white/[0.07] text-white/85 border border-white/[0.06] rounded-bl-md'
+                      }`}>
+                        <p className="font-medium whitespace-pre-wrap">{msg.content}</p>
+                      </div>
 
-                          {/* Strategy badge */}
-                          {msg.strategy && (
-                            <div className="flex flex-wrap gap-1.5 px-1">
-                              {msg.strategy.momentum && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.06] text-white/40 border border-white/[0.08]">{msg.strategy.momentum}</span>}
-                              {msg.strategy.balance && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/[0.06] text-white/40 border border-white/[0.08]">{msg.strategy.balance}</span>}
-                              {msg.strategy.energy && <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-500/10 text-emerald-400/60 border border-emerald-500/15">{msg.strategy.energy}</span>}
-                            </div>
+                      {/* Strategy badges */}
+                      {msg.role === 'coach' && msg.strategy && (
+                        <div className="flex flex-wrap gap-1.5 px-1">
+                          {msg.strategy.momentum && (
+                            <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                              msg.strategy.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
+                              msg.strategy.momentum === 'Declining' || msg.strategy.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
+                              'bg-white/[0.08] text-white/50'
+                            }`}>
+                              {msg.strategy.momentum === 'Rising' ? <TrendingUp className="h-3 w-3" /> :
+                               msg.strategy.momentum === 'Declining' || msg.strategy.momentum === 'Stalling' ? <TrendingDown className="h-3 w-3" /> : null}
+                              {msg.strategy.momentum}
+                            </span>
                           )}
+                          {msg.strategy.balance && <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{msg.strategy.balance}</span>}
+                          {msg.strategy.energy && (
+                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                              msg.strategy.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
+                              msg.strategy.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
+                              'bg-violet-500/15 text-violet-300'
+                            }`}>
+                              {msg.strategy.energy.replace('_', ' ')}
+                            </span>
+                          )}
+                          {msg.strategy.no_questions && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">no questions</span>}
+                          {msg.strategy.keep_short && <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">keep short</span>}
+                        </div>
+                      )}
 
-                          {/* Coach reply cards */}
-                          {msg.replies && (
-                            <div className="space-y-1.5 pl-1">
-                              {Object.entries(msg.replies).filter(([, v]) => v).map(([tone, text]) => {
-                                const config = TONE_CONFIG[tone];
-                                if (!config) return null;
-                                return (
-                                  <motion.button key={tone} whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={() => handleUseCoachReply(text!, tone)} className="w-full text-left group">
-                                    <Glass className="p-3 transition-all hover:border-white/[0.2]">
-                                      <div className="flex items-start gap-2.5">
-                                        <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shrink-0`}>
-                                          <span className="text-sm">{config.emoji}</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <span className="text-[9px] font-black tracking-[0.15em] text-white/40">{config.label}</span>
-                                          <p className="text-white/85 text-[13px] font-medium leading-relaxed mt-0.5">{text}</p>
-                                        </div>
-                                        <span className="text-[9px] font-bold text-transparent group-hover:text-white/25 transition-all flex items-center gap-1 shrink-0 pt-1"><Copy className="h-3 w-3" />USE</span>
-                                      </div>
-                                    </Glass>
-                                  </motion.button>
-                                );
-                              })}
-                            </div>
+                      {/* Coach draft replies */}
+                      {msg.role === 'coach' && msg.replies && (msg.replies.shorter || msg.replies.spicier || msg.replies.softer) && (
+                        <div className="w-full space-y-1.5 mt-1">
+                          <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach draft</p>
+                          {msg.replies.shorter && (
+                            <button
+                              onClick={() => handleUseCoachReply(msg.replies!.shorter!, 'shorter')}
+                              className="w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-white/80 text-[13px] font-medium hover:bg-emerald-500/[0.14] transition-all active:scale-[0.98] group"
+                            >
+                              <span className="text-[10px] text-emerald-400/60 font-bold block mb-0.5">Shorter</span>
+                              {msg.replies.shorter}
+                              <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to use</span>
+                            </button>
+                          )}
+                          {msg.replies.spicier && (
+                            <button
+                              onClick={() => handleUseCoachReply(msg.replies!.spicier!, 'spicier')}
+                              className="w-full text-left px-3.5 py-2.5 rounded-xl bg-orange-500/[0.08] border border-orange-500/20 text-white/80 text-[13px] font-medium hover:bg-orange-500/[0.14] transition-all active:scale-[0.98] group"
+                            >
+                              <span className="text-[10px] text-orange-400/60 font-bold block mb-0.5">Spicier</span>
+                              {msg.replies.spicier}
+                              <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to use</span>
+                            </button>
+                          )}
+                          {msg.replies.softer && (
+                            <button
+                              onClick={() => handleUseCoachReply(msg.replies!.softer!, 'softer')}
+                              className="w-full text-left px-3.5 py-2.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-white/80 text-[13px] font-medium hover:bg-blue-500/[0.14] transition-all active:scale-[0.98] group"
+                            >
+                              <span className="text-[10px] text-blue-400/60 font-bold block mb-0.5">Softer</span>
+                              {msg.replies.softer}
+                              <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to use</span>
+                            </button>
                           )}
                         </div>
                       )}
@@ -721,43 +747,50 @@ export default function AppPage() {
 
                 {/* Coach typing indicator */}
                 {coachLoading && (
-                  <div className="mb-4 flex justify-start">
-                    <Glass className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }} className="w-2 h-2 rounded-full bg-violet-400" />
-                        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }} className="w-2 h-2 rounded-full bg-violet-400" />
-                        <motion.div animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }} className="w-2 h-2 rounded-full bg-violet-400" />
-                      </div>
-                    </Glass>
+                  <div className="mb-3 flex justify-start">
+                    <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.06] flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                      <span className="text-[12px] text-white/40 font-medium">Thinking...</span>
+                    </div>
                   </div>
                 )}
                 <div ref={coachEndRef} />
               </div>
 
               {/* Coach input bar */}
-              <div className="shrink-0 px-4 md:px-6 py-3 border-t border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(40px)' }}>
+              <div className="shrink-0 px-3 py-3 border-t border-white/[0.06]">
                 <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshot} className="hidden" />
                 {coachExtracting && (
                   <div className="mb-2 flex items-center gap-2 text-xs text-violet-300/60">
                     <Loader2 className="h-3 w-3 animate-spin" /> Reading screenshot...
                   </div>
                 )}
-                <div className="flex items-end gap-2.5">
-                  <div className="flex-1 rounded-2xl border border-white/[0.08] focus-within:border-violet-500/30 focus-within:shadow-[0_0_20px_rgba(139,92,246,0.1)] transition-all overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <textarea value={coachInput} onChange={e => setCoachInput(e.target.value)} placeholder="Ask your coach anything..." rows={1}
-                      className="w-full bg-transparent text-white placeholder-white/20 resize-none focus:outline-none text-sm font-medium leading-relaxed px-4 py-3 max-h-32"
-                      onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCoachSend(); }}
-                      onInput={e => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 128) + 'px'; }} />
-                  </div>
-                  <div className="flex items-center gap-1.5 pb-0.5">
-                    <button onClick={() => coachFileInputRef.current?.click()} className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white/25 hover:text-white/50 hover:border-white/[0.12] transition-all active:scale-90">
-                      <Camera className="h-4 w-4" />
-                    </button>
-                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.95 }} onClick={handleCoachSend} disabled={coachLoading || !coachInput.trim()}
-                      className="h-10 px-6 rounded-xl bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white font-black text-xs tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_25px_rgba(139,92,246,0.35)] disabled:opacity-20 transition-all">
-                      {coachLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-                    </motion.button>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => coachFileInputRef.current?.click()}
+                    disabled={coachExtracting || coachLoading}
+                    className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30 shrink-0"
+                    title="Upload screenshot for context"
+                  >
+                    {coachExtracting ? <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" /> : <Camera className="h-3.5 w-3.5" />}
+                  </button>
+                  <input
+                    type="text"
+                    value={coachInput}
+                    onChange={(e) => setCoachInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCoachSend(); } }}
+                    placeholder="Ask anything or add context..."
+                    maxLength={500}
+                    disabled={coachLoading || coachExtracting}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/20 text-[13px] focus:outline-none focus:border-violet-500/30 transition-all disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleCoachSend}
+                    disabled={!coachInput.trim() || coachLoading}
+                    className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
             </>
