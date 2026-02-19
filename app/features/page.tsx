@@ -1,470 +1,144 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Check, Zap, Target, TrendingUp, RefreshCw, Pencil, Eye, Activity } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Target, RefreshCw, Pencil, Eye, Activity, Zap, Lock } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
-const FEATURES = [
-  {
-    id: 'subtext-intelligence',
-    badge: 'New',
-    badgeColor: 'bg-amber-500',
-    icon: Eye,
-    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
-    title: 'Subtext Intelligence',
-    tagline: 'AI that reads between the lines.',
-    description: 'The AI now understands that "wateveerr" is playful, not a literal dismissal. Stretched words like "heyyyy" = excited, "ughhhh" = dramatic/funny, and one-word sarcastic replies like "suuure" are banter invitations. It reads the FEELING behind the words, not just the dictionary definition.',
-    howItWorks: [
-      'Works automatically in all reply generation (V1 and V2)',
-      'AI reads the full conversation arc to understand emotional context',
-      'Dismissive-sounding words in flirty convos are interpreted as coy teasing',
-      'Replies match the actual feeling — playful gets playful back, not interrogation',
-    ],
-    example: {
-      input: 'Flirty convo → they say "missed u" → you say "missed you too" → they say "wateveerr"',
-      outputs: [
-        { tone: 'Reading', text: 'They\'re being coy/shy about admitting feelings', emoji: '🎯' },
-        { tone: 'Good', text: '"mhm sure you didn\'t" — plays along warmly', emoji: '✅' },
-        { tone: 'Bad', text: '"You did, didn\'t you?" — sounds like interrogation', emoji: '❌' },
-      ],
-    },
-  },
-  {
-    id: 'vibe-check',
-    badge: 'New',
-    badgeColor: 'bg-emerald-500',
-    icon: Activity,
-    iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
-    title: 'Vibe Check',
-    tagline: 'Know how your message reads before you send it.',
-    description: 'As you type your own message, Vibe Check analyzes it in real-time and tells you exactly how it reads — energy level, confidence, neediness risk, sarcasm risk, and frame strength. Like Grammarly for your texting game. Upgraded in v3.7 with 4 new dimensions beyond just energy.',
-    howItWorks: [
-      'Type your own draft in the Vibe Check box (8+ characters)',
-      'AI analyzes it automatically after 1.5 seconds',
-      'See energy (too eager → too cold), vibe label, confidence level, neediness risk, sarcasm risk, and frame strength',
-      'Get a one-line sharp-friend tip: "Drop the question mark, make it a statement."',
-    ],
-    example: {
-      input: '"hey I was just thinking about you, hope you\'re doing well, would love to catch up sometime if you\'re free"',
-      outputs: [
-        { tone: 'Energy', text: 'too_eager — over-investing, seeking validation', emoji: '🔴' },
-        { tone: 'Neediness Risk', text: 'High — apologetic tone, double question, over-explaining', emoji: '⚠️' },
-        { tone: 'Tip', text: 'Cut it in half. "been thinking about you" is enough.', emoji: '💡' },
-      ],
-    },
-  },
-  {
-    id: 'thread-mode',
-    badge: 'Core',
-    badgeColor: 'bg-emerald-500',
-    icon: MessageCircle,
-    iconBg: 'bg-gradient-to-br from-violet-500 to-fuchsia-600',
-    title: 'Thread Mode',
-    tagline: 'Not just replies. Full conversations.',
-    description: 'Text Wingman now tracks your entire conversation — their messages and yours. The AI reads the full thread and generates replies that actually fit the flow, not just the last message. Double-texts, custom replies, auto-save — it all works like a real texting coach by your side.',
-    howItWorks: [
-      'Paste what they sent you and hit Generate',
-      'Pick a reply and tap "I sent this" — or type what you actually said',
-      'Paste their next message and generate again — the AI sees everything',
-      'Your thread auto-saves so you can come back anytime',
-    ],
-    example: {
-      input: 'Them: "hey how you doing"\nYou: "nothing much, what about you?"\nThem: "nothing lol"',
-      outputs: [
-        { tone: 'Shorter', text: 'Sounds boring, come do something fun', emoji: '⚡' },
-        { tone: 'Spicier', text: 'Nothing? That\'s a crime on a Friday', emoji: '🔥' },
-        { tone: 'Softer', text: 'Same here — we should change that', emoji: '💚' },
-      ],
-    },
-  },
-  {
-    id: 'strategy-mode',
-    badge: 'Pro',
-    badgeColor: 'bg-emerald-600',
-    icon: Target,
-    iconBg: 'bg-gradient-to-br from-emerald-500 to-cyan-600',
-    title: 'Strategy Mode',
-    tagline: 'AI coaching for every conversation.',
-    description: 'StrategyAgent analyzes your full thread and gives you a deep tactical coaching card before you reply. It now detects sarcasm vs low investment, power dynamics (who\'s chasing), energy level (High flirt → Cold), and risk flags like frame testing or over-investing. The strategy shapes every reply automatically.',
-    howItWorks: [
-      'Build a thread with 3+ messages — StrategyAgent runs automatically on Generate',
-      'See your coaching card: momentum, balance, energy level, sarcasm detection, and risk flags',
-      'Get a sharp one-liner from your AI friend: "You\'re chasing. Let them come to you."',
-      'Your replies are shaped by the strategy — sarcasm mirrored, constraints enforced, power balance respected',
-    ],
-    example: {
-      input: '6-message thread — user sending longer messages, they\'re giving short replies',
-      outputs: [
-        { tone: 'Momentum', text: 'Declining — their messages are getting shorter', emoji: '📉' },
-        { tone: 'Balance', text: 'User chasing — you\'re investing 2x more than them', emoji: '⚖️' },
-        { tone: 'Coach', text: 'Pull back. Keep it short. Let them come to you.', emoji: '🎯' },
-      ],
-    },
-  },
-  {
-    id: 'reply-generator',
-    badge: 'Free',
-    badgeColor: 'bg-purple-500',
-    icon: Sparkles,
-    iconBg: 'bg-gradient-to-br from-purple-500 to-indigo-600',
-    title: 'Reply Generator',
-    tagline: 'Paste their message. Get 3 perfect replies.',
-    description: 'Drop any text message into Text Wingman and instantly get three reply options — Shorter (brief & casual), Spicier (playful & flirty), and Softer (warm & genuine). With Thread Mode, every reply is aware of the full conversation. Free users get 5 replies per day. Pro users get unlimited.',
-    howItWorks: [
-      'Paste the message you received',
-      'Pick the context (crush, friend, work, etc.)',
-      'Hit Generate and get 3 replies instantly',
-      'Copy your favorite and tap "I sent this" to continue the thread',
-    ],
-    example: {
-      input: '"Hey, what are you doing this weekend?"',
-      outputs: [
-        { tone: 'Shorter', text: 'Nothing set yet, why what\'s up', emoji: '⚡' },
-        { tone: 'Spicier', text: 'Depends, you planning something fun or boring', emoji: '🔥' },
-        { tone: 'Softer', text: 'Keeping it open — would love to hang if you\'re free', emoji: '💚' },
-      ],
-    },
-  },
-  {
-    id: 'decoder',
-    badge: 'Free',
-    badgeColor: 'bg-amber-500',
-    icon: Brain,
-    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
-    title: 'Message Decoder',
-    tagline: '"What do they actually mean?"',
-    description: 'Ever stare at a text wondering what they really mean? The Decoder now detects sarcasm vs low investment, kidding vs serious, and power dynamics — not just surface intent. Paste any message or full thread and get a sharp breakdown of what\'s actually happening. Free users get 1 decode per day. Pro users get unlimited.',
-    howItWorks: [
-      'Paste a message (or full conversation thread)',
-      'Hit the 🧠 Decode button',
-      'See intent, subtext, energy, sarcasm detection, and red/green/yellow flags',
-      'Get a Coach Tip in sharp-friend voice: "Don\'t ask that — hold frame"',
-    ],
-    example: {
-      input: '"lol ok well lmk"',
-      outputs: [
-        { tone: 'Intent', text: 'They\'re giving you one last chance to commit before they move on', emoji: '🎯' },
-        { tone: 'Energy', text: 'Pulling away — low effort, no question back, flat tone', emoji: '🚪' },
-        { tone: 'Coach Tip', text: 'Don\'t match their energy. Be specific: suggest a plan with a time and place.', emoji: '💡' },
-      ],
-    },
-  },
-  {
-    id: 'opener',
-    badge: 'Free',
-    badgeColor: 'bg-pink-500',
-    icon: Send,
-    iconBg: 'bg-gradient-to-br from-pink-500 to-rose-600',
-    title: 'Opening Line Generator',
-    tagline: 'Start conversations that actually go somewhere.',
-    description: 'Don\'t know what to say first? Switch to Opener Mode and get three conversation starters tailored to the situation. Free users get 1 opener per day. Pro users get unlimited.',
-    howItWorks: [
-      'Switch to Opener Mode at the top',
-      'Pick the situation (Dating App, Instagram, Cold Text, etc.)',
-      'Optionally describe the person for personalized openers',
-      'Get 3 openers with explanations of why each one works',
-    ],
-    example: {
-      input: 'Dating App • "Loves hiking, golden retriever, funny pizza bio"',
-      outputs: [
-        { tone: 'Bold', text: 'Your dog has better trail pics than most people I know', emoji: '🎯' },
-        { tone: 'Witty', text: 'Pizza bio and a golden retriever? You\'re either perfect or a trap', emoji: '⚡' },
-        { tone: 'Warm', text: 'What\'s the best trail you and your pup have done lately', emoji: '💚' },
-      ],
-    },
-  },
-  {
-    id: 'edit-polish',
-    badge: 'New',
-    badgeColor: 'bg-violet-500',
-    icon: Pencil,
-    iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
-    title: 'Edit + Polish',
-    tagline: 'Make any reply yours.',
-    description: 'Like a reply but want to add your own twist? Tap Edit, add your ideas — like "let\'s grab food later" — then hit Polish. AI smooths it out, keeps it under 18 words, and maintains the tone. Or tap "Use as is" to keep your exact wording. Works on every reply in both Thread Mode and Screenshot Briefing.',
-    howItWorks: [
-      'Tap Edit on any reply card',
-      'Modify the text or add your own ideas',
-      'Hit Polish — AI refines it while keeping your additions',
-      'Or tap "Use as is" to keep your exact edit',
-    ],
-    example: {
-      input: 'Original: "Called in sick for pampering? Bold move."\nYour edit: "Called in sick for pampering? Bold move. I\'m gonna get something to eat later"',
-      outputs: [
-        { tone: 'Polish', text: 'called in sick for the spa? bold. let\'s grab food later', emoji: '✨' },
-        { tone: 'Use as is', text: 'Your exact words, no changes', emoji: '✓' },
-        { tone: 'Cancel', text: 'Discard and keep the original', emoji: '↩️' },
-      ],
-    },
-  },
-  {
-    id: 'regenerate',
-    badge: 'New',
-    badgeColor: 'bg-white/20',
-    icon: RefreshCw,
-    iconBg: 'bg-gradient-to-br from-gray-500 to-zinc-600',
-    title: 'Regenerate Replies',
-    tagline: 'Not feeling it? Get fresh options.',
-    description: 'If the AI-generated replies don\'t hit right, tap "Generate different replies" for a brand new set — same conversation context, completely different replies. Works in both Thread Mode and Screenshot Briefing. No need to re-enter or re-upload anything.',
-    howItWorks: [
-      'Generate replies as usual (thread or screenshot)',
-      'Not satisfied? Tap "Generate different replies" or "Retry"',
-      'Get a fresh set of 3 replies using the same conversation context',
-      'Regenerate as many times as you want',
-    ],
-    example: null,
-  },
-  {
-    id: 'revive-mode',
-    badge: 'New',
-    badgeColor: 'bg-cyan-500',
-    icon: RefreshCw,
-    iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-600',
-    title: 'Revive Mode',
-    tagline: 'Bring dead conversations back to life.',
-    description: 'Conversation died? She left you on read? Revive Mode analyzes what went wrong and generates 3 re-engagement messages that feel natural — not thirsty. Never send "hey stranger" again. Free users get 1 revive per day. Pro users get unlimited.',
-    howItWorks: [
-      'Switch to Revive Mode and paste the old conversation (or upload a screenshot)',
-      'Pick the context — crush, ex, friend, etc.',
-      'Hit Revive and get an AI analysis of why the convo died',
-      'Choose from 3 messages: Smooth (callback), Bold (playful), or Warm (genuine)',
-    ],
-    example: {
-      input: 'Stale convo — last message was "The same" 2 weeks ago',
-      outputs: [
-        { tone: 'Smooth', text: 'did you ever try that place you were talking about', emoji: '🎯' },
-        { tone: 'Bold', text: 'you fell off the earth huh', emoji: '🔥' },
-        { tone: 'Warm', text: 'saw something that reminded me of our convo', emoji: '💚' },
-      ],
-    },
-  },
-  {
-    id: 'screenshot-briefing',
-    badge: 'New',
-    badgeColor: 'bg-emerald-500',
-    icon: Camera,
-    iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
-    title: 'Screenshot Briefing',
-    tagline: 'Upload. Get strategy + replies. Zero typing.',
-    description: 'Upload a screenshot of any conversation and get an instant tactical briefing — strategy coaching, momentum analysis, and 3 ready-to-send replies. Works with iMessage, WhatsApp, Instagram, Tinder, Bumble, Hinge, Facebook Dating, Messenger, and Snapchat.',
-    howItWorks: [
-      'Take a screenshot of any conversation',
-      'Upload it in Reply Mode — AI reads every message',
-      'Get instant strategy coaching (momentum, balance, energy)',
-      'Pick from 3 energy-matched replies and send',
-    ],
-    example: {
-      input: 'Screenshot from iMessage — "I took a sick day to go to the spa lol"',
-      outputs: [
-        { tone: 'Strategy', text: 'They\'re into you. They re-initiated and shared personal plans. Turn up the charm.', emoji: '�' },
-        { tone: 'Shorter', text: 'called in sick for the spa? respect', emoji: '⚡' },
-        { tone: 'Spicier', text: 'skipped work for a spa day? risk-taker huh', emoji: '🔥' },
-      ],
-    },
-  },
-  {
-    id: 'saved-threads',
-    badge: 'Free',
-    badgeColor: 'bg-blue-500',
-    icon: BookmarkCheck,
-    iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-600',
-    title: 'Auto-Save Threads',
-    tagline: 'Never lose context. Pick up where you left off.',
-    description: 'Every conversation with 2+ messages auto-saves in the background. Come back anytime, load a thread, and the AI picks up right where you left off with full context. No manual saving needed.',
-    howItWorks: [
-      'Start a conversation — it auto-saves after 2 messages',
-      'Tap "Recent" to see all your saved conversations',
-      'Load any thread and keep generating with full context',
-      'Start fresh anytime with the "New" button',
-    ],
-    example: null,
-  },
-  {
-    id: 'screenshot',
-    badge: 'Free',
-    badgeColor: 'bg-green-500',
-    icon: Camera,
-    iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
-    title: 'Screenshot Upload',
-    tagline: 'Screenshot it. We\'ll read it.',
-    description: 'Take a screenshot of any conversation — iMessage, WhatsApp, Instagram, Tinder, Bumble, Hinge, Facebook Dating, Messenger, Snapchat — and upload it. Our AI reads the entire thread, identifies who said what, and fills it in automatically. Works in all modes: Reply, Decode, Opener, and Revive.', 
-    howItWorks: [
-      'Screenshot any conversation on your phone',
-      'Tap Upload Screenshot in the app',
-      'AI reads every message with Them/You labels',
-      'Generate replies or decode the whole thread',
-    ],
-    example: null,
-  },
-  {
-    id: 'v2-verified',
-    badge: 'Pro',
-    badgeColor: 'bg-green-600',
-    icon: Shield,
-    iconBg: 'bg-gradient-to-br from-green-500 to-teal-600',
-    title: 'V2 Verified Mode',
-    tagline: '3-agent pipeline. Every reply verified before you see it.',
-    description: 'V2 Mode runs every reply through a 3-step AI pipeline: Draft → Rule-Check → Tone-Verify. Every agent now receives the full strategy context — sarcasm detected, power balance, energy level — so rules and tone are checked against the recommended move, not just generic standards. If a reply fails, it auto-revises up to 2 times.',
-    howItWorks: [
-      'Default for Pro users — toggle to V1 Fast Mode anytime for speed',
-      'Agent 1 (Draft): generates 3 replies shaped by strategy, sarcasm flags, and your style history',
-      'Agent 2 (Rule-Check): enforces ≤18 words, no emojis, no needy language, no dead-ends, strategy alignment',
-      'Agent 3 (Tone-Verify): confirms each reply matches its tone AND the recommended strategy move',
-    ],
-    example: null,
-  },
+const FREE_FEATURES = [
+  { icon: MessageCircle, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Reply Generator', tagline: 'Paste their message. Get 3 perfect replies.', bullets: ['3 tones: Shorter, Spicier, Softer', 'Thread-aware — reads the full convo', '5 replies/day free'] },
+  { icon: Eye, color: 'text-amber-400', bg: 'bg-amber-500/10', title: 'Subtext Intelligence', tagline: 'AI that reads between the lines.', bullets: ['"wateveerr" = coy, not dismissive', 'Stretched words, sarcasm, banter detected', 'Replies match the feeling, not just the words'] },
+  { icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Vibe Check', tagline: 'Know how your message reads before you send.', bullets: ['Real-time draft analysis as you type', 'Energy, neediness risk, frame strength', 'Sharp-friend tip: "Cut the question mark"'] },
+  { icon: Brain, color: 'text-orange-400', bg: 'bg-orange-500/10', title: 'Message Decoder', tagline: '"What do they actually mean?"', bullets: ['Paste any message or full thread', 'Intent, subtext, sarcasm, power dynamics', '1 decode/day free · unlimited Pro'] },
+  { icon: Send, color: 'text-pink-400', bg: 'bg-pink-500/10', title: 'Opener Generator', tagline: 'First messages that actually land.', bullets: ['Dating apps, Instagram, cold texts', 'Personalized to their bio or situation', '1 opener/day free · unlimited Pro'] },
+  { icon: RefreshCw, color: 'text-cyan-400', bg: 'bg-cyan-500/10', title: 'Revive Mode', tagline: 'Bring dead conversations back to life.', bullets: ['Analyzes why the convo died', 'Smooth, Bold, or Warm re-engagement', '1 revive/day free · unlimited Pro'] },
+  { icon: Camera, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Screenshot Briefing', tagline: 'Upload. Get strategy + replies. Zero typing.', bullets: ['Works with iMessage, WhatsApp, IG, Tinder, Hinge + more', 'AI reads every message, identifies who said what', 'Instant strategy + 3 replies'] },
+  { icon: Pencil, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Edit + Polish', tagline: 'Make any reply yours.', bullets: ['Add your own ideas to any reply', 'Polish keeps your words, tightens the rest', 'Works in Thread Mode and Screenshot Briefing'] },
+  { icon: RefreshCw, color: 'text-white/40', bg: 'bg-white/[0.06]', title: 'Regenerate', tagline: 'Not feeling it? Get fresh options.', bullets: ['Tap "Generate different replies" anytime', 'Same context, completely different replies', 'No re-uploading or re-entering needed'] },
+  { icon: BookmarkCheck, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Auto-Save Threads', tagline: 'Never lose context.', bullets: ['Conversations auto-save after 2+ messages', 'Load any thread and keep going', 'Full context preserved across sessions'] },
+];
+
+const PRO_FEATURES = [
+  { icon: Target, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Strategy Mode', tagline: 'AI coaching before every reply.', bullets: ['Detects sarcasm vs low investment', 'Tracks power dynamics — who\'s chasing', 'Sharp one-liner: "Pull back. Let them come to you."', 'Shapes every reply around the right move'] },
+  { icon: Shield, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'V2 Verified Pipeline', tagline: '3-agent pipeline. Every reply verified.', bullets: ['Draft → Rule-Check → Tone-Verify', '≤18 words enforced, no needy language', 'Strategy-aligned tone verification', 'Auto-revises up to 2x if a reply fails'] },
+  { icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Unlimited Everything', tagline: 'No daily limits. Ever.', bullets: ['Unlimited replies, decodes, openers, revives', 'Full reply history saved', 'Strategy Mode on every generation'] },
 ];
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-gray-950">
+    <div className="min-h-screen bg-[#030305]">
+      {/* Ambient orbs */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-15%] left-[-10%] w-[50%] h-[50%] rounded-full" style={{ background: 'rgba(139,92,246,0.10)', filter: 'blur(120px)' }} />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full" style={{ background: 'rgba(236,72,153,0.08)', filter: 'blur(120px)' }} />
+      </div>
+
       {/* Nav */}
-      <nav className="container mx-auto px-4 py-6">
+      <nav className="relative z-10 container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <Link href="/" className="transition-transform hover:scale-105">
-            <Logo size="md" showText={true} className="cursor-pointer" />
+            <Logo size="md" showText={true} />
           </Link>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl text-sm hidden sm:flex">
-              <Link href="/changelog">Changelog</Link>
-            </Button>
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10 rounded-xl text-sm">
-              <Link href="/login">Login</Link>
-            </Button>
-            <Button asChild size="sm" className="bg-white text-black hover:bg-gray-100 rounded-xl font-semibold">
-              <Link href="/app">Try Free</Link>
-            </Button>
+            <Link href="/changelog" className="text-white/50 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all hidden sm:block">Changelog</Link>
+            <Link href="/login" className="text-white/50 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all">Login</Link>
+            <Link href="/app" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-semibold shadow-lg shadow-violet-600/20 px-4 py-2 text-sm transition-all">Try Free</Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="container mx-auto px-4 pt-8 pb-16 text-center">
-        <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30 mb-6">
-          <Sparkles className="h-4 w-4" />
-          v{CURRENT_VERSION} — Sarcasm Detection + Power Dynamics + Style Matching
+      <div className="relative z-10 container mx-auto px-4 pb-20 max-w-5xl">
+
+        {/* Hero */}
+        <div className="text-center pt-8 pb-14 space-y-4">
+          <div className="inline-flex items-center gap-2 bg-cyan-500/10 text-cyan-400 px-4 py-1.5 rounded-full text-xs font-bold border border-cyan-500/20">
+            <Sparkles className="h-3.5 w-3.5" />
+            v{CURRENT_VERSION} — Sarcasm Detection + Power Dynamics + Style Matching
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-white">
+            Everything Wingman can do.
+          </h1>
+          <p className="text-white/40 text-lg max-w-xl mx-auto">
+            Free features. Pro features. All in one place.
+          </p>
         </div>
-        <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-          Not just replies.
-          <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">Conversations.</span>
-        </h1>
-        <p className="text-lg text-white/60 max-w-2xl mx-auto mb-8">
-          Text Wingman tracks the full conversation, detects sarcasm vs low investment, reads power dynamics, coaches the move, and generates replies that sound like you — not a robot.
-        </p>
-        <div className="flex flex-wrap gap-3 justify-center">
-          {FEATURES.map(f => (
-            <a key={f.id} href={`#${f.id}`} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-sm text-white/80 hover:text-white">
-              <f.icon className="h-4 w-4" />
-              {f.title}
-            </a>
-          ))}
-        </div>
-      </section>
 
-      {/* Feature Sections */}
-      <div className="container mx-auto px-4 pb-20 space-y-20 max-w-5xl">
-        {FEATURES.map((feature, idx) => {
-          const isEven = idx % 2 === 0;
-          return (
-            <section key={feature.id} id={feature.id} className="scroll-mt-24">
-              <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-8 lg:gap-12 items-center`}>
-                {/* Text Side */}
-                <div className="flex-1 space-y-5">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-2xl ${feature.iconBg} flex items-center justify-center shadow-xl`}>
-                      <feature.icon className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white ${feature.badgeColor}`}>
-                        {feature.badge}
-                      </span>
-                    </div>
+        {/* Free features grid */}
+        <div className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-[10px] font-black text-white/25 uppercase tracking-[0.3em]">Free</span>
+            <div className="flex-1 h-px bg-white/[0.06]" />
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {FREE_FEATURES.map((f) => (
+              <div key={f.title} className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-5 hover:bg-white/[0.05] hover:border-white/[0.12] transition-all">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-xl ${f.bg} flex items-center justify-center shrink-0`}>
+                    <f.icon className={`h-4 w-4 ${f.color}`} />
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-white">{feature.title}</h2>
-                  <p className="text-xl text-white/40 font-medium italic">{feature.tagline}</p>
-                  <p className="text-white/70 leading-relaxed">{feature.description}</p>
-
-                  {/* How it works */}
-                  <div className="space-y-3 pt-2">
-                    <p className="text-sm font-bold text-white/50 uppercase tracking-wider">How it works</p>
-                    {feature.howItWorks.map((step, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="text-xs font-bold text-white/60">{i + 1}</span>
-                        </div>
-                        <p className="text-white/70 text-sm">{step}</p>
-                      </div>
-                    ))}
+                  <div>
+                    <p className="text-white/85 font-bold text-sm">{f.title}</p>
+                    <p className="text-white/30 text-[11px]">{f.tagline}</p>
                   </div>
-
-                  <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold mt-4">
-                    <Link href="/app">
-                      Try it now <ArrowRight className="h-4 w-4 ml-2" />
-                    </Link>
-                  </Button>
                 </div>
-
-                {/* Example / Visual Side */}
-                <div className="flex-1 w-full max-w-md">
-                  {feature.example ? (
-                    <Card className="bg-white/5 border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-                      <CardContent className="p-6 space-y-4">
-                        <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-                          <p className="text-xs font-bold text-white/40 mb-2">Input</p>
-                          <p className="text-white/90 text-sm font-medium">{feature.example.input}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-px flex-1 bg-white/10" />
-                          <Sparkles className="h-4 w-4 text-purple-400" />
-                          <div className="h-px flex-1 bg-white/10" />
-                        </div>
-                        <div className="space-y-3">
-                          {feature.example.outputs.map((out, i) => (
-                            <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/[0.07] transition-colors">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-lg">{out.emoji}</span>
-                                <span className="text-xs font-bold text-white/50">{out.tone}</span>
-                              </div>
-                              <p className="text-white/90 text-sm font-medium leading-relaxed">&ldquo;{out.text}&rdquo;</p>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-[300px] text-center space-y-4">
-                      <div className={`w-20 h-20 rounded-3xl ${feature.iconBg} flex items-center justify-center shadow-2xl`}>
-                        <feature.icon className="h-10 w-10 text-white" />
-                      </div>
-                      <p className="text-white/50 text-sm max-w-[240px]">{feature.tagline}</p>
-                      <Button asChild className="bg-white/10 border border-white/20 text-white hover:bg-white/20 rounded-xl text-sm">
-                        <Link href="/app">See it in action →</Link>
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                <ul className="space-y-1.5 mt-3">
+                  {f.bullets.map((b, i) => (
+                    <li key={i} className="flex items-start gap-2 text-white/45 text-xs">
+                      <span className="text-white/20 mt-0.5 shrink-0">—</span>
+                      {b}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </section>
-          );
-        })}
-      </div>
-
-      {/* Bottom CTA */}
-      <section className="container mx-auto px-4 pb-20 text-center">
-        <div className="max-w-2xl mx-auto bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-3xl p-10">
-          <h2 className="text-3xl font-bold text-white mb-3">Ready to never fumble a text again?</h2>
-          <p className="text-white/60 mb-6">All features. Free to start. No credit card required.</p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild size="lg" className="bg-white text-black hover:bg-gray-100 rounded-xl font-bold text-lg h-14 px-8">
-              <Link href="/app">Start for Free</Link>
-            </Button>
-            <Button asChild size="lg" className="bg-white/10 border border-white/30 text-white hover:bg-white/20 rounded-xl font-bold text-lg h-14 px-8">
-              <Link href="/#pricing">See Pricing</Link>
-            </Button>
+            ))}
           </div>
         </div>
-      </section>
+
+        {/* Pro features grid */}
+        <div className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-[10px] font-black text-violet-400/60 uppercase tracking-[0.3em]">Pro</span>
+            <div className="flex-1 h-px bg-violet-500/20" />
+            <Lock className="h-3 w-3 text-violet-400/40" />
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {PRO_FEATURES.map((f) => (
+              <div key={f.title} className="rounded-2xl border border-violet-500/15 bg-violet-500/[0.04] p-5 hover:bg-violet-500/[0.07] hover:border-violet-500/25 transition-all">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-xl ${f.bg} flex items-center justify-center shrink-0`}>
+                    <f.icon className={`h-4 w-4 ${f.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-white/85 font-bold text-sm">{f.title}</p>
+                    <p className="text-white/30 text-[11px]">{f.tagline}</p>
+                  </div>
+                </div>
+                <ul className="space-y-1.5 mt-3">
+                  {f.bullets.map((b, i) => (
+                    <li key={i} className="flex items-start gap-2 text-white/45 text-xs">
+                      <span className="text-violet-400/40 mt-0.5 shrink-0">—</span>
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="rounded-3xl border border-violet-500/20 bg-violet-500/[0.06] p-10 text-center space-y-4">
+          <h2 className="text-2xl md:text-3xl font-black text-white">Ready to never fumble a text again?</h2>
+          <p className="text-white/35 text-sm">All free features. No credit card. Upgrade when you need the edge.</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Link href="/app" className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-lg shadow-violet-600/20 px-8 h-12 transition-all hover:scale-[1.02]">
+              Start for Free <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/#pricing" className="inline-flex items-center justify-center gap-2 bg-white/[0.06] border border-white/[0.12] text-white hover:bg-white/[0.10] rounded-xl font-bold px-8 h-12 transition-all">
+              See Pricing
+            </Link>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }

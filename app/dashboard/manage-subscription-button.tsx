@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { CreditCard, Loader2 } from 'lucide-react';
 
-export default function ManageSubscriptionButton() {
+export default function ManageSubscriptionButton({ compact }: { compact?: boolean }) {
   const [loading, setLoading] = useState(false);
 
   const handleManageSubscription = async () => {
@@ -28,6 +28,15 @@ export default function ManageSubscriptionButton() {
       setLoading(false);
     }
   };
+
+  if (compact) {
+    return (
+      <button onClick={handleManageSubscription} disabled={loading}
+        className="text-[10px] text-white/25 hover:text-white/50 font-bold mt-1 block transition-colors disabled:opacity-40">
+        {loading ? <Loader2 className="h-3 w-3 animate-spin inline" /> : 'Manage →'}
+      </button>
+    );
+  }
 
   return (
     <button

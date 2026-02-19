@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Zap, Camera, Brain, Target, TrendingDown, TrendingUp, Eye, RefreshCw, Pencil, ChevronDown, Users, Heart, Briefcase, MessageSquare, HelpCircle } from "lucide-react";
+import { Sparkles, MessageCircle, Check, X, ArrowRight, Shield, Camera, Target, TrendingUp, Pencil, ChevronDown } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 const jsonLd = {
@@ -58,21 +56,11 @@ export default function HomePage() {
             <Logo size="md" showText={true} className="cursor-pointer" />
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-3">
-            <Button asChild variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl hidden sm:flex">
-              <Link href="/features">Features</Link>
-            </Button>
-            <Button asChild variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl hidden sm:flex">
-              <Link href="/guides">Guides</Link>
-            </Button>
-            <Button asChild variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl hidden sm:flex">
-              <Link href="#pricing">Pricing</Link>
-            </Button>
-            <Button asChild variant="ghost" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl text-sm">
-              <Link href="/login?mode=signin">Login</Link>
-            </Button>
-            <Button asChild size="sm" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-semibold shadow-lg shadow-violet-600/20">
-              <Link href="/app">Try Free</Link>
-            </Button>
+            <Link href="/features" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all hidden sm:block">Features</Link>
+            <Link href="/guides" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all hidden sm:block">Guides</Link>
+            <Link href="#pricing" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all hidden sm:block">Pricing</Link>
+            <Link href="/login?mode=signin" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all">Login</Link>
+            <Link href="/app" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-semibold shadow-lg shadow-violet-600/20 px-4 py-2 text-sm transition-all">Try Free</Link>
           </div>
         </div>
       </nav>
@@ -92,11 +80,8 @@ export default function HomePage() {
               Your sharp friend
               <span className="block bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent mt-1">for every conversation.</span>
             </h1>
-            <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-              Text Wingman reads your conversation, coaches the move, writes the reply — and now detects sarcasm vs low investment, power dynamics, who&apos;s chasing, and matches your personal texting style. Like having a sharp friend who actually gets people.
-            </p>
-            <p className="text-sm text-white/30 font-medium">
-              Free. No card. Sarcasm detection + power dynamics + vibe check + tone translator + threads + decode + openers + revive.
+            <p className="text-lg md:text-xl text-white/50 max-w-xl mx-auto leading-relaxed">
+              Reads the full conversation, detects sarcasm and power dynamics, coaches the move, writes the reply. Like a sharp friend who actually gets people.
             </p>
           </div>
 
@@ -285,8 +270,8 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════ */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Four modes. Every situation covered.</h2>
-          <p className="text-white/50">Reply, Decode, Revive dead convos, or generate Openers — edit any reply and make it yours.</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Two ways in. Every situation covered.</h2>
+          <p className="text-white/50">Screenshot a conversation or build a thread — Reply, Decode, Revive, Opener all included.</p>
         </div>
         <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-5">
           {/* Screenshot Path */}
@@ -386,7 +371,6 @@ export default function HomePage() {
           </div>
         </div>
         <div className="text-center mt-6">
-          <p className="text-white/25 text-xs mb-4">Plus: sarcasm detection, power dynamics, personal style matching, 3-agent verified pipeline, ≤18 word enforcement, vibe check, tone translator</p>
           <Link href="/features" className="text-emerald-400 hover:text-white text-sm font-medium transition-colors inline-flex items-center gap-1">
             See all features <ArrowRight className="h-3.5 w-3.5" />
           </Link>
@@ -418,9 +402,9 @@ export default function HomePage() {
           ))}
         </div>
         <div className="text-center mt-8">
-          <Button asChild className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-lg shadow-violet-600/20 px-8 h-12">
-            <Link href="/app">Handle it now &mdash; free <ArrowRight className="h-4 w-4 ml-2" /></Link>
-          </Button>
+          <Link href="/app" className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-lg shadow-violet-600/20 px-8 h-12 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            Handle it now — free <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
 
@@ -510,9 +494,7 @@ export default function HomePage() {
                 <X className="h-4 w-4 text-white/15 flex-shrink-0" /> V2 Verified pipeline
               </li>
             </ul>
-            <Button asChild className="w-full h-12 text-sm font-bold rounded-xl bg-white/[0.06] border border-white/[0.12] text-white hover:bg-white/[0.10] transition-all">
-              <Link href="/app">Start Free →</Link>
-            </Button>
+            <Link href="/app" className="w-full h-12 text-sm font-bold rounded-xl bg-white/[0.06] border border-white/[0.12] text-white hover:bg-white/[0.10] transition-all flex items-center justify-center">Start Free →</Link>
             <p className="text-xs text-center text-white/25 mt-3">No credit card required</p>
           </div>
 
@@ -549,9 +531,7 @@ export default function HomePage() {
                 <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Cancel anytime
               </li>
             </ul>
-            <Button asChild className="w-full h-14 text-base font-black rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 shadow-xl shadow-violet-600/20 hover:scale-[1.02] transition-all">
-              <Link href="/pricing">Get Pro →</Link>
-            </Button>
+            <Link href="/pricing" className="w-full h-14 text-base font-black rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 shadow-xl shadow-violet-600/20 hover:scale-[1.02] transition-all flex items-center justify-center">Get Pro →</Link>
             <p className="text-xs text-center text-white/30 mt-3">7-day free trial available</p>
           </div>
 
@@ -583,9 +563,7 @@ export default function HomePage() {
                 <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Priority support
               </li>
             </ul>
-            <Button asChild className="w-full h-12 text-sm font-bold rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-black hover:from-emerald-400 hover:to-cyan-400 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-all">
-              <Link href="/pricing">Get Annual →</Link>
-            </Button>
+            <Link href="/pricing" className="w-full h-12 text-sm font-bold rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-black hover:from-emerald-400 hover:to-cyan-400 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-all flex items-center justify-center">Get Annual →</Link>
             <p className="text-xs text-center text-white/25 mt-3">Billed once, in full. Cancel anytime.</p>
           </div>
         </div>
@@ -622,9 +600,7 @@ export default function HomePage() {
 
       {/* Sticky Mobile CTA */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/90 to-transparent md:hidden z-50">
-        <Button asChild className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-2xl shadow-violet-600/20">
-          <Link href="/app">Try It Free →</Link>
-        </Button>
+        <Link href="/app" className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-2xl shadow-violet-600/20 flex items-center justify-center">Try It Free →</Link>
       </div>
     </div>
   );
