@@ -90,6 +90,8 @@ type SavedThread = {
   context: string | null;
   platform: string | null;
   type: 'thread' | 'coach';
+  messages?: any[];
+  created_at?: string;
   updated_at: string;
   message_count: number;
   last_message: any;
@@ -334,19 +336,37 @@ export default function AppPage() {
     }
   }, [toast]);
 
-  // Auto-load session from ?load= query param (from /history deep link)
+  // Auto-load session from ?load= query param (from /history or dashboard deep link)
   useEffect(() => {
     const loadId = searchParams.get('load');
-    if (loadId && savedThreads.length > 0) {
-      const found = savedThreads.find(t => t.id === loadId);
-      if (found) {
-        handleLoadThread(found);
-        // Clean up URL
+    if (!loadId) return;
+    // Fetch the thread directly by ID — don't wait for savedThreads
+    (async () => {
+      try {
+        const res = await fetch(`/api/threads?id=${loadId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const fullThread = data.thread;
+        if (!fullThread) return;
+        const msgs = fullThread.messages || [];
+        const saved: SavedThread = {
+          id: fullThread.id,
+          name: fullThread.name || 'Untitled',
+          context: fullThread.context || null,
+          platform: fullThread.platform || null,
+          type: fullThread.type || 'thread',
+          messages: msgs,
+          created_at: fullThread.created_at || '',
+          updated_at: fullThread.updated_at || '',
+          message_count: msgs.length,
+          last_message: msgs.length > 0 ? msgs[msgs.length - 1] : null,
+        };
+        handleLoadThread(saved);
         window.history.replaceState({}, '', '/app');
-      }
-    }
+      } catch {}
+    })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedThreads]);
+  }, []);
 
   // Rotate taglines every 3 seconds
   useEffect(() => {
@@ -1468,49 +1488,43 @@ export default function AppPage() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       const fullThread = data.thread;
+      const type = saved.type || fullThread?.type || 'thread';
+      const msgs = fullThread?.messages || [];
 
-      // Coach session — restore coach chat history
-      if ((saved.type || fullThread?.type) === 'coach') {
-        if (fullThread?.messages) {
-          const coachMsgs: StrategyChatMessage[] = (fullThread.messages as any[]).map((m: any) => ({
-            role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
-            content: m.content || '',
-            draft: m.draft || null,
-          }));
-          setStrategyChatHistory(coachMsgs);
-        }
-        setActiveCoachSessionId(saved.id);
-        setActiveThreadId(null);
-        setActiveThreadName(null);
-        setThread([]);
-        setReplies([]);
-        setShowThreads(false);
-        toast({ title: 'Coach session loaded', description: saved.name });
-        return;
-      }
-
-      // Regular thread — restore thread messages
-      if (fullThread?.messages) {
-        const messages: ThreadMessage[] = (fullThread.messages as any[]).map((m: any) => ({
-          role: m.role === 'you' ? 'you' as const : 'them' as const,
-          text: m.text || '',
-          timestamp: m.timestamp ? new Date(m.timestamp).getTime() : Date.now(),
+      // Convert ALL sessions into Coach chat history so they display in Coach UI
+      if (type === 'coach') {
+        // Coach session — messages are already in {role, content, draft} format
+        const coachMsgs: StrategyChatMessage[] = (msgs as any[]).map((m: any) => ({
+          role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+          content: m.content || '',
+          draft: m.draft || null,
         }));
-        setThread(messages);
+        setStrategyChatHistory(coachMsgs);
+      } else {
+        // Thread session — convert {role: 'you'|'them', text} into coach chat format
+        // "them" messages become user messages (they sent it), "you" messages become assistant suggestions
+        const coachMsgs: StrategyChatMessage[] = (msgs as any[]).map((m: any) => {
+          if (m.role === 'them') {
+            return { role: 'user' as const, content: m.text || '' };
+          } else {
+            return { role: 'assistant' as const, content: m.text || '' };
+          }
+        });
+        setStrategyChatHistory(coachMsgs);
       }
 
-      setActiveThreadId(saved.id);
-      setActiveThreadName(saved.name);
-      setActiveCoachSessionId(null);
-      setStrategyChatHistory([]);
-      if (saved.context) setSelectedContext(saved.context as ContextType);
+      setActiveCoachSessionId(saved.id);
+      setActiveThreadId(null);
+      setActiveThreadName(null);
+      setThread([]);
       setReplies([]);
       setDecodeResult(null);
       setPendingSent(null);
       setMessage('');
       setShowThreads(false);
       setShowExamples(false);
-      toast({ title: 'Thread loaded', description: saved.name });
+      if (saved.context) setSelectedContext(saved.context as ContextType);
+      toast({ title: 'Session loaded', description: saved.name });
     } catch {
       toast({ title: 'Failed to load', variant: 'destructive' });
     }
@@ -1940,7 +1954,60 @@ export default function AppPage() {
                 </button>
               )}
             </div>
-            <p className="text-sm text-white/40 mb-4">Drop a screenshot, paste a message, or pick a scenario</p>
+            <p className="text-sm text-white/40 mb-3">Drop a screenshot, paste a message, or pick a scenario</p>
+
+            {/* Strategy Status Indicator */}
+            <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+              {(() => {
+                const sd = strategyData;
+                // Momentum light
+                const momentumColor = !sd ? 'bg-white/10' :
+                  sd.momentum === 'Rising' ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
+                  (sd.momentum === 'Declining' || sd.momentum === 'Stalling') ? 'bg-red-400 shadow-red-400/40 shadow-sm' :
+                  'bg-amber-400 shadow-amber-400/40 shadow-sm';
+                const momentumLabel = sd?.momentum || 'Off';
+                // Balance light
+                const balanceColor = !sd ? 'bg-white/10' :
+                  (sd.balance === 'Balanced' || sd.balance === 'You lead') ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
+                  sd.balance === 'They lead' ? 'bg-amber-400 shadow-amber-400/40 shadow-sm' :
+                  'bg-white/20';
+                const balanceLabel = sd?.balance || 'Off';
+                // Energy/move light
+                const energyColor = !sd ? 'bg-white/10' :
+                  sd.move.energy === 'escalate' ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
+                  sd.move.energy === 'pull_back' ? 'bg-red-400 shadow-red-400/40 shadow-sm' :
+                  sd.move.energy === 'match' ? 'bg-amber-400 shadow-amber-400/40 shadow-sm' :
+                  'bg-white/20';
+                const energyLabel = sd ? sd.move.energy.replace('_', ' ') : 'Off';
+                return (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-2 h-2 rounded-full transition-all duration-500 ${momentumColor}`} />
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${sd ? 'text-white/50' : 'text-white/15'}`}>{momentumLabel}</span>
+                    </div>
+                    <div className="w-px h-3 bg-white/[0.08]" />
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-2 h-2 rounded-full transition-all duration-500 ${balanceColor}`} />
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${sd ? 'text-white/50' : 'text-white/15'}`}>{balanceLabel}</span>
+                    </div>
+                    <div className="w-px h-3 bg-white/[0.08]" />
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-2 h-2 rounded-full transition-all duration-500 ${energyColor}`} />
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${sd ? 'text-white/50' : 'text-white/15'}`}>{energyLabel}</span>
+                    </div>
+                    {sd?.move.risk && sd.move.risk !== 'low' && (
+                      <>
+                        <div className="w-px h-3 bg-white/[0.08]" />
+                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                          sd.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
+                        }`}>{sd.move.risk} risk</span>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
             <div className="flex flex-wrap gap-2">
               {[
                 { emoji: '💬', label: "What'd they say?", prompt: 'Help me reply to this message' },

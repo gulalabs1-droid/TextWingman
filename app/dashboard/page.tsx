@@ -271,7 +271,7 @@ export default async function DashboardPage() {
                 const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null
                 const preview = lastMsg?.content || lastMsg?.text || null
                 return (
-                  <Link key={t.id} href="/app" className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors">
+                  <Link key={t.id} href={`/app?load=${t.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors">
                     <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isCoach ? 'bg-violet-500/20' : 'bg-white/[0.07]'}`}>
                       {isCoach
                         ? <Sparkles className="h-3 w-3 text-violet-400" />
