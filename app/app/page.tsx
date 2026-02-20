@@ -305,12 +305,12 @@ export default function AppPage() {
 
   // ── Dynamic placeholder rotation ──────────────────────
   const SMART_PLACEHOLDERS = [
-    'Ask anything, paste a message...',
+    'Ask anything or paste a message...',
     'Decode why she sent "k."...',
-    'What should I reply to this...',
+    'What should I reply to this?',
     'Is this a good sign or bad?',
-    'Help me start a conversation...',
-    'Am I overthinking this text?',
+    'Help me start something new...',
+    'Am I overthinking this?',
   ];
 
   // Rotate placeholder text every 4s when input is empty
@@ -2009,43 +2009,8 @@ export default function AppPage() {
           }}
         />
 
-        {/* ── Smart Preview — remembers your last convo or suggests based on time ── */}
-        {appMode === 'coach' && strategyChatHistory.length === 0 && (() => {
-          const preview = getSmartPreview();
-          if (!preview) return null;
-          return (
-            <button
-              onClick={() => {
-                if (preview.type === 'thread' && preview.thread) {
-                  handleLoadThread(preview.thread);
-                } else {
-                  setStrategyChatInput(preview.text.replace('?', ''));
-                }
-                setSmartPreviewDismissed(true);
-              }}
-              className="w-full mb-4 p-4 rounded-2xl bg-gradient-to-r from-violet-500/[0.08] to-fuchsia-500/[0.08] border border-violet-500/15 hover:border-violet-500/30 hover:from-violet-500/[0.12] hover:to-fuchsia-500/[0.12] transition-all active:scale-[0.98] text-left group animate-in fade-in slide-in-from-top-2 duration-500"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-lg shrink-0">{preview.emoji}</span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-white/80 truncate">{preview.text}</p>
-                    <p className="text-[11px] text-white/35 mt-0.5">{preview.sub}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-wider group-hover:text-violet-400 transition-colors">
-                    {preview.type === 'thread' ? 'Continue' : 'Try it'}
-                  </span>
-                  <ArrowRight className="h-3.5 w-3.5 text-violet-400/40 group-hover:text-violet-400 group-hover:translate-x-0.5 transition-all" />
-                </div>
-              </div>
-            </button>
-          );
-        })()}
-
         {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ── */}
-        <div className="mb-8 rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100dvh - 16rem)' }}>
+        <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 13rem)' }}>
           {/* Hidden file inputs */}
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
           <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
@@ -2140,6 +2105,41 @@ export default function AppPage() {
               </div>
             )}
 
+            {/* Smart Preview — inside scrollable area, above chips */}
+            {!loadingSession && strategyChatHistory.length === 0 && (() => {
+              const preview = getSmartPreview();
+              if (!preview) return null;
+              return (
+                <button
+                  onClick={() => {
+                    if (preview.type === 'thread' && preview.thread) {
+                      handleLoadThread(preview.thread);
+                    } else {
+                      setStrategyChatInput(preview.text.replace('?', ''));
+                    }
+                    setSmartPreviewDismissed(true);
+                  }}
+                  className="w-full mb-3 p-3.5 rounded-2xl bg-gradient-to-r from-violet-500/[0.08] to-fuchsia-500/[0.08] border border-violet-500/15 hover:border-violet-500/30 hover:from-violet-500/[0.12] hover:to-fuchsia-500/[0.12] transition-all active:scale-[0.98] text-left group animate-in fade-in duration-500"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-base shrink-0">{preview.emoji}</span>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-semibold text-white/80 truncate">{preview.text}</p>
+                        <p className="text-[10px] text-white/35 mt-0.5">{preview.sub}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span className="text-[9px] text-violet-400/60 font-bold uppercase tracking-wider group-hover:text-violet-400 transition-colors">
+                        {preview.type === 'thread' ? 'Continue' : 'Try it'}
+                      </span>
+                      <ArrowRight className="h-3 w-3 text-violet-400/40 group-hover:text-violet-400 transition-all" />
+                    </div>
+                  </div>
+                </button>
+              );
+            })()}
+
             {/* Scenario chips — only when no chat history */}
             {!loadingSession && strategyChatHistory.length === 0 && (() => {
               const h = new Date().getHours();
@@ -2148,10 +2148,10 @@ export default function AppPage() {
               const hasThread = savedThreads.length > 0;
               const threadName = hasThread ? savedThreads[0]?.name?.split(' ').slice(0, 2).join(' ') : '';
               const chips = [
-                { emoji: '💬', label: "What'd they say?", sub: hasThread ? `Reply to ${threadName}` : 'Craft the perfect response', prompt: 'Help me reply to this message', glow: hasThread },
-                { emoji: '🔍', label: 'What do they mean?', sub: hasThread ? `Decode ${threadName}'s message` : 'Read between the lines', prompt: 'Decode their message for me', glow: false },
-                { emoji: '✨', label: isEvening ? 'Start a flirty convo 🔥' : 'Start the convo', sub: isEvening ? 'Prime time to make a move' : 'Break the ice smoothly', prompt: isEvening ? 'Write me a flirty opener for tonight' : 'Write me a great opener', glow: isEvening },
-                { emoji: '🔥', label: 'Revive a dead chat', sub: isWeekend ? 'Weekend = perfect timing' : 'Bring it back to life', prompt: 'Help me revive a dead conversation', glow: isWeekend },
+                { emoji: '💬', label: "What'd they say?", sub: hasThread ? `Reply to ${threadName}` : 'Craft the perfect reply', prompt: 'Help me reply to this message', glow: hasThread },
+                { emoji: '🔍', label: 'Decode this', sub: hasThread ? `Decode ${threadName}'s message` : 'Read between the lines', prompt: 'Decode their message for me', glow: false },
+                { emoji: '✨', label: isEvening ? 'Flirty opener 🔥' : 'Start the convo', sub: isEvening ? 'Prime time to move' : 'Break the ice', prompt: isEvening ? 'Write me a flirty opener for tonight' : 'Write me a great opener', glow: isEvening },
+                { emoji: '🔥', label: 'Revive dead chat', sub: isWeekend ? 'Weekend = perfect timing' : 'Bring it back', prompt: 'Help me revive a dead conversation', glow: isWeekend },
                 { emoji: '🎯', label: 'Am I being played?', sub: 'Get an honest read', prompt: 'Am I being played or are they genuinely interested?', glow: false },
                 { emoji: '📊', label: 'Read the situation', sub: 'Full vibe analysis', prompt: 'Read this convo and tell me where I stand', glow: false },
               ];
@@ -2167,7 +2167,7 @@ export default function AppPage() {
                           : 'bg-white/[0.07] border-white/[0.12] hover:bg-white/[0.12]'
                       }`}
                     >
-                      <p className="text-[12px] font-semibold text-white/70">
+                      <p className="text-[12px] font-semibold text-white/70 leading-snug">
                         <span className="mr-1">{chip.emoji}</span>{chip.label}
                       </p>
                       <p className="text-[10px] text-white/30 mt-0.5 leading-tight">{chip.sub}</p>
@@ -2276,7 +2276,7 @@ export default function AppPage() {
                 placeholder={SMART_PLACEHOLDERS[placeholderIdx]}
                 rows={1}
                 disabled={strategyChatLoading}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[14px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[13px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
                 style={{ minHeight: '42px' }}
               />
               <button
