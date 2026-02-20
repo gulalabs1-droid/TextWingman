@@ -10,6 +10,25 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.2.0',
+    date: '2026-02-20',
+    title: 'Smart Preview, Context-Aware Coach & Apple-Ready Polish',
+    description: 'The Coach now feels alive before you type a word. Smart Preview remembers your last conversation, chips adapt to time of day and context, the input bar rotates smart suggestions, and the entire layout got an Apple-level polish pass.',
+    type: 'feature',
+    highlights: [
+      'Smart Preview on load — if you have saved threads, Coach shows a ghosted card: "Last convo with [name] — Tap to pick up where you left off." If no history, rotates time-of-day scenarios (Friday night dead chat? Monday morning reply?)',
+      'Context-Aware Chips — scenario buttons now have dynamic subtitles that change based on your threads, time of day, and day of week. Relevant chips glow violet.',
+      'Dynamic placeholder rotation — input cycles through smart examples every 4 seconds: "Decode why she sent \'k.\'...", "Am I overthinking this text?", etc.',
+      'Send button morph — empty input shows Send icon, typing morphs it to ✨ Go with sparkle',
+      'Personalized Coach header — your first initial as a gradient avatar, dynamic greeting: "What\'s up [Name]?"',
+      'Apple iMessage layout — Coach card restructured as flex column with sticky input, scrollable chat/chips, proper maxHeight so input never gets cut off',
+      'Chips now in a 2-column grid for compact mobile display instead of stacking vertically',
+      'iOS safe area padding — input no longer hidden behind the home indicator on iPhone',
+      'Fixed "Paste what they said" empty state leaking into Coach mode',
+      'Shortened placeholder text to prevent truncation on narrow screens',
+    ],
+  },
+  {
     version: '4.1.0',
     date: '2026-02-19',
     title: 'Unified History + Coach-Only UI',

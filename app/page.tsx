@@ -230,7 +230,7 @@ export default function HomePage() {
             { icon: '✨', title: 'Write openers', desc: 'First message for any platform — dating app, DM, cold text, reconnect.' },
             { icon: '🔥', title: 'Revive dead chats', desc: 'Haven\'t heard back in days? Coach writes the perfect re-engagement.' },
             { icon: '📸', title: 'Screenshot upload', desc: 'Drop a screenshot — Coach reads every message and gives you the move.' },
-            { icon: '🧠', title: 'Full conversation strategy', desc: 'Momentum, power dynamics, energy level — Coach reads it all before replying.' },
+            { icon: '�', title: 'Remembers your convos', desc: 'Smart Preview loads your last thread on launch. Context-aware chips adapt to the moment.' },
           ].map((f) => (
             <div key={f.title} className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-5 hover:bg-white/[0.06] hover:border-white/[0.14] transition-all">
               <span className="text-2xl block mb-3">{f.icon}</span>

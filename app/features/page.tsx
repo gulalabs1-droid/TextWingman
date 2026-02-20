@@ -1,26 +1,27 @@
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Target, RefreshCw, Pencil, Eye, Activity, Zap, Lock, Crosshair, PanelRightOpen } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Target, RefreshCw, Pencil, Zap, Lock, Crosshair, Eye, Clock, User } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FREE_FEATURES = [
-  { icon: Crosshair, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Coach Mode', tagline: 'Your AI texting coach — the face of V4.', bullets: ['Ask anything: "read this convo", "what should I say?", "decode this"', 'Gets strategy + 3 reply options inline with confidence scores', 'Handles replies, decodes, openers, and revives in one chat'] },
-  { icon: MessageCircle, color: 'text-cyan-400', bg: 'bg-cyan-500/10', title: 'Thread Mode', tagline: 'Track the full conversation. Generate replies.', bullets: ['Paste messages or upload screenshots to build the thread', '3 tones: Quick, Spicy, Soft with confidence scores', 'Inline decode on any "them" message'] },
-  { icon: Camera, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Screenshot Multi-Upload', tagline: 'Upload screenshots. Get instant coaching.', bullets: ['Upload multiple screenshots at once in Coach mode', 'AI reads every message, identifies who said what', 'Works with iMessage, WhatsApp, IG, Tinder, Hinge + more'] },
-  { icon: Brain, color: 'text-orange-400', bg: 'bg-orange-500/10', title: 'Message Decoder', tagline: '"What do they actually mean?"', bullets: ['Inline decode on any message in the thread', 'Intent, subtext, sarcasm, power dynamics, flags', '1 decode/day free · unlimited Pro'] },
-  { icon: Send, color: 'text-pink-400', bg: 'bg-pink-500/10', title: 'Opener Generator', tagline: 'First messages that actually land.', bullets: ['Ask Coach: "write me an opener"', 'Personalized to their bio or situation', '1 opener/day free · unlimited Pro'] },
-  { icon: RefreshCw, color: 'text-cyan-400', bg: 'bg-cyan-500/10', title: 'Revive Mode', tagline: 'Bring dead conversations back to life.', bullets: ['Ask Coach: "revive this dead chat"', 'Smooth, Bold, or Warm re-engagement options', '1 revive/day free · unlimited Pro'] },
-  { icon: Pencil, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Edit + Polish', tagline: 'Make any reply yours.', bullets: ['Tap Edit on any reply, add your ideas', 'Polish keeps your words, tightens the rest', 'Works in Thread Mode and Coach replies'] },
-  { icon: RefreshCw, color: 'text-white/40', bg: 'bg-white/[0.06]', title: 'Regenerate', tagline: 'Not feeling it? Get fresh options.', bullets: ['REFRESH button for new reply options', 'Same context, completely different replies', 'No re-uploading or re-entering needed'] },
-  { icon: BookmarkCheck, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Auto-Save Threads', tagline: 'Never lose context.', bullets: ['Conversations auto-save after 2+ messages', 'Load, rename, or delete any saved thread', 'Full context preserved across sessions'] },
+  { icon: Crosshair, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Coach Mode', tagline: 'Your AI texting coach — one chat for everything.', bullets: ['Ask anything: "read this convo", "what should I say?", "decode this"', 'Gets strategy + 3 reply options (Quick, Spicy, Soft) inline', 'Handles replies, decodes, openers, and revives in one conversation'] },
+  { icon: Eye, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', title: 'Smart Preview', tagline: 'Coach remembers before you ask.', bullets: ['Shows your last thread on load: "Last convo with Sarah — pick up where you left off"', 'No history? Rotates smart scenarios by time of day (Friday night dead chat? Monday morning reply?)', 'One tap to instantly load and continue any conversation'] },
+  { icon: Sparkles, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Context-Aware Chips', tagline: 'Buttons that think for you.', bullets: ['Scenario chips change subtitles based on your threads and time of day', 'Evening? "Start a flirty convo 🔥" — Weekend? Revive chip says "Perfect timing"', 'Relevant chips glow violet so you know what matters right now'] },
+  { icon: Camera, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Screenshot Upload', tagline: 'Upload screenshots. Get instant coaching.', bullets: ['Upload multiple screenshots at once in Coach', 'AI reads every message, identifies who said what', 'Works with iMessage, WhatsApp, IG, Tinder, Hinge, Bumble + more'] },
+  { icon: Brain, color: 'text-orange-400', bg: 'bg-orange-500/10', title: 'Message Decoder', tagline: '"What do they actually mean?"', bullets: ['Ask Coach to decode any message', 'Intent, subtext, sarcasm, power dynamics, red/green flags', '1 decode/day free · unlimited Pro'] },
+  { icon: Send, color: 'text-pink-400', bg: 'bg-pink-500/10', title: 'Opener Generator', tagline: 'First messages that actually land.', bullets: ['Ask Coach: "write me an opener"', 'Personalized to their bio, platform, or situation', '1 opener/day free · unlimited Pro'] },
+  { icon: RefreshCw, color: 'text-cyan-400', bg: 'bg-cyan-500/10', title: 'Revive Mode', tagline: 'Bring dead conversations back to life.', bullets: ['Ask Coach: "revive this dead chat"', 'Smooth, Bold, or Warm re-engagement options with analysis', '1 revive/day free · unlimited Pro'] },
+  { icon: Pencil, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Edit + Polish', tagline: 'Make any reply yours.', bullets: ['Tap Edit on any reply, add your ideas', 'Polish keeps your words, tightens the rest', 'Use As Is option if you prefer your own wording'] },
+  { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', title: 'Dynamic Input Bar', tagline: 'A psychic input that suggests what to ask.', bullets: ['Placeholder rotates smart examples every 4 seconds', '"Decode why she sent \'k.\'…", "Am I overthinking this text?"', 'Send button morphs to ✨ Go when you start typing'] },
+  { icon: BookmarkCheck, color: 'text-blue-400', bg: 'bg-blue-500/10', title: 'Auto-Save Sessions', tagline: 'Never lose context.', bullets: ['Coach sessions and threads auto-save after 2+ messages', 'Load, rename, or delete any saved session', 'Full context preserved — resume anytime from History'] },
+  { icon: User, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Personalized Coach', tagline: 'It knows your name. It greets you.', bullets: ['Your initial as a gradient avatar next to Coach', 'Dynamic greeting: "What\'s up [Name]?"', 'Feels like your own personal texting advisor'] },
 ];
 
 const PRO_FEATURES = [
-  { icon: PanelRightOpen, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Intel Sidebar', tagline: 'Real-time conversation intelligence.', bullets: ['Health ring — animated score showing conversation health', 'Risk level, timing window, strategy card', 'Context and goal selectors on desktop', 'Mobile Intel Sheet — expandable on phone'] },
-  { icon: Target, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Strategy Mode', tagline: 'AI coaching before every reply.', bullets: ['Detects sarcasm vs low investment', 'Tracks power dynamics — who\'s chasing', 'Sharp one-liner: "Pull back. Let them come to you."', 'Shapes every reply around the right move'] },
-  { icon: Shield, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'V2 Verified Pipeline', tagline: '3-agent pipeline. Every reply verified.', bullets: ['Draft → Rule-Check → Tone-Verify', '≤18 words enforced, no needy language', 'Strategy-aligned tone verification', 'Auto-revises up to 2x if a reply fails'] },
-  { icon: Activity, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Simulated Outcomes', tagline: 'Confidence scores on every reply.', bullets: ['% confidence score on each reply option', 'BEST badge highlights the top-scoring reply', 'Branch prediction — see likely outcomes'] },
-  { icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Unlimited Everything', tagline: 'No daily limits. Ever.', bullets: ['Unlimited replies, decodes, openers, revives', 'Full thread history saved', 'Strategy + Intel on every generation'] },
+  { icon: Target, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Strategy Mode', tagline: 'AI coaching before every reply.', bullets: ['Detects sarcasm vs low investment, kidding vs serious', 'Tracks power dynamics — who\'s chasing, who\'s pulling back', 'Sharp one-liner: "Pull back. Let them come to you."', 'Shapes every reply around the right strategic move'] },
+  { icon: Shield, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'V2 Verified Pipeline', tagline: '3-agent pipeline. Every reply verified.', bullets: ['Draft → Rule-Check → Tone-Verify', '≤18 words enforced, no needy language, no emojis', 'Strategy-aligned tone verification', 'Auto-revises up to 2x if a reply fails checks'] },
+  { icon: Brain, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Deep Conversation Intelligence', tagline: 'Reads the full thread like a human would.', bullets: ['Momentum tracking — Rising, Declining, Stalling', 'Energy matching — mirrors their effort level and slang', 'Balance analysis — who\'s investing more in the convo', 'Risk flags — over-investing, frame testing, sarcasm detection'] },
+  { icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Unlimited Everything', tagline: 'No daily limits. Ever.', bullets: ['Unlimited replies, decodes, openers, revives', 'Full session history saved and searchable', 'Strategy analysis on every generation', 'V1/V2 toggle — switch between fast and verified modes'] },
 ];
 
 export default function FeaturesPage() {
@@ -52,13 +53,13 @@ export default function FeaturesPage() {
         <div className="text-center pt-8 pb-14 space-y-4">
           <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
             <Sparkles className="h-3.5 w-3.5" />
-            v{CURRENT_VERSION} — Coach Mode + Intel Sidebar + Dark Glass UI
+            v{CURRENT_VERSION} — Smart Preview + Context-Aware Coach
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-white">
             Everything Wingman can do.
           </h1>
           <p className="text-white/40 text-lg max-w-xl mx-auto">
-            Coach Mode is the face. Thread Mode tracks the convo. Intel keeps you sharp.
+            One AI coach that reads every situation, remembers your conversations, and adapts to the moment.
           </p>
         </div>
 

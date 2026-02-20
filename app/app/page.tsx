@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
@@ -273,9 +273,54 @@ export default function AppPage() {
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const coachSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const [activeCoachSessionId, setActiveCoachSessionId] = useState<string | null>(null);
+  const [smartPreviewDismissed, setSmartPreviewDismissed] = useState(false);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const { toast } = useToast();
   
   const charCount = message.length;
+
+  // ── Smart Preview helpers ──────────────────────────────
+  const getTimeGreeting = () => {
+    const h = new Date().getHours();
+    const day = new Date().getDay();
+    if (day === 5 && h >= 18) return { emoji: '🌙', text: 'Friday night dead chat?', sub: 'Let\'s revive it before the weekend ends' };
+    if (day === 0 && h < 12) return { emoji: '☀️', text: 'Sunday morning catch-up?', sub: 'Perfect time to send something warm' };
+    if (day === 1 && h < 12) return { emoji: '📱', text: 'Monday morning reply?', sub: 'Start the week with the right energy' };
+    if (h >= 22 || h < 5) return { emoji: '🌙', text: 'Late night text?', sub: 'Keep it short, keep it smooth' };
+    if (h >= 18) return { emoji: '✨', text: 'Evening text incoming?', sub: 'Prime time to make your move' };
+    if (h >= 12) return { emoji: '☀️', text: 'Afternoon reply?', sub: 'Drop something casual and confident' };
+    return { emoji: '🌅', text: 'Morning message?', sub: 'Start fresh, keep it light' };
+  };
+
+  const getSmartPreview = () => {
+    if (smartPreviewDismissed) return null;
+    const recentThread = savedThreads.length > 0 ? savedThreads.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0] : null;
+    if (recentThread) {
+      const name = recentThread.name?.slice(0, 30) || 'Last convo';
+      const ctx = recentThread.context ? ` (${recentThread.context})` : '';
+      return { type: 'thread' as const, thread: recentThread, emoji: '🔥', text: `${name}${ctx}`, sub: 'Tap to pick up where you left off' };
+    }
+    return { type: 'time' as const, ...getTimeGreeting() };
+  };
+
+  // ── Dynamic placeholder rotation ──────────────────────
+  const SMART_PLACEHOLDERS = [
+    'Ask anything, paste a message...',
+    'Decode why she sent "k."...',
+    'What should I reply to this...',
+    'Is this a good sign or bad?',
+    'Help me start a conversation...',
+    'Am I overthinking this text?',
+  ];
+
+  // Rotate placeholder text every 4s when input is empty
+  useEffect(() => {
+    if (strategyChatInput.trim() || appMode !== 'coach') return;
+    const timer = setInterval(() => {
+      setPlaceholderIdx(prev => (prev + 1) % SMART_PLACEHOLDERS.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [strategyChatInput, appMode, SMART_PLACEHOLDERS.length]);
 
   // Show one-time feature spotlight for screenshot upload
   useEffect(() => {
@@ -1964,17 +2009,58 @@ export default function AppPage() {
           }}
         />
 
+        {/* ── Smart Preview — remembers your last convo or suggests based on time ── */}
+        {appMode === 'coach' && strategyChatHistory.length === 0 && (() => {
+          const preview = getSmartPreview();
+          if (!preview) return null;
+          return (
+            <button
+              onClick={() => {
+                if (preview.type === 'thread' && preview.thread) {
+                  handleLoadThread(preview.thread);
+                } else {
+                  setStrategyChatInput(preview.text.replace('?', ''));
+                }
+                setSmartPreviewDismissed(true);
+              }}
+              className="w-full mb-4 p-4 rounded-2xl bg-gradient-to-r from-violet-500/[0.08] to-fuchsia-500/[0.08] border border-violet-500/15 hover:border-violet-500/30 hover:from-violet-500/[0.12] hover:to-fuchsia-500/[0.12] transition-all active:scale-[0.98] text-left group animate-in fade-in slide-in-from-top-2 duration-500"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-lg shrink-0">{preview.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-white/80 truncate">{preview.text}</p>
+                    <p className="text-[11px] text-white/35 mt-0.5">{preview.sub}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[10px] text-violet-400/60 font-bold uppercase tracking-wider group-hover:text-violet-400 transition-colors">
+                    {preview.type === 'thread' ? 'Continue' : 'Try it'}
+                  </span>
+                  <ArrowRight className="h-3.5 w-3.5 text-violet-400/40 group-hover:text-violet-400 group-hover:translate-x-0.5 transition-all" />
+                </div>
+              </div>
+            </button>
+          );
+        })()}
+
         {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ── */}
         <div className="mb-8 rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100dvh - 16rem)' }}>
           {/* Hidden file inputs */}
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
           <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
 
-          {/* ─ Header — always visible, compact ─ */}
+          {/* ─ Header — always visible, compact, personalized ─ */}
           <div className="shrink-0 pt-5 pb-3 px-6 border-b border-white/[0.06]">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-violet-400" />
+                {userName ? (
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-[13px] font-black text-white shadow-sm shadow-violet-500/30">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                ) : (
+                  <Sparkles className="h-5 w-5 text-violet-400 animate-pulse" />
+                )}
                 Coach
               </h2>
               {isPro && (
@@ -1989,7 +2075,9 @@ export default function AppPage() {
                 </button>
               )}
             </div>
-            <p className="text-sm text-white/40">Drop a screenshot, paste a message, or pick a scenario</p>
+            <p className="text-sm text-white/40">
+              {userName ? `What's up ${userName.split(' ')[0]}? ` : ''}Drop a screenshot, paste, or pick a scenario
+            </p>
 
             {/* Strategy Status Indicator — only visible when Coach has strategy data */}
             {strategyData && (
@@ -2053,26 +2141,41 @@ export default function AppPage() {
             )}
 
             {/* Scenario chips — only when no chat history */}
-            {!loadingSession && strategyChatHistory.length === 0 && (
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { emoji: '💬', label: "What'd they say?", prompt: 'Help me reply to this message' },
-                  { emoji: '🔍', label: 'What do they mean?', prompt: 'Decode their message for me' },
-                  { emoji: '✨', label: 'Start the convo', prompt: 'Write me a great opener' },
-                  { emoji: '🔥', label: 'Revive a dead chat', prompt: 'Help me revive a dead conversation' },
-                  { emoji: '🎯', label: 'Am I being played?', prompt: 'Am I being played or are they genuinely interested?' },
-                  { emoji: '📊', label: 'Read the situation', prompt: 'Read this convo and tell me where I stand' },
-                ].map(chip => (
-                  <button
-                    key={chip.label}
-                    onClick={() => setStrategyChatInput(chip.prompt)}
-                    className="px-3 py-2 rounded-xl text-[12px] font-semibold transition-all active:scale-95 bg-white/[0.07] text-white/60 border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/85 text-left"
-                  >
-                    <span className="mr-1">{chip.emoji}</span>{chip.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            {!loadingSession && strategyChatHistory.length === 0 && (() => {
+              const h = new Date().getHours();
+              const isEvening = h >= 18 || h < 5;
+              const isWeekend = [0, 5, 6].includes(new Date().getDay());
+              const hasThread = savedThreads.length > 0;
+              const threadName = hasThread ? savedThreads[0]?.name?.split(' ').slice(0, 2).join(' ') : '';
+              const chips = [
+                { emoji: '💬', label: "What'd they say?", sub: hasThread ? `Reply to ${threadName}` : 'Craft the perfect response', prompt: 'Help me reply to this message', glow: hasThread },
+                { emoji: '🔍', label: 'What do they mean?', sub: hasThread ? `Decode ${threadName}'s message` : 'Read between the lines', prompt: 'Decode their message for me', glow: false },
+                { emoji: '✨', label: isEvening ? 'Start a flirty convo 🔥' : 'Start the convo', sub: isEvening ? 'Prime time to make a move' : 'Break the ice smoothly', prompt: isEvening ? 'Write me a flirty opener for tonight' : 'Write me a great opener', glow: isEvening },
+                { emoji: '🔥', label: 'Revive a dead chat', sub: isWeekend ? 'Weekend = perfect timing' : 'Bring it back to life', prompt: 'Help me revive a dead conversation', glow: isWeekend },
+                { emoji: '🎯', label: 'Am I being played?', sub: 'Get an honest read', prompt: 'Am I being played or are they genuinely interested?', glow: false },
+                { emoji: '📊', label: 'Read the situation', sub: 'Full vibe analysis', prompt: 'Read this convo and tell me where I stand', glow: false },
+              ];
+              return (
+                <div className="grid grid-cols-2 gap-2">
+                  {chips.map(chip => (
+                    <button
+                      key={chip.label}
+                      onClick={() => setStrategyChatInput(chip.prompt)}
+                      className={`px-3 py-2.5 rounded-xl text-left transition-all active:scale-95 border ${
+                        chip.glow
+                          ? 'bg-violet-500/[0.10] border-violet-500/25 hover:bg-violet-500/[0.18] hover:border-violet-500/40 shadow-sm shadow-violet-500/10'
+                          : 'bg-white/[0.07] border-white/[0.12] hover:bg-white/[0.12]'
+                      }`}
+                    >
+                      <p className="text-[12px] font-semibold text-white/70">
+                        <span className="mr-1">{chip.emoji}</span>{chip.label}
+                      </p>
+                      <p className="text-[10px] text-white/30 mt-0.5 leading-tight">{chip.sub}</p>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Chat history */}
             {!loadingSession && strategyChatHistory.length > 0 && (
@@ -2170,7 +2273,7 @@ export default function AppPage() {
                 value={strategyChatInput}
                 onChange={(e) => { setStrategyChatInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
-                placeholder="Ask anything, paste a message..."
+                placeholder={SMART_PLACEHOLDERS[placeholderIdx]}
                 rows={1}
                 disabled={strategyChatLoading}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[14px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
@@ -2179,9 +2282,20 @@ export default function AppPage() {
               <button
                 onClick={handleStrategyChatSend}
                 disabled={!strategyChatInput.trim() || strategyChatLoading}
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-md shadow-violet-500/20 hover:shadow-violet-500/35 transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none shrink-0"
+                className={`rounded-xl flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${
+                  strategyChatInput.trim()
+                    ? 'px-4 h-10 gap-1.5 bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-md shadow-violet-500/25 hover:shadow-violet-500/40'
+                    : 'w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-md shadow-violet-500/20 hover:shadow-violet-500/35 disabled:shadow-none'
+                }`}
               >
-                <Send className="h-4 w-4" />
+                {strategyChatInput.trim() ? (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span className="text-[12px] font-bold">Go</span>
+                  </>
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </button>
             </div>
             {strategyChatHistory.length > 0 && (
