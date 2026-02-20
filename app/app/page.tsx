@@ -254,6 +254,8 @@ export default function AppPage() {
   const [strategyChatLoading, setStrategyChatLoading] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [saving, setSaving] = useState(false);
+  const [savingCoach, setSavingCoach] = useState(false);
+  const [loadingSession, setLoadingSession] = useState(false);
   const [editingReply, setEditingReply] = useState<string | null>(null); // tone being edited
   const [editText, setEditText] = useState('');
   const [refining, setRefining] = useState(false);
@@ -266,6 +268,7 @@ export default function AppPage() {
   const coachFileInputRef = useRef<HTMLInputElement>(null);
   const [coachScreenshotExtracting, setCoachScreenshotExtracting] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const coachEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const coachSaveTimer = useRef<NodeJS.Timeout | null>(null);
@@ -337,33 +340,52 @@ export default function AppPage() {
   }, [toast]);
 
   // Auto-load session from ?load= query param (from /history or dashboard deep link)
+  // Inlines restoration to avoid double-fetch (handleLoadThread would re-fetch the same thread)
   useEffect(() => {
     const loadId = searchParams.get('load');
     if (!loadId) return;
-    // Fetch the thread directly by ID — don't wait for savedThreads
+    setLoadingSession(true);
     (async () => {
       try {
         const res = await fetch(`/api/threads?id=${loadId}`);
         if (!res.ok) return;
         const data = await res.json();
-        const fullThread = data.thread;
-        if (!fullThread) return;
-        const msgs = fullThread.messages || [];
-        const saved: SavedThread = {
-          id: fullThread.id,
-          name: fullThread.name || 'Untitled',
-          context: fullThread.context || null,
-          platform: fullThread.platform || null,
-          type: fullThread.type || 'thread',
-          messages: msgs,
-          created_at: fullThread.created_at || '',
-          updated_at: fullThread.updated_at || '',
-          message_count: msgs.length,
-          last_message: msgs.length > 0 ? msgs[msgs.length - 1] : null,
-        };
-        handleLoadThread(saved);
+        const ft = data.thread;
+        if (!ft) return;
+        const type = ft.type || 'thread';
+        const msgs = ft.messages || [];
+
+        // Restore into Coach chat UI
+        if (type === 'coach') {
+          const coachMsgs: StrategyChatMessage[] = msgs.map((m: any) => ({
+            role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+            content: m.content || '',
+            draft: m.draft || null,
+          }));
+          setStrategyChatHistory(coachMsgs);
+        } else {
+          const coachMsgs: StrategyChatMessage[] = msgs.map((m: any) => ({
+            role: m.role === 'them' ? 'user' as const : 'assistant' as const,
+            content: m.text || m.content || '',
+          }));
+          setStrategyChatHistory(coachMsgs);
+        }
+
+        setActiveCoachSessionId(ft.id);
+        setActiveThreadId(null);
+        setActiveThreadName(null);
+        setThread([]);
+        setReplies([]);
+        setShowThreads(false);
+        setShowExamples(false);
+        if (ft.context) setSelectedContext(ft.context as ContextType);
+        toast({ title: 'Session loaded', description: ft.name || 'Untitled' });
         window.history.replaceState({}, '', '/app');
-      } catch {}
+      } catch {
+        toast({ title: 'Failed to load session', variant: 'destructive' });
+      } finally {
+        setLoadingSession(false);
+      }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -380,6 +402,11 @@ export default function AppPage() {
   useEffect(() => {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thread]);
+
+  // Auto-scroll coach chat
+  useEffect(() => {
+    coachEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [strategyChatHistory, strategyChatLoading]);
 
   // Auto-save thread after 2+ messages (1.5s debounce)
   useEffect(() => {
@@ -460,14 +487,8 @@ export default function AppPage() {
       // Build full conversation context for smarter replies
       const fullContext = buildThreadContext(effectiveMessage);
       
-      // Show progress steps for V2
-      if (isPro && useV2) {
-        setV2Step('drafting');
-        await new Promise(r => setTimeout(r, 800));
-        setV2Step('rule-checking');
-        await new Promise(r => setTimeout(r, 600));
-        setV2Step('tone-verifying');
-      }
+      // Show V2 progress indicator (no fake delays — step updates happen instantly)
+      if (isPro && useV2) setV2Step('drafting');
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -577,13 +598,7 @@ export default function AppPage() {
       const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
       const fullContext = buildThreadContext(lastThem.text);
 
-      if (isPro && useV2) {
-        setV2Step('drafting');
-        await new Promise(r => setTimeout(r, 800));
-        setV2Step('rule-checking');
-        await new Promise(r => setTimeout(r, 600));
-        setV2Step('tone-verifying');
-      }
+      if (isPro && useV2) setV2Step('drafting');
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -917,7 +932,9 @@ export default function AppPage() {
   const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<string> => {
     return new Promise((resolve, reject) => {
       const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
         const canvas = document.createElement('canvas');
         let { width, height } = img;
         if (width > maxWidth) {
@@ -931,15 +948,15 @@ export default function AppPage() {
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => reject(new Error('Failed to load image'));
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Failed to load image')); };
+      img.src = objectUrl;
     });
   };
 
   // Screenshot upload & extraction
   const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || extracting) return;
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -1455,7 +1472,7 @@ export default function AppPage() {
 
   const autoSaveCoachSession = async () => {
     if (strategyChatHistory.length < 2) return;
-    setSaving(true);
+    setSavingCoach(true);
     try {
       const firstUserMsg = strategyChatHistory.find(m => m.role === 'user');
       const autoName = firstUserMsg ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '') : 'Coach session';
@@ -1478,7 +1495,7 @@ export default function AppPage() {
         fetchThreads();
       }
     } catch {} finally {
-      setSaving(false);
+      setSavingCoach(false);
     }
   };
 
@@ -1639,9 +1656,13 @@ export default function AppPage() {
     if (!strategyChatInput.trim() || strategyChatLoading) return;
     const userMsg = strategyChatInput.trim();
     setStrategyChatInput('');
-    const newHistory: StrategyChatMessage[] = [...strategyChatHistory, { role: 'user', content: userMsg }];
-    setStrategyChatHistory(newHistory);
+    // Use functional update to avoid stale closure — always append to latest state
+    setStrategyChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
     setStrategyChatLoading(true);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
     try {
       const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
       const res = await fetch('/api/strategy-chat', {
@@ -1651,16 +1672,26 @@ export default function AppPage() {
           threadContext,
           strategy: strategyData,
           context: selectedContext || 'crush',
-          chatHistory: newHistory.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
+          chatHistory: strategyChatHistory.map(m => ({ role: m.role, content: m.content })),
           userMessage: userMsg,
         }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
-    } catch {
-      setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Couldn't reach the coach right now. Try again." }]);
+    } catch (err: any) {
+      const isTimeout = err?.name === 'AbortError';
+      toast({
+        title: isTimeout ? 'Coach timed out' : 'Coach unavailable',
+        description: 'Tap to retry your message',
+        variant: 'destructive',
+      });
+      // Remove the user message that failed instead of polluting history with error text
+      setStrategyChatHistory(prev => prev.slice(0, -1));
+      setStrategyChatInput(userMsg); // Put message back so user can retry
     } finally {
+      clearTimeout(timeout);
       setStrategyChatLoading(false);
     }
   };
@@ -1956,57 +1987,53 @@ export default function AppPage() {
             </div>
             <p className="text-sm text-white/40 mb-3">Drop a screenshot, paste a message, or pick a scenario</p>
 
-            {/* Strategy Status Indicator */}
-            <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-              {(() => {
-                const sd = strategyData;
-                // Momentum light
-                const momentumColor = !sd ? 'bg-white/10' :
-                  sd.momentum === 'Rising' ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
-                  (sd.momentum === 'Declining' || sd.momentum === 'Stalling') ? 'bg-red-400 shadow-red-400/40 shadow-sm' :
-                  'bg-amber-400 shadow-amber-400/40 shadow-sm';
-                const momentumLabel = sd?.momentum || 'Off';
-                // Balance light
-                const balanceColor = !sd ? 'bg-white/10' :
-                  (sd.balance === 'Balanced' || sd.balance === 'You lead') ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
-                  sd.balance === 'They lead' ? 'bg-amber-400 shadow-amber-400/40 shadow-sm' :
-                  'bg-white/20';
-                const balanceLabel = sd?.balance || 'Off';
-                // Energy/move light
-                const energyColor = !sd ? 'bg-white/10' :
-                  sd.move.energy === 'escalate' ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
-                  sd.move.energy === 'pull_back' ? 'bg-red-400 shadow-red-400/40 shadow-sm' :
-                  sd.move.energy === 'match' ? 'bg-amber-400 shadow-amber-400/40 shadow-sm' :
-                  'bg-white/20';
-                const energyLabel = sd ? sd.move.energy.replace('_', ' ') : 'Off';
-                return (
-                  <>
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-2 h-2 rounded-full transition-all duration-500 ${momentumColor}`} />
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${sd ? 'text-white/50' : 'text-white/15'}`}>{momentumLabel}</span>
-                    </div>
-                    <div className="w-px h-3 bg-white/[0.08]" />
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-2 h-2 rounded-full transition-all duration-500 ${balanceColor}`} />
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${sd ? 'text-white/50' : 'text-white/15'}`}>{balanceLabel}</span>
-                    </div>
-                    <div className="w-px h-3 bg-white/[0.08]" />
-                    <div className="flex items-center gap-1.5">
-                      <div className={`w-2 h-2 rounded-full transition-all duration-500 ${energyColor}`} />
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${sd ? 'text-white/50' : 'text-white/15'}`}>{energyLabel}</span>
-                    </div>
-                    {sd?.move.risk && sd.move.risk !== 'low' && (
-                      <>
-                        <div className="w-px h-3 bg-white/[0.08]" />
-                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                          sd.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
-                        }`}>{sd.move.risk} risk</span>
-                      </>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
+            {/* Strategy Status Indicator — only visible when Coach has strategy data */}
+            {strategyData && (
+              <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] animate-in fade-in slide-in-from-top-1 duration-300">
+                {(() => {
+                  const sd = strategyData;
+                  const momentumColor =
+                    sd.momentum === 'Rising' ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
+                    (sd.momentum === 'Declining' || sd.momentum === 'Stalling') ? 'bg-red-400 shadow-red-400/40 shadow-sm' :
+                    'bg-amber-400 shadow-amber-400/40 shadow-sm';
+                  const balanceColor =
+                    (sd.balance === 'Balanced' || sd.balance === 'You lead') ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
+                    sd.balance === 'They lead' ? 'bg-amber-400 shadow-amber-400/40 shadow-sm' :
+                    'bg-white/20';
+                  const energyColor =
+                    sd.move.energy === 'escalate' ? 'bg-emerald-400 shadow-emerald-400/40 shadow-sm' :
+                    sd.move.energy === 'pull_back' ? 'bg-red-400 shadow-red-400/40 shadow-sm' :
+                    sd.move.energy === 'match' ? 'bg-amber-400 shadow-amber-400/40 shadow-sm' :
+                    'bg-white/20';
+                  return (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-2 h-2 rounded-full transition-all duration-500 ${momentumColor}`} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{sd.momentum}</span>
+                      </div>
+                      <div className="w-px h-3 bg-white/[0.08]" />
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-2 h-2 rounded-full transition-all duration-500 ${balanceColor}`} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{sd.balance}</span>
+                      </div>
+                      <div className="w-px h-3 bg-white/[0.08]" />
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-2 h-2 rounded-full transition-all duration-500 ${energyColor}`} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{sd.move.energy.replace('_', ' ')}</span>
+                      </div>
+                      {sd.move.risk && sd.move.risk !== 'low' && (
+                        <>
+                          <div className="w-px h-3 bg-white/[0.08]" />
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            sd.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
+                          }`}>{sd.move.risk} risk</span>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            )}
 
             <div className="flex flex-wrap gap-2">
               {[
@@ -2034,8 +2061,17 @@ export default function AppPage() {
             {/* ===== COACH CHAT ===== */}
             <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
             <div className="space-y-3">
+                {/* Loading session overlay */}
+                {loadingSession && (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                      <span className="text-sm text-white/40 font-medium">Loading session...</span>
+                    </div>
+                  </div>
+                )}
                 {/* Chat history */}
-                {strategyChatHistory.length > 0 && (
+                {!loadingSession && strategyChatHistory.length > 0 && (
                   <div className="space-y-4 max-h-[560px] overflow-y-auto pr-1">
                     {strategyChatHistory.map((msg, i) => (
                       <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -2110,7 +2146,7 @@ export default function AppPage() {
                         </div>
                       </div>
                     )}
-                    <div ref={threadEndRef} />
+                    <div ref={coachEndRef} />
                   </div>
                 )}
 
@@ -3509,14 +3545,6 @@ export default function AppPage() {
 
                 {/* Input row */}
                 <div className="px-3 py-3 flex items-center gap-2 border-t border-white/[0.06]">
-                  <input
-                    ref={coachFileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
-                    multiple
-                    onChange={handleCoachScreenshotUpload}
-                    className="hidden"
-                  />
                   <button
                     onClick={() => coachFileInputRef.current?.click()}
                     disabled={coachScreenshotExtracting || strategyChatLoading}

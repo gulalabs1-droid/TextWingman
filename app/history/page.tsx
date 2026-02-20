@@ -33,6 +33,7 @@ export default function HistoryPage() {
   const [filter, setFilter] = useState<'all' | 'coach' | 'thread' | 'replies'>('all');
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -42,6 +43,7 @@ export default function HistoryPage() {
 
   const fetchAll = async () => {
     setLoading(true);
+    setError(false);
     try {
       const [threadsRes, userRes] = await Promise.all([
         fetch('/api/threads'),
@@ -51,6 +53,8 @@ export default function HistoryPage() {
       if (threadsRes.ok) {
         const data = await threadsRes.json();
         setThreads(data.threads || []);
+      } else {
+        setError(true);
       }
 
       if (userRes.data.user) {
@@ -62,7 +66,9 @@ export default function HistoryPage() {
           .limit(50);
         setReplyHistory(data || []);
       }
-    } catch {}
+    } catch {
+      setError(true);
+    }
     setLoading(false);
   };
 
@@ -149,6 +155,13 @@ export default function HistoryPage() {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-violet-400/50" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-16 space-y-4">
+            <p className="text-white/50 text-sm font-semibold">Failed to load history</p>
+            <button onClick={fetchAll} className="px-5 py-2.5 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white/60 text-sm font-bold hover:bg-white/[0.14] transition-all">
+              Retry
+            </button>
           </div>
         ) : totalCount === 0 ? (
           <div className="text-center py-16 space-y-4">
