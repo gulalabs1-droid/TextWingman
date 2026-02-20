@@ -30,7 +30,7 @@ export default function HistoryPage() {
   const [threads, setThreads] = useState<SavedThread[]>([]);
   const [replyHistory, setReplyHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'coach' | 'thread' | 'replies'>('all');
+  const [filter, setFilter] = useState<'all' | 'sessions' | 'replies'>('all');
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState(false);
@@ -86,12 +86,7 @@ export default function HistoryPage() {
     setDeleting(null);
   };
 
-  const filteredThreads = threads.filter(t => {
-    if (filter === 'coach') return t.type === 'coach';
-    if (filter === 'thread') return t.type === 'thread';
-    if (filter === 'replies') return false;
-    return true;
-  });
+  const filteredThreads = filter === 'replies' ? [] : threads;
 
   const showReplies = filter === 'all' || filter === 'replies';
 
@@ -133,11 +128,10 @@ export default function HistoryPage() {
         {/* Filter tabs */}
         <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1">
           {([
-            { key: 'all', label: 'All' },
-            { key: 'coach', label: 'Coach' },
-            { key: 'thread', label: 'Threads' },
-            { key: 'replies', label: 'Quick Replies' },
-          ] as const).map(tab => (
+            { key: 'all' as const, label: 'All' },
+            { key: 'sessions' as const, label: 'Sessions' },
+            { key: 'replies' as const, label: 'Quick Replies' },
+          ]).map(tab => (
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
@@ -195,16 +189,10 @@ export default function HistoryPage() {
                     className="w-full text-left p-4 space-y-2"
                   >
                     <div className="flex items-center gap-2">
-                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isCoach ? 'bg-violet-500/20' : 'bg-white/[0.07]'}`}>
-                        {isCoach
-                          ? <Sparkles className="h-3 w-3 text-violet-400" />
-                          : <MessageCircle className="h-3 w-3 text-white/40" />
-                        }
+                      <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-violet-500/20">
+                        <Sparkles className="h-3 w-3 text-violet-400" />
                       </div>
-                      <span className={`text-[9px] font-black uppercase tracking-widest ${isCoach ? 'text-violet-400/70' : 'text-white/30'}`}>
-                        {isCoach ? 'Coach' : 'Thread'}
-                      </span>
-                      <span className="text-white/15 text-[10px] ml-auto flex items-center gap-1">
+                      <span className="text-white/20 text-[10px] ml-auto flex items-center gap-1">
                         <Clock className="h-2.5 w-2.5" />
                         {timeAgo}
                       </span>

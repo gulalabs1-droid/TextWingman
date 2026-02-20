@@ -1835,7 +1835,7 @@ export default function AppPage() {
         <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
       </div>
 
-      <div className={`relative z-10 mx-auto px-5 py-6 pb-14 max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
+      <div className={`relative z-10 mx-auto px-5 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Link href="/dashboard" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
@@ -1964,10 +1964,14 @@ export default function AppPage() {
           }}
         />
 
-        {/* ── COACH SECTION ── */}
-        <div className="mb-8 rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
-          {/* Coach header + scenario chips */}
-          <div className="pt-6 pb-4 px-6 border-b border-white/[0.06]">
+        {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ── */}
+        <div className="mb-8 rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100dvh - 16rem)' }}>
+          {/* Hidden file inputs */}
+          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
+          <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
+
+          {/* ─ Header — always visible, compact ─ */}
+          <div className="shrink-0 pt-5 pb-3 px-6 border-b border-white/[0.06]">
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-violet-400" />
@@ -1985,11 +1989,11 @@ export default function AppPage() {
                 </button>
               )}
             </div>
-            <p className="text-sm text-white/40 mb-3">Drop a screenshot, paste a message, or pick a scenario</p>
+            <p className="text-sm text-white/40">Drop a screenshot, paste a message, or pick a scenario</p>
 
             {/* Strategy Status Indicator — only visible when Coach has strategy data */}
             {strategyData && (
-              <div className="flex items-center gap-3 mb-4 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] animate-in fade-in slide-in-from-top-1 duration-300">
+              <div className="flex items-center gap-3 mt-3 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] animate-in fade-in slide-in-from-top-1 duration-300">
                 {(() => {
                   const sd = strategyData;
                   const momentumColor =
@@ -2034,157 +2038,162 @@ export default function AppPage() {
                 })()}
               </div>
             )}
-
-            <div className="flex flex-wrap gap-2">
-              {[
-                { emoji: '💬', label: "What'd they say?", prompt: 'Help me reply to this message' },
-                { emoji: '🔍', label: 'What do they mean?', prompt: 'Decode their message for me' },
-                { emoji: '✨', label: 'Start the convo', prompt: 'Write me a great opener' },
-                { emoji: '🔥', label: 'Revive a dead chat', prompt: 'Help me revive a dead conversation' },
-                { emoji: '🎯', label: 'Am I being played?', prompt: 'Am I being played or are they genuinely interested?' },
-                { emoji: '📊', label: 'Read the situation', prompt: 'Read this convo and tell me where I stand' },
-              ].map(chip => (
-                <button
-                  key={chip.label}
-                  onClick={() => setStrategyChatInput(chip.prompt)}
-                  className="px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all active:scale-95 bg-white/[0.07] text-white/60 border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/85"
-                >
-                  <span className="mr-1.5">{chip.emoji}</span>{chip.label}
-                </button>
-              ))}
-            </div>
           </div>
-          <div className="space-y-4 px-6 pb-6 pt-4">
-            {/* Hidden file inputs */}
-            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
 
-            {/* ===== COACH CHAT ===== */}
-            <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
-            <div className="space-y-3">
-                {/* Loading session overlay */}
-                {loadingSession && (
-                  <div className="flex items-center justify-center py-16">
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
-                      <span className="text-sm text-white/40 font-medium">Loading session...</span>
+          {/* ─ Scrollable content — chips OR chat history ─ */}
+          <div className="flex-1 overflow-y-auto px-6 py-3 min-h-0">
+            {/* Loading session overlay */}
+            {loadingSession && (
+              <div className="flex items-center justify-center py-16">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                  <span className="text-sm text-white/40 font-medium">Loading session...</span>
+                </div>
+              </div>
+            )}
+
+            {/* Scenario chips — only when no chat history */}
+            {!loadingSession && strategyChatHistory.length === 0 && (
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { emoji: '💬', label: "What'd they say?", prompt: 'Help me reply to this message' },
+                  { emoji: '🔍', label: 'What do they mean?', prompt: 'Decode their message for me' },
+                  { emoji: '✨', label: 'Start the convo', prompt: 'Write me a great opener' },
+                  { emoji: '🔥', label: 'Revive a dead chat', prompt: 'Help me revive a dead conversation' },
+                  { emoji: '🎯', label: 'Am I being played?', prompt: 'Am I being played or are they genuinely interested?' },
+                  { emoji: '📊', label: 'Read the situation', prompt: 'Read this convo and tell me where I stand' },
+                ].map(chip => (
+                  <button
+                    key={chip.label}
+                    onClick={() => setStrategyChatInput(chip.prompt)}
+                    className="px-3 py-2 rounded-xl text-[12px] font-semibold transition-all active:scale-95 bg-white/[0.07] text-white/60 border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/85 text-left"
+                  >
+                    <span className="mr-1">{chip.emoji}</span>{chip.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Chat history */}
+            {!loadingSession && strategyChatHistory.length > 0 && (
+              <div className="space-y-4">
+                {strategyChatHistory.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-br-md shadow-md shadow-violet-500/20'
+                          : 'bg-white/[0.07] text-white/90 border border-white/[0.08] rounded-bl-md'
+                      }`}>
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                      {/* Strategy badges inline on coach response */}
+                      {msg.role === 'assistant' && strategyData && i === strategyChatHistory.length - 1 && (
+                        <div className="flex flex-wrap gap-1.5 px-1">
+                          <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                            strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
+                            strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
+                            'bg-white/[0.08] text-white/50'
+                          }`}>
+                            {strategyData.momentum === 'Rising' ? <TrendingUp className="h-2.5 w-2.5" /> : strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
+                            {strategyData.momentum}
+                          </span>
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{strategyData.balance}</span>
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                            strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
+                            strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
+                            'bg-violet-500/15 text-violet-300'
+                          }`}>{strategyData.move.energy.replace('_', ' ')}</span>
+                        </div>
+                      )}
+                      {/* Draft reply cards */}
+                      {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
+                        <div className="w-full space-y-2">
+                          <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach drafts</p>
+                          {msg.draft.shorter && (
+                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '⚡ Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-violet-500/30 transition-all active:scale-[0.98] group">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ Shorter</span>
+                                <span className="text-[10px] text-violet-400/50 group-hover:text-violet-400 transition-colors">Copy →</span>
+                              </div>
+                              <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
+                            </button>
+                          )}
+                          {msg.draft.spicier && (
+                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '🔥 Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-orange-500/30 transition-all active:scale-[0.98] group">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">🔥 Spicier</span>
+                                <span className="text-[10px] text-orange-400/50 group-hover:text-orange-400 transition-colors">Copy →</span>
+                              </div>
+                              <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
+                            </button>
+                          )}
+                          {msg.draft.softer && (
+                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '💚 Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-emerald-500/30 transition-all active:scale-[0.98] group">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 Softer</span>
+                                <span className="text-[10px] text-emerald-400/50 group-hover:text-emerald-400 transition-colors">Copy →</span>
+                              </div>
+                              <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {strategyChatLoading && (
+                  <div className="flex justify-start">
+                    <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.08] flex items-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                      <span className="text-[13px] text-white/40">Thinking...</span>
                     </div>
                   </div>
                 )}
-                {/* Chat history */}
-                {!loadingSession && strategyChatHistory.length > 0 && (
-                  <div className="space-y-4 max-h-[560px] overflow-y-auto pr-1">
-                    {strategyChatHistory.map((msg, i) => (
-                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                          <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${
-                            msg.role === 'user'
-                              ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-br-md shadow-md shadow-violet-500/20'
-                              : 'bg-white/[0.07] text-white/90 border border-white/[0.08] rounded-bl-md'
-                          }`}>
-                            <p className="whitespace-pre-wrap">{msg.content}</p>
-                          </div>
-                          {/* Strategy badges inline on coach response */}
-                          {msg.role === 'assistant' && strategyData && i === strategyChatHistory.length - 1 && (
-                            <div className="flex flex-wrap gap-1.5 px-1">
-                              <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                                strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
-                                strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
-                                'bg-white/[0.08] text-white/50'
-                              }`}>
-                                {strategyData.momentum === 'Rising' ? <TrendingUp className="h-2.5 w-2.5" /> : strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
-                                {strategyData.momentum}
-                              </span>
-                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{strategyData.balance}</span>
-                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                                strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
-                                strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
-                                'bg-violet-500/15 text-violet-300'
-                              }`}>{strategyData.move.energy.replace('_', ' ')}</span>
-                            </div>
-                          )}
-                          {/* Draft reply cards */}
-                          {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
-                            <div className="w-full space-y-2">
-                              <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach drafts</p>
-                              {msg.draft.shorter && (
-                                <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '⚡ Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-violet-500/30 transition-all active:scale-[0.98] group">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ Shorter</span>
-                                    <span className="text-[10px] text-violet-400/50 group-hover:text-violet-400 transition-colors">Copy →</span>
-                                  </div>
-                                  <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
-                                </button>
-                              )}
-                              {msg.draft.spicier && (
-                                <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '🔥 Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-orange-500/30 transition-all active:scale-[0.98] group">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">🔥 Spicier</span>
-                                    <span className="text-[10px] text-orange-400/50 group-hover:text-orange-400 transition-colors">Copy →</span>
-                                  </div>
-                                  <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
-                                </button>
-                              )}
-                              {msg.draft.softer && (
-                                <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '💚 Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-emerald-500/30 transition-all active:scale-[0.98] group">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 Softer</span>
-                                    <span className="text-[10px] text-emerald-400/50 group-hover:text-emerald-400 transition-colors">Copy →</span>
-                                  </div>
-                                  <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {strategyChatLoading && (
-                      <div className="flex justify-start">
-                        <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.08] flex items-center gap-2">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
-                          <span className="text-[13px] text-white/40">Thinking...</span>
-                        </div>
-                      </div>
-                    )}
-                    <div ref={coachEndRef} />
-                  </div>
-                )}
-
-                {/* Input row */}
-                <div className="flex items-end gap-2">
-                  <button
-                    onClick={() => coachFileInputRef.current?.click()}
-                    disabled={coachScreenshotExtracting}
-                    className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/35 hover:text-white/70 hover:bg-white/[0.10] transition-all active:scale-90 shrink-0 disabled:opacity-40"
-                    title="Upload screenshot"
-                  >
-                    {coachScreenshotExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                  </button>
-                  <textarea
-                    value={strategyChatInput}
-                    onChange={(e) => { setStrategyChatInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
-                    placeholder="Ask anything, paste their message..."
-                    rows={1}
-                    disabled={strategyChatLoading}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[14px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
-                    style={{ minHeight: '42px' }}
-                  />
-                  <button
-                    onClick={handleStrategyChatSend}
-                    disabled={!strategyChatInput.trim() || strategyChatLoading}
-                    className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-md shadow-violet-500/20 hover:shadow-violet-500/35 transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none shrink-0"
-                  >
-                    <Send className="h-4 w-4" />
-                  </button>
-                </div>
-                {strategyChatHistory.length > 0 && (
-                  <div className="flex justify-end">
-                    <button onClick={() => { setStrategyChatHistory([]); setStrategyChatInput(''); }} className="text-[10px] text-white/20 hover:text-white/50 transition-colors">Clear chat</button>
-                  </div>
-                )}
+                <div ref={coachEndRef} />
               </div>
+            )}
+          </div>
 
+          {/* ─ Input — pinned at bottom, never cut off ─ */}
+          <div className="shrink-0 px-6 pb-5 pt-3 border-t border-white/[0.06]">
+            <div className="flex items-end gap-2">
+              <button
+                onClick={() => coachFileInputRef.current?.click()}
+                disabled={coachScreenshotExtracting}
+                className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/35 hover:text-white/70 hover:bg-white/[0.10] transition-all active:scale-90 shrink-0 disabled:opacity-40"
+                title="Upload screenshot"
+              >
+                {coachScreenshotExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              </button>
+              <textarea
+                value={strategyChatInput}
+                onChange={(e) => { setStrategyChatInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
+                placeholder="Ask anything, paste a message..."
+                rows={1}
+                disabled={strategyChatLoading}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[14px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
+                style={{ minHeight: '42px' }}
+              />
+              <button
+                onClick={handleStrategyChatSend}
+                disabled={!strategyChatInput.trim() || strategyChatLoading}
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-md shadow-violet-500/20 hover:shadow-violet-500/35 transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed disabled:shadow-none shrink-0"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+            {strategyChatHistory.length > 0 && (
+              <div className="flex justify-end mt-2">
+                <button onClick={() => { setStrategyChatHistory([]); setStrategyChatInput(''); }} className="text-[10px] text-white/20 hover:text-white/50 transition-colors">Clear chat</button>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* End of Coach Card */}
+
+        <div className="space-y-4">
             {/* ===== REPLY MODE (hidden, logic preserved) ===== */}
             {appMode === 'reply' && (<>
             {/* Context Selector */}
@@ -2740,8 +2749,7 @@ export default function AppPage() {
                   ) : (
                     <div className="space-y-1 max-h-60 overflow-y-auto">
                       {savedThreads.map(t => {
-                        const isCoach = t.type === 'coach';
-                        const isActive = isCoach ? activeCoachSessionId === t.id : activeThreadId === t.id;
+                        const isActive = activeCoachSessionId === t.id || activeThreadId === t.id;
                         return (
                         <button
                           key={t.id}
@@ -2755,15 +2763,12 @@ export default function AppPage() {
                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                             isActive ? 'bg-violet-500/20' : 'bg-white/[0.05]'
                           }`}>
-                            {isCoach
-                              ? <Sparkles className={`h-3.5 w-3.5 ${isActive ? 'text-violet-400' : 'text-white/30'}`} />
-                              : <MessageCircle className={`h-3.5 w-3.5 ${isActive ? 'text-violet-400' : 'text-white/30'}`} />
-                            }
+                            <Sparkles className={`h-3.5 w-3.5 ${isActive ? 'text-violet-400' : 'text-white/30'}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white/80 text-sm font-semibold truncate">{t.name}</p>
                             <p className="text-white/25 text-[10px] mt-0.5">
-                              {isCoach ? 'Coach' : 'Thread'} · {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
+                              {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
                             </p>
                           </div>
                           <button
@@ -3035,7 +3040,6 @@ export default function AppPage() {
             )}
             </>)}
           </div>
-        </div>
 
         {/* Decode Results Panel */}
         {decodeResult && (
@@ -3849,8 +3853,8 @@ export default function AppPage() {
           </div>
         )}
 
-        {/* Empty State */}
-        {!loading && replies.length === 0 && message === '' && (
+        {/* Empty State — Reply mode only */}
+        {appMode === 'reply' && !loading && replies.length === 0 && message === '' && (
           <div className="text-center pt-10 pb-6 space-y-4 animate-in fade-in duration-500">
             <p className="text-white/40 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
               Paste what they said above and we&apos;ll craft the perfect reply.

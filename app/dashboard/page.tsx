@@ -266,23 +266,22 @@ export default async function DashboardPage() {
             <div className="divide-y divide-white/[0.05]">
               {/* Saved threads + coach sessions */}
               {(recentThreads || []).map((t) => {
-                const isCoach = t.type === 'coach'
                 const msgs = Array.isArray(t.messages) ? t.messages : []
                 const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null
                 const preview = lastMsg?.content || lastMsg?.text || null
+                const diffMs = Date.now() - new Date(t.updated_at).getTime()
+                const mins = Math.floor(diffMs / 60000)
+                const timeAgo = mins < 1 ? 'Just now' : mins < 60 ? `${mins}m` : Math.floor(mins / 60) < 24 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
                 return (
                   <Link key={t.id} href={`/app?load=${t.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors">
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isCoach ? 'bg-violet-500/20' : 'bg-white/[0.07]'}`}>
-                      {isCoach
-                        ? <Sparkles className="h-3 w-3 text-violet-400" />
-                        : <MessageCircle className="h-3 w-3 text-white/40" />
-                      }
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-violet-500/20">
+                      <Sparkles className="h-3 w-3 text-violet-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white/65 text-sm font-medium truncate">{t.name}</p>
                       {preview && <p className="text-white/25 text-[10px] truncate">{preview}</p>}
                     </div>
-                    <span className={`text-[9px] font-bold uppercase shrink-0 ${isCoach ? 'text-violet-400/50' : 'text-white/20'}`}>{isCoach ? 'Coach' : 'Thread'}</span>
+                    <span className="text-[9px] text-white/20 shrink-0">{timeAgo}</span>
                   </Link>
                 )
               })}
