@@ -1893,7 +1893,7 @@ export default function AppPage() {
       <div className={`relative z-10 mx-auto px-5 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <Link href="/dashboard" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+          <Link href={userId ? '/dashboard' : '/pricing'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
             <ArrowLeft className="h-5 w-5 text-white/70" />
           </Link>
           <div className="flex items-center gap-3">
