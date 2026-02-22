@@ -266,6 +266,7 @@ export default function AppPage() {
   const [showToneBar, setShowToneBar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coachFileInputRef = useRef<HTMLInputElement>(null);
+  const coachTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [coachScreenshotExtracting, setCoachScreenshotExtracting] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
   const coachEndRef = useRef<HTMLDivElement>(null);
@@ -312,6 +313,15 @@ export default function AppPage() {
     'Help me start something new...',
     'Am I overthinking this?',
   ];
+
+  // Auto-resize + focus coach textarea when input is set programmatically (chip tap, Smart Preview)
+  useEffect(() => {
+    const el = coachTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    if (strategyChatInput.trim()) el.focus();
+  }, [strategyChatInput]);
 
   // Rotate placeholder text every 4s when input is empty
   useEffect(() => {
@@ -2267,6 +2277,7 @@ export default function AppPage() {
                 {coachScreenshotExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
               </button>
               <textarea
+                ref={coachTextareaRef}
                 value={strategyChatInput}
                 onChange={(e) => { setStrategyChatInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
