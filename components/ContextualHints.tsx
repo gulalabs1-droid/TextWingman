@@ -1,133 +1,55 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Brain, Send, BookmarkCheck, Camera, X } from 'lucide-react';
+import { Camera, X } from 'lucide-react';
 
-type HintId = 'decode' | 'opener' | 'save' | 'screenshot';
-
-type HintConfig = {
-  id: HintId;
-  storageKey: string;
-  icon: typeof Brain;
-  iconBg: string;
-  title: string;
-  description: string;
-  cta: string;
-};
-
-const HINTS: HintConfig[] = [
-  {
-    id: 'decode',
-    storageKey: 'tw_hint_decode_v1',
-    icon: Brain,
-    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-500',
-    title: 'Not sure what they mean?',
-    description: 'Hit the 🧠 Decode button to analyze the subtext, intent, and hidden meaning behind their message.',
-    cta: 'Try Decode',
-  },
-  {
-    id: 'opener',
-    storageKey: 'tw_hint_opener_v1',
-    icon: Send,
-    iconBg: 'bg-gradient-to-br from-pink-500 to-rose-500',
-    title: 'Need to text first?',
-    description: 'Switch to Opener Mode at the top to generate the perfect opening line for any situation.',
-    cta: 'Try Opener Mode',
-  },
-  {
-    id: 'save',
-    storageKey: 'tw_hint_save_v1',
-    icon: BookmarkCheck,
-    iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-500',
-    title: 'Talking to someone special?',
-    description: 'Save this convo as a thread so the AI remembers the full context next time.',
-    cta: 'Save Thread',
-  },
-  {
-    id: 'screenshot',
-    storageKey: 'tw_hint_screenshot_v1',
-    icon: Camera,
-    iconBg: 'bg-gradient-to-br from-green-500 to-emerald-500',
-    title: 'Too lazy to copy-paste?',
-    description: 'Just screenshot the conversation and upload it — we\'ll read every message automatically.',
-    cta: 'Upload Screenshot',
-  },
-];
+const STORAGE_KEY = 'tw_hint_screenshot_v2';
 
 type ContextualHintsProps = {
   hasMessage: boolean;
   hasReplies: boolean;
   appMode: string;
-  onAction?: (hintId: HintId) => void;
+  onAction?: (hintId: string) => void;
 };
 
-export default function ContextualHints({ hasMessage, hasReplies, appMode, onAction }: ContextualHintsProps) {
-  const [dismissedHints, setDismissedHints] = useState<Set<string>>(new Set());
-  const [activeHint, setActiveHint] = useState<HintConfig | null>(null);
-  const [mounted, setMounted] = useState(false);
+export default function ContextualHints({ appMode, onAction }: ContextualHintsProps) {
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    // Load dismissed hints from localStorage
-    const dismissed = new Set<string>();
-    HINTS.forEach(h => {
-      if (localStorage.getItem(h.storageKey)) dismissed.add(h.id);
-    });
-    setDismissedHints(dismissed);
-  }, []);
+    if (appMode !== 'coach') return;
+    if (localStorage.getItem(STORAGE_KEY)) return;
+    const timer = setTimeout(() => setVisible(true), 6000);
+    return () => clearTimeout(timer);
+  }, [appMode]);
 
-  useEffect(() => {
-    if (!mounted) return;
-
-    // Determine which hint to show based on context
-    let hint: HintConfig | null = null;
-
-    if (hasMessage && !hasReplies && appMode === 'reply' && !dismissedHints.has('decode')) {
-      // User has a message but hasn't generated replies yet — suggest decode
-      hint = HINTS.find(h => h.id === 'decode') || null;
-    } else if (!hasMessage && appMode === 'reply' && !dismissedHints.has('screenshot')) {
-      // Empty state — suggest screenshot
-      hint = HINTS.find(h => h.id === 'screenshot') || null;
-    } else if (!hasMessage && appMode === 'reply' && !dismissedHints.has('opener')) {
-      // Empty state, already dismissed screenshot — suggest opener mode
-      hint = HINTS.find(h => h.id === 'opener') || null;
-    } else if (hasReplies && appMode === 'reply' && !dismissedHints.has('save')) {
-      // User has generated replies — suggest saving
-      hint = HINTS.find(h => h.id === 'save') || null;
-    }
-
-    setActiveHint(hint);
-  }, [hasMessage, hasReplies, appMode, dismissedHints, mounted]);
-
-  const dismissHint = (hint: HintConfig) => {
-    localStorage.setItem(hint.storageKey, 'true');
-    setDismissedHints(prev => new Set([...prev, hint.id]));
-    setActiveHint(null);
+  const dismiss = () => {
+    setVisible(false);
+    localStorage.setItem(STORAGE_KEY, 'true');
   };
 
-  if (!activeHint || !mounted) return null;
-
-  const Icon = activeHint.icon;
+  if (!visible) return null;
 
   return (
-    <div className="mb-4 animate-in fade-in slide-in-from-top-3 duration-500">
-      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-start gap-3">
-        <div className={`w-10 h-10 rounded-xl ${activeHint.iconBg} flex items-center justify-center shrink-0 shadow-lg`}>
-          <Icon className="h-5 w-5 text-white" />
+    <div className="mb-3 animate-in fade-in slide-in-from-top-2 duration-400">
+      <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
+          <Camera className="h-4 w-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white font-bold text-sm">{activeHint.title}</p>
-          <p className="text-white/60 text-xs mt-0.5 leading-relaxed">{activeHint.description}</p>
-          <button 
-            onClick={() => { onAction?.(activeHint.id as HintId); dismissHint(activeHint); }}
-            className="mt-2 text-xs font-bold text-purple-300 hover:text-purple-200 transition-colors"
+          <p className="text-[12px] font-semibold text-white/75">Skip the copy-paste</p>
+          <p className="text-[11px] text-white/35 mt-0.5">Upload a screenshot — Coach reads the whole thread automatically.</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => { onAction?.('screenshot'); dismiss(); }}
+            className="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition-colors"
           >
-            {activeHint.cta} →
+            Try it
+          </button>
+          <button onClick={dismiss} className="text-white/20 hover:text-white/50 transition-colors">
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
-        <button onClick={() => dismissHint(activeHint)} className="text-white/30 hover:text-white/60 transition-colors shrink-0">
-          <X className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );
