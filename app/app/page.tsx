@@ -1996,19 +1996,6 @@ export default function AppPage() {
         {/* Feature Tour — shows once on first visit */}
         <FeatureTour />
 
-        {/* Contextual Discovery Hints */}
-        <ContextualHints
-          hasMessage={!!message.trim()}
-          hasReplies={replies.length > 0}
-          appMode={appMode}
-          onAction={(hintId) => {
-            if (hintId === 'decode') handleDecode();
-            if (hintId === 'opener') setAppMode('opener');
-            if (hintId === 'save') { fetchThreads(); setShowThreads(true); }
-            if (hintId === 'screenshot') fileInputRef.current?.click();
-          }}
-        />
-
         {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ── */}
         <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 14.5rem)' }}>
           {/* Hidden file inputs */}
@@ -2095,6 +2082,16 @@ export default function AppPage() {
 
           {/* ─ Scrollable content — chips OR chat history ─ */}
           <div className="flex-1 overflow-y-auto px-6 py-3 min-h-0">
+            {/* Contextual hint — inside card so it doesn't push card below safe area */}
+            <ContextualHints
+              hasMessage={!!message.trim()}
+              hasReplies={replies.length > 0}
+              appMode={appMode}
+              onAction={(hintId) => {
+                if (hintId === 'screenshot') coachFileInputRef.current?.click();
+              }}
+            />
+
             {/* Loading session overlay */}
             {loadingSession && (
               <div className="flex items-center justify-center py-16">
