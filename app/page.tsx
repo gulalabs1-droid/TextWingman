@@ -21,11 +21,12 @@ const jsonLd = {
   featureList: [
     'AI texting coach — ask anything, get strategy + replies in one chat',
     'Screenshot upload — instant conversation analysis',
-    'AI reply generation in 3 tones (Quick, Spicy, Soft)',
+    'AI reply generation in 3 tones (Quick, Spicy, Soft) — all verified',
+    'Conversation intelligence — detects tone, unanswered questions, power dynamics',
     'Decode mode — understand what their message really means',
     'Conversation Revive — re-engage dead threads',
     'Opener generator — first messages for any situation',
-    'V2 Verified pipeline — rule-checked, tone-verified replies under 18 words',
+    'V2 Verified pipeline — every reply quality-checked for neediness, strategy alignment, and natural voice',
     'Session history — auto-saved, resume anytime',
   ],
   creator: { '@type': 'Organization', name: 'Gula Labs', url: 'https://textwingman.com' },
@@ -93,7 +94,7 @@ export default function HomePage() {
             <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-2">Start sending.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-            Coach reads your full thread, tells you what&apos;s really happening, and gives you 3 replies that sound exactly like you — in under 10 seconds.
+            Coach reads your full thread, detects their tone, spots what you can&apos;t ignore, and gives you 3 verified replies that sound exactly like you.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Link href="/app" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-xl shadow-violet-600/25 px-8 h-14 text-base flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]">
@@ -189,8 +190,8 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto grid md:grid-cols-3 gap-6">
           {[
             { n: '1', icon: <Upload className="h-5 w-5 text-violet-400" />, title: 'Drop it in', desc: 'Screenshot, paste their message, or just ask Coach what to do.' },
-            { n: '2', icon: <Brain className="h-5 w-5 text-fuchsia-400" />, title: 'Coach reads everything', desc: 'Full thread analysis — momentum, energy, power dynamics, subtext.' },
-            { n: '3', icon: <Zap className="h-5 w-5 text-emerald-400" />, title: 'Send with confidence', desc: '3 reply options under 18 words. Pick one, copy, send. Done.' },
+            { n: '2', icon: <Brain className="h-5 w-5 text-fuchsia-400" />, title: 'Coach reads everything', desc: 'Tone, momentum, power dynamics, unanswered questions — nothing gets missed.' },
+            { n: '3', icon: <Zap className="h-5 w-5 text-emerald-400" />, title: 'Send with confidence', desc: '3 verified reply options under 18 words. No neediness, no generic fluff.' },
           ].map(step => (
             <div key={step.n} className="text-center space-y-4 group">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center group-hover:border-violet-500/30 group-hover:shadow-lg group-hover:shadow-violet-500/10 transition-all duration-300">
@@ -396,7 +397,7 @@ export default function HomePage() {
             { q: 'Is it actually free?', a: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial expiration. Pro unlocks unlimited everything + V2 Verified pipeline.' },
             { q: 'Can you see my conversations?', a: 'No. Messages are processed in real-time and never stored. We don\'t connect to your messaging apps.' },
             { q: 'What apps does it work with?', a: 'All of them. iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Telegram, LinkedIn — anything with text.' },
-            { q: 'How is this different from ChatGPT?', a: 'ChatGPT gives you a paragraph that sounds robotic. Wingman generates 3 verified replies under 18 words that sound like you actually texted them, plus real-time strategy analysis.' },
+            { q: 'How is this different from ChatGPT?', a: 'ChatGPT gives you a paragraph that sounds robotic. Wingman reads the full conversation, detects tone and power dynamics, then generates 3 verified replies under 18 words — each one quality-checked for neediness, strategy alignment, and natural voice.' },
             { q: 'Will people know I\'m using AI?', a: 'No. Every reply sounds like a real person — lowercase, casual, no emojis. The 18-word limit keeps it natural. Plus you can edit any reply.' },
           ].map((faq, i) => (
             <details key={i} className="group bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.05] hover:border-white/[0.14] transition-all duration-300">

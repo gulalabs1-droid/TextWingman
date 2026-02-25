@@ -10,6 +10,23 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.3.0',
+    date: '2026-02-25',
+    title: 'Verified Coach Drafts & Deeper Conversation Intelligence',
+    description: 'Every reply Coach suggests is now verified before you see it. The system reads the full conversation deeper — detecting tone, unanswered questions, and things you can\'t ignore. Replies are sharper, more natural, and strategy-aligned.',
+    type: 'milestone',
+    highlights: [
+      'Verified Coach drafts — every reply suggestion now goes through an automatic quality check before it reaches you. No more generic or needy replies slipping through.',
+      'Deeper conversation reading — Coach now detects their tone (flirty, cold, playful, stressed), spots unanswered questions, and flags things you MUST acknowledge (compliments, vulnerable moments, direct questions).',
+      'Energy matching upgraded — replies now mirror their effort level more precisely. Short message? Short reply. They shared something real? Coach engages with it.',
+      'Strategy-aligned drafts — if Coach says "pull back", every reply option follows that move. No more contradictions between advice and suggestions.',
+      'Subtext intelligence — stretched words ("wateveerr", "suuure") recognized as playful, not rejection. Dismissive after vulnerability = deflection. Coach reads what they FEEL.',
+      'Zero tolerance for neediness — "please", "sorry", "just checking in", "I was wondering" are automatically caught and rewritten to sound confident.',
+      'Content engagement enforced — every reply must reference what they actually said. No more generic "that\'s cool" responses.',
+      'Extended timeout for screenshot analysis — larger conversations process reliably without timing out.',
+    ],
+  },
+  {
     version: '4.2.0',
     date: '2026-02-20',
     title: 'Smart Preview, Context-Aware Coach & Apple-Ready Polish',
