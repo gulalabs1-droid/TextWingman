@@ -177,8 +177,8 @@ CONTEXT EXTRACTION:
 - Goal: ${goal}
 - Relationship: ${relationshipContext}
 
-Return JSON array:
-[{"text": "...", "style": "hood_charisma"}, {"text": "...", "style": "clean_direct"}, ...]`,
+Return ONLY valid JSON object with a "candidates" key:
+{"candidates": [{"text": "...", "style": "hood_charisma"}, {"text": "...", "style": "clean_direct"}, {"text": "...", "style": "playful_tease"}, {"text": "...", "style": "bold_closer"}, {"text": "...", "style": "warm_genuine"}, {"text": "...", "style": "chill_unbothered"}]}`,
       },
       {
         role: "user",
@@ -186,16 +186,21 @@ Return JSON array:
       },
     ],
     temperature: 0.85,
-    max_tokens: 600,
+    max_tokens: 1200,
     response_format: { type: "json_object" },
   });
 
   try {
-    const parsed = JSON.parse(res.choices[0].message.content || "{}");
-    // Handle both {candidates: [...]} and direct array
-    const arr = Array.isArray(parsed) ? parsed : parsed.candidates || parsed.replies || [];
-    return arr;
-  } catch {
+    const raw = res.choices[0].message.content || "{}";
+    const parsed = JSON.parse(raw);
+    // Handle any key name: find the first array value in the object
+    if (Array.isArray(parsed)) return parsed;
+    const arrKey = Object.keys(parsed).find((k) => Array.isArray(parsed[k]));
+    if (arrKey && parsed[arrKey].length > 0) return parsed[arrKey];
+    console.error("generateCandidates: no array found in response:", raw.slice(0, 300));
+    return [];
+  } catch (e) {
+    console.error("generateCandidates parse error:", e, res.choices[0].message.content?.slice(0, 300));
     return [];
   }
 }
@@ -269,13 +274,20 @@ Return ONLY valid JSON:
       },
     ],
     temperature: 0.3,
-    max_tokens: 1200,
+    max_tokens: 1500,
     response_format: { type: "json_object" },
   });
 
   try {
-    return JSON.parse(res.choices[0].message.content || "{}");
-  } catch {
+    const parsed = JSON.parse(res.choices[0].message.content || "{}");
+    // Ensure candidates array exists — model might use a different key
+    if (!parsed.candidates && !Array.isArray(parsed)) {
+      const arrKey = Object.keys(parsed).find((k) => Array.isArray(parsed[k]));
+      if (arrKey) parsed.candidates = parsed[arrKey];
+    }
+    return parsed;
+  } catch (e) {
+    console.error("criticAndSelect parse error:", e);
     return {
       candidates: candidates.map((c) => ({
         ...c,
@@ -430,9 +442,9 @@ export async function POST(req: Request) {
     const { strategy, metrics } = strategyResult;
     const strategyLatency = Date.now() - parallelStart;
 
-    // Step 3: Generate 6 candidates
+    // Step 3: Generate 6 candidates (with retry)
     const genStart = Date.now();
-    const rawCandidates = await generateCandidates(
+    let rawCandidates = await generateCandidates(
       effectiveText,
       contextExtraction,
       strategy,
@@ -441,13 +453,38 @@ export async function POST(req: Request) {
       relationshipContext,
       chatHistory
     );
+
+    // Retry once if empty
+    if (!rawCandidates || rawCandidates.length === 0) {
+      console.log("X2: First generation attempt returned empty, retrying...");
+      rawCandidates = await generateCandidates(
+        effectiveText,
+        contextExtraction,
+        strategy,
+        metrics,
+        goal,
+        relationshipContext,
+        chatHistory
+      );
+    }
     const generationLatency = Date.now() - genStart;
 
+    // If still empty after retry, fall back to coach mode
     if (!rawCandidates || rawCandidates.length === 0) {
-      return NextResponse.json(
-        { error: "Failed to generate candidates" },
-        { status: 500 }
+      console.error("X2: Generation failed after retry, falling back to coach mode");
+      const { reply, draft } = await coachResponse(
+        userMessage || `Analyze this conversation and suggest replies:\n${effectiveText}`,
+        chatHistory,
+        goal,
+        relationshipContext
       );
+      return NextResponse.json({
+        mode: "coach",
+        reply,
+        draft,
+        latencyMs: Date.now() - startTime,
+        fallback: true,
+      });
     }
 
     // Step 4: Critic scores and selects
