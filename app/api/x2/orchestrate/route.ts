@@ -311,7 +311,7 @@ async function coachResponse(
   threadText?: string
 ): Promise<{ reply: string; draft: any }> {
   const threadBlock = threadText
-    ? `\nTHEIR CONVERSATION THREAD (from screenshot — this is the conversation the user is asking about):\n${threadText}\n\nYou MUST base all advice and replies on THIS conversation. The user's follow-up messages are about THIS thread.\n`
+    ? `\nTHEIR CONVERSATION THREAD (from screenshot — this is the conversation the user is asking about):\n${threadText}\n`
     : "";
 
   const res = await openai.chat.completions.create({
@@ -332,17 +332,31 @@ PERSONALITY:
 RELATIONSHIP CONTEXT: ${relationshipContext || "crush/dating"}
 GOAL: ${goal}
 ${threadBlock}
-CRITICAL RULES FOR CONVERSATION TRACKING:
-- This is a CONTINUOUS coaching session.
-- If a conversation thread was provided above, ALL your advice and draft replies MUST be based on that specific conversation. Do NOT make up new scenarios.
-- If the user types something like "hello" or "good and u" — that's a message they RECEIVED. Treat it as context, not a greeting to you.
-- If the user says "ok say that" or "I'll use that one" — acknowledge it and ask what happened next.
-- Track the evolving conversation: user shares what they received → you coach → user tells you what they sent → you coach the next move.
+MEMORY & CONTEXT RULES:
+- This is a CONTINUOUS coaching session. You have FULL memory of everything said in this chat.
+- The chat history includes your previous suggestions (winner replies, drafts, all candidate options). YOU KNOW what you already recommended.
+- If a conversation thread was provided above, ALL your advice and replies MUST be based on that specific conversation. Do NOT invent new scenarios or generic advice.
+- If the user uploads a NEW screenshot mid-conversation, the thread text will update. Acknowledge the new conversation naturally ("New convo — let me read this...") and adapt. Don't confuse the old thread with the new one.
 
-When you want to suggest reply options, put them at the END:
-DRAFT: {"shorter": "...", "spicier": "...", "softer": "..."}
+WHAT THE USER MIGHT DO (detect and handle each):
+1. **Ask for a reply** ("what should I say?", "set a date then", "how do I respond?") → Generate drafts based on the conversation thread. Always include DRAFT.
+2. **Micro-edit a reply** ("would 'you' sound better?", "period or no period?", "should I say 'lol' at the end?", "which one looks better?", "make it shorter") → Compare the options directly. Give your pick and WHY. Show both versions if helpful. Be opinionated.
+3. **Choose a reply** ("ok say that", "I'll use the spicy one", "going with the winner") → Acknowledge, then ask what happened next or offer the next move.
+4. **Report what happened** ("she replied...", "he said...", "left on read", "got a response") → That's a message they RECEIVED. Coach the next move, update your read. Include DRAFT if a reply is needed.
+5. **Ask for strategy** ("am I overthinking?", "is she interested?", "what does this mean?") → Give your sharp read based on the actual thread. Be specific, reference their actual messages.
+6. **Type something short** ("hello", "good and u", "lol ok") → This is almost certainly a message they RECEIVED from the other person. Treat it as new context, not a greeting to you. Update your read and suggest the next move.
+7. **Drop a new conversation** (new screenshot or pasted thread) → Read the new thread fresh. Don't carry assumptions from the old one.
 
-Keep responses punchy (2-5 sentences) unless they need more.`,
+DRAFT RULES (when suggesting replies):
+- 3 options: shorter (brief/casual), spicier (bold/playful), softer (warm/genuine)
+- ≤18 words each, no emojis, lowercase, sound like a real person
+- Put them at the END in this exact format:
+  DRAFT: {"shorter": "...", "spicier": "...", "softer": "..."}
+- Only include DRAFT when suggesting reply options. Not for pure coaching or micro-edit comparisons.
+- Every draft MUST reference what they actually said. No generic responses.
+- ZERO needy language. Match their energy level.
+
+Keep responses punchy (2-5 sentences) unless they need a deeper breakdown.`,
       },
       ...chatHistory.map((m) => ({
         role: m.role as "user" | "assistant",
@@ -351,7 +365,7 @@ Keep responses punchy (2-5 sentences) unless they need more.`,
       { role: "user", content: userMessage },
     ],
     temperature: 0.75,
-    max_tokens: 800,
+    max_tokens: 1000,
   });
 
   const raw = res.choices[0].message.content || "";

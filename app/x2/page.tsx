@@ -150,16 +150,48 @@ export default function X2Page() {
       const stepTimer = willOrchestrate ? setTimeout(() => setPipelineStep('generating'), 3000) : null;
       const stepTimer2 = willOrchestrate ? setTimeout(() => setPipelineStep('scoring'), 8000) : null;
 
+      // Build rich chat history — include what the coach actually suggested
+      const richHistory = chatHistory.map((m) => {
+        if (m.role === 'assistant' && m.orchestration) {
+          const o = m.orchestration;
+          const parts = [];
+          if (o.strategy?.move?.one_liner) parts.push(`Strategy: "${o.strategy.move.one_liner}"`);
+          if (o.winner?.text) parts.push(`Winner (${o.winner.style}): "${o.winner.text}"`);
+          if (o.backup?.text) parts.push(`Backup (${o.backup.style}): "${o.backup.text}"`);
+          if (o.candidates?.length) {
+            const others = o.candidates
+              .filter((c: any) => c.text !== o.winner?.text && c.text !== o.backup?.text)
+              .map((c: any) => `${c.style}: "${c.text}"`)
+              .join(', ');
+            if (others) parts.push(`Other options: ${others}`);
+          }
+          return { role: m.role, content: parts.join('\n') || 'Analyzed the conversation.' };
+        }
+        if (m.role === 'assistant' && m.draft) {
+          const d = m.draft;
+          const draftText = [
+            d.shorter ? `Shorter: "${d.shorter}"` : null,
+            d.spicier ? `Spicier: "${d.spicier}"` : null,
+            d.softer ? `Softer: "${d.softer}"` : null,
+          ].filter(Boolean).join(', ');
+          return { role: m.role, content: `${m.content}\nDrafts suggested: ${draftText}` };
+        }
+        if (m.role === 'user' && m.images && !m.content) {
+          return { role: m.role, content: '[Uploaded screenshot of conversation]' };
+        }
+        return { role: m.role, content: m.content || '[empty]' };
+      });
+
       const res = await fetch('/api/x2/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userMessage: userMsg,
           threadText: extractedThread || userMsg,
-          chatHistory: chatHistory.map((m) => ({ role: m.role, content: m.content })),
+          chatHistory: richHistory,
           goal,
           relationshipContext: context,
-          mode: extractedThread ? 'orchestrate' : 'chat',
+          mode: 'chat',
         }),
       });
       if (stepTimer) clearTimeout(stepTimer);
@@ -241,13 +273,35 @@ export default function X2Page() {
           const stepTimer = setTimeout(() => setPipelineStep('generating'), 3000);
           const stepTimer2 = setTimeout(() => setPipelineStep('scoring'), 8000);
 
+          // Build rich chat history for screenshot uploads too
+          const screenshotRichHistory = chatHistory.map((m) => {
+            if (m.role === 'assistant' && m.orchestration) {
+              const o = m.orchestration;
+              const parts = [];
+              if (o.strategy?.move?.one_liner) parts.push(`Strategy: "${o.strategy.move.one_liner}"`);
+              if (o.winner?.text) parts.push(`Winner (${o.winner.style}): "${o.winner.text}"`);
+              if (o.backup?.text) parts.push(`Backup (${o.backup.style}): "${o.backup.text}"`);
+              return { role: m.role, content: parts.join('\n') || 'Analyzed the conversation.' };
+            }
+            if (m.role === 'assistant' && m.draft) {
+              const d = m.draft;
+              const draftText = [d.shorter ? `Shorter: "${d.shorter}"` : null, d.spicier ? `Spicier: "${d.spicier}"` : null, d.softer ? `Softer: "${d.softer}"` : null].filter(Boolean).join(', ');
+              return { role: m.role, content: `${m.content}\nDrafts: ${draftText}` };
+            }
+            if (m.role === 'user' && m.images && !m.content) return { role: m.role, content: '[Uploaded screenshot]' };
+            return { role: m.role, content: m.content || '[empty]' };
+          });
+
+          const isNewConvo = chatHistory.some((m) => m.orchestration || m.draft);
           const res = await fetch('/api/x2/orchestrate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              userMessage: `Analyze this conversation from the screenshot`,
+              userMessage: isNewConvo
+                ? `New screenshot uploaded — this might be a different conversation or an update. Analyze it.`
+                : `Analyze this conversation from the screenshot`,
               threadText,
-              chatHistory: chatHistory.map((m) => ({ role: m.role, content: m.content })),
+              chatHistory: screenshotRichHistory,
               goal,
               relationshipContext: context,
               mode: 'orchestrate',
