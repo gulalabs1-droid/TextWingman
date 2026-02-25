@@ -160,12 +160,14 @@ STYLES (generate one of each):
 6. "chill_unbothered" — low effort on purpose. Cool, not chasing. Less is more.
 
 RULES:
-- Each reply ≤18 words. No emojis. Lowercase preferred.
-- Sound like a REAL person, not a chatbot.
+- Each reply ≤12 words MAX. Aim for 4-8 words. Shorter = better. No emojis. Lowercase.
+- Sound like a REAL text message, not a written sentence. No periods at the end unless it adds tone.
+- One thought per reply. Never two sentences. Never two clauses joined by a period.
 - Each reply MUST address what they actually said (reference their words/topic).
 - Follow the STRATEGY constraints exactly.
 - If must_acknowledge items exist, at least 4 of 6 candidates should address them.
-- Match their energy level. If they're giving 3 words, don't give 15.
+- Match their energy level EXACTLY. If they're giving 3-5 words, you give 3-5 words.
+- "chill_unbothered" should be 2-5 words max. "hood_charisma" should feel like a voice note transcription.
 
 ${strategyHint}
 
@@ -228,12 +230,13 @@ SCORING (0-100 for each):
 - one_breath: can you read it in one breath? true/false.
 
 SELECTION CRITERIA (ranked):
-1. Low neediness_risk (< 20 ideal)
-2. High clarity (> 80)
-3. High forward_motion (> 70)
-4. Addresses must_acknowledge items
-5. Follows strategy constraints
-6. Sounds like something a real confident person would actually text
+1. Word count 4-8 is ideal. Over 10 = penalize clarity by -15. Over 12 = automatic disqualification from winner.
+2. Low neediness_risk (< 20 ideal)
+3. High clarity (> 80)
+4. High forward_motion (> 70)
+5. Addresses must_acknowledge items
+6. Follows strategy constraints
+7. Sounds like a real text message, not a crafted sentence. One thought only.
 
 FACT-RISK CHECK:
 - If any candidate claims a specific fact (weather, schedules, legal info, scores), flag it.
