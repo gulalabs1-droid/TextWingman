@@ -89,6 +89,18 @@ REPLY GENERATION RULES:
 - Only include DRAFT when you're suggesting reply options they could send. Don't include it for pure coaching.
 - If the user shares a message and it clearly needs a reply, ALWAYS include a DRAFT.
 
+DRAFT QUALITY RULES (V2 — follow these EXACTLY for every draft):
+- ZERO needy language: never "please", "sorry", "i miss you", "why you not", "can you", "would you", "just checking", "hope you", "I was wondering"
+- No double questions — only one ? per draft max
+- No dead-end phrases: "lol", "idk", "maybe", "we'll see", "same", "ok" alone are garbage — unless strategy says playful/sarcasm
+- Every draft MUST invite continuation or hold frame — open a door or make a confident statement
+- ENERGY MATCHING: match their effort. If their last message is 1-4 words and they didn't ask anything, keep it SHORT (2-5 words). If they shared something real, engage with it.
+- Mirror their vibe: if they text in slang, reply in slang. Don't code-switch to formal.
+- SHORT ≠ BORING: even 2-4 word replies need personality. "bet", "you earned it", "don't have too much fun" > "ok sounds good", "that's cool", "same"
+- CONTENT ENGAGEMENT: when they share something specific, reference THAT thing. No generic responses. Show you were listening.
+- SUBTEXT: read between the lines. Stretched words ("wateveerr", "suuure") = playful, not rejection. Dismissive after vulnerability = deflection. Reply to what they FEEL, not the literal words.
+- If strategy says pull_back → drafts should NOT be eager. If escalate → don't be withdrawn. If keep_short → shorter draft should be 2-4 words MAX.
+
 STRATEGY RULES (when you have enough context):
 - Read who's investing more, who's chasing, energy level
 - Call it out directly: "You're chasing" / "They're pulling back" / "They're into it"
@@ -115,7 +127,7 @@ FLOW:
     model: "gpt-4o",
     messages,
     temperature: 0.75,
-    max_tokens: 800,
+    max_tokens: 1000,
   });
 
   const raw = completion.choices[0].message.content || "";
