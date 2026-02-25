@@ -1,5 +1,6 @@
 // app/api/strategy-chat/route.ts
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -7,6 +8,101 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// ── Option 2: Context Extraction Agent ──────────────────
+interface ContextExtraction {
+  her_tone: string;
+  topic: string;
+  open_questions: string[];
+  must_acknowledge: string[];
+}
+
+async function extractContext(
+  threadText: string,
+  relationshipContext: string
+): Promise<ContextExtraction | null> {
+  try {
+    const res = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a conversation context extractor. Analyze the thread and return ONLY valid JSON:
+{
+  "her_tone": "warm" | "neutral" | "cold" | "flirty" | "serious" | "stressed" | "playful" | "dry",
+  "topic": "logistics" | "flirting" | "conflict" | "safety" | "smalltalk" | "catching_up" | "planning" | "emotional",
+  "open_questions": ["unanswered questions from either side"],
+  "must_acknowledge": ["things that CANNOT be ignored — compliments, vulnerable moments, direct questions, plans proposed"]
+}
+Rules:
+- her_tone = the OTHER person's tone in their last 2-3 messages
+- open_questions = things asked but not yet answered
+- must_acknowledge = if they said something vulnerable, asked a direct question, or proposed plans — MUST address it`,
+        },
+        {
+          role: "user",
+          content: `THREAD:\n${threadText}\nRELATIONSHIP: ${relationshipContext}`,
+        },
+      ],
+      temperature: 0.2,
+      max_tokens: 300,
+      response_format: { type: "json_object" },
+    });
+    return JSON.parse(res.choices[0].message.content || "null");
+  } catch {
+    return null;
+  }
+}
+
+// ── Option 1: RuleAgent Verification ────────────────────
+async function verifyDrafts(
+  drafts: { shorter?: string; spicier?: string; softer?: string },
+  strategyContext: string
+): Promise<{ shorter?: string; spicier?: string; softer?: string }> {
+  try {
+    const res = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a strict reply verifier. Check each draft against ALL rules. If a draft violates any rule, rewrite it minimally to pass while keeping the original tone and intent.
+
+Hard Rules (fail if broken):
+1. Word count ≤18 (count carefully)
+2. No emojis (none at all)
+3. No needy language ("please", "sorry", "i miss you", "why you not", "can you", "would you", "just checking", "hope you", "I was wondering")
+4. No double questions (only one ? allowed per draft)
+5. No dead-end phrases ("lol", "idk", "maybe", "we'll see", "same", "ok" alone) unless strategy says playful/sarcasm
+6. Must invite continuation or hold frame
+7. Must match strategy energy (pull_back = not eager, escalate = not withdrawn, keep_short = shorter should be 2-4 words)
+8. Must sound like a real person, not a chatbot
+9. If the other person shared something specific, at least one draft must reference it
+
+Return ONLY valid JSON:
+{"shorter": "verified or fixed text", "spicier": "verified or fixed text", "softer": "verified or fixed text"}
+
+If a draft already passes all rules, return it unchanged.`,
+        },
+        {
+          role: "user",
+          content: `${strategyContext}\nDRAFTS: ${JSON.stringify(drafts)}`,
+        },
+      ],
+      temperature: 0.2,
+      max_tokens: 300,
+      response_format: { type: "json_object" },
+    });
+    const parsed = JSON.parse(res.choices[0].message.content || "{}");
+    // Only use verified versions if they have content
+    return {
+      shorter: parsed.shorter || drafts.shorter,
+      spicier: parsed.spicier || drafts.spicier,
+      softer: parsed.softer || drafts.softer,
+    };
+  } catch {
+    return drafts; // Fail open — return originals if verification crashes
+  }
+}
 
 export async function POST(req: Request) {
   const supabase = await createServerClient();
@@ -30,8 +126,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
 
-  // ─── Build an adaptive system prompt ───
+  // ─── Context extraction (Option 2) — runs in parallel when thread exists ───
   const hasThread = threadContext && threadContext.trim().length > 0;
+  let contextData: ContextExtraction | null = null;
+  const contextPromise = hasThread
+    ? extractContext(threadContext, context || "crush")
+    : Promise.resolve(null);
 
   const strategyBlock = strategy
     ? `\nCURRENT STRATEGY ANALYSIS:
@@ -50,6 +150,17 @@ export async function POST(req: Request) {
 - Risk level: ${strategy.move.risk}\n`
     : "";
 
+  // Await context extraction (started above, runs while we build the prompt)
+  contextData = await contextPromise;
+
+  const contextBlock = contextData
+    ? `\nCONTEXT EXTRACTION (from dedicated analyzer):
+- Their tone: ${contextData.her_tone}
+- Topic: ${contextData.topic}
+- Open questions: ${contextData.open_questions?.join(", ") || "none"}
+- MUST ACKNOWLEDGE (do NOT ignore these): ${contextData.must_acknowledge?.join(", ") || "none"}\n`
+    : "";
+
   const threadBlock = hasThread
     ? `\nTHEIR CONVERSATION THREAD (messages they're asking about):\n${threadContext}\n`
     : "";
@@ -65,7 +176,7 @@ PERSONALITY:
 - NEVER give generic advice like "keep it engaging" or "ask a follow-up question" — be SPECIFIC
 
 RELATIONSHIP CONTEXT: ${context || "crush/dating"}
-${threadBlock}${strategyBlock}
+${threadBlock}${strategyBlock}${contextBlock}
 WHAT YOU CAN DO:
 1. Read a conversation (pasted text or extracted from screenshots) and give sharp strategy + reply options
 2. Answer questions about what to say or do — with SPECIFIC words, not vague tips
@@ -136,15 +247,37 @@ FLOW:
   const draftMatch = raw.match(/DRAFT:\s*(\{[\s\S]*?\})\s*$/);
   let draft: { shorter?: string; spicier?: string; softer?: string } | null = null;
   let coachReply = raw;
+  let verified = false;
 
   if (draftMatch) {
     try {
       draft = JSON.parse(draftMatch[1]);
       coachReply = raw.slice(0, draftMatch.index).trim();
+
+      // ── Option 1: RuleAgent verification on drafts ──
+      if (draft && (draft.shorter || draft.spicier || draft.softer)) {
+        const strategyCtx = strategy
+          ? `STRATEGY: ${JSON.stringify({
+              momentum: strategy.momentum,
+              balance: strategy.balance,
+              energy: strategy.move?.energy,
+              sarcasm_detected: strategy.sarcasm_detected,
+              is_kidding: strategy.is_kidding,
+              constraints: strategy.move?.constraints,
+            })}`
+          : "STRATEGY: none provided";
+        draft = await verifyDrafts(draft, strategyCtx);
+        verified = true;
+      }
     } catch {
       // ignore parse error, return full text
     }
   }
 
-  return NextResponse.json({ reply: coachReply, draft });
+  return NextResponse.json({
+    reply: coachReply,
+    draft,
+    verified,
+    context_extraction: contextData,
+  });
 }
