@@ -1,6 +1,7 @@
 // app/api/x2/orchestrate/route.ts
 // "Text God" orchestrator — multi-agent pipeline with verification
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -420,21 +421,14 @@ export async function POST(req: Request) {
 
   // ── Full Orchestration Pipeline ─────────────────────────
   try {
-    // Step 1: Context Extraction
-    const contextStart = Date.now();
-    const contextExtraction = await extractContext(
-      effectiveText,
-      goal,
-      relationshipContext
-    );
-
-    // Step 2: Strategy Analysis (reuse existing)
-    const strategyStart = Date.now();
-    const { strategy, metrics } = await analyzeStrategy(
-      effectiveText,
-      relationshipContext
-    );
-    const strategyLatency = Date.now() - strategyStart;
+    // Steps 1+2: Context Extraction & Strategy Analysis (parallelized — they're independent)
+    const parallelStart = Date.now();
+    const [contextExtraction, strategyResult] = await Promise.all([
+      extractContext(effectiveText, goal, relationshipContext),
+      analyzeStrategy(effectiveText, relationshipContext),
+    ]);
+    const { strategy, metrics } = strategyResult;
+    const strategyLatency = Date.now() - parallelStart;
 
     // Step 3: Generate 6 candidates
     const genStart = Date.now();

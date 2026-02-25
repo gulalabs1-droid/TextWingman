@@ -124,6 +124,7 @@ type StrategyChatMessage = {
   role: 'user' | 'assistant';
   content: string;
   draft?: { shorter?: string; spicier?: string; softer?: string } | null;
+  images?: string[];
 };
 
 type ScanResult = {
@@ -1675,13 +1676,27 @@ export default function AppPage() {
     if (!files.length) return;
     setCoachScreenshotExtracting(true);
     try {
-      const results = await Promise.all(files.map(async (file) => {
+      // Read all files as base64 for thumbnails AND extraction
+      const fileData = await Promise.all(files.map(async (file) => {
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = reject;
           reader.readAsDataURL(file);
         });
+        return base64;
+      }));
+
+      // Add a user message with image thumbnails immediately
+      const imageUrls = fileData.map(b64 => b64);
+      setStrategyChatHistory(prev => [...prev, {
+        role: 'user',
+        content: files.length === 1 ? '📸 Screenshot uploaded' : `📸 ${files.length} screenshots uploaded`,
+        images: imageUrls,
+      }]);
+
+      // Extract text from each screenshot
+      const results = await Promise.all(fileData.map(async (base64) => {
         const res = await fetch('/api/extract-text', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1691,13 +1706,45 @@ export default function AppPage() {
         return data.full_conversation || null;
       }));
       const extracted = results.filter(Boolean);
+
       if (extracted.length > 0) {
+        // Auto-send extracted text to Coach for analysis
+        setStrategyChatLoading(true);
         const contextMsg = extracted.length === 1
-          ? `Here's additional context from a screenshot:\n${extracted[0]}`
-          : `Here's additional context from ${extracted.length} screenshots:\n${extracted.map((t, i) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
-        setStrategyChatInput(prev => prev ? `${prev}\n${contextMsg}` : contextMsg);
+          ? `Here's the conversation from the screenshot:\n${extracted[0]}`
+          : `Here's the conversation from ${extracted.length} screenshots:\n${extracted.map((t: string, i: number) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
+
+        const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
+        // Get current history including the image message we just added
+        const currentHistory = [...strategyChatHistory, {
+          role: 'user' as const,
+          content: files.length === 1 ? '📸 Screenshot uploaded' : `📸 ${files.length} screenshots uploaded`,
+        }];
+
+        try {
+          const res = await fetch('/api/strategy-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              threadContext,
+              strategy: strategyData,
+              context: selectedContext || 'crush',
+              chatHistory: currentHistory.map(m => ({ role: m.role, content: m.content })),
+              userMessage: contextMsg,
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Failed');
+          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+        } catch {
+          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Couldn't analyze the screenshot right now. Try again or paste the conversation text." }]);
+        } finally {
+          setStrategyChatLoading(false);
+        }
       } else {
         toast({ title: 'Could not read screenshots', description: 'Try clearer images', variant: 'destructive' });
+        // Remove the image message since extraction failed
+        setStrategyChatHistory(prev => prev.slice(0, -1));
       }
     } catch {
       toast({ title: 'Upload failed', description: 'Try again', variant: 'destructive' });
@@ -2190,6 +2237,16 @@ export default function AppPage() {
                 {strategyChatHistory.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      {/* Inline image thumbnails for screenshot uploads */}
+                      {msg.images && msg.images.length > 0 && (
+                        <div className={`flex gap-2 flex-wrap ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          {msg.images.map((img, imgIdx) => (
+                            <div key={imgIdx} className="relative rounded-xl overflow-hidden border border-white/[0.12] shadow-lg shadow-black/30 max-w-[180px]">
+                              <img src={img} alt={`Screenshot ${imgIdx + 1}`} className="w-full h-auto max-h-[240px] object-cover" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${
                         msg.role === 'user'
                           ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-br-md shadow-md shadow-violet-500/20'

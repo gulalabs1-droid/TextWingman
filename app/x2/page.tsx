@@ -260,10 +260,11 @@ export default function X2Page() {
               { role: 'assistant', content: data.reply, draft: data.draft },
             ]);
           }
-        } catch {
+        } catch (err: any) {
+          console.error('X2 orchestrate error:', err);
           setChatHistory((prev) => [
             ...prev,
-            { role: 'assistant', content: "Couldn't analyze the screenshot. Try again." },
+            { role: 'assistant', content: `Analysis failed: ${err.message || 'Unknown error'}. Try again.` },
           ]);
         } finally {
           setLoading(false);
