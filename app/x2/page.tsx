@@ -120,6 +120,7 @@ export default function X2Page() {
   const [expandedTrace, setExpandedTrace] = useState<number | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [pipelineStep, setPipelineStep] = useState<string | null>(null);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -141,31 +142,35 @@ export default function X2Page() {
     setInput('');
     setChatHistory((prev) => [...prev, { role: 'user', content: userMsg }]);
     setLoading(true);
+    setPipelineStep('analyzing');
 
     try {
+      const hasThread = userMsg.includes('You:') && userMsg.includes('Them:');
+      const stepTimer = hasThread ? setTimeout(() => setPipelineStep('generating'), 3000) : null;
+      const stepTimer2 = hasThread ? setTimeout(() => setPipelineStep('scoring'), 8000) : null;
+
       const res = await fetch('/api/x2/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userMessage: userMsg,
-          threadText: userMsg, // If it contains You:/Them: it'll auto-orchestrate
+          threadText: userMsg,
           chatHistory: chatHistory.map((m) => ({ role: m.role, content: m.content })),
           goal,
           relationshipContext: context,
           mode: 'chat',
         }),
       });
+      if (stepTimer) clearTimeout(stepTimer);
+      if (stepTimer2) clearTimeout(stepTimer2);
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
 
       if (data.mode === 'orchestrate') {
         setChatHistory((prev) => [
           ...prev,
-          {
-            role: 'assistant',
-            content: `Here's my read and your best options:`,
-            orchestration: data,
-          },
+          { role: 'assistant', content: '', orchestration: data },
         ]);
       } else {
         setChatHistory((prev) => [
@@ -179,6 +184,7 @@ export default function X2Page() {
       setInput(userMsg);
     } finally {
       setLoading(false);
+      setPipelineStep(null);
     }
   };
 
@@ -187,6 +193,7 @@ export default function X2Page() {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setExtracting(true);
+    setPipelineStep('reading');
 
     try {
       const fileData = await Promise.all(
@@ -201,17 +208,14 @@ export default function X2Page() {
         )
       );
 
-      // Show images in chat immediately
+      // Show images in chat immediately — no text label, just the image
       setChatHistory((prev) => [
         ...prev,
-        {
-          role: 'user',
-          content: files.length === 1 ? '📸 Screenshot uploaded' : `📸 ${files.length} screenshots uploaded`,
-          images: fileData,
-        },
+        { role: 'user', content: '', images: fileData },
       ]);
 
       // Extract text from screenshots
+      setPipelineStep('extracting');
       const results = await Promise.all(
         fileData.map(async (base64) => {
           const res = await fetch('/api/extract-text', {
@@ -227,9 +231,14 @@ export default function X2Page() {
 
       if (extracted.length > 0) {
         setLoading(true);
+        setPipelineStep('analyzing');
         const threadText = extracted.join('\n\n');
 
         try {
+          // Pipeline steps update on a timer since we can't get real-time from the API
+          const stepTimer = setTimeout(() => setPipelineStep('generating'), 3000);
+          const stepTimer2 = setTimeout(() => setPipelineStep('scoring'), 8000);
+
           const res = await fetch('/api/x2/orchestrate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -242,17 +251,16 @@ export default function X2Page() {
               mode: 'orchestrate',
             }),
           });
+          clearTimeout(stepTimer);
+          clearTimeout(stepTimer2);
+
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Failed');
 
           if (data.mode === 'orchestrate') {
             setChatHistory((prev) => [
               ...prev,
-              {
-                role: 'assistant',
-                content: `Analyzed the screenshot. Here's my read:`,
-                orchestration: data,
-              },
+              { role: 'assistant', content: '', orchestration: data },
             ]);
           } else {
             setChatHistory((prev) => [
@@ -277,6 +285,7 @@ export default function X2Page() {
       toast({ title: 'Upload failed', variant: 'destructive' });
     } finally {
       setExtracting(false);
+      setPipelineStep(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -405,29 +414,32 @@ export default function X2Page() {
 
         {/* Chat messages */}
         {chatHistory.map((msg, i) => (
-          <div key={i} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div key={i} className={`mb-4 flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
             <div className={`max-w-[90%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-              {/* Image thumbnails */}
+              {/* Image thumbnails — smooth fade-in, no label */}
               {msg.images && msg.images.length > 0 && (
-                <div className="flex gap-2 flex-wrap justify-end">
+                <div className="flex gap-2 flex-wrap justify-end animate-in fade-in zoom-in-95 duration-500">
                   {msg.images.map((img, idx) => (
-                    <div key={idx} className="relative rounded-xl overflow-hidden border border-white/[0.12] shadow-lg shadow-black/30 max-w-[160px]">
-                      <img src={img} alt={`Screenshot ${idx + 1}`} className="w-full h-auto max-h-[200px] object-cover" />
+                    <div key={idx} className="relative rounded-2xl overflow-hidden border border-white/[0.10] shadow-xl shadow-black/40 max-w-[180px] hover:scale-[1.02] transition-transform">
+                      <img src={img} alt="" className="w-full h-auto max-h-[240px] object-cover" />
+                      <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.08]" />
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Message bubble */}
-              <div
-                className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-br from-amber-600 to-orange-600 text-white rounded-br-md shadow-md shadow-amber-500/20'
-                    : 'bg-white/[0.07] text-white/90 border border-white/[0.08] rounded-bl-md'
-                }`}
-              >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              </div>
+              {/* Message bubble — skip if empty (image-only messages) */}
+              {msg.content && (
+                <div
+                  className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-gradient-to-br from-amber-600 to-orange-600 text-white rounded-br-md shadow-md shadow-amber-500/20'
+                      : 'bg-white/[0.07] text-white/90 border border-white/[0.08] rounded-bl-md'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              )}
 
               {/* ── Orchestration results (full pipeline) ── */}
               {msg.orchestration && (() => {
@@ -625,14 +637,41 @@ export default function X2Page() {
           </div>
         ))}
 
-        {/* Loading indicator */}
-        {loading && (
-          <div className="mb-4 flex justify-start">
-            <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.08] flex items-center gap-2">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-400" />
-              <span className="text-[13px] text-white/40">
-                {extracting ? 'Reading screenshot...' : 'Running pipeline...'}
-              </span>
+        {/* Pipeline progress indicator */}
+        {(loading || extracting) && (
+          <div className="mb-4 flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.04] border border-white/[0.06] space-y-2 min-w-[200px]">
+              {/* Step indicators */}
+              <div className="flex items-center gap-2">
+                <div className="relative h-4 w-4 flex items-center justify-center">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-400" />
+                </div>
+                <span className="text-[13px] text-white/60 font-medium animate-in fade-in duration-200">
+                  {pipelineStep === 'reading' && 'Reading image...'}
+                  {pipelineStep === 'extracting' && 'Extracting conversation...'}
+                  {pipelineStep === 'analyzing' && 'Analyzing context & strategy...'}
+                  {pipelineStep === 'generating' && 'Generating 6 reply styles...'}
+                  {pipelineStep === 'scoring' && 'Scoring & selecting winner...'}
+                  {!pipelineStep && 'Processing...'}
+                </span>
+              </div>
+              {/* Progress dots */}
+              <div className="flex gap-1 px-6">
+                {['reading', 'extracting', 'analyzing', 'generating', 'scoring'].map((step, idx) => {
+                  const steps = ['reading', 'extracting', 'analyzing', 'generating', 'scoring'];
+                  const currentIdx = steps.indexOf(pipelineStep || '');
+                  const isActive = idx === currentIdx;
+                  const isDone = idx < currentIdx;
+                  return (
+                    <div
+                      key={step}
+                      className={`h-1 rounded-full transition-all duration-500 ${
+                        isActive ? 'w-6 bg-amber-400' : isDone ? 'w-3 bg-amber-400/40' : 'w-3 bg-white/[0.08]'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
