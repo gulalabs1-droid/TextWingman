@@ -121,6 +121,7 @@ export default function X2Page() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [pipelineStep, setPipelineStep] = useState<string | null>(null);
+  const [extractedThread, setExtractedThread] = useState<string>('');
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -145,20 +146,20 @@ export default function X2Page() {
     setPipelineStep('analyzing');
 
     try {
-      const hasThread = userMsg.includes('You:') && userMsg.includes('Them:');
-      const stepTimer = hasThread ? setTimeout(() => setPipelineStep('generating'), 3000) : null;
-      const stepTimer2 = hasThread ? setTimeout(() => setPipelineStep('scoring'), 8000) : null;
+      const willOrchestrate = !!extractedThread || (userMsg.includes('You:') && userMsg.includes('Them:'));
+      const stepTimer = willOrchestrate ? setTimeout(() => setPipelineStep('generating'), 3000) : null;
+      const stepTimer2 = willOrchestrate ? setTimeout(() => setPipelineStep('scoring'), 8000) : null;
 
       const res = await fetch('/api/x2/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userMessage: userMsg,
-          threadText: userMsg,
+          threadText: extractedThread || userMsg,
           chatHistory: chatHistory.map((m) => ({ role: m.role, content: m.content })),
           goal,
           relationshipContext: context,
-          mode: 'chat',
+          mode: extractedThread ? 'orchestrate' : 'chat',
         }),
       });
       if (stepTimer) clearTimeout(stepTimer);
@@ -233,6 +234,7 @@ export default function X2Page() {
         setLoading(true);
         setPipelineStep('analyzing');
         const threadText = extracted.join('\n\n');
+        setExtractedThread(threadText);
 
         try {
           // Pipeline steps update on a timer since we can't get real-time from the API
@@ -736,6 +738,7 @@ export default function X2Page() {
                 onClick={() => {
                   setChatHistory([]);
                   setExpandedTrace(null);
+                  setExtractedThread('');
                 }}
                 className="text-[10px] text-white/20 hover:text-white/40 transition-colors"
               >

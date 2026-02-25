@@ -307,8 +307,13 @@ async function coachResponse(
   userMessage: string,
   chatHistory: { role: string; content: string }[],
   goal: Goal,
-  relationshipContext: string
+  relationshipContext: string,
+  threadText?: string
 ): Promise<{ reply: string; draft: any }> {
+  const threadBlock = threadText
+    ? `\nTHEIR CONVERSATION THREAD (from screenshot — this is the conversation the user is asking about):\n${threadText}\n\nYou MUST base all advice and replies on THIS conversation. The user's follow-up messages are about THIS thread.\n`
+    : "";
+
   const res = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
@@ -326,9 +331,10 @@ PERSONALITY:
 
 RELATIONSHIP CONTEXT: ${relationshipContext || "crush/dating"}
 GOAL: ${goal}
-
+${threadBlock}
 CRITICAL RULES FOR CONVERSATION TRACKING:
 - This is a CONTINUOUS coaching session.
+- If a conversation thread was provided above, ALL your advice and draft replies MUST be based on that specific conversation. Do NOT make up new scenarios.
 - If the user types something like "hello" or "good and u" — that's a message they RECEIVED. Treat it as context, not a greeting to you.
 - If the user says "ok say that" or "I'll use that one" — acknowledge it and ask what happened next.
 - Track the evolving conversation: user shares what they received → you coach → user tells you what they sent → you coach the next move.
@@ -416,12 +422,13 @@ export async function POST(req: Request) {
   const shouldOrchestrate = mode === "orchestrate" || hasThread;
 
   if (!shouldOrchestrate) {
-    // Coaching mode — enhanced single call with context tracking
+    // Coaching mode — pass threadText so follow-ups have screenshot context
     const { reply, draft } = await coachResponse(
       userMessage,
       chatHistory,
       goal,
-      relationshipContext
+      relationshipContext,
+      threadText?.trim() || undefined
     );
     return NextResponse.json({
       mode: "coach",
@@ -476,7 +483,8 @@ export async function POST(req: Request) {
         userMessage || `Analyze this conversation and suggest replies:\n${effectiveText}`,
         chatHistory,
         goal,
-        relationshipContext
+        relationshipContext,
+        effectiveText
       );
       return NextResponse.json({
         mode: "coach",
