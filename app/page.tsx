@@ -19,14 +19,16 @@ const jsonLd = {
     { '@type': 'Offer', price: '99.99', priceCurrency: 'USD', description: 'Pro Annual — Best Value' },
   ],
   featureList: [
+    'Deep Analysis — upload a screenshot, get 6 reply options scored by a critic agent with a clear winner',
     'AI texting coach — ask anything, get strategy + replies in one chat',
-    'Screenshot upload — instant conversation analysis',
-    'AI reply generation in 3 tones (Quick, Spicy, Soft) — all verified',
+    'Screenshot upload — instant full conversation analysis',
+    'Visible scoring metrics — Neediness Risk, Clarity, Forward Motion, Tone Match on every candidate',
+    'Strategy breakdown — momentum, balance, energy, sharp one-liner on every analysis',
     'Conversation intelligence — detects tone, unanswered questions, power dynamics',
     'Decode mode — understand what their message really means',
     'Conversation Revive — re-engage dead threads',
     'Opener generator — first messages for any situation',
-    'V2 Verified pipeline — every reply quality-checked for neediness, strategy alignment, and natural voice',
+    'Verified pipeline — every reply quality-checked for neediness, strategy alignment, and natural voice',
     'Session history — auto-saved, resume anytime',
   ],
   creator: { '@type': 'Organization', name: 'Gula Labs', url: 'https://textwingman.com' },
@@ -85,16 +87,16 @@ export default function HomePage() {
       {/* ═══ HERO ═══ */}
       <section className="container mx-auto px-4 pt-16 pb-16 md:pt-24 md:pb-24">
         <div className="max-w-4xl mx-auto text-center space-y-6 mb-14 md:mb-20">
-          <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
+          <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-300 px-4 py-1.5 rounded-full text-xs font-bold border border-amber-500/20">
             <Sparkles className="h-3.5 w-3.5" />
-            Over 50,000 replies generated
+            New — Deep Analysis: 6 scored candidates, one clear winner
           </div>
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.05]">
             Stop overthinking.
             <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-2">Start sending.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-            Coach reads your full thread, detects their tone, spots what you can&apos;t ignore, and gives you 3 verified replies that sound exactly like you.
+            Drop a screenshot. Coach runs a full analysis — 6 reply options scored against each other, one clear winner, full strategy breakdown. The sharpest reply every time.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Link href="/app" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-xl shadow-violet-600/25 px-8 h-14 text-base flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]">
@@ -113,7 +115,7 @@ export default function HomePage() {
                   <Sparkles className="h-3.5 w-3.5 text-white" />
                 </div>
                 <span className="text-white/70 text-sm font-bold">Coach</span>
-                <span className="ml-auto px-2 py-0.5 rounded-lg text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/15">V2 Verified</span>
+                <span className="ml-auto px-2 py-0.5 rounded-lg text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/15">Deep Analysis</span>
               </div>
 
               {/* User message — fades in */}
@@ -125,34 +127,43 @@ export default function HomePage() {
 
               {/* Coach analysis — fades in with delay */}
               <div className="flex justify-start mb-4 animate-[fadeSlideUp_0.6s_ease-out_0.8s_both]">
-                <div className="max-w-[92%] space-y-2.5">
-                  <div className="bg-white/[0.06] border border-white/[0.10] rounded-2xl rounded-bl-md px-4 py-3">
-                    <p className="text-white/80 text-[13px] leading-relaxed">She&apos;s hinting hard. &ldquo;My friends bailed&rdquo; = she wants you to make a move. Don&apos;t ask permission — suggest.</p>
-                  </div>
-                  {/* Strategy badges — pop in */}
-                  <div className="flex flex-wrap gap-1.5 px-1 animate-[fadeSlideUp_0.4s_ease-out_1.4s_both]">
+                <div className="max-w-[95%] space-y-2.5">
+                  {/* Strategy pills */}
+                  <div className="flex flex-wrap gap-1.5 px-1 animate-[fadeSlideUp_0.4s_ease-out_1.0s_both]">
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 flex items-center gap-1"><TrendingUp className="h-2.5 w-2.5" />Rising</span>
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-white/[0.06] text-white/40 border border-white/[0.08]">Balanced</span>
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400/60 border border-emerald-500/15">escalate</span>
                   </div>
-                  {/* Reply cards — stagger in */}
-                  <div className="space-y-1.5">
-                    {[
-                      { emoji: '⚡', tone: 'QUICK', text: 'come through then', color: 'from-cyan-400 to-blue-500', delay: '1.6s' },
-                      { emoji: '🔥', tone: 'SPICY', text: 'sounds like you need a rescue', color: 'from-rose-400 to-pink-500', delay: '1.8s' },
-                      { emoji: '💚', tone: 'SOFT', text: 'their loss. come chill with me', color: 'from-emerald-400 to-green-500', delay: '2.0s' },
-                    ].map(r => (
-                      <div key={r.tone} className="bg-white/[0.05] border border-white/[0.08] rounded-xl p-3 flex items-start gap-2.5 animate-[fadeSlideUp_0.5s_ease-out_both]" style={{ animationDelay: r.delay }}>
-                        <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${r.color} flex items-center justify-center shrink-0`}><span className="text-[11px]">{r.emoji}</span></div>
-                        <div className="flex-1"><span className="text-[9px] font-black tracking-wider text-white/30">{r.tone}</span><p className="text-white/80 text-[13px] mt-0.5">&ldquo;{r.text}&rdquo;</p></div>
+                  <p className="text-[11px] text-white/40 italic px-1 animate-[fadeSlideUp_0.4s_ease-out_1.2s_both]">&ldquo;She&apos;s hinting. Make the move. Don&apos;t ask — suggest.&rdquo;</p>
+                  {/* Winner card */}
+                  <div className="relative animate-[fadeSlideUp_0.5s_ease-out_1.4s_both]">
+                    <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 z-10">
+                      <Shield className="h-2.5 w-2.5 text-amber-400" />
+                      <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Winner</span>
+                    </div>
+                    <div className="mt-1 px-4 pt-5 pb-3 rounded-xl bg-amber-500/[0.08] border border-amber-500/20">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400">🎯 Clean Direct</span>
+                        <span className="text-[10px] text-amber-400/50">Copy →</span>
                       </div>
-                    ))}
+                      <p className="text-[13px] text-white/90 font-medium">come through then</p>
+                      <p className="text-[9px] text-amber-400/40 mt-1">💡 Low neediness, high forward motion, matches energy</p>
+                    </div>
                   </div>
+                  {/* Backup card */}
+                  <div className="px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] animate-[fadeSlideUp_0.5s_ease-out_1.7s_both]">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[9px] font-bold text-white/30 uppercase">Backup</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-400">😏 Playful Tease</span>
+                    </div>
+                    <p className="text-[12px] text-white/65">sounds like you need saving</p>
+                  </div>
+                  <p className="text-[9px] text-white/20 px-1 animate-[fadeSlideUp_0.4s_ease-out_2.0s_both]">+ 4 more candidates · tap to see all scores</p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                <p className="text-white/20 text-xs">Ask anything. Upload screenshots. Get the move.</p>
+                <p className="text-white/20 text-xs">Drop a screenshot. Get 6 scored options. Send the winner.</p>
                 <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-violet-600/20 group-hover:scale-105 transition-transform shrink-0 ml-4">
                   Try it <ArrowRight className="h-4 w-4" />
                 </div>
@@ -283,11 +294,12 @@ export default function HomePage() {
         </div>
         <div className="flex gap-4 overflow-x-auto px-4 pb-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible md:px-0 md:pb-0 max-w-4xl md:mx-auto scrollbar-hide">
           {[
-            { icon: '💬', title: 'Generate replies', desc: '3 tones — quick, spicy, soft. Under 18 words.' },
+            { icon: '🏆', title: 'Deep Analysis', desc: '6 candidates scored by a critic agent. Winner badge. Backup option.' },
+            { icon: '📊', title: 'Visible metrics', desc: 'Neediness Risk, Clarity, Forward Motion — see exactly why it won.' },
             { icon: '🔍', title: 'Decode messages', desc: 'Intent, subtext, red/green flags revealed.' },
             { icon: '✨', title: 'Write openers', desc: 'First message for any platform or situation.' },
             { icon: '🔥', title: 'Revive dead chats', desc: 'Re-engage without looking thirsty.' },
-            { icon: '📸', title: 'Screenshot upload', desc: 'Drop it in — Coach reads every message.' },
+            { icon: '📸', title: 'Screenshot upload', desc: 'Drop it in — triggers the full analysis pipeline.' },
           ].map((f) => (
             <div key={f.title} className="min-w-[220px] snap-center md:min-w-0 bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:bg-white/[0.06] hover:border-violet-500/20 hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-500/5 transition-all duration-300 group">
               <span className="text-3xl block mb-4 group-hover:scale-110 transition-transform duration-300">{f.icon}</span>
@@ -397,7 +409,7 @@ export default function HomePage() {
             { q: 'Is it actually free?', a: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial expiration. Pro unlocks unlimited everything + V2 Verified pipeline.' },
             { q: 'Can you see my conversations?', a: 'No. Messages are processed in real-time and never stored. We don\'t connect to your messaging apps.' },
             { q: 'What apps does it work with?', a: 'All of them. iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Telegram, LinkedIn — anything with text.' },
-            { q: 'How is this different from ChatGPT?', a: 'ChatGPT gives you a paragraph that sounds robotic. Wingman reads the full conversation, detects tone and power dynamics, then generates 3 verified replies under 18 words — each one quality-checked for neediness, strategy alignment, and natural voice.' },
+            { q: 'How is this different from ChatGPT?', a: 'ChatGPT gives you one generic paragraph. Wingman runs a full analysis — 6 reply options generated and scored against each other by a critic agent. You see a winner, a backup, strategy pills, and visible metrics. No guessing. No robotic sentences.' },
             { q: 'Will people know I\'m using AI?', a: 'No. Every reply sounds like a real person — lowercase, casual, no emojis. The 18-word limit keeps it natural. Plus you can edit any reply.' },
           ].map((faq, i) => (
             <details key={i} className="group bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.05] hover:border-white/[0.14] transition-all duration-300">

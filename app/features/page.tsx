@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
-import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Target, RefreshCw, Pencil, Zap, Lock, Crosshair, Eye, Clock, User } from 'lucide-react';
+import { ArrowRight, Brain, Send, BookmarkCheck, Camera, Shield, Sparkles, MessageCircle, Target, RefreshCw, Pencil, Zap, Lock, Crosshair, Eye, Clock, User, Trophy } from 'lucide-react';
 import { CURRENT_VERSION } from '@/lib/changelog';
 
 const FREE_FEATURES = [
@@ -18,10 +18,11 @@ const FREE_FEATURES = [
 ];
 
 const PRO_FEATURES = [
+  { icon: Trophy, color: 'text-amber-400', bg: 'bg-amber-500/10', title: 'Deep Analysis', tagline: '6 candidates scored. One clear winner.', bullets: ['Upload a screenshot — 6 reply options generated and ranked by a critic agent', 'Winner gets a Trophy badge. Backup sits right below. Both one-tap copy.', 'Expand to see every score: Neediness Risk, Clarity, Forward Motion, Tone Match', '6 distinct styles — Hood Charisma, Clean Direct, Playful Tease, Bold Closer, Warm, Chill'] },
   { icon: Target, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Strategy Mode', tagline: 'AI coaching before every reply.', bullets: ['Detects sarcasm vs low investment, kidding vs serious', 'Tracks power dynamics — who\'s chasing, who\'s pulling back', 'Sharp one-liner: "Pull back. Let them come to you."', 'Shapes every reply around the right strategic move'] },
-  { icon: Shield, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'V2 Verified Pipeline', tagline: 'Every reply verified before you see it.', bullets: ['Coach drafts auto-verified — neediness, word count, tone, strategy alignment all checked', '≤18 words enforced, no needy language, no dead-end phrases', 'Violations caught and rewritten automatically', 'Strategy-aligned — if Coach says pull back, replies follow'] },
-  { icon: Brain, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Deep Conversation Intelligence', tagline: 'Reads the full thread like a human would.', bullets: ['Detects their tone — flirty, cold, playful, stressed, dry', 'Spots unanswered questions and things you MUST acknowledge', 'Energy matching — mirrors their effort level and slang', 'Momentum, balance, power dynamics, sarcasm detection'] },
-  { icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Unlimited Everything', tagline: 'No daily limits. Ever.', bullets: ['Unlimited replies, decodes, openers, revives', 'Full session history saved and searchable', 'Strategy analysis on every generation', 'V1/V2 toggle — switch between fast and verified modes'] },
+  { icon: Shield, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Verified Pipeline', tagline: 'Every reply checked before you see it.', bullets: ['Auto-verified — neediness, word count, tone, strategy alignment all checked', '≤12 words enforced. Aim for 4-8. Shorter = better.', 'Violations caught and rewritten automatically', 'Strategy-aligned — if Coach says pull back, replies follow'] },
+  { icon: Brain, color: 'text-emerald-400', bg: 'bg-emerald-500/10', title: 'Deep Conversation Intelligence', tagline: 'Reads the thread like a human would.', bullets: ['Detects their tone — flirty, cold, playful, stressed, dry', 'Spots open questions and things you MUST acknowledge', 'Energy matching — short message gets a short reply. Always.', 'Context extraction: topic, goal, must-acknowledge items surfaced'] },
+  { icon: Zap, color: 'text-violet-400', bg: 'bg-violet-500/10', title: 'Unlimited Everything', tagline: 'No daily limits. Ever.', bullets: ['Unlimited replies, decodes, openers, revives', 'Full session history saved and searchable', 'Deep Analysis on every screenshot upload', 'Intelligent follow-ups with full session memory'] },
 ];
 
 export default function FeaturesPage() {
@@ -53,13 +54,13 @@ export default function FeaturesPage() {
         <div className="text-center pt-8 pb-14 space-y-4">
           <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
             <Sparkles className="h-3.5 w-3.5" />
-            v{CURRENT_VERSION} — Verified Coach Drafts + Deeper Intelligence
+            v{CURRENT_VERSION} — Deep Analysis: 6 Candidates, Scored & Ranked
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-white">
             Everything Wingman can do.
           </h1>
           <p className="text-white/40 text-lg max-w-xl mx-auto">
-            One AI coach that reads every situation, remembers your conversations, and adapts to the moment.
+            One AI coach that reads every situation, scores 6 reply options against each other, and gives you the sharpest move.
           </p>
         </div>
 
