@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
@@ -120,10 +120,73 @@ type StrategyData = {
   latencyMs: number;
 } | null;
 
+type CandidateScores = {
+  neediness_risk: number;
+  clarity: number;
+  forward_motion: number;
+  tone_match: number;
+  one_breath: boolean;
+};
+
+type Candidate = {
+  text: string;
+  style: string;
+  word_count: number;
+  scores: CandidateScores;
+  notes: string;
+};
+
+type OrchestrateResult = {
+  mode: 'orchestrate';
+  winner: Candidate | null;
+  backup: Candidate | null;
+  winner_id: number;
+  backup_id: number;
+  winner_reason: string;
+  candidates: Candidate[];
+  context_extraction: {
+    her_tone: string;
+    topic: string;
+    open_questions: string[];
+    must_acknowledge: string[];
+    goal_detected: string;
+  };
+  strategy: {
+    momentum: string;
+    balance: string;
+    energy_level?: string;
+    sarcasm_detected?: boolean;
+    is_kidding?: boolean;
+    risk_flags?: string[];
+    move: {
+      energy: string;
+      one_liner: string;
+      constraints: Record<string, boolean>;
+      risk: string;
+    };
+  };
+  latency: {
+    total: number;
+    strategy: number;
+    generation: number;
+    critic: number;
+  };
+};
+
+const STYLE_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
+  hood_charisma: { label: 'Hood Charisma', emoji: '👑', color: 'text-amber-400 bg-amber-500/15' },
+  clean_direct: { label: 'Clean Direct', emoji: '🎯', color: 'text-blue-400 bg-blue-500/15' },
+  playful_tease: { label: 'Playful Tease', emoji: '😏', color: 'text-pink-400 bg-pink-500/15' },
+  bold_closer: { label: 'Bold Closer', emoji: '⚡', color: 'text-orange-400 bg-orange-500/15' },
+  warm_genuine: { label: 'Warm Genuine', emoji: '💚', color: 'text-emerald-400 bg-emerald-500/15' },
+  chill_unbothered: { label: 'Chill', emoji: '🧊', color: 'text-cyan-400 bg-cyan-500/15' },
+};
+
 type StrategyChatMessage = {
   role: 'user' | 'assistant';
   content: string;
   draft?: { shorter?: string; spicier?: string; softer?: string } | null;
+  orchestration?: OrchestrateResult | null;
   images?: string[];
 };
 
@@ -253,6 +316,10 @@ export default function AppPage() {
   const [strategyChatHistory, setStrategyChatHistory] = useState<StrategyChatMessage[]>([]);
   const [strategyChatInput, setStrategyChatInput] = useState('');
   const [strategyChatLoading, setStrategyChatLoading] = useState(false);
+  const [extractedThread, setExtractedThread] = useState('');
+  const [expandedCoachTrace, setExpandedCoachTrace] = useState<number | null>(null);
+  const [coachCopiedId, setCoachCopiedId] = useState<string | null>(null);
+  const [coachPipelineStep, setCoachPipelineStep] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [saving, setSaving] = useState(false);
   const [savingCoach, setSavingCoach] = useState(false);
@@ -1669,6 +1736,32 @@ export default function AppPage() {
     setStrategyChatHistory([]);
     setStrategyChatInput('');
     setActiveCoachSessionId(null);
+    setExtractedThread('');
+    setExpandedCoachTrace(null);
+    setCoachCopiedId(null);
+    setCoachPipelineStep(null);
+  };
+
+  const copyCoachText = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCoachCopiedId(id);
+    toast({ title: '✓ Copied' });
+    setTimeout(() => setCoachCopiedId(null), 2000);
+  };
+
+  const CoachScoreBar = ({ label, value, inverted = false }: { label: string; value: number; inverted?: boolean }) => {
+    const displayValue = inverted ? 100 - value : value;
+    const color =
+      displayValue >= 80 ? 'bg-emerald-500' : displayValue >= 60 ? 'bg-amber-500' : 'bg-red-500';
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-white/40 w-20 shrink-0">{label}</span>
+        <div className="flex-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
+          <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${displayValue}%` }} />
+        </div>
+        <span className="text-[10px] text-white/50 w-8 text-right">{value}</span>
+      </div>
+    );
   };
 
   const handleCoachScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1708,38 +1801,97 @@ export default function AppPage() {
       const extracted = results.filter(Boolean);
 
       if (extracted.length > 0) {
-        // Auto-send extracted text to Coach for analysis
         setStrategyChatLoading(true);
-        const contextMsg = extracted.length === 1
-          ? `Here's the conversation from the screenshot:\n${extracted[0]}`
-          : `Here's the conversation from ${extracted.length} screenshots:\n${extracted.map((t: string, i: number) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
+        const threadText = extracted.join('\n\n');
+        setExtractedThread(threadText);
 
-        const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
-        // Get current history including the image message we just added
-        const currentHistory = [...strategyChatHistory, {
-          role: 'user' as const,
-          content: files.length === 1 ? '📸 Screenshot uploaded' : `📸 ${files.length} screenshots uploaded`,
-        }];
+        // Build rich history for context
+        const richHistory = strategyChatHistory.map((m) => {
+          if (m.role === 'assistant' && m.orchestration) {
+            const o = m.orchestration;
+            const parts = [];
+            if (o.strategy?.move?.one_liner) parts.push(`Strategy: "${o.strategy.move.one_liner}"`);
+            if (o.winner?.text) parts.push(`Winner (${o.winner.style}): "${o.winner.text}"`);
+            if (o.backup?.text) parts.push(`Backup (${o.backup.style}): "${o.backup.text}"`);
+            return { role: m.role, content: parts.join('\n') || 'Analyzed the conversation.' };
+          }
+          if (m.role === 'assistant' && m.draft) {
+            const d = m.draft;
+            const draftText = [d.shorter ? `Shorter: "${d.shorter}"` : null, d.spicier ? `Spicier: "${d.spicier}"` : null, d.softer ? `Softer: "${d.softer}"` : null].filter(Boolean).join(', ');
+            return { role: m.role, content: `${m.content}\nDrafts: ${draftText}` };
+          }
+          if (m.role === 'user' && m.images && !m.content) return { role: m.role, content: '[Uploaded screenshot]' };
+          return { role: m.role, content: m.content || '[empty]' };
+        });
 
         try {
-          const res = await fetch('/api/strategy-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              threadContext,
-              strategy: strategyData,
-              context: selectedContext || 'crush',
-              chatHistory: currentHistory.map(m => ({ role: m.role, content: m.content })),
-              userMessage: contextMsg,
-            }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Failed');
-          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+          if (isPro) {
+            // Pro: Full X2 orchestrate pipeline — 6 candidates, scored, strategy breakdown
+            setCoachPipelineStep('analyzing');
+            const stepTimer = setTimeout(() => setCoachPipelineStep('generating'), 3000);
+            const stepTimer2 = setTimeout(() => setCoachPipelineStep('scoring'), 8000);
+
+            const isNewConvo = strategyChatHistory.some((m) => m.orchestration || m.draft);
+            const res = await fetch('/api/x2/orchestrate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userMessage: isNewConvo
+                  ? 'New screenshot uploaded — might be a different conversation. Analyze it.'
+                  : 'Analyze this conversation from the screenshot',
+                threadText,
+                chatHistory: richHistory,
+                goal: 'general',
+                relationshipContext: selectedContext || 'crush',
+                mode: 'orchestrate',
+              }),
+            });
+            clearTimeout(stepTimer);
+            clearTimeout(stepTimer2);
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+
+            if (data.mode === 'orchestrate') {
+              setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: '', orchestration: data }]);
+              // Also update strategyData for the rest of the app
+              if (data.strategy) {
+                setStrategyData({
+                  momentum: data.strategy.momentum,
+                  balance: data.strategy.balance,
+                  move: data.strategy.move,
+                  latencyMs: data.latency?.total || 0,
+                });
+              }
+            } else {
+              setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+            }
+          } else {
+            // Free: Use strategy-chat (single coach call)
+            const contextMsg = extracted.length === 1
+              ? `Here's the conversation from the screenshot:\n${extracted[0]}`
+              : `Here's the conversation from ${extracted.length} screenshots:\n${extracted.map((t: string, i: number) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
+            const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
+            const res = await fetch('/api/strategy-chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                threadContext,
+                strategy: strategyData,
+                context: selectedContext || 'crush',
+                chatHistory: richHistory,
+                userMessage: contextMsg,
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+          }
         } catch {
           setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Couldn't analyze the screenshot right now. Try again or paste the conversation text." }]);
         } finally {
           setStrategyChatLoading(false);
+          setCoachPipelineStep(null);
         }
       } else {
         toast({ title: 'Could not read screenshots', description: 'Try clearer images', variant: 'destructive' });
@@ -1758,30 +1910,88 @@ export default function AppPage() {
     if (!strategyChatInput.trim() || strategyChatLoading) return;
     const userMsg = strategyChatInput.trim();
     setStrategyChatInput('');
-    // Use functional update to avoid stale closure — always append to latest state
     setStrategyChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
     setStrategyChatLoading(true);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    // Build rich chat history — include what the coach actually suggested
+    const richHistory = strategyChatHistory.map((m) => {
+      if (m.role === 'assistant' && m.orchestration) {
+        const o = m.orchestration;
+        const parts = [];
+        if (o.strategy?.move?.one_liner) parts.push(`Strategy: "${o.strategy.move.one_liner}"`);
+        if (o.winner?.text) parts.push(`Winner (${o.winner.style}): "${o.winner.text}"`);
+        if (o.backup?.text) parts.push(`Backup (${o.backup.style}): "${o.backup.text}"`);
+        if (o.candidates?.length) {
+          const others = o.candidates
+            .filter((c: Candidate) => c.text !== o.winner?.text && c.text !== o.backup?.text)
+            .map((c: Candidate) => `${c.style}: "${c.text}"`)
+            .join(', ');
+          if (others) parts.push(`Other options: ${others}`);
+        }
+        return { role: m.role, content: parts.join('\n') || 'Analyzed the conversation.' };
+      }
+      if (m.role === 'assistant' && m.draft) {
+        const d = m.draft;
+        const draftText = [d.shorter ? `Shorter: "${d.shorter}"` : null, d.spicier ? `Spicier: "${d.spicier}"` : null, d.softer ? `Softer: "${d.softer}"` : null].filter(Boolean).join(', ');
+        return { role: m.role, content: `${m.content}\nDrafts suggested: ${draftText}` };
+      }
+      if (m.role === 'user' && m.images && !m.content) return { role: m.role, content: '[Uploaded screenshot]' };
+      return { role: m.role, content: m.content || '[empty]' };
+    });
 
     try {
-      const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
-      const res = await fetch('/api/strategy-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          threadContext,
-          strategy: strategyData,
-          context: selectedContext || 'crush',
-          chatHistory: strategyChatHistory.map(m => ({ role: m.role, content: m.content })),
-          userMessage: userMsg,
-        }),
-        signal: controller.signal,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+      // Pro + has extracted thread from screenshot → use orchestrate for follow-ups
+      if (isPro && extractedThread) {
+        const res = await fetch('/api/x2/orchestrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userMessage: userMsg,
+            threadText: extractedThread,
+            chatHistory: richHistory,
+            goal: 'general',
+            relationshipContext: selectedContext || 'crush',
+            mode: 'chat',
+          }),
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+        if (data.mode === 'orchestrate') {
+          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: '', orchestration: data }]);
+          if (data.strategy) {
+            setStrategyData({
+              momentum: data.strategy.momentum,
+              balance: data.strategy.balance,
+              move: data.strategy.move,
+              latencyMs: data.latency?.total || 0,
+            });
+          }
+        } else {
+          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+        }
+      } else {
+        // Free users or no thread — use strategy-chat
+        const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
+        const res = await fetch('/api/strategy-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            threadContext: extractedThread || threadContext,
+            strategy: strategyData,
+            context: selectedContext || 'crush',
+            chatHistory: richHistory,
+            userMessage: userMsg,
+          }),
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+        setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+      }
     } catch (err: any) {
       const isTimeout = err?.name === 'AbortError';
       toast({
@@ -1789,9 +1999,8 @@ export default function AppPage() {
         description: 'Tap to retry your message',
         variant: 'destructive',
       });
-      // Remove the user message that failed instead of polluting history with error text
       setStrategyChatHistory(prev => prev.slice(0, -1));
-      setStrategyChatInput(userMsg); // Put message back so user can retry
+      setStrategyChatInput(userMsg);
     } finally {
       clearTimeout(timeout);
       setStrategyChatLoading(false);
@@ -2235,27 +2444,181 @@ export default function AppPage() {
             {!loadingSession && strategyChatHistory.length > 0 && (
               <div className="space-y-4">
                 {strategyChatHistory.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                      {/* Inline image thumbnails for screenshot uploads */}
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                    <div className={`max-w-[90%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                      {/* Inline image thumbnails */}
                       {msg.images && msg.images.length > 0 && (
-                        <div className={`flex gap-2 flex-wrap ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`flex gap-2 flex-wrap ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in zoom-in-95 duration-500`}>
                           {msg.images.map((img, imgIdx) => (
-                            <div key={imgIdx} className="relative rounded-xl overflow-hidden border border-white/[0.12] shadow-lg shadow-black/30 max-w-[180px]">
+                            <div key={imgIdx} className="relative rounded-2xl overflow-hidden border border-white/[0.10] shadow-xl shadow-black/40 max-w-[180px] hover:scale-[1.02] transition-transform">
                               <img src={img} alt={`Screenshot ${imgIdx + 1}`} className="w-full h-auto max-h-[240px] object-cover" />
+                              <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.08]" />
                             </div>
                           ))}
                         </div>
                       )}
-                      <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${
-                        msg.role === 'user'
-                          ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-br-md shadow-md shadow-violet-500/20'
-                          : 'bg-white/[0.07] text-white/90 border border-white/[0.08] rounded-bl-md'
-                      }`}>
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                      </div>
-                      {/* Strategy badges inline on coach response */}
-                      {msg.role === 'assistant' && strategyData && i === strategyChatHistory.length - 1 && (
+                      {/* Message bubble — skip if empty (orchestration-only messages) */}
+                      {msg.content && (
+                        <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${
+                          msg.role === 'user'
+                            ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-br-md shadow-md shadow-violet-500/20'
+                            : 'bg-white/[0.07] text-white/90 border border-white/[0.08] rounded-bl-md'
+                        }`}>
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      )}
+
+                      {/* ── Orchestration results (full pipeline — Pro) ── */}
+                      {msg.orchestration && (() => {
+                        const orch = msg.orchestration;
+                        const isExp = expandedCoachTrace === i;
+                        return (
+                          <div className="w-full space-y-2">
+                            {/* Strategy pills */}
+                            <div className="flex flex-wrap gap-1.5 px-1">
+                              <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                                orch.strategy.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
+                                orch.strategy.momentum === 'Declining' || orch.strategy.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
+                                'bg-white/[0.08] text-white/50'
+                              }`}>
+                                {orch.strategy.momentum === 'Rising' ? <TrendingUp className="h-2.5 w-2.5" /> : orch.strategy.momentum === 'Declining' || orch.strategy.momentum === 'Stalling' ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
+                                {orch.strategy.momentum}
+                              </span>
+                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{orch.strategy.balance}</span>
+                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                                orch.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
+                                orch.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
+                                'bg-violet-500/15 text-violet-300'
+                              }`}>{orch.strategy.move.energy.replace('_', ' ')}</span>
+                              {orch.strategy.move.risk === 'high' && (
+                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-500/15 text-red-400">⚠ high risk</span>
+                              )}
+                            </div>
+                            <p className="text-[12px] text-white/50 italic px-1">&ldquo;{orch.strategy.move.one_liner}&rdquo;</p>
+
+                            {/* Winner card */}
+                            {orch.winner && (
+                              <div className="relative">
+                                <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 z-10">
+                                  <Trophy className="h-2.5 w-2.5 text-amber-400" />
+                                  <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Winner</span>
+                                </div>
+                                <button
+                                  onClick={() => copyCoachText(orch.winner!.text, `w-${i}`)}
+                                  className="w-full text-left mt-1 px-4 pt-5 pb-3 rounded-xl bg-amber-500/[0.08] border border-amber-500/20 hover:bg-amber-500/[0.12] hover:border-amber-500/35 transition-all active:scale-[0.98] group"
+                                >
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[orch.winner.style]?.color || 'bg-white/10 text-white/50'}`}>
+                                      {STYLE_CONFIG[orch.winner.style]?.emoji} {STYLE_CONFIG[orch.winner.style]?.label || orch.winner.style}
+                                    </span>
+                                    <span className="text-[10px] text-amber-400/50 group-hover:text-amber-400 transition-colors">
+                                      {coachCopiedId === `w-${i}` ? <Check className="h-3 w-3" /> : 'Copy →'}
+                                    </span>
+                                  </div>
+                                  <p className="text-[14px] text-white/90 font-medium">{orch.winner.text}</p>
+                                  {orch.winner_reason && <p className="text-[10px] text-amber-400/40 mt-1.5">💡 {orch.winner_reason}</p>}
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Backup card */}
+                            {orch.backup && orch.backup.text !== orch.winner?.text && (
+                              <button
+                                onClick={() => copyCoachText(orch.backup!.text, `b-${i}`)}
+                                className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] transition-all active:scale-[0.98] group"
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Backup</span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[orch.backup.style]?.color || 'bg-white/10 text-white/50'}`}>
+                                      {STYLE_CONFIG[orch.backup.style]?.emoji} {STYLE_CONFIG[orch.backup.style]?.label || orch.backup.style}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-white/30 group-hover:text-white/60 transition-colors">
+                                    {coachCopiedId === `b-${i}` ? <Check className="h-3 w-3" /> : 'Copy →'}
+                                  </span>
+                                </div>
+                                <p className="text-[13px] text-white/70">{orch.backup.text}</p>
+                              </button>
+                            )}
+
+                            {/* Expand/collapse all candidates */}
+                            <button
+                              onClick={() => setExpandedCoachTrace(isExp ? null : i)}
+                              className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-white/25 hover:text-white/50 transition-colors"
+                            >
+                              {isExp ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              {isExp ? 'Hide' : 'Show'} all {orch.candidates?.length || 0} candidates + scores
+                              <span className="text-white/15 ml-1">{orch.latency.total}ms</span>
+                            </button>
+
+                            {/* Expanded trace */}
+                            {isExp && (
+                              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {/* Context extraction */}
+                                <div className="px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                                  <p className="text-[9px] font-bold text-white/25 uppercase tracking-wider mb-2">Context Extraction</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">tone: {orch.context_extraction.her_tone}</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">topic: {orch.context_extraction.topic}</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">goal: {orch.context_extraction.goal_detected}</span>
+                                  </div>
+                                  {orch.context_extraction.must_acknowledge.length > 0 && (
+                                    <div className="mt-1.5">
+                                      <p className="text-[9px] text-red-400/50 font-bold">Must acknowledge:</p>
+                                      {orch.context_extraction.must_acknowledge.map((a, idx) => (
+                                        <p key={idx} className="text-[10px] text-white/35 ml-2">• {a}</p>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* All candidates with scores */}
+                                {orch.candidates?.map((c, cIdx) => (
+                                  <button
+                                    key={cIdx}
+                                    onClick={() => copyCoachText(c.text, `c-${i}-${cIdx}`)}
+                                    className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all active:scale-[0.98] group ${
+                                      cIdx === orch.winner_id ? 'bg-amber-500/[0.06] border-amber-500/20' :
+                                      cIdx === orch.backup_id ? 'bg-white/[0.03] border-white/[0.08]' :
+                                      'bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04]'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <div className="flex items-center gap-1.5">
+                                        {cIdx === orch.winner_id && <Trophy className="h-3 w-3 text-amber-400" />}
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[c.style]?.color || 'bg-white/10 text-white/50'}`}>
+                                          {STYLE_CONFIG[c.style]?.emoji} {STYLE_CONFIG[c.style]?.label || c.style}
+                                        </span>
+                                        <span className="text-[9px] text-white/20">{c.word_count}w</span>
+                                      </div>
+                                      <span className="text-[10px] text-white/20 group-hover:text-white/50 transition-colors">
+                                        {coachCopiedId === `c-${i}-${cIdx}` ? <Check className="h-3 w-3 text-emerald-400" /> : 'Copy'}
+                                      </span>
+                                    </div>
+                                    <p className="text-[13px] text-white/75 mb-2">{c.text}</p>
+                                    <div className="space-y-1">
+                                      <CoachScoreBar label="Neediness" value={c.scores.neediness_risk} inverted />
+                                      <CoachScoreBar label="Clarity" value={c.scores.clarity} />
+                                      <CoachScoreBar label="Forward" value={c.scores.forward_motion} />
+                                      <CoachScoreBar label="Tone match" value={c.scores.tone_match} />
+                                    </div>
+                                    {c.notes && <p className="text-[9px] text-white/20 mt-1.5">{c.notes}</p>}
+                                  </button>
+                                ))}
+                                <div className="flex gap-3 px-2 text-[9px] text-white/15">
+                                  <span>Strategy: {orch.latency.strategy}ms</span>
+                                  <span>Gen: {orch.latency.generation}ms</span>
+                                  <span>Critic: {orch.latency.critic}ms</span>
+                                  <span className="text-white/25 font-bold">Total: {orch.latency.total}ms</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Strategy badges — only for non-orchestration coach responses */}
+                      {msg.role === 'assistant' && !msg.orchestration && strategyData && i === strategyChatHistory.length - 1 && (
                         <div className="flex flex-wrap gap-1.5 px-1">
                           <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
                             strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
@@ -2273,7 +2636,8 @@ export default function AppPage() {
                           }`}>{strategyData.move.energy.replace('_', ' ')}</span>
                         </div>
                       )}
-                      {/* Draft reply cards */}
+
+                      {/* Draft reply cards (free tier / coaching mode) */}
                       {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
                         <div className="w-full space-y-2">
                           <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach drafts</p>
@@ -2313,7 +2677,12 @@ export default function AppPage() {
                   <div className="flex justify-start">
                     <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.08] flex items-center gap-2">
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
-                      <span className="text-[13px] text-white/40">Thinking...</span>
+                      <span className="text-[13px] text-white/40">
+                        {coachPipelineStep === 'analyzing' ? 'Analyzing conversation...' :
+                         coachPipelineStep === 'generating' ? 'Generating 6 candidates...' :
+                         coachPipelineStep === 'scoring' ? 'Scoring & picking winner...' :
+                         'Thinking...'}
+                      </span>
                     </div>
                   </div>
                 )}
