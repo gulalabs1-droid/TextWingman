@@ -436,7 +436,7 @@ export async function POST(req: Request) {
   // Otherwise, run coaching mode
   const hasThread =
     effectiveText.includes("You:") && effectiveText.includes("Them:");
-  const shouldOrchestrate = mode === "orchestrate" || hasThread;
+  const shouldOrchestrate = mode === "orchestrate" || (mode !== "chat" && hasThread);
 
   if (!shouldOrchestrate) {
     // Coaching mode — pass threadText so follow-ups have screenshot context
