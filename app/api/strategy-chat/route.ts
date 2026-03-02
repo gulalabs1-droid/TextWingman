@@ -116,9 +116,7 @@ export async function POST(req: Request) {
 
   await ensureAdminAccess(user.id, user.email || "");
   const entitlement = await getUserTier(user.id, user.email || "");
-  if (!hasPro(entitlement.tier)) {
-    return NextResponse.json({ error: "Strategy Chat requires Pro" }, { status: 403 });
-  }
+  const isPro = hasPro(entitlement.tier);
 
   const { threadContext, strategy, context, chatHistory, userMessage } = await req.json();
 
@@ -126,10 +124,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
 
-  // ─── Context extraction (Option 2) — runs in parallel when thread exists ───
+  // ─── Context extraction (Option 2) — Pro only, runs in parallel when thread exists ───
   const hasThread = threadContext && threadContext.trim().length > 0;
   let contextData: ContextExtraction | null = null;
-  const contextPromise = hasThread
+  const contextPromise = hasThread && isPro
     ? extractContext(threadContext, context || "crush")
     : Promise.resolve(null);
 
@@ -255,7 +253,7 @@ FLOW:
       coachReply = raw.slice(0, draftMatch.index).trim();
 
       // ── Option 1: RuleAgent verification on drafts ──
-      if (draft && (draft.shorter || draft.spicier || draft.softer)) {
+      if (isPro && draft && (draft.shorter || draft.spicier || draft.softer)) {
         const strategyCtx = strategy
           ? `STRATEGY: ${JSON.stringify({
               momentum: strategy.momentum,

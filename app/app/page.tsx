@@ -1887,8 +1887,15 @@ export default function AppPage() {
             if (!res.ok) throw new Error(data.error || 'Failed');
             setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
           }
-        } catch {
-          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Couldn't analyze the screenshot right now. Try again or paste the conversation text." }]);
+        } catch (err: any) {
+          const msg = err?.message || '';
+          if (msg.includes('401') || msg.toLowerCase().includes('auth')) {
+            setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Sign in to get coaching on your screenshots. It's free." }]);
+          } else if (msg.includes('403')) {
+            setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Upgrade to Pro to unlock Deep Analysis — 6 scored candidates, winner badge, full strategy breakdown." }]);
+          } else {
+            setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: "Couldn't analyze the screenshot right now. Try again or paste the conversation text." }]);
+          }
         } finally {
           setStrategyChatLoading(false);
           setCoachPipelineStep(null);
