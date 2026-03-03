@@ -2721,8 +2721,34 @@ export default function AppPage() {
             )}
           </div>
 
+          {/* ─ Context selector row ─ */}
+          <div className="shrink-0 px-6 pt-3 pb-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-white/25 font-bold uppercase tracking-wider shrink-0">Who?</span>
+              {CONTEXT_OPTIONS.map((ctx) => (
+                <button
+                  key={ctx.value}
+                  onClick={() => setSelectedContext(selectedContext === ctx.value ? null : ctx.value as ContextType)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all active:scale-95 ${
+                    selectedContext === ctx.value
+                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                      : 'bg-white/[0.05] text-white/35 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/60'
+                  }`}
+                >
+                  {ctx.emoji} {ctx.label}
+                </button>
+              ))}
+              {selectedContext && (() => {
+                const cat = getContextCategory(selectedContext);
+                const catColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-pink-400/70';
+                const catIcon = cat === 'professional' ? '💼' : cat === 'platonic' ? '🤝' : '💘';
+                return <span className={`text-[10px] font-bold ml-1 ${catColor}`}>{catIcon} {cat}</span>;
+              })()}
+            </div>
+          </div>
+
           {/* ─ Input — pinned at bottom, never cut off ─ */}
-          <div className="shrink-0 px-6 pb-5 pt-3 border-t border-white/[0.06]">
+          <div className="shrink-0 px-6 pb-5 pt-2 border-t border-white/[0.06]">
             <div className="flex items-end gap-2">
               <button
                 onClick={() => coachFileInputRef.current?.click()}
