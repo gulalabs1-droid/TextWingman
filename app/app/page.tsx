@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy } from 'lucide-react';
 import { Logo } from '@/components/Logo';
-import { CURRENT_VERSION } from '@/lib/changelog';
+import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
@@ -262,7 +262,12 @@ export default function AppPage() {
   const [showExamples, setShowExamples] = useState(true);
   const [currentTagline, setCurrentTagline] = useState(0);
   const [showCraftedMessage, setShowCraftedMessage] = useState(false);
-  const [selectedContext, setSelectedContext] = useState<ContextType>(null);
+  const [selectedContext, setSelectedContext] = useState<ContextType>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('tw_context') as ContextType) || null;
+    }
+    return null;
+  });
   const [customContext, setCustomContext] = useState('');
   const [userIntent, setUserIntent] = useState('');
   const [sharing, setSharing] = useState<string | null>(null);
@@ -403,6 +408,20 @@ export default function AppPage() {
     }, 4000);
     return () => clearInterval(timer);
   }, [strategyChatInput, appMode, SMART_PLACEHOLDERS.length]);
+
+  // Changelog unread badge
+  const [hasUnread, setHasUnread] = useState(false);
+  useEffect(() => {
+    const lastSeen = localStorage.getItem('tw_changelog_seen');
+    const latest = CHANGELOG[0]?.date;
+    if (latest && (!lastSeen || lastSeen < latest)) setHasUnread(true);
+  }, []);
+
+  // Persist selected context across sessions
+  useEffect(() => {
+    if (selectedContext) localStorage.setItem('tw_context', selectedContext);
+    else localStorage.removeItem('tw_context');
+  }, [selectedContext]);
 
   // Show one-time feature spotlight for screenshot upload
   useEffect(() => {
@@ -2167,8 +2186,13 @@ export default function AppPage() {
             <Link href="/" className="transition-transform hover:scale-105">
               <Logo size="sm" showText={true} />
             </Link>
-            <Link href="/changelog" className="px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[10px] font-bold text-white/50 hover:text-white/80 transition-colors">
+            <Link
+              href="/changelog"
+              onClick={() => { localStorage.setItem('tw_changelog_seen', CHANGELOG[0]?.date || ''); setHasUnread(false); }}
+              className="relative px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[10px] font-bold text-white/50 hover:text-white/80 transition-colors"
+            >
               v{CURRENT_VERSION}
+              {hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-violet-500 animate-pulse" />}
             </Link>
           </div>
           <Link href="/profile" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
@@ -2667,32 +2691,40 @@ export default function AppPage() {
                       {/* Draft reply cards (free tier / coaching mode) */}
                       {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (() => {
                         const draftLabels = DRAFT_LABELS[getContextCategory(selectedContext)];
+                        const cat = getContextCategory(selectedContext);
+                        const accentA = cat === 'professional' ? 'hover:border-amber-500/30' : cat === 'platonic' ? 'hover:border-blue-500/30' : 'hover:border-violet-500/30';
+                        const accentB = cat === 'professional' ? 'hover:border-amber-500/20' : cat === 'platonic' ? 'hover:border-cyan-500/30' : 'hover:border-orange-500/30';
+                        const accentC = cat === 'professional' ? 'hover:border-amber-400/20' : cat === 'platonic' ? 'hover:border-blue-400/30' : 'hover:border-emerald-500/30';
+                        const copyA = cat === 'professional' ? 'text-amber-400/50 group-hover:text-amber-400' : cat === 'platonic' ? 'text-blue-400/50 group-hover:text-blue-400' : 'text-violet-400/50 group-hover:text-violet-400';
+                        const copyB = cat === 'professional' ? 'text-amber-300/50 group-hover:text-amber-300' : cat === 'platonic' ? 'text-cyan-400/50 group-hover:text-cyan-400' : 'text-orange-400/50 group-hover:text-orange-400';
+                        const copyC = cat === 'professional' ? 'text-amber-200/50 group-hover:text-amber-200' : cat === 'platonic' ? 'text-blue-300/50 group-hover:text-blue-300' : 'text-emerald-400/50 group-hover:text-emerald-400';
+                        const headerColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-emerald-400/70';
                         return (
                         <div className="w-full space-y-2">
-                          <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach drafts</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-wider px-1 ${headerColor}`}>Coach drafts</p>
                           {msg.draft.shorter && (
-                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '⚡ Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-violet-500/30 transition-all active:scale-[0.98] group">
+                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '⚡ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentA} transition-all active:scale-[0.98] group`}>
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ {draftLabels.a}</span>
-                                <span className="text-[10px] text-violet-400/50 group-hover:text-violet-400 transition-colors">Copy →</span>
+                                <span className={`text-[10px] transition-colors ${copyA}`}>Copy →</span>
                               </div>
                               <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
                             </button>
                           )}
                           {msg.draft.spicier && (
-                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-orange-500/30 transition-all active:scale-[0.98] group">
+                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentB} transition-all active:scale-[0.98] group`}>
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">🔥 {draftLabels.b}</span>
-                                <span className="text-[10px] text-orange-400/50 group-hover:text-orange-400 transition-colors">Copy →</span>
+                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">✦ {draftLabels.b}</span>
+                                <span className={`text-[10px] transition-colors ${copyB}`}>Copy →</span>
                               </div>
                               <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
                             </button>
                           )}
                           {msg.draft.softer && (
-                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-emerald-500/30 transition-all active:scale-[0.98] group">
+                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentC} transition-all active:scale-[0.98] group`}>
                               <div className="flex items-center justify-between mb-1">
                                 <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 {draftLabels.c}</span>
-                                <span className="text-[10px] text-emerald-400/50 group-hover:text-emerald-400 transition-colors">Copy →</span>
+                                <span className={`text-[10px] transition-colors ${copyC}`}>Copy →</span>
                               </div>
                               <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
                             </button>
@@ -2723,7 +2755,7 @@ export default function AppPage() {
 
           {/* ─ Context selector row ─ */}
           <div className="shrink-0 px-6 pt-3 pb-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
               <span className="text-[10px] text-white/25 font-bold uppercase tracking-wider shrink-0">Who?</span>
               {CONTEXT_OPTIONS.map((ctx) => (
                 <button
@@ -2742,7 +2774,7 @@ export default function AppPage() {
                 const cat = getContextCategory(selectedContext);
                 const catColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-pink-400/70';
                 const catIcon = cat === 'professional' ? '💼' : cat === 'platonic' ? '🤝' : '💘';
-                return <span className={`text-[10px] font-bold ml-1 ${catColor}`}>{catIcon} {cat}</span>;
+                return <span className={`text-[10px] font-bold ml-1 shrink-0 ${catColor}`}>{catIcon} {cat}</span>;
               })()}
             </div>
           </div>
@@ -2763,11 +2795,17 @@ export default function AppPage() {
                 value={strategyChatInput}
                 onChange={(e) => { setStrategyChatInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
-                placeholder={SMART_PLACEHOLDERS[placeholderIdx]}
                 rows={1}
                 disabled={strategyChatLoading}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[13px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
                 style={{ minHeight: '42px' }}
+                placeholder={selectedContext ? (
+                  getContextCategory(selectedContext) === 'professional'
+                    ? `Ask about your ${CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label.toLowerCase()}...`
+                    : getContextCategory(selectedContext) === 'platonic'
+                    ? `Ask about your ${CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label.toLowerCase()}...`
+                    : `Ask about your ${CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label.toLowerCase()}...`
+                ) : SMART_PLACEHOLDERS[placeholderIdx]}
               />
               <button
                 onClick={handleStrategyChatSend}
