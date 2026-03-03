@@ -6,12 +6,13 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
+import { getContextCategory, COACHING_PHILOSOPHY, DRAFT_LABELS, TONE_OPTIONS } from "@/lib/context-category";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ── Option 2: Context Extraction Agent ──────────────────
 interface ContextExtraction {
-  her_tone: string;
+  their_tone: string;
   topic: string;
   open_questions: string[];
   must_acknowledge: string[];
@@ -29,15 +30,15 @@ async function extractContext(
           role: "system",
           content: `You are a conversation context extractor. Analyze the thread and return ONLY valid JSON:
 {
-  "her_tone": "warm" | "neutral" | "cold" | "flirty" | "serious" | "stressed" | "playful" | "dry",
-  "topic": "logistics" | "flirting" | "conflict" | "safety" | "smalltalk" | "catching_up" | "planning" | "emotional",
+  "their_tone": ${TONE_OPTIONS[getContextCategory(relationshipContext)]},
+  "topic": "logistics" | "flirting" | "conflict" | "safety" | "smalltalk" | "catching_up" | "planning" | "emotional" | "work_request" | "feedback" | "scheduling",
   "open_questions": ["unanswered questions from either side"],
-  "must_acknowledge": ["things that CANNOT be ignored — compliments, vulnerable moments, direct questions, plans proposed"]
+  "must_acknowledge": ["things that CANNOT be ignored — compliments, vulnerable moments, direct questions, plans proposed, requests"]
 }
 Rules:
-- her_tone = the OTHER person's tone in their last 2-3 messages
+- their_tone = the OTHER person's tone in their last 2-3 messages
 - open_questions = things asked but not yet answered
-- must_acknowledge = if they said something vulnerable, asked a direct question, or proposed plans — MUST address it`,
+- must_acknowledge = if they said something vulnerable, asked a direct question, or proposed plans/requests — MUST address it`,
         },
         {
           role: "user",
@@ -153,7 +154,7 @@ export async function POST(req: Request) {
 
   const contextBlock = contextData
     ? `\nCONTEXT EXTRACTION (from dedicated analyzer):
-- Their tone: ${contextData.her_tone}
+- Their tone: ${contextData.their_tone}
 - Topic: ${contextData.topic}
 - Open questions: ${contextData.open_questions?.join(", ") || "none"}
 - MUST ACKNOWLEDGE (do NOT ignore these): ${contextData.must_acknowledge?.join(", ") || "none"}\n`
@@ -175,6 +176,8 @@ PERSONALITY:
 
 RELATIONSHIP CONTEXT: ${context || "crush/dating"}
 ${threadBlock}${strategyBlock}${contextBlock}
+${COACHING_PHILOSOPHY[getContextCategory(context)]}
+
 WHAT YOU CAN DO:
 1. Read a conversation (pasted text or extracted from screenshots) and give sharp strategy + reply options
 2. Answer questions about what to say or do — with SPECIFIC words, not vague tips
@@ -191,8 +194,8 @@ CRITICAL RULES FOR CONVERSATION TRACKING:
 - Track the evolving conversation: user shares what they received → you coach → user tells you what they sent → you coach the next move.
 
 REPLY GENERATION RULES:
-- 3 options: shorter (brief/casual), spicier (bold/playful), softer (warm/genuine)
-- ≤18 words each, no emojis, lowercase, sound like a real person
+- 3 options: ${DRAFT_LABELS[getContextCategory(context)].a.toLowerCase()} (brief/to the point), ${DRAFT_LABELS[getContextCategory(context)].b.toLowerCase()}, ${DRAFT_LABELS[getContextCategory(context)].c.toLowerCase()}
+- ≤18 words each, no emojis, sound like a real message
 - When you produce replies, put them at the END in this exact format:
   DRAFT: {"shorter": "...", "spicier": "...", "softer": "..."}
 - Only include DRAFT when you're suggesting reply options they could send. Don't include it for pure coaching.

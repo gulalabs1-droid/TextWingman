@@ -15,6 +15,12 @@ import {
   type StrategyResult,
   type ThreadMetrics,
 } from "@/lib/strategy";
+import {
+  getContextCategory,
+  CANDIDATE_STYLES,
+  COACHING_PHILOSOPHY,
+  TONE_OPTIONS,
+} from "@/lib/context-category";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -29,7 +35,7 @@ function getSupabaseAdmin() {
 type Goal = "set_date" | "tease" | "recover" | "support" | "de_escalate" | "general";
 
 interface ContextExtraction {
-  her_tone: string;
+  their_tone: string;
   topic: string;
   open_questions: string[];
   must_acknowledge: string[];
@@ -89,17 +95,17 @@ async function extractContext(
 
 Return ONLY valid JSON with these exact keys:
 {
-  "her_tone": "warm" | "neutral" | "cold" | "flirty" | "serious" | "stressed" | "playful" | "dry",
-  "topic": "logistics" | "flirting" | "conflict" | "safety" | "smalltalk" | "catching_up" | "planning" | "emotional",
+  "their_tone": ${TONE_OPTIONS[getContextCategory(relationshipContext)]},
+  "topic": "logistics" | "flirting" | "conflict" | "safety" | "smalltalk" | "catching_up" | "planning" | "emotional" | "work_request" | "feedback" | "scheduling",
   "open_questions": ["list of unanswered questions from either side"],
-  "must_acknowledge": ["things that CANNOT be ignored in the next reply — compliments, vulnerable moments, direct questions, plans proposed"],
+  "must_acknowledge": ["things that CANNOT be ignored in the next reply — compliments, vulnerable moments, direct questions, plans proposed, requests"],
   "goal_detected": "set_date" | "tease" | "recover" | "support" | "de_escalate" | "general"
 }
 
 Rules:
-- her_tone = the OTHER person's tone in their last 2-3 messages
+- their_tone = the OTHER person's tone in their last 2-3 messages
 - open_questions = things asked but not yet answered
-- must_acknowledge = if they said something vulnerable, asked a direct question, or proposed plans — you MUST address it
+- must_acknowledge = if they said something vulnerable, asked a direct question, or proposed plans/requests — you MUST address it
 - goal_detected = what the user is probably trying to do based on the conversation flow (override with user's explicit goal if provided)`,
       },
       {
@@ -116,7 +122,7 @@ Rules:
     return JSON.parse(res.choices[0].message.content || "{}");
   } catch {
     return {
-      her_tone: "neutral",
+      their_tone: "neutral",
       topic: "general" as any,
       open_questions: [],
       must_acknowledge: [],
@@ -149,30 +155,34 @@ async function generateCandidates(
     messages: [
       {
         role: "system",
-        content: `You are an elite texting copy generator. Generate exactly 6 reply candidates in different styles.
+        content: (() => {
+          const cat = getContextCategory(relationshipContext);
+          const styles = CANDIDATE_STYLES[cat];
+          const styleLines = styles.map((s, i) => `${i + 1}. "${s.name}" — ${s.description}`).join("\n");
+          const styleNames = styles.map(s => `{"text": "...", "style": "${s.name}"}`).join(", ");
+          const isPro = cat === "professional";
+          const wordLimit = isPro ? "≤20 words" : "≤12 words MAX. Aim for 4-8 words";
+          const toneRule = isPro
+            ? "Professional messages may use proper capitalization. Be clear and direct. No slang."
+            : `Sound like a REAL text message, not a written sentence. No periods at the end unless it adds tone. Lowercase.`;
+          return `You are an elite message copy generator. Generate exactly 6 reply candidates in different styles.
 
 STYLES (generate one of each):
-1. "hood_charisma" — smooth, confident, street-smart. Slang is fine. Swagger without trying too hard.
-2. "clean_direct" — clear, confident, no games. Says what needs to be said. Gentleman energy.
-3. "playful_tease" — lighthearted, flirty, fun. Teases without being mean. Creates tension.
-4. "bold_closer" — moves things forward. Pushes for plans, escalates. Confident ask.
-5. "warm_genuine" — honest, real, emotionally intelligent. Shows you care without being soft.
-6. "chill_unbothered" — low effort on purpose. Cool, not chasing. Less is more.
+${styleLines}
 
 RULES:
-- Each reply ≤12 words MAX. Aim for 4-8 words. Shorter = better. No emojis. Lowercase.
-- Sound like a REAL text message, not a written sentence. No periods at the end unless it adds tone.
-- One thought per reply. Never two sentences. Never two clauses joined by a period.
+- Each reply ${wordLimit}. Shorter = better. No emojis.
+- ${toneRule}
+- One thought per reply. Never two sentences.
 - Each reply MUST address what they actually said (reference their words/topic).
 - Follow the STRATEGY constraints exactly.
 - If must_acknowledge items exist, at least 4 of 6 candidates should address them.
-- Match their energy level EXACTLY. If they're giving 3-5 words, you give 3-5 words.
-- "chill_unbothered" should be 2-5 words max. "hood_charisma" should feel like a voice note transcription.
+- Match their energy level EXACTLY.
 
 ${strategyHint}
 
 CONTEXT EXTRACTION:
-- Her tone: ${context.her_tone}
+- Their tone: ${context.their_tone}
 - Topic: ${context.topic}
 - Open questions: ${context.open_questions.join(", ") || "none"}
 - Must acknowledge: ${context.must_acknowledge.join(", ") || "none"}
@@ -180,7 +190,8 @@ CONTEXT EXTRACTION:
 - Relationship: ${relationshipContext}
 
 Return ONLY valid JSON object with a "candidates" key:
-{"candidates": [{"text": "...", "style": "hood_charisma"}, {"text": "...", "style": "clean_direct"}, {"text": "...", "style": "playful_tease"}, {"text": "...", "style": "bold_closer"}, {"text": "...", "style": "warm_genuine"}, {"text": "...", "style": "chill_unbothered"}]}`,
+{"candidates": [${styleNames}]}`;
+        })(),
       },
       {
         role: "user",
@@ -243,7 +254,7 @@ FACT-RISK CHECK:
 - Hedge uncertain facts: "from what I saw...", "sounds like...", or ask to confirm.
 
 CONTEXT:
-- Her tone: ${context.her_tone}
+- Their tone: ${context.their_tone}
 - Must acknowledge: ${context.must_acknowledge.join(", ") || "none"}
 - Strategy energy: ${strategy.move.energy}
 - Strategy one-liner: "${strategy.move.one_liner}"
@@ -335,6 +346,8 @@ PERSONALITY:
 RELATIONSHIP CONTEXT: ${relationshipContext || "crush/dating"}
 GOAL: ${goal}
 ${threadBlock}
+${COACHING_PHILOSOPHY[getContextCategory(relationshipContext)]}
+
 MEMORY & CONTEXT RULES:
 - This is a CONTINUOUS coaching session. You have FULL memory of everything said in this chat.
 - The chat history includes your previous suggestions (winner replies, drafts, all candidate options). YOU KNOW what you already recommended.

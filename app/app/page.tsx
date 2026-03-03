@@ -11,6 +11,7 @@ import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
+import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -2646,38 +2647,41 @@ export default function AppPage() {
                       )}
 
                       {/* Draft reply cards (free tier / coaching mode) */}
-                      {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
+                      {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (() => {
+                        const draftLabels = DRAFT_LABELS[getContextCategory(selectedContext)];
+                        return (
                         <div className="w-full space-y-2">
                           <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach drafts</p>
                           {msg.draft.shorter && (
                             <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '⚡ Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-violet-500/30 transition-all active:scale-[0.98] group">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ Shorter</span>
+                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ {draftLabels.a}</span>
                                 <span className="text-[10px] text-violet-400/50 group-hover:text-violet-400 transition-colors">Copy →</span>
                               </div>
                               <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
                             </button>
                           )}
                           {msg.draft.spicier && (
-                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '🔥 Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-orange-500/30 transition-all active:scale-[0.98] group">
+                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-orange-500/30 transition-all active:scale-[0.98] group">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">🔥 Spicier</span>
+                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">🔥 {draftLabels.b}</span>
                                 <span className="text-[10px] text-orange-400/50 group-hover:text-orange-400 transition-colors">Copy →</span>
                               </div>
                               <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
                             </button>
                           )}
                           {msg.draft.softer && (
-                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '💚 Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-emerald-500/30 transition-all active:scale-[0.98] group">
+                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }} className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] hover:border-emerald-500/30 transition-all active:scale-[0.98] group">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 Softer</span>
+                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 {draftLabels.c}</span>
                                 <span className="text-[10px] text-emerald-400/50 group-hover:text-emerald-400 transition-colors">Copy →</span>
                               </div>
                               <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
                             </button>
                           )}
                         </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
