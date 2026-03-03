@@ -11,7 +11,7 @@ const jsonLd = {
   name: 'Text Wingman',
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web',
-  description: 'AI texting coach that reads your conversation, gives strategy, and generates replies you\'d actually send. One coach for every situation.',
+  description: 'AI texting coach that reads your conversation, gives strategy, and generates replies you\'d actually send. Crush, ex, friend, coworker — one coach that adapts to every situation.',
   url: 'https://textwingman.com',
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
@@ -87,9 +87,9 @@ export default function HomePage() {
       {/* ═══ HERO ═══ */}
       <section className="container mx-auto px-4 pt-16 pb-16 md:pt-24 md:pb-24">
         <div className="max-w-4xl mx-auto text-center space-y-6 mb-14 md:mb-20">
-          <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-300 px-4 py-1.5 rounded-full text-xs font-bold border border-amber-500/20">
+          <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
             <Sparkles className="h-3.5 w-3.5" />
-            New — Deep Analysis: 6 scored candidates, one clear winner
+            New — Context-Aware Coach: friend, work &amp; dating modes
           </div>
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.05]">
             Stop overthinking.
@@ -295,9 +295,9 @@ export default function HomePage() {
         <div className="flex gap-4 overflow-x-auto px-4 pb-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible md:px-0 md:pb-0 max-w-4xl md:mx-auto scrollbar-hide">
           {[
             { icon: '🏆', title: 'Deep Analysis', desc: '6 candidates scored by a critic agent. Winner badge. Backup option.' },
+            { icon: '🎯', title: 'Context-aware mode', desc: 'Dating, friend, or work — Coach changes its whole coaching approach for each.' },
             { icon: '📊', title: 'Visible metrics', desc: 'Neediness Risk, Clarity, Forward Motion — see exactly why it won.' },
             { icon: '🔍', title: 'Decode messages', desc: 'Intent, subtext, red/green flags revealed.' },
-            { icon: '✨', title: 'Write openers', desc: 'First message for any platform or situation.' },
             { icon: '🔥', title: 'Revive dead chats', desc: 'Re-engage without looking thirsty.' },
             { icon: '📸', title: 'Screenshot upload', desc: 'Drop it in — triggers the full analysis pipeline.' },
           ].map((f) => (
@@ -310,20 +310,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ SCENARIOS — 3 strongest cards ═══ */}
+      {/* ═══ SCENARIOS — 6 cards across 3 categories ═══ */}
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Built for real situations.</h2>
-          <p className="text-white/50">Crush, ex, dead chat — Coach adapts.</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Built for every situation.</h2>
+          <p className="text-white/50">Coach knows who you&apos;re talking to and changes its whole approach.</p>
+          <div className="flex items-center justify-center gap-3 mt-5">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-pink-500/10 text-pink-300 border border-pink-500/20">💘 Dating</span>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/20">🤝 Friends</span>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">💼 Work</span>
+          </div>
         </div>
-        <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
           {[
-            { emoji: '💘', title: 'The crush you can\'t read', desc: 'Left on delivered for 6 hours then replied "lol sorry I fell asleep." What do you say?', color: 'border-pink-500/20 hover:border-pink-500/30' },
-            { emoji: '💔', title: 'The ex who texted back', desc: '"Hey, been thinking about you" at 1am. Not too eager, not too cold.', color: 'border-red-500/20 hover:border-red-500/30' },
-            { emoji: '', title: 'The convo that died', desc: 'Talking every day, then nothing for 4 days. Coach writes the re-engagement.', color: 'border-cyan-500/20 hover:border-cyan-500/30' },
+            { emoji: '💘', tag: 'Dating', tagColor: 'bg-pink-500/10 text-pink-300 border-pink-500/20', title: 'The crush you can\'t read', desc: 'Left on delivered for 6 hours then replied "lol sorry I fell asleep." Coach reads the momentum and gives you the exact move.', color: 'border-pink-500/20 hover:border-pink-500/30' },
+            { emoji: '💔', tag: 'Dating', tagColor: 'bg-pink-500/10 text-pink-300 border-pink-500/20', title: 'The ex who texted back', desc: '"Hey, been thinking about you" at 1am. Not too eager, not too cold — Coach walks the line perfectly.', color: 'border-red-500/20 hover:border-red-500/30' },
+            { emoji: '🧊', tag: 'Dating', tagColor: 'bg-pink-500/10 text-pink-300 border-pink-500/20', title: 'The convo that died', desc: 'Talking every day, then nothing for 4 days. Coach writes the re-engagement without looking thirsty.', color: 'border-cyan-500/20 hover:border-cyan-500/30' },
+            { emoji: '🤝', tag: 'Friend', tagColor: 'bg-blue-500/10 text-blue-300 border-blue-500/20', title: 'The friendship that\'s drifting', desc: 'You used to talk every day. Now it\'s been two weeks. Coach helps you reach back without making it weird.', color: 'border-blue-500/20 hover:border-blue-500/30' },
+            { emoji: '😬', tag: 'Friend', tagColor: 'bg-blue-500/10 text-blue-300 border-blue-500/20', title: 'After the awkward moment', desc: 'Said something weird, or they did. Coach helps you address it directly and move on — no over-apologizing.', color: 'border-indigo-500/20 hover:border-indigo-500/30' },
+            { emoji: '💼', tag: 'Work', tagColor: 'bg-amber-500/10 text-amber-300 border-amber-500/20', title: 'The message to your boss', desc: 'Asking for something, pushing back, or following up. Coach calibrates for professional dynamics — clear ask, right tone.', color: 'border-amber-500/20 hover:border-amber-500/30' },
           ].map((s, i) => (
             <div key={i} className={`bg-white/[0.03] border ${s.color} rounded-2xl p-6 transition-all hover:bg-white/[0.05] hover:-translate-y-1 hover:shadow-lg duration-300`}>
-              <span className="text-3xl mb-4 block">{s.emoji}</span>
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-3xl">{s.emoji}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${s.tagColor}`}>{s.tag}</span>
+              </div>
               <h3 className="font-bold text-white mb-2">{s.title}</h3>
               <p className="text-white/40 text-sm leading-relaxed">{s.desc}</p>
             </div>
@@ -410,6 +421,7 @@ export default function HomePage() {
             { q: 'Can you see my conversations?', a: 'No. Messages are processed in real-time and never stored. We don\'t connect to your messaging apps.' },
             { q: 'What apps does it work with?', a: 'All of them. iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Telegram, LinkedIn — anything with text.' },
             { q: 'How is this different from ChatGPT?', a: 'ChatGPT gives you one generic paragraph. Wingman runs a full analysis — 6 reply options generated and scored against each other by a critic agent. You see a winner, a backup, strategy pills, and visible metrics. No guessing. No robotic sentences.' },
+            { q: 'Does it work for texts outside of dating?', a: 'Yes — and the coaching actually changes based on who you\'re texting. Select Friend or Work and Coach switches to a completely different mode. Work messages get professional calibration (clarity, no slang, power dynamics). Friend messages get warmth and honesty without pressure. Dating is still the core focus, but everything else is fully supported.' },
             { q: 'Will people know I\'m using AI?', a: 'No. Every reply sounds like a real person — lowercase, casual, no emojis. The 18-word limit keeps it natural. Plus you can edit any reply.' },
           ].map((faq, i) => (
             <details key={i} className="group bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.05] hover:border-white/[0.14] transition-all duration-300">

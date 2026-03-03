@@ -376,11 +376,14 @@ export default function AppPage() {
   // ── Dynamic placeholder rotation ──────────────────────
   const SMART_PLACEHOLDERS = [
     'Ask anything or paste a message...',
-    'Decode why she sent "k."...',
+    'Decode why they sent "k."...',
     'What should I reply to this?',
     'Is this a good sign or bad?',
     'Help me start something new...',
     'Am I overthinking this?',
+    'How do I bring this up with my coworker?',
+    'My friend went cold — what do I say?',
+    'How do I follow up without being pushy?',
   ];
 
   // Auto-resize + focus coach textarea when input is set programmatically (chip tap, Smart Preview)
@@ -2419,7 +2422,22 @@ export default function AppPage() {
               const isWeekend = [0, 5, 6].includes(new Date().getDay());
               const hasThread = savedThreads.length > 0;
               const threadName = hasThread ? savedThreads[0]?.name?.split(' ').slice(0, 2).join(' ') : '';
-              const chips = [
+              const cat = getContextCategory(selectedContext);
+              const chips = cat === 'professional' ? [
+                { emoji: '💼', label: 'Draft the message', sub: 'Clear ask, right tone', prompt: 'Help me write a professional message', glow: true },
+                { emoji: '📋', label: 'Follow up', sub: 'Without being pushy', prompt: 'How do I follow up on this without looking desperate?', glow: false },
+                { emoji: '🤝', label: 'Push back', sub: 'Professionally', prompt: 'Help me disagree or push back on this professionally', glow: false },
+                { emoji: '🔍', label: 'Decode this', sub: 'What do they actually mean?', prompt: 'Decode this work message for me — what are they really saying?', glow: false },
+                { emoji: '⚡', label: 'Make it shorter', sub: 'Cut the fluff', prompt: 'Make this message shorter and more direct', glow: false },
+                { emoji: '🎯', label: 'Nail the tone', sub: 'Calibrate for your audience', prompt: 'Is this the right tone for my boss / coworker?', glow: false },
+              ] : cat === 'platonic' ? [
+                { emoji: '🤝', label: 'Reach back out', sub: hasThread ? `Reconnect with ${threadName}` : 'Without making it weird', prompt: "Help me reach back out to a friend I haven't talked to in a while", glow: hasThread },
+                { emoji: '💬', label: "What'd they say?", sub: 'Craft the right reply', prompt: 'Help me reply to this message', glow: false },
+                { emoji: '🔍', label: 'Decode this', sub: 'Read between the lines', prompt: 'Decode their message for me — what does it really mean?', glow: false },
+                { emoji: '😬', label: 'Fix the awkward', sub: 'Address it and move on', prompt: 'Help me address an awkward situation with my friend', glow: false },
+                { emoji: '💚', label: 'Check in', sub: 'Warm but not intense', prompt: 'Write me a genuine check-in message — warm but no pressure', glow: isWeekend },
+                { emoji: '📊', label: 'Read the situation', sub: 'Where do things stand?', prompt: 'Read this conversation and tell me where things stand with my friend', glow: false },
+              ] : [
                 { emoji: '💬', label: "What'd they say?", sub: hasThread ? `Reply to ${threadName}` : 'Craft the perfect reply', prompt: 'Help me reply to this message', glow: hasThread },
                 { emoji: '🔍', label: 'Decode this', sub: hasThread ? `Decode ${threadName}'s message` : 'Read between the lines', prompt: 'Decode their message for me', glow: false },
                 { emoji: '✨', label: isEvening ? 'Flirty opener 🔥' : 'Start the convo', sub: isEvening ? 'Prime time to move' : 'Break the ice', prompt: isEvening ? 'Write me a flirty opener for tonight' : 'Write me a great opener', glow: isEvening },
@@ -2776,11 +2794,12 @@ export default function AppPage() {
                   </button>
                 ))}
               </div>
-              {selectedContext && (
-                <p className="text-xs text-violet-400/80 font-medium animate-in fade-in duration-200">
-                  Replies will be optimized for {CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label}
-                </p>
-              )}
+              {selectedContext && (() => {
+                const cat = getContextCategory(selectedContext);
+                const catLabel = cat === 'professional' ? '💼 Professional mode — clarity, tone, power dynamics' : cat === 'platonic' ? '🤝 Friend & Family mode — warmth, honesty, genuine connection' : '💘 Dating mode — attraction, energy, forward motion';
+                const catColor = cat === 'professional' ? 'text-amber-400/80' : cat === 'platonic' ? 'text-blue-400/80' : 'text-pink-400/80';
+                return <p className={`text-xs font-medium animate-in fade-in duration-200 ${catColor}`}>{catLabel}</p>;
+              })()}
               {/* Custom context input */}
               <div className="relative animate-in fade-in duration-200">
                 <input

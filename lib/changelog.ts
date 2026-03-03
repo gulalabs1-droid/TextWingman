@@ -10,6 +10,50 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.6.0',
+    date: '2026-03-03',
+    title: 'Context-Aware Coaching — Friend, Work, Family & More',
+    description: 'Coach now understands who you\'re texting and changes its entire approach accordingly. A work Slack message gets professional calibration. A friend conversation gets warmth and honesty. A crush still gets the full dating playbook. One coach, every situation.',
+    type: 'milestone',
+    highlights: [
+      'Three coaching modes — Romantic (crush, ex, new match), Platonic (friend, family), and Professional (colleague, work) — each with a fully distinct coaching philosophy',
+      'Professional mode: Coach focuses on clarity of ask, power dynamics (peer vs superior), zero ambiguity, and professional tone — no dating metaphors, no "chasing" advice',
+      'Platonic mode: Coach reads emotional temperature (drifting, stressed, distant), focuses on genuine connection without pressure, doesn\'t manufacture drama',
+      'Context-aware candidate styles — Professional gets Clear Ask, Diplomatic, Direct Professional, Warm Collegial, Concise, Assertive. Platonic gets Warm Genuine, Honest Direct, Check In, Lighthearted',
+      'Context-aware draft labels — "Spicier" becomes "More Formal" for work, "Warmer" for friends. Labels match the actual situation',
+      'Neutral tone detection — "her_tone" replaced with "their_tone" throughout the analysis pipeline. Works for anyone',
+      'Word limits adapt — Professional replies allow up to 20 words (proper capitalization, no slang). Romantic replies stay ≤12 words lowercase',
+    ],
+  },
+  {
+    version: '4.5.0',
+    date: '2026-02-28',
+    title: 'Admin Dashboard — Executive Metrics & Activity Intelligence',
+    description: 'Full admin dashboard revamp with live KPI cards, sparklines, revenue projections, a growth funnel, real-time activity feed, and AI performance insights. Built for seeing exactly what\'s happening at a glance.',
+    type: 'improvement',
+    highlights: [
+      'Executive KPI row — signups, generations, MRR, and paid users each with a 7-day sparkline and week-over-week % comparison',
+      'Revenue & Monetization — MRR sparkline, projected annual run rate, and a Plan Health donut chart showing free vs weekly vs annual split',
+      'Growth Funnel — horizontal funnel visualization from Signed Up → First Generation → Paid with drop-off percentages at each stage',
+      'Recent Activity Feed — live stream of the last 24h events: signups, generations, plan upgrades, labeled with relative timestamps',
+      'AI Performance card — generation stats, pipeline health, and contextual growth tip based on current funnel data',
+      'Quick Actions — one-click CSV exports for all users, paid users, churn list, and funnel data',
+      'Animated number counts, violet/fuchsia sparklines, hover lift effects throughout',
+    ],
+  },
+  {
+    version: '4.4.1',
+    date: '2026-03-03',
+    title: 'Screenshot Polish & Smart Preview Fix',
+    description: 'Two UX fixes for the Coach interface: redundant screenshot label removed, and the smart preview pill no longer navigates away from your current session.',
+    type: 'fix',
+    highlights: [
+      'Screenshot upload — removed the redundant "📸 Screenshot uploaded" text bubble. The thumbnail is self-explanatory; no need for a caption below it',
+      'Smart Preview navigation fix — the "🔥 [last thread]" pill at the top of an empty Coach session no longer calls loadThread() and replaces your session. Now pre-fills the input with context so you stay in Coach',
+      'Smart Preview label changed from "Continue" to "Ask about it" to match the actual new behavior',
+    ],
+  },
+  {
     version: '4.4.0',
     date: '2026-02-27',
     title: 'Deep Analysis Mode — 6 Candidates, Scored & Ranked',
