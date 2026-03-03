@@ -1780,11 +1780,11 @@ export default function AppPage() {
         return base64;
       }));
 
-      // Add a user message with image thumbnails immediately
+      // Add a user message with image thumbnails immediately (no text — thumbnail is enough)
       const imageUrls = fileData.map(b64 => b64);
       setStrategyChatHistory(prev => [...prev, {
         role: 'user',
-        content: files.length === 1 ? '📸 Screenshot uploaded' : `📸 ${files.length} screenshots uploaded`,
+        content: '',
         images: imageUrls,
       }]);
 
@@ -2383,7 +2383,8 @@ export default function AppPage() {
                 <button
                   onClick={() => {
                     if (preview.type === 'thread' && preview.thread) {
-                      handleLoadThread(preview.thread);
+                      // Pre-fill coach input with thread context rather than loading the old session
+                      setStrategyChatInput(`Help me with ${preview.thread.name || 'my last conversation'}`);
                     } else {
                       setStrategyChatInput(preview.text.replace('?', ''));
                     }
@@ -2401,7 +2402,7 @@ export default function AppPage() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       <span className="text-[9px] text-violet-400/60 font-bold uppercase tracking-wider group-hover:text-violet-400 transition-colors">
-                        {preview.type === 'thread' ? 'Continue' : 'Try it'}
+                        {preview.type === 'thread' ? 'Ask about it' : 'Try it'}
                       </span>
                       <ArrowRight className="h-3 w-3 text-violet-400/40 group-hover:text-violet-400 transition-all" />
                     </div>
