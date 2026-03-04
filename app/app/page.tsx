@@ -1890,7 +1890,7 @@ export default function AppPage() {
                 threadText,
                 chatHistory: richHistory,
                 goal: 'general',
-                relationshipContext: selectedContext || 'crush',
+                relationshipContext: selectedContext || 'not specified',
                 mode: 'orchestrate',
               }),
             });
@@ -2008,7 +2008,7 @@ export default function AppPage() {
             threadText: extractedThread,
             chatHistory: richHistory,
             goal: 'general',
-            relationshipContext: selectedContext || 'crush',
+            relationshipContext: selectedContext || 'not specified',
             mode: 'chat',
           }),
           signal: controller.signal,
@@ -2454,6 +2454,39 @@ export default function AppPage() {
               </div>
             )}
 
+            {/* ── Start here — 3 entry-point cards (empty state) ── */}
+            {!loadingSession && strategyChatHistory.length === 0 && (
+              <div className="mb-4 animate-in fade-in duration-500">
+                <p className="text-[10px] text-white/20 font-bold uppercase tracking-wider mb-2 px-1">Start with</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => coachFileInputRef.current?.click()}
+                    className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                  >
+                    <span className="text-xl">📸</span>
+                    <span className="text-[11px] font-semibold text-white/55">Screenshot</span>
+                    <span className="text-[9px] text-white/25">Upload a convo</span>
+                  </button>
+                  <button
+                    onClick={() => { setStrategyChatInput('Help me reply to this: '); setTimeout(() => coachTextareaRef.current?.focus(), 50); }}
+                    className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                  >
+                    <span className="text-xl">💬</span>
+                    <span className="text-[11px] font-semibold text-white/55">Paste message</span>
+                    <span className="text-[9px] text-white/25">Get a reply</span>
+                  </button>
+                  <button
+                    onClick={() => { setTimeout(() => coachTextareaRef.current?.focus(), 50); }}
+                    className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                  >
+                    <span className="text-xl">🤔</span>
+                    <span className="text-[11px] font-semibold text-white/55">Just ask</span>
+                    <span className="text-[9px] text-white/25">Any situation</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Loading session overlay */}
             {loadingSession && (
               <div className="flex items-center justify-center py-16">
@@ -2780,31 +2813,40 @@ export default function AppPage() {
                         <div className="w-full space-y-2">
                           <p className={`text-[10px] font-bold uppercase tracking-wider px-1 ${headerColor}`}>Coach drafts</p>
                           {msg.draft.shorter && (
-                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '⚡ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentA} transition-all active:scale-[0.98] group`}>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ {draftLabels.a}</span>
-                                <span className={`text-[10px] transition-colors ${copyA}`}>Copy →</span>
-                              </div>
-                              <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
-                            </button>
+                            <div>
+                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '⚡ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentA} transition-all active:scale-[0.98] group`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ {draftLabels.a}</span>
+                                  <span className={`text-[10px] transition-colors ${copyA}`}>Copy →</span>
+                                </div>
+                                <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
+                              </button>
+                              <button onClick={() => { setStrategyChatInput(`I'm thinking of sending this: "${msg.draft!.shorter}" — is this the right move?`); setTimeout(() => coachTextareaRef.current?.focus(), 50); }} className="w-full px-4 py-1 text-left text-[10px] text-white/20 hover:text-violet-400 transition-colors">Coach this →</button>
+                            </div>
                           )}
                           {msg.draft.spicier && (
-                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentB} transition-all active:scale-[0.98] group`}>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">✦ {draftLabels.b}</span>
-                                <span className={`text-[10px] transition-colors ${copyB}`}>Copy →</span>
-                              </div>
-                              <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
-                            </button>
+                            <div>
+                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentB} transition-all active:scale-[0.98] group`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">✦ {draftLabels.b}</span>
+                                  <span className={`text-[10px] transition-colors ${copyB}`}>Copy →</span>
+                                </div>
+                                <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
+                              </button>
+                              <button onClick={() => { setStrategyChatInput(`I'm thinking of sending this: "${msg.draft!.spicier}" — is this the right move?`); setTimeout(() => coachTextareaRef.current?.focus(), 50); }} className="w-full px-4 py-1 text-left text-[10px] text-white/20 hover:text-violet-400 transition-colors">Coach this →</button>
+                            </div>
                           )}
                           {msg.draft.softer && (
-                            <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentC} transition-all active:scale-[0.98] group`}>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 {draftLabels.c}</span>
-                                <span className={`text-[10px] transition-colors ${copyC}`}>Copy →</span>
-                              </div>
-                              <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
-                            </button>
+                            <div>
+                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentC} transition-all active:scale-[0.98] group`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 {draftLabels.c}</span>
+                                  <span className={`text-[10px] transition-colors ${copyC}`}>Copy →</span>
+                                </div>
+                                <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
+                              </button>
+                              <button onClick={() => { setStrategyChatInput(`I'm thinking of sending this: "${msg.draft!.softer}" — is this the right move?`); setTimeout(() => coachTextareaRef.current?.focus(), 50); }} className="w-full px-4 py-1 text-left text-[10px] text-white/20 hover:text-violet-400 transition-colors">Coach this →</button>
+                            </div>
                           )}
                         </div>
                         );
@@ -2847,12 +2889,14 @@ export default function AppPage() {
                   {ctx.emoji} {ctx.label}
                 </button>
               ))}
-              {selectedContext && (() => {
+              {selectedContext ? (() => {
                 const cat = getContextCategory(selectedContext);
                 const catColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-pink-400/70';
                 const catIcon = cat === 'professional' ? '💼' : cat === 'platonic' ? '🤝' : '💘';
                 return <span className={`text-[10px] font-bold ml-1 shrink-0 ${catColor}`}>{catIcon} {cat}</span>;
-              })()}
+              })() : (
+                <span className="text-[10px] text-white/15 shrink-0 ml-1 italic">← set for smarter results</span>
+              )}
             </div>
           </div>
 
