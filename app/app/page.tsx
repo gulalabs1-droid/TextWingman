@@ -283,7 +283,13 @@ export default function AppPage() {
   const [openerUsed, setOpenerUsed] = useState(0);
   const [openerLimit, setOpenerLimit] = useState(1);
   const [isPro, setIsPro] = useState(false);
-  const [useV2, setUseV2] = useState(true); // Pro users default to V2, can toggle to V1 for speed
+  const [useV2, setUseV2] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('tw_use_v2');
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  }); // Pro users default to V2, can toggle to V1 for speed
   const [v2Meta, setV2Meta] = useState<V2Meta>(null);
   const [v2Step, setV2Step] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -408,6 +414,11 @@ export default function AppPage() {
     }, 4000);
     return () => clearInterval(timer);
   }, [strategyChatInput, appMode, SMART_PLACEHOLDERS.length]);
+
+  // Persist useV2 preference
+  useEffect(() => {
+    localStorage.setItem('tw_use_v2', String(useV2));
+  }, [useV2]);
 
   // Once-per-day V1/V2 mode reminder
   const [showModeReminder, setShowModeReminder] = useState(false);
@@ -2597,7 +2608,23 @@ export default function AppPage() {
                             </div>
                             <p className="text-[12px] text-white/50 italic px-1">&ldquo;{orch.strategy.move.one_liner}&rdquo;</p>
 
-                            {/* Winner card */}
+                            {/* Quick copy winner row — above the full card */}
+                            {orch.winner && (
+                              <div className="flex items-center gap-2 px-1">
+                                <button
+                                  onClick={() => copyCoachText(orch.winner!.text, `qw-${i}`)}
+                                  className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/[0.10] border border-amber-500/25 hover:bg-amber-500/[0.16] hover:border-amber-500/40 transition-all active:scale-[0.98] group"
+                                >
+                                  <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                                  <p className="text-[13px] text-white/90 font-medium truncate flex-1">{orch.winner.text}</p>
+                                  <span className="text-[10px] font-bold text-amber-400/60 group-hover:text-amber-400 transition-colors shrink-0">
+                                    {coachCopiedId === `qw-${i}` ? '✓ Copied' : 'Copy →'}
+                                  </span>
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Winner card detail */}
                             {orch.winner && (
                               <div className="relative">
                                 <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 z-10">
