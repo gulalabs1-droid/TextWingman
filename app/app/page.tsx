@@ -245,7 +245,7 @@ const ENERGY_CONFIG: Record<string, { emoji: string; color: string; bg: string }
 type ContextType = 'crush' | 'friend' | 'colleague' | 'family' | 'ex' | 'new_match' | null;
 
 const CONTEXT_OPTIONS = [
-  { value: 'crush', label: 'Crush/Dating', emoji: '💘', description: 'Someone you\'re into' },
+  { value: 'crush', label: 'Crush', emoji: '💘', description: 'Someone you\'re into' },
   { value: 'friend', label: 'Friend', emoji: '🤝', description: 'Close friend' },
   { value: 'colleague', label: 'Work', emoji: '💼', description: 'Professional' },
   { value: 'family', label: 'Family', emoji: '👪', description: 'Family member' },
@@ -381,7 +381,7 @@ export default function AppPage() {
       const ctx = recentThread.context ? ` (${recentThread.context})` : '';
       return { type: 'thread' as const, thread: recentThread, emoji: '🔥', text: `${name}${ctx}`, sub: 'Tap to pick up where you left off' };
     }
-    return { type: 'time' as const, ...getTimeGreeting() };
+    return null;
   };
 
   // ── Dynamic placeholder rotation ──────────────────────
@@ -2259,17 +2259,7 @@ export default function AppPage() {
           </div>
         )}
 
-        {/* Pro Status Badge - Compact */}
-        {isPro && (
-          <div className={`mb-5 px-4 py-3 rounded-2xl flex items-center justify-center gap-2.5 ${
-            useV2 ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-violet-500/10 border border-violet-500/20'
-          }`}>
-            {useV2 ? <Shield className="h-4 w-4 text-emerald-400" /> : <Zap className="h-4 w-4 text-violet-400" />}
-            <span className={`text-xs font-bold ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>{useV2 ? 'V2 Verified' : 'V1 Fast Mode'}</span>
-            <span className="text-white/15">·</span>
-            <span className={`text-xs ${useV2 ? 'text-emerald-400/60' : 'text-violet-400/60'}`}>{useV2 ? '≤18 words · No emojis · Tone-checked' : 'Quick replies · No strategy overhead'}</span>
-          </div>
-        )}
+        {/* Pro Status Badge removed — V2 On button in Coach header serves this purpose */}
 
         {/* Usage Bar - Hidden for Pro users */}
         {usageCount > 0 && !isPro && (
@@ -2454,38 +2444,45 @@ export default function AppPage() {
               </div>
             )}
 
-            {/* ── Start here — 3 entry-point cards (empty state) ── */}
-            {!loadingSession && strategyChatHistory.length === 0 && (
-              <div className="mb-4 animate-in fade-in duration-500">
-                <p className="text-[10px] text-white/20 font-bold uppercase tracking-wider mb-2 px-1">Start with</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    onClick={() => coachFileInputRef.current?.click()}
-                    className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
-                  >
-                    <span className="text-xl">📸</span>
-                    <span className="text-[11px] font-semibold text-white/55">Screenshot</span>
-                    <span className="text-[9px] text-white/25">Upload a convo</span>
-                  </button>
-                  <button
-                    onClick={() => { setStrategyChatInput('Help me reply to this: '); setTimeout(() => coachTextareaRef.current?.focus(), 50); }}
-                    className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
-                  >
-                    <span className="text-xl">💬</span>
-                    <span className="text-[11px] font-semibold text-white/55">Paste message</span>
-                    <span className="text-[9px] text-white/25">Get a reply</span>
-                  </button>
-                  <button
-                    onClick={() => { setTimeout(() => coachTextareaRef.current?.focus(), 50); }}
-                    className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
-                  >
-                    <span className="text-xl">🤔</span>
-                    <span className="text-[11px] font-semibold text-white/55">Just ask</span>
-                    <span className="text-[9px] text-white/25">Any situation</span>
-                  </button>
+            {/* ── Start here — entry-point cards (empty state) ── */}
+            {!loadingSession && strategyChatHistory.length === 0 && (() => {
+              const recentThread = savedThreads.length > 0
+                ? savedThreads.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0]
+                : null;
+              return (
+                <div className="mb-4 animate-in fade-in duration-500">
+                  <p className="text-[10px] text-white/20 font-bold uppercase tracking-wider mb-2 px-1">Start with</p>
+                  <div className={`grid gap-2 ${recentThread ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    <button
+                      onClick={() => coachFileInputRef.current?.click()}
+                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                    >
+                      <span className="text-xl">📸</span>
+                      <span className="text-[11px] font-semibold text-white/55">Screenshot</span>
+                      <span className="text-[9px] text-white/25">Upload a convo</span>
+                    </button>
+                    <button
+                      onClick={() => { setStrategyChatInput('Help me reply to this: '); setTimeout(() => coachTextareaRef.current?.focus(), 50); }}
+                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                    >
+                      <span className="text-xl">💬</span>
+                      <span className="text-[11px] font-semibold text-white/55">Paste message</span>
+                      <span className="text-[9px] text-white/25">Get a reply</span>
+                    </button>
+                    {recentThread && (
+                      <button
+                        onClick={() => { setStrategyChatInput(`Pick up where we left off with ${recentThread.name || 'my last convo'}`); setTimeout(() => coachTextareaRef.current?.focus(), 50); setSmartPreviewDismissed(true); }}
+                        className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-violet-500/[0.07] border border-violet-500/15 hover:bg-violet-500/[0.12] hover:border-violet-500/25 transition-all active:scale-95 text-center"
+                      >
+                        <span className="text-xl">🔥</span>
+                        <span className="text-[11px] font-semibold text-violet-300/70 truncate w-full">{recentThread.name?.split(' ').slice(0, 2).join(' ') || 'Last convo'}</span>
+                        <span className="text-[9px] text-white/25">Pick up here</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Loading session overlay */}
             {loadingSession && (
