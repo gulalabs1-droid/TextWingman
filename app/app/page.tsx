@@ -409,6 +409,20 @@ export default function AppPage() {
     return () => clearInterval(timer);
   }, [strategyChatInput, appMode, SMART_PLACEHOLDERS.length]);
 
+  // Once-per-day V1/V2 mode reminder
+  const [showModeReminder, setShowModeReminder] = useState(false);
+  useEffect(() => {
+    if (!isPro) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const seen = localStorage.getItem('tw_mode_reminder_date');
+    if (seen !== today) setShowModeReminder(true);
+  }, [isPro]);
+  const dismissModeReminder = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem('tw_mode_reminder_date', today);
+    setShowModeReminder(false);
+  };
+
   // Changelog unread badge
   const [hasUnread, setHasUnread] = useState(false);
   useEffect(() => {
@@ -2392,6 +2406,42 @@ export default function AppPage() {
                 if (hintId === 'screenshot') coachFileInputRef.current?.click();
               }}
             />
+
+            {/* ── Once-per-day V1/V2 mode reminder ── */}
+            {isPro && showModeReminder && strategyChatHistory.length === 0 && !loadingSession && (
+              <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-3 border animate-in fade-in slide-in-from-top-2 duration-300 ${
+                useV2
+                  ? 'bg-emerald-500/[0.07] border-emerald-500/20'
+                  : 'bg-violet-500/[0.07] border-violet-500/20'
+              }`}>
+                <span className={`text-lg shrink-0`}>{useV2 ? '🛡️' : '⚡'}</span>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[11px] font-bold leading-tight ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>
+                    {useV2 ? 'Deep Analysis on' : 'Fast Mode on'}
+                  </p>
+                  <p className="text-[10px] text-white/30 leading-tight mt-0.5">
+                    {useV2 ? '6 scored candidates · strategy · takes ~8s' : 'Instant replies · no scoring overhead'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setUseV2(v => !v); dismissModeReminder(); }}
+                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                    useV2
+                      ? 'bg-violet-500/15 border-violet-500/25 text-violet-300 hover:bg-violet-500/25'
+                      : 'bg-emerald-500/15 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25'
+                  }`}
+                >
+                  {useV2 ? 'Switch to Fast ⚡' : 'Switch to Deep 🛡️'}
+                </button>
+                <button
+                  onClick={dismissModeReminder}
+                  className="shrink-0 p-1 text-white/20 hover:text-white/50 transition-colors"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Loading session overlay */}
             {loadingSession && (
