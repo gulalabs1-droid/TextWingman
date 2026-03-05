@@ -331,6 +331,8 @@ export default function AppPage() {
   const [extractedThread, setExtractedThread] = useState('');
   const [expandedCoachTrace, setExpandedCoachTrace] = useState<number | null>(null);
   const [coachCopiedId, setCoachCopiedId] = useState<string | null>(null);
+  const [theyRepliedForIdx, setTheyRepliedForIdx] = useState<number | null>(null);
+  const [theyRepliedInput, setTheyRepliedInput] = useState('');
   const [coachPipelineStep, setCoachPipelineStep] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [saving, setSaving] = useState(false);
@@ -1646,7 +1648,18 @@ export default function AppPage() {
     setSavingCoach(true);
     try {
       const firstUserMsg = strategyChatHistory.find(m => m.role === 'user');
-      const autoName = firstUserMsg ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '') : 'Coach session';
+      const lastOrch = [...strategyChatHistory].reverse().find(m => m.orchestration);
+      const orchTopic = lastOrch?.orchestration?.context_extraction?.topic;
+      const orchTone = lastOrch?.orchestration?.context_extraction?.her_tone;
+      const autoName = activeCoachSessionId
+        ? undefined
+        : orchTopic && orchTone
+          ? `${orchTopic} · ${orchTone}`
+          : orchTopic
+            ? orchTopic
+            : firstUserMsg
+              ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '')
+              : 'Coach session';
 
       const res = await fetch('/api/threads', {
         method: 'POST',
@@ -1792,6 +1805,7 @@ export default function AppPage() {
 
   const copyCoachText = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
+    if (navigator.vibrate) navigator.vibrate(30);
     setCoachCopiedId(id);
     toast({ title: '✓ Copied' });
     setTimeout(() => setCoachCopiedId(null), 2000);
@@ -1961,12 +1975,31 @@ export default function AppPage() {
     }
   };
 
+  const handleCoachRegenerate = () => {
+    if (strategyChatLoading) return;
+    const lastUser = [...strategyChatHistory].reverse().find(m => m.role === 'user');
+    if (!lastUser) return;
+    setStrategyChatHistory(prev => {
+      const last = [...prev];
+      while (last.length && last[last.length - 1].role === 'assistant') last.pop();
+      return last;
+    });
+    handleStrategyChatSendWithMsg(lastUser.content);
+  };
+
   const handleStrategyChatSend = async () => {
     if (!strategyChatInput.trim() || strategyChatLoading) return;
     const userMsg = strategyChatInput.trim();
     setStrategyChatInput('');
-    setStrategyChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
+    handleStrategyChatSendWithMsg(userMsg);
+  };
+
+  const handleStrategyChatSendWithMsg = async (userMsg: string) => {
+    if (!userMsg.trim() || strategyChatLoading) return;
+    setStrategyChatHistory(prev => [...prev, { role: 'user' as const, content: userMsg }]);
     setStrategyChatLoading(true);
+    setTheyRepliedForIdx(null);
+    setTheyRepliedInput('');
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
@@ -2561,6 +2594,10 @@ export default function AppPage() {
                 { emoji: '📊', label: 'Read the situation', sub: 'Full vibe analysis', prompt: 'Read this convo and tell me where I stand', glow: false },
               ];
               return (
+                <>
+                <p className="text-[9px] text-white/20 font-bold uppercase tracking-wider mb-2 px-1">
+                  {cat === 'professional' ? '💼 Work' : cat === 'platonic' ? '🤝 Friend' : '💘 Crush'} scenarios
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {chips.map(chip => (
                     <button
@@ -2579,6 +2616,7 @@ export default function AppPage() {
                     </button>
                   ))}
                 </div>
+                </>
               );
             })()}
 
@@ -2638,19 +2676,52 @@ export default function AppPage() {
                             </div>
                             <p className="text-[12px] text-white/50 italic px-1">&ldquo;{orch.strategy.move.one_liner}&rdquo;</p>
 
-                            {/* Quick copy winner row — above the full card */}
+                            {/* Quick copy winner row + they replied prompt */}
                             {orch.winner && (
-                              <div className="flex items-center gap-2 px-1">
-                                <button
-                                  onClick={() => copyCoachText(orch.winner!.text, `qw-${i}`)}
-                                  className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/[0.10] border border-amber-500/25 hover:bg-amber-500/[0.16] hover:border-amber-500/40 transition-all active:scale-[0.98] group"
-                                >
-                                  <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                                  <p className="text-[13px] text-white/90 font-medium truncate flex-1">{orch.winner.text}</p>
-                                  <span className="text-[10px] font-bold text-amber-400/60 group-hover:text-amber-400 transition-colors shrink-0">
-                                    {coachCopiedId === `qw-${i}` ? '✓ Copied' : 'Copy →'}
-                                  </span>
-                                </button>
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2 px-1">
+                                  <button
+                                    onClick={() => { copyCoachText(orch.winner!.text, `qw-${i}`); setTheyRepliedForIdx(i); }}
+                                    className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/[0.10] border border-amber-500/25 hover:bg-amber-500/[0.16] hover:border-amber-500/40 transition-all active:scale-[0.98] group"
+                                  >
+                                    <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                                    <p className="text-[13px] text-white/90 font-medium truncate flex-1">{orch.winner.text}</p>
+                                    <span className="text-[10px] font-bold text-amber-400/60 group-hover:text-amber-400 transition-colors shrink-0">
+                                      {coachCopiedId === `qw-${i}` ? '✓ Copied' : 'Copy →'}
+                                    </span>
+                                  </button>
+                                </div>
+                                {theyRepliedForIdx === i && i === strategyChatHistory.length - 1 && (
+                                  <div className="flex items-center gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <input
+                                      autoFocus
+                                      value={theyRepliedInput}
+                                      onChange={e => setTheyRepliedInput(e.target.value)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter' && theyRepliedInput.trim()) {
+                                          setStrategyChatInput(`They replied: "${theyRepliedInput.trim()}"`);
+                                          setTheyRepliedForIdx(null);
+                                          setTheyRepliedInput('');
+                                          setTimeout(() => handleStrategyChatSend(), 50);
+                                        }
+                                        if (e.key === 'Escape') { setTheyRepliedForIdx(null); setTheyRepliedInput(''); }
+                                      }}
+                                      placeholder="They replied: paste it here..."
+                                      className="flex-1 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/20 text-[12px] focus:outline-none focus:border-amber-500/30 transition-all"
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        if (!theyRepliedInput.trim()) { setTheyRepliedForIdx(null); return; }
+                                        setStrategyChatInput(`They replied: "${theyRepliedInput.trim()}"`);
+                                        setTheyRepliedForIdx(null);
+                                        setTheyRepliedInput('');
+                                        setTimeout(() => handleStrategyChatSend(), 50);
+                                      }}
+                                      className="px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 text-[11px] font-bold hover:bg-amber-500/25 transition-all active:scale-95"
+                                    >→</button>
+                                    <button onClick={() => { setTheyRepliedForIdx(null); setTheyRepliedInput(''); }} className="text-white/20 hover:text-white/50 transition-colors"><X className="h-3.5 w-3.5" /></button>
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -2775,6 +2846,18 @@ export default function AppPage() {
                         );
                       })()}
 
+                      {/* Re-generate button — last assistant message only */}
+                      {msg.role === 'assistant' && i === strategyChatHistory.length - 1 && (
+                        <button
+                          onClick={handleCoachRegenerate}
+                          disabled={strategyChatLoading}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] text-white/25 hover:text-white/60 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08] transition-all disabled:opacity-30"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Re-generate
+                        </button>
+                      )}
+
                       {/* Strategy badges — only for non-orchestration coach responses */}
                       {msg.role === 'assistant' && !msg.orchestration && strategyData && i === strategyChatHistory.length - 1 && (
                         <div className="flex flex-wrap gap-1.5 px-1">
@@ -2811,7 +2894,7 @@ export default function AppPage() {
                           <p className={`text-[10px] font-bold uppercase tracking-wider px-1 ${headerColor}`}>Coach drafts</p>
                           {msg.draft.shorter && (
                             <div>
-                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '⚡ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentA} transition-all active:scale-[0.98] group`}>
+                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); if (navigator.vibrate) navigator.vibrate(30); toast({ title: '⚡ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentA} transition-all active:scale-[0.98] group`}>
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ {draftLabels.a}</span>
                                   <span className={`text-[10px] transition-colors ${copyA}`}>Copy →</span>
@@ -2823,7 +2906,7 @@ export default function AppPage() {
                           )}
                           {msg.draft.spicier && (
                             <div>
-                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentB} transition-all active:scale-[0.98] group`}>
+                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); if (navigator.vibrate) navigator.vibrate(30); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentB} transition-all active:scale-[0.98] group`}>
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">✦ {draftLabels.b}</span>
                                   <span className={`text-[10px] transition-colors ${copyB}`}>Copy →</span>
@@ -2835,7 +2918,7 @@ export default function AppPage() {
                           )}
                           {msg.draft.softer && (
                             <div>
-                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentC} transition-all active:scale-[0.98] group`}>
+                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); if (navigator.vibrate) navigator.vibrate(30); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentC} transition-all active:scale-[0.98] group`}>
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 {draftLabels.c}</span>
                                   <span className={`text-[10px] transition-colors ${copyC}`}>Copy →</span>
@@ -2845,6 +2928,13 @@ export default function AppPage() {
                               <button onClick={() => { setStrategyChatInput(`I'm thinking of sending this: "${msg.draft!.softer}" — is this the right move?`); setTimeout(() => coachTextareaRef.current?.focus(), 50); }} className="w-full px-4 py-1 text-left text-[10px] text-white/20 hover:text-violet-400 transition-colors">Coach this →</button>
                             </div>
                           )}
+                        {!isPro && (
+                          <a href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/[0.06] border border-violet-500/15 hover:bg-violet-500/[0.10] transition-all mt-1">
+                            <Shield className="h-3 w-3 text-violet-400 shrink-0" />
+                            <span className="text-[10px] text-violet-300/60 flex-1">Pro gets 6 scored candidates + strategy</span>
+                            <span className="text-[10px] text-violet-400/40">→</span>
+                          </a>
+                        )}
                         </div>
                         );
                       })()}
