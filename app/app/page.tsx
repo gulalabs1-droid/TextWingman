@@ -255,6 +255,7 @@ const CONTEXT_OPTIONS = [
 
 export default function AppPage() {
   const searchParams = useSearchParams();
+  const lightMode = searchParams.get('lm') === '1';
   const [message, setMessage] = useState('');
   const [replies, setReplies] = useState<Reply[]>([]);
   const [loading, setLoading] = useState(false);
@@ -2149,6 +2150,18 @@ export default function AppPage() {
     }
   };
 
+  // Apply light-mode filter to <html> so position:fixed children aren't broken
+  useEffect(() => {
+    if (!lightMode) return;
+    const el = document.documentElement;
+    el.style.filter = 'invert(1) hue-rotate(180deg) brightness(1.06) saturate(0.88) contrast(0.95)';
+    el.style.background = '#fff';
+    return () => {
+      el.style.filter = '';
+      el.style.background = '';
+    };
+  }, [lightMode]);
+
   // VPN Abuse Block Modal
   if (vpnBlocked) {
     return (
@@ -2222,6 +2235,16 @@ export default function AppPage() {
   }
 
   return (
+    <>
+    {lightMode && (
+      <div
+        style={{ filter: 'invert(1) hue-rotate(180deg) brightness(1.06) saturate(0.88) contrast(0.95)' }}
+        className="fixed bottom-4 right-4 z-[9999] flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/90 border border-gray-200 shadow-lg backdrop-blur"
+      >
+        <span className="text-[11px] font-semibold text-gray-700">☀️ Light preview</span>
+        <a href="/app" className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition-colors">Exit →</a>
+      </div>
+    )}
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Ambient background mesh */}
       <div className="fixed inset-0 pointer-events-none hidden md:block">
@@ -4721,5 +4744,6 @@ export default function AppPage() {
         )}
       </div>
     </div>
+  </>
   );
 }
