@@ -11,7 +11,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "videos:validate": "tsx marketing/videos/render/validate.ts",
+    "videos:render": "tsx marketing/videos/render/render-all.ts",
+    "videos:still": "tsx marketing/videos/render/render-still.ts",
+    "videos:studio": "remotion studio marketing/videos/remotion/Root.tsx",
+    "videos:comps": "remotion compositions marketing/videos/remotion/Root.tsx"
   },
   "dependencies": {
     "@openai/agents": "^0.4.5",
@@ -35,6 +40,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@remotion/cli": "^4.0.451",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",
@@ -42,7 +48,9 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.3",
     "postcss": "^8.4.38",
+    "remotion": "^4.0.451",
     "tailwindcss": "^3.4.3",
+    "tsx": "^4.21.0",
     "typescript": "^5.4.5"
   }
 }

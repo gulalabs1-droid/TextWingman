@@ -4,11 +4,102 @@ export const maxDuration = 30;
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
 import { getContextCategory, COACHING_PHILOSOPHY, DRAFT_LABELS, TONE_OPTIONS } from "@/lib/context-category";
+import crypto from "crypto";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const FREE_USAGE_LIMIT = 5;
+const RESET_HOURS = 24;
+
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  return createSupabaseAdminClient(url, key);
+}
+
+function getClientIP(req: Request): string {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return req.headers.get("x-real-ip") || "127.0.0.1";
+}
+
+function getFingerprint(req: Request): string {
+  const userAgent = req.headers.get("user-agent") || "";
+  const language = req.headers.get("accept-language") || "";
+  return crypto
+    .createHash("sha256")
+    .update(`${userAgent}-${language}`)
+    .digest("hex")
+    .substring(0, 32);
+}
+
+async function trackFreeUsage(req: Request, userId: string | null) {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    console.error("Strategy chat usage tracking unavailable");
+    return NextResponse.json(
+      { error: "Service temporarily unavailable. Please try again." },
+      { status: 503 }
+    );
+  }
+
+  const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
+  const ip = getClientIP(req);
+  const fingerprint = getFingerprint(req);
+
+  let query = supabase
+    .from("usage_logs")
+    .select("*", { count: "exact", head: true })
+    .eq("action", "generate_reply")
+    .gte("created_at", cutoffTime);
+
+  if (userId) {
+    query = query.eq("user_id", userId);
+  } else {
+    query = query.or(`ip_address.eq.${ip},fingerprint.eq.${fingerprint}`);
+  }
+
+  const { count, error: countError } = await query;
+  if (countError) {
+    console.error("Strategy chat usage check failed:", countError);
+    return NextResponse.json(
+      { error: "Unable to verify usage. Please try again." },
+      { status: 503 }
+    );
+  }
+
+  if ((count || 0) >= FREE_USAGE_LIMIT) {
+    return NextResponse.json(
+      {
+        error: "Usage limit reached",
+        message: `You've reached your daily limit of ${FREE_USAGE_LIMIT} free replies. Upgrade to Pro for unlimited!`,
+      },
+      { status: 429 }
+    );
+  }
+
+  const { error: insertError } = await supabase.from("usage_logs").insert({
+    ip_address: ip,
+    user_id: userId,
+    user_agent: req.headers.get("user-agent") || "unknown",
+    action: "generate_reply",
+    fingerprint,
+  });
+
+  if (insertError) {
+    console.error("Strategy chat usage insert failed:", insertError);
+    return NextResponse.json(
+      { error: "Unable to track usage. Please try again." },
+      { status: 503 }
+    );
+  }
+
+  return null;
+}
 
 // ── Option 2: Context Extraction Agent ──────────────────
 interface ContextExtraction {
@@ -111,18 +202,23 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  }
+  let isPro = false;
 
-  await ensureAdminAccess(user.id, user.email || "");
-  const entitlement = await getUserTier(user.id, user.email || "");
-  const isPro = hasPro(entitlement.tier);
+  if (user?.id && user.email) {
+    await ensureAdminAccess(user.id, user.email);
+    const entitlement = await getUserTier(user.id, user.email);
+    isPro = hasPro(entitlement.tier);
+  }
 
   const { threadContext, strategy, context, chatHistory, userMessage } = await req.json();
 
   if (!userMessage?.trim()) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
+  }
+
+  if (!isPro) {
+    const usageError = await trackFreeUsage(req, user?.id || null);
+    if (usageError) return usageError;
   }
 
   // ─── Context extraction (Option 2) — Pro only, runs in parallel when thread exists ───

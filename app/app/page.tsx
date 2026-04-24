@@ -1947,7 +1947,14 @@ export default function AppPage() {
               }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
+            if (!res.ok) {
+              if (res.status === 429) {
+                setShowPaywall(true);
+                setStrategyChatHistory(prev => prev.slice(0, -1));
+                return;
+              }
+              throw new Error(data.error || 'Failed');
+            }
             setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
           }
         } catch (err: any) {
@@ -2078,7 +2085,15 @@ export default function AppPage() {
           signal: controller.signal,
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed');
+        if (!res.ok) {
+          if (res.status === 429) {
+            setShowPaywall(true);
+            setStrategyChatHistory(prev => prev.slice(0, -1));
+            setStrategyChatInput(userMsg);
+            return;
+          }
+          throw new Error(data.error || 'Failed');
+        }
         setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
       }
     } catch (err: any) {

@@ -32,3 +32,7 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated marketing video exports
+marketing/videos/output/*.mp4
+marketing/videos/output/*.png

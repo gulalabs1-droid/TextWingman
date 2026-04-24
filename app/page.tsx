@@ -11,7 +11,7 @@ const jsonLd = {
   name: 'Text Wingman',
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web',
-  description: 'AI texting coach that reads your conversation, gives strategy, and generates replies you\'d actually send. Crush, ex, friend, coworker — one coach that adapts to every situation.',
+  description: 'AI texting coach for dating apps. Upload a screenshot or paste what they sent, then get the best reply with the strategy behind it.',
   url: 'https://textwingman.com',
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
@@ -41,7 +41,7 @@ const faqJsonLd = {
     { '@type': 'Question', name: 'Is Text Wingman free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial. Pro unlocks unlimited everything + the verified pipeline.' } },
     { '@type': 'Question', name: 'Can you see my conversations?', acceptedAnswer: { '@type': 'Answer', text: 'No. Messages are processed in real-time and never stored on our servers. We don\'t connect to your messaging apps.' } },
     { '@type': 'Question', name: 'What apps does it work with?', acceptedAnswer: { '@type': 'Answer', text: 'All of them — iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Messenger, Telegram, LinkedIn, and more.' } },
-    { '@type': 'Question', name: 'How is this different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'ChatGPT gives you a robotic paragraph. Wingman gives you 3 verified replies under 18 words that sound like you actually texted them, plus real-time strategy on the conversation dynamics.' } },
+    { '@type': 'Question', name: 'How is this different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'ChatGPT gives you a generic reply. Wingman reads the conversation context, weighs the tone, and gives you short dating-text replies with the strategy behind them.' } },
     { '@type': 'Question', name: 'Will people know I\'m using AI?', acceptedAnswer: { '@type': 'Answer', text: 'No. Every reply sounds like a real person — lowercase, casual, no emojis, no formal sentences. The 18-word limit keeps it natural.' } },
   ],
 };
@@ -89,20 +89,20 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto text-center space-y-6 mb-14 md:mb-20">
           <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
             <Sparkles className="h-3.5 w-3.5" />
-            New — Context-Aware Coach: friend, work &amp; dating modes
+            Built for Hinge, Tinder, Bumble, Instagram &amp; iMessage
           </div>
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.05]">
-            Stop overthinking.
-            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-2">Start sending.</span>
+            AI texting coach
+            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-2">for dating apps.</span>
           </h1>
           <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-            Drop a screenshot. Coach runs a full analysis — 6 reply options scored against each other, one clear winner, full strategy breakdown. The sharpest reply every time.
+            Upload a screenshot or paste what they sent. Text Wingman reads the context, scores your options, and gives you the best reply in seconds.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <Link href="/app" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-xl shadow-violet-600/25 px-8 h-14 text-base flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]">
               Try it free <ArrowRight className="h-4 w-4" />
             </Link>
-            <p className="text-white/25 text-xs">No sign-up required &bull; 5 free replies/day</p>
+            <p className="text-white/25 text-xs">No sign-up required &bull; 5 free replies/day &bull; no card</p>
           </div>
         </div>
 
@@ -121,7 +121,7 @@ export default function HomePage() {
               {/* User message — fades in */}
               <div className="flex justify-end mb-3 animate-[fadeSlideUp_0.6s_ease-out_0.3s_both]">
                 <div className="bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 border border-violet-500/15 rounded-2xl rounded-br-md px-4 py-2.5 max-w-[85%]">
-                  <p className="text-white/85 text-[13px] leading-relaxed">she said &ldquo;my friends bailed on me lol&rdquo; what do I say?</p>
+                  <p className="text-white/85 text-[13px] leading-relaxed">she said &ldquo;haha maybe, depends who&apos;s asking&rdquo; after I asked for drinks</p>
                 </div>
               </div>
 
@@ -134,7 +134,7 @@ export default function HomePage() {
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-white/[0.06] text-white/40 border border-white/[0.08]">Balanced</span>
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400/60 border border-emerald-500/15">escalate</span>
                   </div>
-                  <p className="text-[11px] text-white/40 italic px-1 animate-[fadeSlideUp_0.4s_ease-out_1.2s_both]">&ldquo;She&apos;s hinting. Make the move. Don&apos;t ask — suggest.&rdquo;</p>
+                  <p className="text-[11px] text-white/40 italic px-1 animate-[fadeSlideUp_0.4s_ease-out_1.2s_both]">&ldquo;Playful interest. Lead with confidence, but keep it light.&rdquo;</p>
                   {/* Winner card */}
                   <div className="relative animate-[fadeSlideUp_0.5s_ease-out_1.4s_both]">
                     <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 z-10">
@@ -146,8 +146,8 @@ export default function HomePage() {
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400">🎯 Clean Direct</span>
                         <span className="text-[10px] text-amber-400/50">Copy →</span>
                       </div>
-                      <p className="text-[13px] text-white/90 font-medium">come through then</p>
-                      <p className="text-[9px] text-amber-400/40 mt-1">💡 Low neediness, high forward motion, matches energy</p>
+                      <p className="text-[13px] text-white/90 font-medium">someone with good taste and a Friday plan</p>
+                      <p className="text-[9px] text-amber-400/40 mt-1">💡 Confident, specific, keeps the invite alive</p>
                     </div>
                   </div>
                   {/* Backup card */}
@@ -156,14 +156,14 @@ export default function HomePage() {
                       <span className="text-[9px] font-bold text-white/30 uppercase">Backup</span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-400">😏 Playful Tease</span>
                     </div>
-                    <p className="text-[12px] text-white/65">sounds like you need saving</p>
+                    <p className="text-[12px] text-white/65">dangerous question. Friday at 8?</p>
                   </div>
                   <p className="text-[9px] text-white/20 px-1 animate-[fadeSlideUp_0.4s_ease-out_2.0s_both]">+ 4 more candidates · tap to see all scores</p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-1">
-                <p className="text-white/20 text-xs">Drop a screenshot. Get 6 scored options. Send the winner.</p>
+                <p className="text-white/20 text-xs">Drop a screenshot. Get the read. Send the winner.</p>
                 <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-violet-600/20 group-hover:scale-105 transition-transform shrink-0 ml-4">
                   Try it <ArrowRight className="h-4 w-4" />
                 </div>
