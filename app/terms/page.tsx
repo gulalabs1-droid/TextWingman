@@ -41,7 +41,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-xl font-semibold text-gray-900 mt-6 mb-3">4. Subscriptions & Payments</h2>
-              <p>Free users get 3 replies per day. Pro subscriptions provide unlimited access. Subscriptions auto-renew unless cancelled. You can cancel anytime from your account settings.</p>
+              <p>Free users get 5 replies per day. Pro subscriptions provide unlimited access. Subscriptions auto-renew unless cancelled. You can cancel anytime from your account settings.</p>
             </section>
 
             <section>

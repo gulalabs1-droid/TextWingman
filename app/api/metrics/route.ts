@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       throw allError;
     }
 
-    const freeLimit = 3; // Matches homepage pricing: 3 free replies per day
+    const freeLimit = 5; // Matches FREE_USAGE_LIMIT in strategy-chat/generate routes
 
     return NextResponse.json({
       today: {

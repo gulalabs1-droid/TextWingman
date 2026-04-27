@@ -150,7 +150,7 @@ export default async function DashboardPage() {
           <Link href="/pricing" className="block rounded-3xl p-6 border border-red-500/20 bg-red-500/[0.06] hover:bg-red-500/[0.09] transition-all group">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white/80 font-black text-lg">3 free replies used today</p>
+                <p className="text-white/80 font-black text-lg">5 free replies used today</p>
                 <p className="text-white/35 text-sm mt-1">Go unlimited — never miss the right reply.</p>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(139,92,246,0.3)] group-hover:scale-105 transition-transform">

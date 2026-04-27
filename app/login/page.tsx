@@ -271,7 +271,7 @@ export default function LoginPage() {
 
         {mode === 'signup' && (
           <p className="text-center text-xs text-gray-400">
-            3 free replies per day • No credit card required
+            5 free replies per day • No credit card required
           </p>
         )}
       </div>
