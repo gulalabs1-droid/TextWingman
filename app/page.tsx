@@ -463,6 +463,7 @@ export default function HomePage() {
               <Link href="/terms" className="hover:text-white/60 transition">Terms</Link>
               <Link href="/privacy" className="hover:text-white/60 transition">Privacy</Link>
               <Link href="/contact" className="hover:text-white/60 transition">Contact</Link>
+              <a href="https://www.tiktok.com/@gulatextwingman" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">TikTok</a>
             </div>
             <p className="text-xs text-white/20">&copy; {new Date().getFullYear()} Text Wingman. All rights reserved.</p>
           </div>

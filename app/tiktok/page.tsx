@@ -190,6 +190,19 @@ export default function TikTokLandingPage() {
           </div>
         </div>
 
+        {/* TikTok handle — social proof, opens in new tab */}
+        <div className="mt-5 text-center">
+          <a
+            href="https://www.tiktok.com/@gulatextwingman"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('tiktok_handle_click', { from: 'landing' })}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 hover:text-white/80 transition-colors"
+          >
+            <span aria-hidden>🎵</span> Follow @gulatextwingman on TikTok
+          </a>
+        </div>
+
         {/* Tiny context tap-throughs to add keyword intent into the funnel */}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           {[
