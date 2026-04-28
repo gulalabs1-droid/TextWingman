@@ -106,6 +106,9 @@ export default function TikTokLandingPage() {
       {/* Hero + input card */}
       <main className="container mx-auto px-4 pt-6 pb-24 max-w-xl">
         <div className="text-center space-y-4 mb-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/25 bg-fuchsia-500/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-200 shadow-lg shadow-fuchsia-500/10">
+            From TikTok? Start here
+          </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             Paste the text. Get the reply.
             <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-1">
@@ -119,7 +122,7 @@ export default function TikTokLandingPage() {
 
         {/* Input card */}
         <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-5 sm:p-6 backdrop-blur-sm">
-          <label className="block text-xs font-bold text-white/60 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-black text-fuchsia-200 uppercase tracking-[0.18em] mb-2">
             What did they say?
           </label>
           <textarea
@@ -134,8 +137,11 @@ export default function TikTokLandingPage() {
             }}
             placeholder={`e.g. "haha maybe, depends who's asking"`}
             rows={4}
-            className="w-full min-h-[110px] max-h-[220px] p-4 rounded-2xl bg-black/30 border border-white/[0.08] text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/40 transition-colors text-[15px] leading-relaxed"
+            className="w-full min-h-[110px] max-h-[220px] p-4 rounded-2xl bg-black/30 border border-white/[0.08] text-white placeholder-white/30 resize-none focus:outline-none focus:border-fuchsia-400/60 focus:ring-4 focus:ring-fuchsia-500/10 transition-colors text-[15px] leading-relaxed"
           />
+          <p className="mt-2 text-[11px] text-white/35">
+            Paste the exact message. We do not send anything for you.
+          </p>
 
           {/* Actions */}
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -146,6 +152,12 @@ export default function TikTokLandingPage() {
               onChange={handleUpload}
               className="hidden"
             />
+            <button
+              onClick={handlePasteSubmit}
+              className="h-14 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10"
+            >
+              Get my reply free <ArrowRight className="h-4 w-4" />
+            </button>
             <button
               onClick={() => {
                 track('tiktok_upload_click');
@@ -163,12 +175,6 @@ export default function TikTokLandingPage() {
                   <Camera className="h-4 w-4" /> Upload screenshot
                 </>
               )}
-            </button>
-            <button
-              onClick={handlePasteSubmit}
-              className="h-12 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-violet-600/25 transition-all active:scale-[0.98]"
-            >
-              Paste text free <ArrowRight className="h-4 w-4" />
             </button>
           </div>
 
@@ -238,7 +244,7 @@ export default function TikTokLandingPage() {
               }}
               className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-2xl shadow-violet-600/30 transition-all active:scale-[0.98]"
             >
-              Paste the text
+              Get my reply free
             </button>
           </div>
         </div>

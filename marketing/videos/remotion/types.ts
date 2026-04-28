@@ -1,4 +1,17 @@
-export type VideoTemplate = "wrong-right" | "group-chat" | "screenshot-analyzer";
+export type VideoTemplate =
+  | "wrong-right"
+  | "group-chat"
+  | "screenshot-analyzer"
+  | "panic-translator"
+  | "wrong-reply-court"
+  | "texting-er"
+  | "group-chat-outage"
+  | "receipt"
+  | "museum"
+  | "scanner"
+  | "comment-bait"
+  | "funeral"
+  | "speedrun";
 
 export type VideoScript = {
   id: string;

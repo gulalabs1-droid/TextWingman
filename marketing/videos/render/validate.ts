@@ -7,7 +7,21 @@ const scripts = JSON.parse(
   readFileSync(path.join(root, "marketing/videos/scripts.json"), "utf8")
 ) as VideoScript[];
 
-const validTemplates = new Set(["wrong-right", "group-chat", "screenshot-analyzer"]);
+const validTemplates = new Set([
+  "wrong-right",
+  "group-chat",
+  "screenshot-analyzer",
+  "panic-translator",
+  "wrong-reply-court",
+  "texting-er",
+  "group-chat-outage",
+  "receipt",
+  "museum",
+  "scanner",
+  "comment-bait",
+  "funeral",
+  "speedrun",
+]);
 const errors: string[] = [];
 const warnings: string[] = [];
 

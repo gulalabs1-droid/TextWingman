@@ -18,6 +18,7 @@ const getFlag = (name: string) => {
 
 const dryRun = args.includes("--dry-run");
 const id = getFlag("id");
+const ids = getFlag("ids");
 const template = getFlag("template");
 const limit = Number(getFlag("limit") || "0");
 
@@ -28,6 +29,15 @@ function loadScripts() {
 
 let selected = loadScripts();
 if (id) selected = selected.filter((script) => script.id === id);
+if (ids) {
+  const idSet = new Set(
+    ids
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+  );
+  selected = selected.filter((script) => idSet.has(script.id));
+}
 if (template) selected = selected.filter((script) => script.template === template);
 if (limit > 0) selected = selected.slice(0, limit);
 
