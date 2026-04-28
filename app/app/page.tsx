@@ -12,6 +12,7 @@ import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
+import { captureAttribution, track } from '@/lib/analytics';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -427,8 +428,6 @@ export default function AppPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { captureAttribution, track } = require('@/lib/analytics');
       const attribution = captureAttribution();
       const params = new URLSearchParams(window.location.search);
       const src = params.get('src');
@@ -476,20 +475,12 @@ export default function AppPage() {
     } catch {}
     deepUpsellShown.current = true;
     setShowDeepUpsell(true);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { track } = require('@/lib/analytics');
-      track('deep_upsell_shown');
-    } catch {}
+    try { track('deep_upsell_shown'); } catch {}
   }, [strategyChatHistory, isPro, useV2]);
   const dismissDeepUpsell = () => {
     setShowDeepUpsell(false);
     try { localStorage.setItem('tw_deep_upsell_dismissed', '1'); } catch {}
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { track } = require('@/lib/analytics');
-      track('deep_upsell_dismissed');
-    } catch {}
+    try { track('deep_upsell_dismissed'); } catch {}
   };
 
   // Once-per-day V1/V2 mode reminder
@@ -2336,13 +2327,7 @@ export default function AppPage() {
           <div className="flex flex-col gap-1 shrink-0">
             <Link
               href="/pricing?src=deep_upsell"
-              onClick={() => {
-                try {
-                  // eslint-disable-next-line @typescript-eslint/no-require-imports
-                  const { track } = require('@/lib/analytics');
-                  track('deep_upsell_click');
-                } catch {}
-              }}
+              onClick={() => { try { track('deep_upsell_click'); } catch {} }}
               className="px-3 py-1.5 rounded-xl bg-white text-violet-700 text-[11px] font-black hover:bg-white/90 transition-colors"
             >
               Unlock
