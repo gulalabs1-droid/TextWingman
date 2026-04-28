@@ -168,7 +168,7 @@ export default function TikTokLandingPage() {
               onClick={handlePasteSubmit}
               className="h-12 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-violet-600/25 transition-all active:scale-[0.98]"
             >
-              Paste her text free <ArrowRight className="h-4 w-4" />
+              Paste text free <ArrowRight className="h-4 w-4" />
             </button>
           </div>
 
