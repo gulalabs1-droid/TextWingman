@@ -173,19 +173,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ STATS BAR ═══ */}
+      {/* ═══ BENEFITS BAR ═══ */}
       <section className="border-y border-white/[0.06] py-8">
         <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-center">
             {[
-              { n: '50K+', label: 'Replies generated' },
-              { n: '12K+', label: 'Conversations coached' },
-              { n: '<2s', label: 'Average response time' },
-              { n: '4.9★', label: 'User satisfaction' },
-            ].map(stat => (
-              <div key={stat.label}>
-                <p className="text-2xl font-black text-white">{stat.n}</p>
-                <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider">{stat.label}</p>
+              { icon: '💬', label: '5 free replies/day' },
+              { icon: '🔓', label: 'No card' },
+              { icon: '📸', label: 'Screenshot upload' },
+              { icon: '✂️', label: 'Replies under 18 words' },
+            ].map(b => (
+              <div key={b.label} className="flex items-center gap-2">
+                <span className="text-lg" aria-hidden>{b.icon}</span>
+                <p className="text-sm font-bold text-white/70">{b.label}</p>
               </div>
             ))}
           </div>
@@ -469,12 +469,12 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* Floating Sticky CTA — appears after scrolling past hero */}
+      {/* Floating Sticky CTA — appears after scrolling past hero; always routes to app input */}
       <div className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-500 ${showSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
         <div className="p-4 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent">
           <div className="max-w-lg mx-auto">
             <Link href="/app" className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-2xl shadow-violet-600/30 flex items-center justify-center gap-2 hover:from-violet-500 hover:to-fuchsia-500 transition-all">
-              <Sparkles className="h-4 w-4" /> Try It Free
+              <Sparkles className="h-4 w-4" /> Paste the text
             </Link>
           </div>
         </div>

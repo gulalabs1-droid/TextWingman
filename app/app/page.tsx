@@ -423,6 +423,75 @@ export default function AppPage() {
     localStorage.setItem('tw_use_v2', String(useV2));
   }, [useV2]);
 
+  // ── TikTok / paid-traffic entry: capture attribution, force Fast mode, prefill message ──
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { captureAttribution, track } = require('@/lib/analytics');
+      const attribution = captureAttribution();
+      const params = new URLSearchParams(window.location.search);
+      const src = params.get('src');
+      const mode = params.get('mode');
+      const prefill = params.get('prefill');
+      const via = params.get('via');
+
+      if (src || mode) {
+        track('app_view', { src: src || undefined, mode: mode || undefined, via: via || undefined });
+      }
+      if (mode === 'fast' || src === 'tiktok') {
+        setUseV2(false);
+      }
+      if (prefill === '1') {
+        const msg = sessionStorage.getItem('tw_prefill_message');
+        if (msg) {
+          setStrategyChatInput(msg);
+          sessionStorage.removeItem('tw_prefill_message');
+          track('app_prefill_loaded', { length: msg.length, via: via || 'paste' });
+        }
+      }
+      // Strip params from URL so refresh doesn't re-trigger prefill
+      if (src || mode || prefill) {
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+      void attribution;
+    } catch {
+      // tracking must never break the app
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // One-time "Unlock Deep Analysis" upsell — fires after first Fast-mode response for non-Pro users
+  const [showDeepUpsell, setShowDeepUpsell] = useState(false);
+  const deepUpsellShown = useRef(false);
+  useEffect(() => {
+    if (deepUpsellShown.current) return;
+    if (isPro) return;
+    if (useV2) return; // only nudge Fast-mode users
+    const hasAssistantReply = strategyChatHistory.some(m => m.role === 'assistant');
+    if (!hasAssistantReply) return;
+    try {
+      if (localStorage.getItem('tw_deep_upsell_dismissed') === '1') return;
+    } catch {}
+    deepUpsellShown.current = true;
+    setShowDeepUpsell(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { track } = require('@/lib/analytics');
+      track('deep_upsell_shown');
+    } catch {}
+  }, [strategyChatHistory, isPro, useV2]);
+  const dismissDeepUpsell = () => {
+    setShowDeepUpsell(false);
+    try { localStorage.setItem('tw_deep_upsell_dismissed', '1'); } catch {}
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { track } = require('@/lib/analytics');
+      track('deep_upsell_dismissed');
+    } catch {}
+  };
+
   // Once-per-day V1/V2 mode reminder
   const [showModeReminder, setShowModeReminder] = useState(false);
   useEffect(() => {
@@ -2251,6 +2320,43 @@ export default function AppPage() {
 
   return (
     <>
+    {/* Post-result Deep Analysis upsell — non-Pro, Fast-mode, one-time */}
+    {showDeepUpsell && (
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9998] w-[calc(100%-2rem)] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
+        <div className="rounded-2xl bg-gradient-to-br from-violet-600/95 to-fuchsia-600/95 border border-violet-400/40 shadow-2xl shadow-violet-600/40 backdrop-blur-sm p-4 flex items-center gap-3">
+          <div className="text-2xl shrink-0" aria-hidden>🎯</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-black text-sm leading-tight">
+              Want 6 scored options + the backup reply?
+            </p>
+            <p className="text-white/80 text-[11px] leading-tight mt-0.5">
+              Unlock Deep Analysis — every candidate scored, winner badge, full strategy.
+            </p>
+          </div>
+          <div className="flex flex-col gap-1 shrink-0">
+            <Link
+              href="/pricing?src=deep_upsell"
+              onClick={() => {
+                try {
+                  // eslint-disable-next-line @typescript-eslint/no-require-imports
+                  const { track } = require('@/lib/analytics');
+                  track('deep_upsell_click');
+                } catch {}
+              }}
+              className="px-3 py-1.5 rounded-xl bg-white text-violet-700 text-[11px] font-black hover:bg-white/90 transition-colors"
+            >
+              Unlock
+            </Link>
+            <button
+              onClick={dismissDeepUpsell}
+              className="text-white/70 hover:text-white text-[10px] font-semibold transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     {lightMode && (
       <div
         style={{ filter: 'invert(1) hue-rotate(180deg) brightness(1.06) saturate(0.88) contrast(0.95)' }}

@@ -21,6 +21,16 @@ const brand = {
   gold: "#fbbf24",
 };
 
+const accents = ["#9b5cff", "#14b8a6", "#f97316", "#38bdf8", "#ec5fc7"];
+
+const scriptNumber = (scriptId: string) => {
+  const [, numeric] = scriptId.split("-");
+  return Number(numeric) || 0;
+};
+
+const accentFor = (scriptId: string) =>
+  accents[scriptNumber(scriptId) % accents.length] || brand.purple;
+
 const ease = (frame: number, from: number, to: number) =>
   interpolate(frame, [from, to], [0, 1], {
     extrapolateLeft: "clamp",
@@ -61,16 +71,56 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
   children,
   scriptId,
 }) => {
+  const frame = useCurrentFrame();
+  const accent = accentFor(scriptId);
+  const drift = Math.sin(frame / 34) * 28;
+  const spin = Math.sin(frame / 70) * 6;
   return (
     <AbsoluteFill
       style={{
         background:
-          "radial-gradient(circle at 50% 0%, rgba(155,92,255,0.25), transparent 34%), linear-gradient(180deg, #050508 0%, #0b0c12 50%, #050508 100%)",
+          `radial-gradient(circle at ${26 + drift / 9}% 10%, ${accent}47, transparent 32%), radial-gradient(circle at 82% 26%, rgba(236,95,199,0.24), transparent 30%), linear-gradient(180deg, #050508 0%, #0b0c12 50%, #050508 100%)`,
         color: brand.ink,
         fontFamily:
           'ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
       }}
     >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+          backgroundSize: "54px 54px",
+          opacity: 0.22,
+          transform: `translateY(${(frame % 54) * -0.2}px)`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: -180,
+          top: 330,
+          width: 520,
+          height: 520,
+          borderRadius: 120,
+          background: `${accent}2b`,
+          filter: "blur(2px)",
+          transform: `rotate(${14 + spin}deg)`,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          right: -190,
+          top: 760,
+          width: 470,
+          height: 470,
+          borderRadius: "999px",
+          border: `2px solid ${accent}55`,
+          boxShadow: `0 0 90px ${accent}22`,
+        }}
+      />
       <div
         style={{
           position: "absolute",
@@ -98,10 +148,10 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
               width: 58,
               height: 58,
               borderRadius: 18,
-              background: `linear-gradient(135deg, ${brand.purple}, ${brand.pink})`,
+              background: `linear-gradient(135deg, ${accent}, ${brand.pink})`,
               display: "grid",
               placeItems: "center",
-              boxShadow: "0 16px 40px rgba(155,92,255,0.35)",
+              boxShadow: `0 16px 40px ${accent}55`,
               fontSize: 30,
             }}
           >
@@ -109,7 +159,18 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
           </div>
           <div style={{ fontSize: 34 }}>Text Wingman</div>
         </div>
-        <div style={{ fontSize: 22, color: brand.quiet }}>{scriptId}</div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            fontSize: 22,
+            color: brand.quiet,
+          }}
+        >
+          <span style={{ color: accent, fontWeight: 950 }}>TEXTING MOVE</span>
+          <span>{scriptId}</span>
+        </div>
       </div>
       {children}
     </AbsoluteFill>
@@ -130,6 +191,22 @@ const Hook: React.FC<{ text: string; delay?: number }> = ({ text, delay = 8 }) =
         transform: `translateY(${(1 - amount) * 22}px)`,
       }}
     >
+      <div
+        style={{
+          width: "max-content",
+          margin: "0 auto 20px",
+          borderRadius: 999,
+          padding: "10px 18px",
+          background: "rgba(251,191,36,0.14)",
+          border: "2px solid rgba(251,191,36,0.32)",
+          color: brand.gold,
+          fontSize: 20,
+          fontWeight: 950,
+          letterSpacing: 1.1,
+        }}
+      >
+        STOP THE FUMBLE
+      </div>
       <FitText
         maxChars={52}
         style={{
@@ -177,6 +254,21 @@ const Phone: React.FC<{ children: React.ReactNode; delay?: number }> = ({
           margin: "0 auto 40px",
         }}
       />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 28,
+          color: brand.quiet,
+          fontSize: 22,
+          fontWeight: 850,
+          letterSpacing: 0.4,
+        }}
+      >
+        <span>incoming text</span>
+        <span style={{ color: brand.green }}>wingman mode</span>
+      </div>
       {children}
     </div>
   );
@@ -271,7 +363,7 @@ const CTA: React.FC<{ text: string }> = ({ text }) => {
         position: "absolute",
         left: 96,
         right: 96,
-        bottom: 122,
+        bottom: 168,
         opacity,
         transform: `translateY(${(1 - opacity) * 28}px)`,
       }}
@@ -300,7 +392,7 @@ const CTA: React.FC<{ text: string }> = ({ text }) => {
           fontWeight: 700,
         }}
       >
-        textwingman.com/app
+        gula-agents2.vercel.app
       </div>
     </div>
   );
@@ -318,7 +410,7 @@ const WhyBar: React.FC<{ text: string; delay?: number }> = ({
         position: "absolute",
         left: 96,
         right: 96,
-        bottom: 280,
+        bottom: 330,
         borderRadius: 24,
         background: "rgba(52,211,153,0.11)",
         border: "2px solid rgba(52,211,153,0.26)",
