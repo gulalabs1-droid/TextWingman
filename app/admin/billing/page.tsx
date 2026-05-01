@@ -85,13 +85,6 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-      {isDemoMode && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-          <span className="text-amber-400 text-sm">⚠️</span>
-          <p className="text-xs font-medium text-amber-300/80">Demo Mode — showing sample billing data for presentation purposes.</p>
-        </div>
-      )}
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Billing &amp; Stripe Health</h1>

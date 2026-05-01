@@ -118,14 +118,6 @@ export default function AdminOverviewPage() {
   return (
     <div className="space-y-5">
 
-      {/* ── Demo Mode Banner ── */}
-      {isDemoMode && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-          <span className="text-amber-400 text-sm">⚠️</span>
-          <p className="text-xs font-medium text-amber-300/80">Demo Mode — showing sample growth data for presentation purposes.</p>
-        </div>
-      )}
-
       {/* ── 1. Smart Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
