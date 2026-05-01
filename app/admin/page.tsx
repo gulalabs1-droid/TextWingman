@@ -10,6 +10,9 @@ import {
   Sparkline, MiniDonut, AnimatedNumber, GrowthBadge,
   daySeriesFromMap, relTime, actionLabel, actionIcon,
 } from './components/AdminCharts';
+import { mockAdminOverview, mockFunnel, mockRevenueByDay } from '@/lib/admin-demo-data';
+
+const isDemoMode = process.env.NEXT_PUBLIC_ADMIN_DEMO_MODE === 'true';
 
 type ActivityItem = { action: string; user_id: string | null; email: string | null; created_at: string };
 
@@ -44,6 +47,12 @@ export default function AdminOverviewPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setSecondsAgo(0);
+    if (isDemoMode) {
+      setData(mockAdminOverview);
+      setError('');
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch('/api/admin/overview');
       if (!res.ok) throw new Error('Failed to fetch');
@@ -95,8 +104,27 @@ export default function AdminOverviewPage() {
   const dotColors: Record<string, string> = { weekly: 'bg-violet-500', monthly: 'bg-blue-500', annual: 'bg-emerald-500' };
   const donutColors: Record<string, string> = { weekly: '#8b5cf6', monthly: '#3b82f6', annual: '#10b981' };
 
+  // Demo funnel has 5 stages; live has 3
+  const demoFunnelStages = isDemoMode
+    ? mockFunnel.map((s, i) => ({
+        label: s.label,
+        count: s.count,
+        color: ['from-blue-500 to-blue-600', 'from-violet-500 to-fuchsia-600', 'from-fuchsia-500 to-pink-600', 'from-amber-500 to-orange-600', 'from-emerald-500 to-green-600'][i],
+        dot: ['bg-blue-500', 'bg-violet-500', 'bg-fuchsia-500', 'bg-amber-500', 'bg-emerald-500'][i],
+        href: '/admin/users',
+      }))
+    : null;
+
   return (
     <div className="space-y-5">
+
+      {/* ── Demo Mode Banner ── */}
+      {isDemoMode && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <span className="text-amber-400 text-sm">⚠️</span>
+          <p className="text-xs font-medium text-amber-300/80">Demo Mode — showing sample growth data for presentation purposes.</p>
+        </div>
+      )}
 
       {/* ── 1. Smart Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -171,7 +199,7 @@ export default function AdminOverviewPage() {
           </div>
           {data.paidUsers === 0
             ? <div className="h-8 rounded-lg border border-dashed border-white/[0.06] flex items-center justify-center"><span className="text-[11px] text-white/15">First paid user coming soon</span></div>
-            : <Sparkline values={Array(7).fill(data.mrr)} color="#10b981" h={34} />
+            : <Sparkline values={isDemoMode ? daySeriesFromMap(mockRevenueByDay, 7) : Array(7).fill(data.mrr)} color="#10b981" h={34} />
           }
           <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-white/[0.05] text-center">
             {[['Paid', data.paidUsers, ''], ['Conv.', `${data.conversionRate}%`, ''], ['Churn 7d', data.churn.d7, data.churn.d7 > 0 ? 'text-red-400' : ''], ['Canceling', data.cancelingCount, data.cancelingCount > 0 ? 'text-amber-400' : '']].map(([l, v, cls]) => (
@@ -220,10 +248,10 @@ export default function AdminOverviewPage() {
           <TrendingUp className="h-4 w-4 text-violet-400/50" />
         </div>
         <div className="flex items-stretch gap-0">
-          {funnelStages.map((stage, i) => {
-            const max = funnelStages[0].count || 1;
+          {(demoFunnelStages || funnelStages).map((stage, i, arr) => {
+            const max = arr[0].count || 1;
             const pct = Math.round((stage.count / max) * 100);
-            const dropPct = i > 0 && funnelStages[i - 1].count > 0 ? Math.round(((funnelStages[i - 1].count - stage.count) / funnelStages[i - 1].count) * 100) : null;
+            const dropPct = i > 0 && arr[i - 1].count > 0 ? Math.round(((arr[i - 1].count - stage.count) / arr[i - 1].count) * 100) : null;
             return (
               <div key={stage.label} className="flex items-center flex-1 min-w-0">
                 {i > 0 && (

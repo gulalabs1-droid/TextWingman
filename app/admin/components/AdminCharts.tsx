@@ -133,15 +133,28 @@ export function actionLabel(action: string): string {
     decode: 'decoded a message', opener: 'wrote an opener',
     revive: 'revived a convo', coach: 'asked Coach',
     x2_orchestrate: 'ran Deep Analysis',
+    signup: 'signed up',
+    screenshot_upload: 'uploaded a screenshot',
+    copy_reply: 'copied a reply',
+    upgrade_monthly: 'upgraded to Pro Monthly',
+    upgrade_annual: 'upgraded to Pro Annual',
+    billing_portal: 'opened billing portal',
+    redeem_invite: 'redeemed invite code',
   };
   return map[action] || action.replace(/_/g, ' ');
 }
 
 export function actionIcon(action: string): string {
+  if (action.includes('signup')) return '👤';
   if (action.includes('decode')) return '🔍';
   if (action.includes('revive')) return '🔥';
   if (action.includes('opener')) return '✨';
   if (action.includes('x2') || action.includes('orchestrate')) return '🏆';
   if (action.includes('coach')) return '🤖';
+  if (action.includes('screenshot')) return '📸';
+  if (action.includes('copy')) return '📋';
+  if (action.includes('upgrade')) return '💎';
+  if (action.includes('billing')) return '💳';
+  if (action.includes('redeem') || action.includes('invite')) return '🎟️';
   return '⚡';
 }
