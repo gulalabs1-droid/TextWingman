@@ -238,43 +238,84 @@ export default function AdminOverviewPage() {
         </div>
       </div>
 
-      {/* ── 3b. Daily Breakdown Table (Demo) ── */}
+      {/* ── 3b. Daily P&L Breakdown (Demo) ── */}
       {isDemoMode && (() => {
         const rows = mockDailyBreakdown();
-        const totRev = rows.reduce((s, r) => s + r.revenue, 0);
-        const totSig = rows.reduce((s, r) => s + r.signups, 0);
-        const totGen = rows.reduce((s, r) => s + r.generations, 0);
+        const sum = (fn: (r: typeof rows[0]) => number) => rows.reduce((s, r) => s + fn(r), 0);
+        const totRev = sum(r => r.revenue);
+        const totCost = Math.round(sum(r => r.totalCost) * 100) / 100;
+        const totProfit = Math.round(sum(r => r.netProfit) * 100) / 100;
+        const avgMargin = Math.round((totProfit / totRev) * 1000) / 10;
         return (
           <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5">
-            <p className="text-[11px] font-semibold text-white/35 uppercase tracking-wider mb-4">Daily Breakdown (7d)</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-semibold text-white/35 uppercase tracking-wider">Daily P&L Breakdown (7d)</p>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-emerald-400/60 font-medium">Week Total: ${totRev.toLocaleString()}</span>
+                <span className="text-white/10">·</span>
+                <span className="text-[10px] text-emerald-400/60 font-medium">Profit: ${totProfit.toLocaleString()}</span>
+                <span className="text-white/10">·</span>
+                <span className="text-[10px] text-emerald-400/60 font-medium">Margin: {avgMargin}%</span>
+              </div>
+            </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-xs whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-white/[0.06]">
-                    <th className="text-left py-2 pr-4 text-white/30 font-semibold uppercase tracking-wider">Day</th>
-                    <th className="text-left py-2 pr-4 text-white/30 font-semibold uppercase tracking-wider">Date</th>
-                    <th className="text-right py-2 pr-4 text-white/30 font-semibold uppercase tracking-wider">Revenue</th>
-                    <th className="text-right py-2 pr-4 text-white/30 font-semibold uppercase tracking-wider">Signups</th>
-                    <th className="text-right py-2 text-white/30 font-semibold uppercase tracking-wider">Generations</th>
+                    <th className="text-left py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Day</th>
+                    <th className="text-left py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Date</th>
+                    <th className="text-right py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Revenue</th>
+                    <th className="text-right py-2 pr-3 text-white/20 font-medium uppercase tracking-wider text-[9px]">Wkly</th>
+                    <th className="text-right py-2 pr-3 text-white/20 font-medium uppercase tracking-wider text-[9px]">Mthly</th>
+                    <th className="text-right py-2 pr-3 text-white/20 font-medium uppercase tracking-wider text-[9px]">Annual</th>
+                    <th className="text-right py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Costs</th>
+                    <th className="text-right py-2 pr-3 text-emerald-400/40 font-bold uppercase tracking-wider">Profit</th>
+                    <th className="text-right py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Margin</th>
+                    <th className="text-right py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Signups</th>
+                    <th className="text-right py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Gens</th>
+                    <th className="text-right py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Activated</th>
+                    <th className="text-right py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">+Paid</th>
+                    <th className="text-right py-2 pr-3 text-white/30 font-semibold uppercase tracking-wider">Churn</th>
+                    <th className="text-right py-2 text-white/30 font-semibold uppercase tracking-wider">Active</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.date} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
-                      <td className="py-2.5 pr-4 text-white/60 font-medium">{r.day}</td>
-                      <td className="py-2.5 pr-4 text-white/40">{r.date}</td>
-                      <td className="py-2.5 pr-4 text-right font-bold text-emerald-400">${r.revenue.toLocaleString()}</td>
-                      <td className="py-2.5 pr-4 text-right font-bold text-blue-400">{r.signups}</td>
-                      <td className="py-2.5 text-right font-bold text-fuchsia-400">{r.generations.toLocaleString()}</td>
+                      <td className="py-2.5 pr-3 text-white/60 font-medium">{r.day}</td>
+                      <td className="py-2.5 pr-3 text-white/40">{r.date}</td>
+                      <td className="py-2.5 pr-3 text-right font-bold text-emerald-400">${r.revenue.toLocaleString()}</td>
+                      <td className="py-2.5 pr-3 text-right text-violet-400/60">${r.weeklyRev}</td>
+                      <td className="py-2.5 pr-3 text-right text-blue-400/60">${r.monthlyRev}</td>
+                      <td className="py-2.5 pr-3 text-right text-emerald-400/60">${r.annualRev}</td>
+                      <td className="py-2.5 pr-3 text-right text-red-400/70">${r.totalCost}</td>
+                      <td className="py-2.5 pr-3 text-right font-bold text-emerald-300">${r.netProfit.toLocaleString()}</td>
+                      <td className="py-2.5 pr-3 text-right text-white/50">{r.margin}%</td>
+                      <td className="py-2.5 pr-3 text-right font-bold text-blue-400">{r.signups}</td>
+                      <td className="py-2.5 pr-3 text-right font-bold text-fuchsia-400">{r.generations.toLocaleString()}</td>
+                      <td className="py-2.5 pr-3 text-right text-orange-400">{r.activations}</td>
+                      <td className="py-2.5 pr-3 text-right text-emerald-400 font-medium">+{r.newPaid}</td>
+                      <td className="py-2.5 pr-3 text-right text-red-400 font-medium">-{r.churned}</td>
+                      <td className="py-2.5 text-right text-white/70 font-bold">{r.activePaid}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-white/[0.08]">
                     <td colSpan={2} className="py-2.5 text-white/50 font-bold">Total</td>
-                    <td className="py-2.5 pr-4 text-right font-bold text-emerald-300">${totRev.toLocaleString()}</td>
-                    <td className="py-2.5 pr-4 text-right font-bold text-blue-300">{totSig.toLocaleString()}</td>
-                    <td className="py-2.5 text-right font-bold text-fuchsia-300">{totGen.toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right font-bold text-emerald-300">${totRev.toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right text-violet-300">${sum(r => r.weeklyRev).toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right text-blue-300">${sum(r => r.monthlyRev).toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right text-emerald-300">${sum(r => r.annualRev).toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right text-red-300">${totCost.toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right font-bold text-emerald-200">${totProfit.toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right text-white/50">{avgMargin}%</td>
+                    <td className="py-2.5 pr-3 text-right font-bold text-blue-300">{sum(r => r.signups).toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right font-bold text-fuchsia-300">{sum(r => r.generations).toLocaleString()}</td>
+                    <td className="py-2.5 pr-3 text-right text-orange-300">{sum(r => r.activations)}</td>
+                    <td className="py-2.5 pr-3 text-right text-emerald-300">+{sum(r => r.newPaid)}</td>
+                    <td className="py-2.5 pr-3 text-right text-red-300">-{sum(r => r.churned)}</td>
+                    <td className="py-2.5 text-right text-white/70 font-bold">{rows[rows.length - 1].activePaid}</td>
                   </tr>
                 </tfoot>
               </table>

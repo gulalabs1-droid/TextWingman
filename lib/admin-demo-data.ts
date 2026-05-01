@@ -113,20 +113,69 @@ export const mockPlanBreakdown: Record<string, number> = {
 
 export const mockLatestActivity: ActivityItem[] = demoActivity();
 
-// ── Daily breakdown table (revenue + signups + gens per day, visible) ────────
-export function mockDailyBreakdown(): { date: string; day: string; revenue: number; signups: number; generations: number }[] {
+// ── Detailed daily P&L breakdown ─────────────────────────────────────────────
+export type DailyRow = {
+  date: string;
+  day: string;
+  revenue: number;
+  weeklyRev: number;
+  monthlyRev: number;
+  annualRev: number;
+  apiCost: number;
+  infraCost: number;
+  totalCost: number;
+  netProfit: number;
+  margin: number;
+  signups: number;
+  generations: number;
+  activations: number;
+  newPaid: number;
+  churned: number;
+  activePaid: number;
+};
+
+export function mockDailyBreakdown(): DailyRow[] {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const rev = [920, 1050, 1180, 1260, 1490, 1620, 980];
+  // Revenue split by plan (weekly ~45%, monthly ~38%, annual ~17%)
+  const weeklyRev  = [414, 473, 531, 567, 671, 729, 441];
+  const monthlyRev = [350, 399, 448, 479, 566, 616, 372];
+  const annualRev  = [156, 178, 201, 214, 253, 275, 167];
   const sig = [162, 174, 186, 192, 210, 225, 135];
   const gen = [2410, 2580, 2720, 2810, 2950, 3120, 2160];
+  const act = [96, 103, 111, 115, 126, 135, 81];     // ~59% of signups
+  const newP = [14, 16, 18, 19, 22, 24, 15];          // new paid conversions
+  const churn = [2, 3, 2, 4, 3, 2, 2];                // daily churn
+  // Costs: API ~$0.012/gen, infra flat ~$42/day
+  const infraPerDay = 42;
+
+  let runningPaid = 613; // starting active paid count
+
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(Date.now() - (6 - i) * 86400000);
+    const rev = weeklyRev[i] + monthlyRev[i] + annualRev[i];
+    const apiCost = Math.round(gen[i] * 0.012 * 100) / 100;
+    const totalCost = Math.round((apiCost + infraPerDay) * 100) / 100;
+    const netProfit = Math.round((rev - totalCost) * 100) / 100;
+    const margin = Math.round((netProfit / rev) * 1000) / 10;
+    runningPaid = runningPaid + newP[i] - churn[i];
     return {
       date: d.toISOString().split('T')[0],
       day: days[i],
-      revenue: rev[i],
+      revenue: rev,
+      weeklyRev: weeklyRev[i],
+      monthlyRev: monthlyRev[i],
+      annualRev: annualRev[i],
+      apiCost,
+      infraCost: infraPerDay,
+      totalCost,
+      netProfit,
+      margin,
       signups: sig[i],
       generations: gen[i],
+      activations: act[i],
+      newPaid: newP[i],
+      churned: churn[i],
+      activePaid: runningPaid,
     };
   });
 }
