@@ -113,6 +113,89 @@ export const mockPlanBreakdown: Record<string, number> = {
 
 export const mockLatestActivity: ActivityItem[] = demoActivity();
 
+// ── Daily breakdown table (revenue + signups + gens per day, visible) ────────
+export function mockDailyBreakdown(): { date: string; day: string; revenue: number; signups: number; generations: number }[] {
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const rev = [920, 1050, 1180, 1260, 1490, 1620, 980];
+  const sig = [162, 174, 186, 192, 210, 225, 135];
+  const gen = [2410, 2580, 2720, 2810, 2950, 3120, 2160];
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(Date.now() - (6 - i) * 86400000);
+    return {
+      date: d.toISOString().split('T')[0],
+      day: days[i],
+      revenue: rev[i],
+      signups: sig[i],
+      generations: gen[i],
+    };
+  });
+}
+
+// ── Mock billing data for /admin/billing ─────────────────────────────────────
+type BillingData = {
+  totalSubs: number;
+  activeSubs: number;
+  canceledSubs: number;
+  orphaned: { user_id: string; status: string; stripe_subscription_id: string | null; stripe_customer_id: string | null }[];
+  cancelingSubs: { user_id: string; plan_type: string; current_period_end: string; profiles: { email: string } }[];
+  upcomingRenewals: { user_id: string; plan_type: string; current_period_end: string; profiles: { email: string } }[];
+  mismatches: { id: string; email: string; plan: string }[];
+  recentEvents: { id: string; event_type: string; created_at: string; payload: Record<string, unknown> }[];
+};
+
+function futureDateStr(daysOut: number): string {
+  return new Date(Date.now() + daysOut * 86400000).toISOString();
+}
+
+function pastDateStr(daysAgo: number): string {
+  return new Date(Date.now() - daysAgo * 86400000).toISOString();
+}
+
+export const mockBillingData: BillingData = {
+  totalSubs: 642,
+  activeSubs: 613,
+  canceledSubs: 29,
+  orphaned: [],
+  cancelingSubs: [
+    { user_id: 'demo-c1', plan_type: 'monthly', current_period_end: futureDateStr(4), profiles: { email: 'sarah.k@gmail.com' } },
+    { user_id: 'demo-c2', plan_type: 'weekly', current_period_end: futureDateStr(2), profiles: { email: 'james.r@icloud.com' } },
+    { user_id: 'demo-c3', plan_type: 'monthly', current_period_end: futureDateStr(8), profiles: { email: 'priya.d@outlook.com' } },
+    { user_id: 'demo-c4', plan_type: 'annual', current_period_end: futureDateStr(22), profiles: { email: 'marcus.w@yahoo.com' } },
+    { user_id: 'demo-c5', plan_type: 'weekly', current_period_end: futureDateStr(1), profiles: { email: 'tina.c@gmail.com' } },
+    { user_id: 'demo-c6', plan_type: 'monthly', current_period_end: futureDateStr(12), profiles: { email: 'alex.m@gmail.com' } },
+    { user_id: 'demo-c7', plan_type: 'weekly', current_period_end: futureDateStr(3), profiles: { email: 'devon.j@outlook.com' } },
+    { user_id: 'demo-c8', plan_type: 'monthly', current_period_end: futureDateStr(6), profiles: { email: 'layla.h@icloud.com' } },
+    { user_id: 'demo-c9', plan_type: 'weekly', current_period_end: futureDateStr(1), profiles: { email: 'kevin.b@gmail.com' } },
+    { user_id: 'demo-c10', plan_type: 'annual', current_period_end: futureDateStr(45), profiles: { email: 'nina.s@yahoo.com' } },
+    { user_id: 'demo-c11', plan_type: 'monthly', current_period_end: futureDateStr(9), profiles: { email: 'omar.f@gmail.com' } },
+  ],
+  upcomingRenewals: [
+    { user_id: 'demo-r1', plan_type: 'weekly', current_period_end: futureDateStr(1), profiles: { email: 'emma.l@gmail.com' } },
+    { user_id: 'demo-r2', plan_type: 'weekly', current_period_end: futureDateStr(1), profiles: { email: 'ryan.t@icloud.com' } },
+    { user_id: 'demo-r3', plan_type: 'monthly', current_period_end: futureDateStr(2), profiles: { email: 'chloe.p@outlook.com' } },
+    { user_id: 'demo-r4', plan_type: 'weekly', current_period_end: futureDateStr(2), profiles: { email: 'daniel.v@gmail.com' } },
+    { user_id: 'demo-r5', plan_type: 'weekly', current_period_end: futureDateStr(3), profiles: { email: 'grace.n@yahoo.com' } },
+    { user_id: 'demo-r6', plan_type: 'annual', current_period_end: futureDateStr(5), profiles: { email: 'ethan.w@gmail.com' } },
+    { user_id: 'demo-r7', plan_type: 'monthly', current_period_end: futureDateStr(5), profiles: { email: 'mia.z@icloud.com' } },
+    { user_id: 'demo-r8', plan_type: 'weekly', current_period_end: futureDateStr(6), profiles: { email: 'noah.g@outlook.com' } },
+  ],
+  mismatches: [],
+  recentEvents: [
+    { id: 'evt-1', event_type: 'subscription_created', created_at: pastDateStr(0), payload: { plan: 'monthly', email: 'david.l@gmail.com' } },
+    { id: 'evt-2', event_type: 'payment_succeeded', created_at: pastDateStr(0), payload: { amount: 29.99, email: 'david.l@gmail.com' } },
+    { id: 'evt-3', event_type: 'subscription_created', created_at: pastDateStr(0), payload: { plan: 'annual', email: 'michael.b@gmail.com' } },
+    { id: 'evt-4', event_type: 'payment_succeeded', created_at: pastDateStr(0), payload: { amount: 99.99, email: 'michael.b@gmail.com' } },
+    { id: 'evt-5', event_type: 'subscription_canceled', created_at: pastDateStr(1), payload: { plan: 'weekly', email: 'sarah.k@gmail.com' } },
+    { id: 'evt-6', event_type: 'payment_succeeded', created_at: pastDateStr(1), payload: { amount: 9.99, email: 'emma.l@gmail.com' } },
+    { id: 'evt-7', event_type: 'subscription_created', created_at: pastDateStr(1), payload: { plan: 'weekly', email: 'megan.a@icloud.com' } },
+    { id: 'evt-8', event_type: 'payment_failed', created_at: pastDateStr(2), payload: { amount: 29.99, email: 'james.r@icloud.com' } },
+    { id: 'evt-9', event_type: 'subscription_updated', created_at: pastDateStr(2), payload: { from: 'weekly', to: 'monthly', email: 'chloe.p@outlook.com' } },
+    { id: 'evt-10', event_type: 'payment_succeeded', created_at: pastDateStr(3), payload: { amount: 9.99, email: 'grace.n@yahoo.com' } },
+    { id: 'evt-11', event_type: 'grant_entitlement', created_at: pastDateStr(4), payload: { tier: 'pro', email: 'natalie.g@icloud.com' } },
+    { id: 'evt-12', event_type: 'subscription_created', created_at: pastDateStr(5), payload: { plan: 'monthly', email: 'jordan.s@gmail.com' } },
+  ],
+};
+
 export const mockAdminOverview: OverviewData = {
   totalUsers: 8420,
   signups: { h24: 192, d7: 1284, d30: 4620 },

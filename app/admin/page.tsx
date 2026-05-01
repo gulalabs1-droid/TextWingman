@@ -10,7 +10,7 @@ import {
   Sparkline, MiniDonut, AnimatedNumber, GrowthBadge,
   daySeriesFromMap, relTime, actionLabel, actionIcon,
 } from './components/AdminCharts';
-import { mockAdminOverview, mockFunnel, mockRevenueByDay } from '@/lib/admin-demo-data';
+import { mockAdminOverview, mockFunnel, mockRevenueByDay, mockDailyBreakdown } from '@/lib/admin-demo-data';
 
 const isDemoMode = true; // flip to false to show live data
 
@@ -237,6 +237,51 @@ export default function AdminOverviewPage() {
           }
         </div>
       </div>
+
+      {/* ── 3b. Daily Breakdown Table (Demo) ── */}
+      {isDemoMode && (() => {
+        const rows = mockDailyBreakdown();
+        const totRev = rows.reduce((s, r) => s + r.revenue, 0);
+        const totSig = rows.reduce((s, r) => s + r.signups, 0);
+        const totGen = rows.reduce((s, r) => s + r.generations, 0);
+        return (
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5">
+            <p className="text-[11px] font-semibold text-white/35 uppercase tracking-wider mb-4">Daily Breakdown (7d)</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    <th className="text-left py-2 pr-4 text-white/30 font-semibold uppercase tracking-wider">Day</th>
+                    <th className="text-left py-2 pr-4 text-white/30 font-semibold uppercase tracking-wider">Date</th>
+                    <th className="text-right py-2 pr-4 text-white/30 font-semibold uppercase tracking-wider">Revenue</th>
+                    <th className="text-right py-2 pr-4 text-white/30 font-semibold uppercase tracking-wider">Signups</th>
+                    <th className="text-right py-2 text-white/30 font-semibold uppercase tracking-wider">Generations</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.date} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
+                      <td className="py-2.5 pr-4 text-white/60 font-medium">{r.day}</td>
+                      <td className="py-2.5 pr-4 text-white/40">{r.date}</td>
+                      <td className="py-2.5 pr-4 text-right font-bold text-emerald-400">${r.revenue.toLocaleString()}</td>
+                      <td className="py-2.5 pr-4 text-right font-bold text-blue-400">{r.signups}</td>
+                      <td className="py-2.5 text-right font-bold text-fuchsia-400">{r.generations.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-white/[0.08]">
+                    <td colSpan={2} className="py-2.5 text-white/50 font-bold">Total</td>
+                    <td className="py-2.5 pr-4 text-right font-bold text-emerald-300">${totRev.toLocaleString()}</td>
+                    <td className="py-2.5 pr-4 text-right font-bold text-blue-300">{totSig.toLocaleString()}</td>
+                    <td className="py-2.5 text-right font-bold text-fuchsia-300">{totGen.toLocaleString()}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── 4. Growth Funnel ── */}
       <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5">

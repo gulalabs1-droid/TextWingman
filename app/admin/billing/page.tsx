@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import {
   Loader2, CreditCard, AlertTriangle, RefreshCw, Download, Clock, XCircle, CheckCircle,
 } from 'lucide-react';
+import { mockBillingData } from '@/lib/admin-demo-data';
+
+const isDemoMode = true; // flip to false to show live data
 
 type BillingData = {
   totalSubs: number;
@@ -41,6 +44,11 @@ export default function BillingPage() {
 
   const fetchData = async () => {
     setLoading(true);
+    if (isDemoMode) {
+      setData(mockBillingData);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch('/api/admin/billing');
       if (res.ok) setData(await res.json());
@@ -77,6 +85,13 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
+      {isDemoMode && (
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <span className="text-amber-400 text-sm">⚠️</span>
+          <p className="text-xs font-medium text-amber-300/80">Demo Mode — showing sample billing data for presentation purposes.</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Billing &amp; Stripe Health</h1>
@@ -210,12 +225,22 @@ export default function BillingPage() {
             <p className="text-white/30 text-sm text-center py-4">No events yet</p>
           ) : (
             <div className="space-y-1 max-h-64 overflow-y-auto">
-              {data.recentEvents.map((ev) => (
+              {data.recentEvents.map((ev) => {
+                const colorMap: Record<string, string> = {
+                  subscription_created: 'bg-emerald-500/20 text-emerald-300',
+                  payment_succeeded: 'bg-blue-500/20 text-blue-300',
+                  payment_failed: 'bg-red-500/20 text-red-300',
+                  subscription_canceled: 'bg-orange-500/20 text-orange-300',
+                  subscription_updated: 'bg-violet-500/20 text-violet-300',
+                  grant_entitlement: 'bg-fuchsia-500/20 text-fuchsia-300',
+                };
+                const cls = colorMap[ev.event_type] || 'bg-purple-500/20 text-purple-300';
+                return (
                 <div key={ev.id} className="flex items-center justify-between p-2 bg-white/[0.04] rounded text-xs">
-                  <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded font-medium">{ev.event_type}</span>
+                  <span className={`px-1.5 py-0.5 ${cls} rounded font-medium`}>{ev.event_type.replace(/_/g, ' ')}</span>
                   <span className="text-white/40">{new Date(ev.created_at).toLocaleString()}</span>
                 </div>
-              ))}
+              );})}
             </div>
           )}
         </CardContent>
