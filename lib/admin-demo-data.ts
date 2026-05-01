@@ -245,6 +245,112 @@ export const mockBillingData: BillingData = {
   ],
 };
 
+// ── Mock users for /admin/users ──────────────────────────────────────────────
+type UserRow = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  created_at: string;
+  plan: string;
+  plan_source: string;
+  replies_7d: number;
+  replies_30d: number;
+  replies_lifetime: number;
+  last_reply_at: string | null;
+  subscription_status: string | null;
+  beta_group: string | null;
+};
+
+function genUsers(): UserRow[] {
+  const names: { first: string; last: string; email: string; plan: string; source: string; status: string | null }[] = [
+    { first: 'Tyler', last: 'Mitchell', email: 'tyler.m@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Jessica', last: 'Wong', email: 'jessica.w@icloud.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Marcus', last: 'Johnson', email: 'marcus.j@yahoo.com', plan: 'elite', source: 'stripe', status: 'active' },
+    { first: 'Aaliyah', last: 'Khan', email: 'aaliyah.k@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Brandon', last: 'Chen', email: 'brandon.c@outlook.com', plan: 'free', source: 'none', status: null },
+    { first: 'Samantha', last: 'Rivera', email: 'samantha.r@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'David', last: 'Lopez', email: 'david.l@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Emily', last: 'Nguyen', email: 'emily.n@icloud.com', plan: 'free', source: 'none', status: null },
+    { first: 'Jason', last: 'Park', email: 'jason.p@gmail.com', plan: 'free', source: 'none', status: null },
+    { first: 'Olivia', last: 'Harris', email: 'olivia.h@yahoo.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Michael', last: 'Brown', email: 'michael.b@gmail.com', plan: 'elite', source: 'stripe', status: 'active' },
+    { first: 'Ashley', last: 'Davis', email: 'ashley.d@outlook.com', plan: 'free', source: 'none', status: null },
+    { first: 'Chris', last: 'Foster', email: 'chris.f@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Natalie', last: 'Garcia', email: 'natalie.g@icloud.com', plan: 'pro', source: 'invite', status: 'active' },
+    { first: 'Jordan', last: 'Smith', email: 'jordan.s@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Kayla', last: 'Taylor', email: 'kayla.t@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Anthony', last: 'Vargas', email: 'anthony.v@yahoo.com', plan: 'free', source: 'none', status: null },
+    { first: 'Brittany', last: 'Williams', email: 'brittany.w@outlook.com', plan: 'free', source: 'none', status: null },
+    { first: 'Derek', last: 'Zhang', email: 'derek.z@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Megan', last: 'Anderson', email: 'megan.a@icloud.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Sarah', last: 'Kim', email: 'sarah.k@gmail.com', plan: 'pro', source: 'stripe', status: 'canceling' },
+    { first: 'James', last: 'Robinson', email: 'james.r@icloud.com', plan: 'pro', source: 'stripe', status: 'canceling' },
+    { first: 'Priya', last: 'Desai', email: 'priya.d@outlook.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Emma', last: 'Lee', email: 'emma.l@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Ryan', last: 'Thomas', email: 'ryan.t@icloud.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Chloe', last: 'Patel', email: 'chloe.p@outlook.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Daniel', last: 'Vega', email: 'daniel.v@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Grace', last: 'Nelson', email: 'grace.n@yahoo.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Ethan', last: 'White', email: 'ethan.w@gmail.com', plan: 'elite', source: 'stripe', status: 'active' },
+    { first: 'Mia', last: 'Zhou', email: 'mia.z@icloud.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Noah', last: 'Gutierrez', email: 'noah.g@outlook.com', plan: 'free', source: 'none', status: null },
+    { first: 'Sophia', last: 'Martinez', email: 'sophia.m@gmail.com', plan: 'free', source: 'none', status: null },
+    { first: 'Liam', last: 'Clark', email: 'liam.c@icloud.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Ava', last: 'Ramirez', email: 'ava.r@gmail.com', plan: 'free', source: 'none', status: null },
+    { first: 'Logan', last: 'Scott', email: 'logan.s@yahoo.com', plan: 'free', source: 'none', status: null },
+    { first: 'Isabella', last: 'Flores', email: 'isabella.f@outlook.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Mason', last: 'Adams', email: 'mason.a@gmail.com', plan: 'free', source: 'none', status: null },
+    { first: 'Harper', last: 'Morales', email: 'harper.m@icloud.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Lucas', last: 'Rivera', email: 'lucas.r@gmail.com', plan: 'free', source: 'none', status: null },
+    { first: 'Ella', last: 'Hall', email: 'ella.h@yahoo.com', plan: 'free', source: 'none', status: null },
+    { first: 'Alexander', last: 'Young', email: 'alex.y@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Aria', last: 'King', email: 'aria.k@outlook.com', plan: 'free', source: 'none', status: null },
+    { first: 'Benjamin', last: 'Wright', email: 'ben.w@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Luna', last: 'Torres', email: 'luna.t@icloud.com', plan: 'free', source: 'none', status: null },
+    { first: 'Jack', last: 'Hill', email: 'jack.h@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Zoe', last: 'Green', email: 'zoe.g@yahoo.com', plan: 'free', source: 'none', status: null },
+    { first: 'Owen', last: 'Baker', email: 'owen.b@outlook.com', plan: 'free', source: 'none', status: null },
+    { first: 'Riley', last: 'Perez', email: 'riley.p@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+    { first: 'Henry', last: 'Murphy', email: 'henry.m@icloud.com', plan: 'free', source: 'none', status: null },
+    { first: 'Lily', last: 'Cooper', email: 'lily.c@gmail.com', plan: 'pro', source: 'stripe', status: 'active' },
+  ];
+
+  return names.map((n, i) => {
+    const daysAgo = Math.floor(Math.random() * 120) + 1;
+    const isPaid = n.plan !== 'free';
+    const r7 = isPaid ? Math.floor(Math.random() * 35) + 5 : Math.floor(Math.random() * 8);
+    const r30 = r7 + Math.floor(Math.random() * 60) + (isPaid ? 15 : 0);
+    const rLife = r30 + Math.floor(Math.random() * 200) + (isPaid ? 40 : 0);
+    const lastReplyHoursAgo = isPaid ? Math.floor(Math.random() * 48) + 1 : (Math.random() > 0.3 ? Math.floor(Math.random() * 168) + 24 : null);
+    return {
+      id: `demo-user-${String(i).padStart(3, '0')}`,
+      email: n.email,
+      full_name: `${n.first} ${n.last}`,
+      created_at: new Date(Date.now() - daysAgo * 86400000).toISOString(),
+      plan: n.plan,
+      plan_source: n.source,
+      replies_7d: r7,
+      replies_30d: r30,
+      replies_lifetime: rLife,
+      last_reply_at: lastReplyHoursAgo ? new Date(Date.now() - lastReplyHoursAgo * 3600000).toISOString() : null,
+      subscription_status: n.status,
+      beta_group: i < 5 ? 'beta-v2' : null,
+    };
+  });
+}
+
+export const mockUsers = genUsers();
+
+// ── Mock funnel data for /admin/funnel ───────────────────────────────────────
+export const mockFunnelData = {
+  totalUsers: 8420,
+  signups: { d30: 4620 },
+  activatedUsers: 4980,
+  generations: { d30: 68400 },
+  paidUsers: 642,
+  freeUsers: 7778,
+};
+
 export const mockAdminOverview: OverviewData = {
   totalUsers: 8420,
   signups: { h24: 192, d7: 1284, d30: 4620 },

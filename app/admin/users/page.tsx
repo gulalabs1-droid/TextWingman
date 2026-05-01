@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Users, Search, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { mockUsers } from '@/lib/admin-demo-data';
+
+const isDemoMode = true; // flip to false to show live data
 
 type UserRow = {
   id: string;
@@ -33,6 +36,16 @@ export default function UsersPage() {
 
   const fetchUsers = async (p = page, s = search, pf = planFilter) => {
     setLoading(true);
+    if (isDemoMode) {
+      let filtered = [...mockUsers];
+      if (s) filtered = filtered.filter(u => u.email.toLowerCase().includes(s.toLowerCase()) || u.full_name?.toLowerCase().includes(s.toLowerCase()));
+      if (pf) filtered = filtered.filter(u => u.plan === pf);
+      const perPage = 50;
+      setTotal(filtered.length);
+      setUsers(filtered.slice((p - 1) * perPage, p * perPage));
+      setLoading(false);
+      return;
+    }
     try {
       const params = new URLSearchParams({ page: String(p) });
       if (s) params.set('search', s);

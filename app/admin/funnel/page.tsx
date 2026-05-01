@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, TrendingUp, RefreshCw, ArrowDown } from 'lucide-react';
+import { mockFunnelData, mockFunnel } from '@/lib/admin-demo-data';
+
+const isDemoMode = true; // flip to false to show live data
 
 type FunnelData = {
   totalUsers: number;
@@ -20,6 +23,11 @@ export default function FunnelPage() {
 
   const fetchData = async () => {
     setLoading(true);
+    if (isDemoMode) {
+      setData(mockFunnelData as FunnelData);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch('/api/admin/overview');
       if (res.ok) setData(await res.json());
@@ -36,12 +44,18 @@ export default function FunnelPage() {
 
   if (!data) return <p className="text-center text-red-600 py-20">Failed to load</p>;
 
-  const steps = [
-    { label: 'Total Signups (30d)', count: data.signups.d30, color: 'bg-blue-500' },
-    { label: 'Activated (1+ reply)', count: data.activatedUsers, color: 'bg-purple-500' },
-    { label: 'Free Users (active)', count: data.freeUsers, color: 'bg-orange-500' },
-    { label: 'Paid Users', count: data.paidUsers, color: 'bg-green-500' },
-  ];
+  const steps = isDemoMode
+    ? mockFunnel.map((s, i) => ({
+        label: s.label,
+        count: s.count,
+        color: ['bg-blue-500', 'bg-purple-500', 'bg-fuchsia-500', 'bg-orange-500', 'bg-green-500'][i],
+      }))
+    : [
+        { label: 'Total Signups (30d)', count: data.signups.d30, color: 'bg-blue-500' },
+        { label: 'Activated (1+ reply)', count: data.activatedUsers, color: 'bg-purple-500' },
+        { label: 'Free Users (active)', count: data.freeUsers, color: 'bg-orange-500' },
+        { label: 'Paid Users', count: data.paidUsers, color: 'bg-green-500' },
+      ];
 
   const maxCount = Math.max(...steps.map(s => s.count), 1);
 
