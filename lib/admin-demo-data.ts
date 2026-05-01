@@ -26,9 +26,9 @@ type OverviewData = {
   recentActivity: ActivityItem[];
 };
 
-// ── Revenue by day (Mon $920 → Sun $980, total $8,500) ──────────────────────
+// ── Revenue by day (~$420-$810/day, total ~$4,250/wk) ──────────────────────
 function revenueByDayMap(): Record<string, number> {
-  const amounts = [920, 1050, 1180, 1260, 1490, 1620, 980]; // Mon-Sun
+  const amounts = [460, 525, 590, 630, 745, 810, 490]; // Mon-Sun
   const map: Record<string, number> = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
@@ -37,9 +37,9 @@ function revenueByDayMap(): Record<string, number> {
   return map;
 }
 
-// ── Generations by day (realistic daily spread summing to ~18,750 / 7d) ──────
+// ── Generations by day (realistic daily spread summing to ~9,375 / 7d) ──────
 function genByDayMap(): Record<string, number> {
-  const daily = [2410, 2580, 2720, 2810, 2950, 3120, 2160]; // Mon-Sun
+  const daily = [1205, 1290, 1360, 1405, 1475, 1560, 1080]; // Mon-Sun
   const map: Record<string, number> = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
@@ -48,9 +48,9 @@ function genByDayMap(): Record<string, number> {
   return map;
 }
 
-// ── Signups by day (realistic daily spread summing to ~1,284 / 7d) ──────────
+// ── Signups by day (realistic daily spread summing to ~642 / 7d) ──────────
 function signupsByDayMap(): Record<string, number> {
-  const daily = [162, 174, 186, 192, 210, 225, 135]; // Mon-Sun
+  const daily = [81, 87, 93, 96, 105, 113, 67]; // Mon-Sun
   const map: Record<string, number> = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
@@ -98,17 +98,17 @@ function demoActivity(): ActivityItem[] {
 export const mockRevenueByDay = revenueByDayMap();
 
 export const mockFunnel = [
-  { label: 'Signed Up', count: 8420 },
-  { label: 'Generated 1+', count: 4980 },
-  { label: 'Used 3+ times', count: 2140 },
-  { label: 'Hit Paywall', count: 1025 },
-  { label: 'Paid', count: 642 },
+  { label: 'Signed Up', count: 4210 },
+  { label: 'Generated 1+', count: 2490 },
+  { label: 'Used 3+ times', count: 1070 },
+  { label: 'Hit Paywall', count: 512 },
+  { label: 'Paid', count: 321 },
 ];
 
 export const mockPlanBreakdown: Record<string, number> = {
-  weekly: 210,
-  monthly: 312,
-  annual: 120,
+  weekly: 105,
+  monthly: 156,
+  annual: 60,
 };
 
 export const mockLatestActivity: ActivityItem[] = demoActivity();
@@ -140,18 +140,18 @@ export type DailyRow = {
 export function mockDailyBreakdown(): DailyRow[] {
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   // Revenue split by plan (weekly ~45%, monthly ~38%, annual ~17%)
-  const weeklyRev  = [414, 473, 531, 567, 671, 729, 441];
-  const monthlyRev = [350, 399, 448, 479, 566, 616, 372];
-  const annualRev  = [156, 178, 201, 214, 253, 275, 167];
-  const sig = [162, 174, 186, 192, 210, 225, 135];
-  const gen = [2410, 2580, 2720, 2810, 2950, 3120, 2160];
-  const act = [96, 103, 111, 115, 126, 135, 81];     // ~59% of signups
-  const newP = [14, 16, 18, 19, 22, 24, 15];          // new paid conversions
-  const churn = [2, 3, 2, 4, 3, 2, 2];                // daily churn
-  // Costs: API ~$0.012/gen, infra flat ~$42/day
-  const infraPerDay = 42;
+  const weeklyRev  = [207, 236, 265, 284, 336, 365, 221];
+  const monthlyRev = [175, 200, 224, 240, 283, 308, 186];
+  const annualRev  = [78, 89, 101, 107, 126, 137, 83];
+  const sig = [81, 87, 93, 96, 105, 113, 67];
+  const gen = [1205, 1290, 1360, 1405, 1475, 1560, 1080];
+  const act = [48, 52, 55, 58, 63, 68, 41];       // ~59% of signups
+  const newP = [7, 8, 9, 10, 11, 12, 7];           // new paid conversions
+  const churn = [1, 2, 1, 2, 1, 1, 1];             // daily churn
+  // Costs: API ~$0.012/gen, infra flat ~$28/day
+  const infraPerDay = 28;
 
-  let runningPaid = 613; // starting active paid count
+  let runningPaid = 307; // starting active paid count
 
   // How far through today are we (0-1)? Scale today's numbers.
   const now = new Date();
@@ -225,9 +225,9 @@ function pastDateStr(daysAgo: number): string {
 }
 
 export const mockBillingData: BillingData = {
-  totalSubs: 642,
-  activeSubs: 613,
-  canceledSubs: 29,
+  totalSubs: 321,
+  activeSubs: 307,
+  canceledSubs: 14,
   orphaned: [],
   cancelingSubs: [
     { user_id: 'demo-c1', plan_type: 'monthly', current_period_end: futureDateStr(4), profiles: { email: 'sarah.k@gmail.com' } },
@@ -236,11 +236,6 @@ export const mockBillingData: BillingData = {
     { user_id: 'demo-c4', plan_type: 'annual', current_period_end: futureDateStr(22), profiles: { email: 'marcus.w@yahoo.com' } },
     { user_id: 'demo-c5', plan_type: 'weekly', current_period_end: futureDateStr(1), profiles: { email: 'tina.c@gmail.com' } },
     { user_id: 'demo-c6', plan_type: 'monthly', current_period_end: futureDateStr(12), profiles: { email: 'alex.m@gmail.com' } },
-    { user_id: 'demo-c7', plan_type: 'weekly', current_period_end: futureDateStr(3), profiles: { email: 'devon.j@outlook.com' } },
-    { user_id: 'demo-c8', plan_type: 'monthly', current_period_end: futureDateStr(6), profiles: { email: 'layla.h@icloud.com' } },
-    { user_id: 'demo-c9', plan_type: 'weekly', current_period_end: futureDateStr(1), profiles: { email: 'kevin.b@gmail.com' } },
-    { user_id: 'demo-c10', plan_type: 'annual', current_period_end: futureDateStr(45), profiles: { email: 'nina.s@yahoo.com' } },
-    { user_id: 'demo-c11', plan_type: 'monthly', current_period_end: futureDateStr(9), profiles: { email: 'omar.f@gmail.com' } },
   ],
   upcomingRenewals: [
     { user_id: 'demo-r1', plan_type: 'weekly', current_period_end: futureDateStr(1), profiles: { email: 'emma.l@gmail.com' } },
@@ -367,29 +362,29 @@ export const mockUsers = genUsers();
 
 // ── Mock funnel data for /admin/funnel ───────────────────────────────────────
 export const mockFunnelData = {
-  totalUsers: 8420,
-  signups: { d30: 4620 },
-  activatedUsers: 4980,
-  generations: { d30: 68400 },
-  paidUsers: 642,
-  freeUsers: 7778,
+  totalUsers: 4210,
+  signups: { d30: 2310 },
+  activatedUsers: 2490,
+  generations: { d30: 34200 },
+  paidUsers: 321,
+  freeUsers: 3889,
 };
 
 export const mockAdminOverview: OverviewData = {
-  totalUsers: 8420,
-  signups: { h24: 192, d7: 1284, d30: 4620 },
-  generations: { total: 142800, h24: 2810, d7: 18750, d30: 68400 },
-  activatedUsers: 4980,
-  paidUsers: 642,
-  freeUsers: 7778,
-  mrr: 36420,
-  arr: 437040,
-  projectedMrr: 39200,
+  totalUsers: 4210,
+  signups: { h24: 96, d7: 642, d30: 2310 },
+  generations: { total: 71400, h24: 1405, d7: 9375, d30: 34200 },
+  activatedUsers: 2490,
+  paidUsers: 321,
+  freeUsers: 3889,
+  mrr: 18210,
+  arr: 218520,
+  projectedMrr: 19600,
   conversionRate: 7.6,
   activationRate: 59.1,
   planBreakdown: mockPlanBreakdown,
-  churn: { d7: 18, d30: 52 },
-  cancelingCount: 11,
+  churn: { d7: 9, d30: 26 },
+  cancelingCount: 6,
   genByDay: genByDayMap(),
   signupsByDay: signupsByDayMap(),
   signupGrowthPct: 14,
