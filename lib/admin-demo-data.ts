@@ -135,7 +135,7 @@ export type DailyRow = {
 };
 
 export function mockDailyBreakdown(): DailyRow[] {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   // Revenue split by plan (weekly ~45%, monthly ~38%, annual ~17%)
   const weeklyRev  = [414, 473, 531, 567, 671, 729, 441];
   const monthlyRev = [350, 399, 448, 479, 566, 616, 372];
@@ -159,8 +159,8 @@ export function mockDailyBreakdown(): DailyRow[] {
     const margin = Math.round((netProfit / rev) * 1000) / 10;
     runningPaid = runningPaid + newP[i] - churn[i];
     return {
-      date: d.toISOString().split('T')[0],
-      day: days[i],
+      date: `${d.getMonth() + 1}/${d.getDate()}`,
+      day: dayNames[d.getDay()],
       revenue: rev,
       weeklyRev: weeklyRev[i],
       monthlyRev: monthlyRev[i],

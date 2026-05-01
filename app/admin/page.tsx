@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Users, DollarSign, TrendingUp, Zap, RefreshCw, Crown, Loader2,
-  Activity, UserCheck, AlertTriangle, Download, ArrowRight, Bot, ChevronRight,
+  Activity, UserCheck, AlertTriangle, Download, ArrowRight, Bot, ChevronRight, ChevronDown,
 } from 'lucide-react';
 import {
   Sparkline, MiniDonut, AnimatedNumber, GrowthBadge,
@@ -43,6 +43,7 @@ export default function AdminOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [secondsAgo, setSecondsAgo] = useState(0);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -272,9 +273,21 @@ export default function AdminOverviewPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.date} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
-                      <td className="py-2.5 pr-3 text-white/60 font-medium">{r.day}</td>
+                  {rows.map((r) => {
+                    const isOpen = expandedDay === r.date;
+                    const isToday = r.date === `${new Date().getMonth() + 1}/${new Date().getDate()}`;
+                    return (
+                    <React.Fragment key={r.date}>
+                    <tr
+                      className={`border-b border-white/[0.04] hover:bg-white/[0.05] transition cursor-pointer select-none ${isToday ? 'bg-violet-500/[0.04]' : ''} ${isOpen ? 'bg-white/[0.05]' : ''}`}
+                      onClick={() => setExpandedDay(isOpen ? null : r.date)}
+                    >
+                      <td className="py-2.5 pr-3 text-white/60 font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <ChevronDown className={`h-3 w-3 text-white/30 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
+                          {r.day}{isToday && <span className="text-[9px] text-violet-400 font-bold ml-1">TODAY</span>}
+                        </span>
+                      </td>
                       <td className="py-2.5 pr-3 text-white/40">{r.date}</td>
                       <td className="py-2.5 pr-3 text-right font-bold text-emerald-400">${r.revenue.toLocaleString()}</td>
                       <td className="py-2.5 pr-3 text-right text-violet-400/60">${r.weeklyRev}</td>
@@ -290,7 +303,67 @@ export default function AdminOverviewPage() {
                       <td className="py-2.5 pr-3 text-right text-red-400 font-medium">-{r.churned}</td>
                       <td className="py-2.5 text-right text-white/70 font-bold">{r.activePaid}</td>
                     </tr>
-                  ))}
+                    {isOpen && (
+                      <tr>
+                        <td colSpan={15} className="p-0">
+                          <div className="px-4 py-4 bg-white/[0.02] border-b border-white/[0.06]">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                              {[
+                                { label: 'Gross Revenue', value: `$${r.revenue.toLocaleString()}`, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                                { label: 'Net Profit', value: `$${r.netProfit.toLocaleString()}`, color: 'text-emerald-300', bg: 'bg-emerald-500/10' },
+                                { label: 'Profit Margin', value: `${r.margin}%`, color: 'text-white', bg: 'bg-white/[0.06]' },
+                                { label: 'Net Subscriber Change', value: `${r.newPaid - r.churned >= 0 ? '+' : ''}${r.newPaid - r.churned}`, color: r.newPaid - r.churned >= 0 ? 'text-emerald-400' : 'text-red-400', bg: r.newPaid - r.churned >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
+                              ].map(c => (
+                                <div key={c.label} className={`p-3 rounded-xl ${c.bg} text-center`}>
+                                  <p className="text-[10px] text-white/30 uppercase mb-1">{c.label}</p>
+                                  <p className={`text-lg font-bold ${c.color}`}>{c.value}</p>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid grid-cols-3 gap-3 mb-3">
+                              <div className="p-3 rounded-xl bg-violet-500/10 text-center">
+                                <p className="text-[10px] text-white/30 uppercase mb-1">Weekly Plan Rev</p>
+                                <p className="text-sm font-bold text-violet-400">${r.weeklyRev}</p>
+                                <p className="text-[10px] text-white/20">{Math.round((r.weeklyRev / r.revenue) * 100)}% of total</p>
+                              </div>
+                              <div className="p-3 rounded-xl bg-blue-500/10 text-center">
+                                <p className="text-[10px] text-white/30 uppercase mb-1">Monthly Plan Rev</p>
+                                <p className="text-sm font-bold text-blue-400">${r.monthlyRev}</p>
+                                <p className="text-[10px] text-white/20">{Math.round((r.monthlyRev / r.revenue) * 100)}% of total</p>
+                              </div>
+                              <div className="p-3 rounded-xl bg-emerald-500/10 text-center">
+                                <p className="text-[10px] text-white/30 uppercase mb-1">Annual Plan Rev</p>
+                                <p className="text-sm font-bold text-emerald-400">${r.annualRev}</p>
+                                <p className="text-[10px] text-white/20">{Math.round((r.annualRev / r.revenue) * 100)}% of total</p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="p-3 rounded-xl bg-white/[0.04] text-center">
+                                <p className="text-[10px] text-white/30 uppercase mb-1">API Cost</p>
+                                <p className="text-sm font-bold text-red-400">${r.apiCost}</p>
+                                <p className="text-[10px] text-white/20">${(r.apiCost / r.generations * 1000).toFixed(2)}/1k gens</p>
+                              </div>
+                              <div className="p-3 rounded-xl bg-white/[0.04] text-center">
+                                <p className="text-[10px] text-white/30 uppercase mb-1">Infra Cost</p>
+                                <p className="text-sm font-bold text-red-400">${r.infraCost}</p>
+                              </div>
+                              <div className="p-3 rounded-xl bg-white/[0.04] text-center">
+                                <p className="text-[10px] text-white/30 uppercase mb-1">Activation Rate</p>
+                                <p className="text-sm font-bold text-orange-400">{Math.round((r.activations / r.signups) * 100)}%</p>
+                                <p className="text-[10px] text-white/20">{r.activations} of {r.signups}</p>
+                              </div>
+                              <div className="p-3 rounded-xl bg-white/[0.04] text-center">
+                                <p className="text-[10px] text-white/30 uppercase mb-1">Gens / Signup</p>
+                                <p className="text-sm font-bold text-fuchsia-400">{(r.generations / r.signups).toFixed(1)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
+                    );
+                  })}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-white/[0.08]">
