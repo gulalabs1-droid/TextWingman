@@ -275,21 +275,25 @@ export default function AdminOverviewPage() {
                 <tbody>
                   {rows.map((r) => {
                     const isOpen = expandedDay === r.date;
-                    const isToday = r.date === `${new Date().getMonth() + 1}/${new Date().getDate()}`;
+                    const today = r.isToday;
                     return (
                     <React.Fragment key={r.date}>
                     <tr
-                      className={`border-b border-white/[0.04] hover:bg-white/[0.05] transition cursor-pointer select-none ${isToday ? 'bg-violet-500/[0.04]' : ''} ${isOpen ? 'bg-white/[0.05]' : ''}`}
+                      className={`border-b border-white/[0.04] hover:bg-white/[0.05] transition cursor-pointer select-none ${today ? 'bg-violet-500/[0.06] border-l-2 border-l-violet-500' : ''} ${isOpen ? 'bg-white/[0.05]' : ''}`}
                       onClick={() => setExpandedDay(isOpen ? null : r.date)}
                     >
                       <td className="py-2.5 pr-3 text-white/60 font-medium">
                         <span className="flex items-center gap-1.5">
                           <ChevronDown className={`h-3 w-3 text-white/30 transition-transform ${isOpen ? 'rotate-0' : '-rotate-90'}`} />
-                          {r.day}{isToday && <span className="text-[9px] text-violet-400 font-bold ml-1">TODAY</span>}
+                          {r.day}
+                          {today && <span className="text-[8px] bg-violet-500/30 text-violet-300 font-bold px-1.5 py-0.5 rounded-full ml-1">LIVE</span>}
                         </span>
                       </td>
                       <td className="py-2.5 pr-3 text-white/40">{r.date}</td>
-                      <td className="py-2.5 pr-3 text-right font-bold text-emerald-400">${r.revenue.toLocaleString()}</td>
+                      <td className="py-2.5 pr-3 text-right font-bold text-emerald-400">
+                        ${r.revenue.toLocaleString()}
+                        {today && r.projectedRevenue && <span className="text-[9px] text-white/25 ml-1">→ ${r.projectedRevenue.toLocaleString()}</span>}
+                      </td>
                       <td className="py-2.5 pr-3 text-right text-violet-400/60">${r.weeklyRev}</td>
                       <td className="py-2.5 pr-3 text-right text-blue-400/60">${r.monthlyRev}</td>
                       <td className="py-2.5 pr-3 text-right text-emerald-400/60">${r.annualRev}</td>
@@ -306,55 +310,72 @@ export default function AdminOverviewPage() {
                     {isOpen && (
                       <tr>
                         <td colSpan={15} className="p-0">
-                          <div className="px-4 py-4 bg-white/[0.02] border-b border-white/[0.06]">
+                          <div className="px-5 py-5 bg-gradient-to-b from-white/[0.04] to-white/[0.01] border-b border-white/[0.08]">
+                            {today && r.dayProgress != null && (
+                              <div className="mb-4 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[10px] text-violet-300 font-bold uppercase">Day Progress</span>
+                                  <span className="text-xs text-violet-300 font-bold">{r.dayProgress}% complete</span>
+                                </div>
+                                <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                                  <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all" style={{ width: `${r.dayProgress}%` }} />
+                                </div>
+                                <div className="flex items-center justify-between mt-2">
+                                  <span className="text-[10px] text-white/30">Earned so far: <strong className="text-emerald-400">${r.revenue.toLocaleString()}</strong></span>
+                                  <span className="text-[10px] text-white/30">Projected EOD: <strong className="text-emerald-300">${(r.projectedRevenue || 0).toLocaleString()}</strong></span>
+                                </div>
+                              </div>
+                            )}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                               {[
-                                { label: 'Gross Revenue', value: `$${r.revenue.toLocaleString()}`, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-                                { label: 'Net Profit', value: `$${r.netProfit.toLocaleString()}`, color: 'text-emerald-300', bg: 'bg-emerald-500/10' },
-                                { label: 'Profit Margin', value: `${r.margin}%`, color: 'text-white', bg: 'bg-white/[0.06]' },
-                                { label: 'Net Subscriber Change', value: `${r.newPaid - r.churned >= 0 ? '+' : ''}${r.newPaid - r.churned}`, color: r.newPaid - r.churned >= 0 ? 'text-emerald-400' : 'text-red-400', bg: r.newPaid - r.churned >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10' },
+                                { label: today ? 'Revenue So Far' : 'Gross Revenue', value: `$${r.revenue.toLocaleString()}`, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+                                { label: 'Net Profit', value: `$${r.netProfit.toLocaleString()}`, color: r.netProfit >= 0 ? 'text-emerald-300' : 'text-red-400', bg: r.netProfit >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10', border: r.netProfit >= 0 ? 'border-emerald-500/20' : 'border-red-500/20' },
+                                { label: 'Profit Margin', value: `${r.margin}%`, color: 'text-white', bg: 'bg-white/[0.06]', border: 'border-white/[0.08]' },
+                                { label: 'Net Sub Change', value: `${r.newPaid - r.churned >= 0 ? '+' : ''}${r.newPaid - r.churned}`, color: r.newPaid - r.churned >= 0 ? 'text-emerald-400' : 'text-red-400', bg: r.newPaid - r.churned >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10', border: r.newPaid - r.churned >= 0 ? 'border-emerald-500/20' : 'border-red-500/20' },
                               ].map(c => (
-                                <div key={c.label} className={`p-3 rounded-xl ${c.bg} text-center`}>
-                                  <p className="text-[10px] text-white/30 uppercase mb-1">{c.label}</p>
-                                  <p className={`text-lg font-bold ${c.color}`}>{c.value}</p>
+                                <div key={c.label} className={`p-3 rounded-xl ${c.bg} border ${c.border} text-center`}>
+                                  <p className="text-[10px] text-white/40 uppercase font-semibold mb-1">{c.label}</p>
+                                  <p className={`text-xl font-bold ${c.color}`}>{c.value}</p>
                                 </div>
                               ))}
                             </div>
-                            <div className="grid grid-cols-3 gap-3 mb-3">
-                              <div className="p-3 rounded-xl bg-violet-500/10 text-center">
-                                <p className="text-[10px] text-white/30 uppercase mb-1">Weekly Plan Rev</p>
-                                <p className="text-sm font-bold text-violet-400">${r.weeklyRev}</p>
-                                <p className="text-[10px] text-white/20">{Math.round((r.weeklyRev / r.revenue) * 100)}% of total</p>
-                              </div>
-                              <div className="p-3 rounded-xl bg-blue-500/10 text-center">
-                                <p className="text-[10px] text-white/30 uppercase mb-1">Monthly Plan Rev</p>
-                                <p className="text-sm font-bold text-blue-400">${r.monthlyRev}</p>
-                                <p className="text-[10px] text-white/20">{Math.round((r.monthlyRev / r.revenue) * 100)}% of total</p>
-                              </div>
-                              <div className="p-3 rounded-xl bg-emerald-500/10 text-center">
-                                <p className="text-[10px] text-white/30 uppercase mb-1">Annual Plan Rev</p>
-                                <p className="text-sm font-bold text-emerald-400">${r.annualRev}</p>
-                                <p className="text-[10px] text-white/20">{Math.round((r.annualRev / r.revenue) * 100)}% of total</p>
-                              </div>
+                            <p className="text-[10px] text-white/25 uppercase font-semibold mb-2 tracking-wider">Revenue by Plan</p>
+                            <div className="grid grid-cols-3 gap-3 mb-4">
+                              {[
+                                { label: 'Weekly', value: r.weeklyRev, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/15' },
+                                { label: 'Monthly', value: r.monthlyRev, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/15' },
+                                { label: 'Annual', value: r.annualRev, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/15' },
+                              ].map(c => (
+                                <div key={c.label} className={`p-3 rounded-xl ${c.bg} border ${c.border} text-center`}>
+                                  <p className="text-[10px] text-white/30 uppercase mb-1">{c.label}</p>
+                                  <p className={`text-sm font-bold ${c.color}`}>${c.value}</p>
+                                  <div className="mt-1.5 h-1 bg-white/[0.06] rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full ${c.label === 'Weekly' ? 'bg-violet-500' : c.label === 'Monthly' ? 'bg-blue-500' : 'bg-emerald-500'}`} style={{ width: `${r.revenue > 0 ? Math.round((c.value / r.revenue) * 100) : 0}%` }} />
+                                  </div>
+                                  <p className="text-[9px] text-white/20 mt-1">{r.revenue > 0 ? Math.round((c.value / r.revenue) * 100) : 0}%</p>
+                                </div>
+                              ))}
                             </div>
+                            <p className="text-[10px] text-white/25 uppercase font-semibold mb-2 tracking-wider">Costs & Efficiency</p>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="p-3 rounded-xl bg-white/[0.04] text-center">
+                              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/15 text-center">
                                 <p className="text-[10px] text-white/30 uppercase mb-1">API Cost</p>
                                 <p className="text-sm font-bold text-red-400">${r.apiCost}</p>
-                                <p className="text-[10px] text-white/20">${(r.apiCost / r.generations * 1000).toFixed(2)}/1k gens</p>
+                                <p className="text-[9px] text-white/20">{r.generations > 0 ? `$${(r.apiCost / r.generations * 1000).toFixed(2)}/1k` : '-'}</p>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.04] text-center">
+                              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/15 text-center">
                                 <p className="text-[10px] text-white/30 uppercase mb-1">Infra Cost</p>
                                 <p className="text-sm font-bold text-red-400">${r.infraCost}</p>
+                                <p className="text-[9px] text-white/20">fixed/day</p>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.04] text-center">
+                              <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/15 text-center">
                                 <p className="text-[10px] text-white/30 uppercase mb-1">Activation Rate</p>
-                                <p className="text-sm font-bold text-orange-400">{Math.round((r.activations / r.signups) * 100)}%</p>
-                                <p className="text-[10px] text-white/20">{r.activations} of {r.signups}</p>
+                                <p className="text-sm font-bold text-orange-400">{r.signups > 0 ? Math.round((r.activations / r.signups) * 100) : 0}%</p>
+                                <p className="text-[9px] text-white/20">{r.activations} of {r.signups}</p>
                               </div>
-                              <div className="p-3 rounded-xl bg-white/[0.04] text-center">
+                              <div className="p-3 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/15 text-center">
                                 <p className="text-[10px] text-white/30 uppercase mb-1">Gens / Signup</p>
-                                <p className="text-sm font-bold text-fuchsia-400">{(r.generations / r.signups).toFixed(1)}</p>
+                                <p className="text-sm font-bold text-fuchsia-400">{r.signups > 0 ? (r.generations / r.signups).toFixed(1) : '-'}</p>
                               </div>
                             </div>
                           </div>

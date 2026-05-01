@@ -132,6 +132,9 @@ export type DailyRow = {
   newPaid: number;
   churned: number;
   activePaid: number;
+  isToday?: boolean;
+  projectedRevenue?: number;
+  dayProgress?: number;
 };
 
 export function mockDailyBreakdown(): DailyRow[] {
@@ -150,32 +153,53 @@ export function mockDailyBreakdown(): DailyRow[] {
 
   let runningPaid = 613; // starting active paid count
 
+  // How far through today are we (0-1)? Scale today's numbers.
+  const now = new Date();
+  const hoursPassed = now.getHours() + now.getMinutes() / 60;
+  const dayProgress = Math.min(hoursPassed / 24, 1);
+
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(Date.now() - (6 - i) * 86400000);
-    const rev = weeklyRev[i] + monthlyRev[i] + annualRev[i];
-    const apiCost = Math.round(gen[i] * 0.012 * 100) / 100;
+    const isToday = i === 6; // last entry is today
+    const scale = isToday ? dayProgress : 1;
+
+    const wkRev = Math.round(weeklyRev[i] * scale);
+    const moRev = Math.round(monthlyRev[i] * scale);
+    const anRev = Math.round(annualRev[i] * scale);
+    const rev = wkRev + moRev + anRev;
+    const fullRev = weeklyRev[i] + monthlyRev[i] + annualRev[i];
+    const gens = Math.round(gen[i] * scale);
+    const sigs = Math.round(sig[i] * scale);
+    const acts = Math.round(act[i] * scale);
+    const nPaid = Math.round(newP[i] * scale);
+    const chu = Math.round(churn[i] * scale);
+
+    const apiCost = Math.round(gens * 0.012 * 100) / 100;
     const totalCost = Math.round((apiCost + infraPerDay) * 100) / 100;
     const netProfit = Math.round((rev - totalCost) * 100) / 100;
-    const margin = Math.round((netProfit / rev) * 1000) / 10;
-    runningPaid = runningPaid + newP[i] - churn[i];
+    const margin = rev > 0 ? Math.round((netProfit / rev) * 1000) / 10 : 0;
+    runningPaid = runningPaid + nPaid - chu;
     return {
       date: `${d.getMonth() + 1}/${d.getDate()}`,
       day: dayNames[d.getDay()],
       revenue: rev,
-      weeklyRev: weeklyRev[i],
-      monthlyRev: monthlyRev[i],
-      annualRev: annualRev[i],
+      weeklyRev: wkRev,
+      monthlyRev: moRev,
+      annualRev: anRev,
       apiCost,
       infraCost: infraPerDay,
       totalCost,
       netProfit,
       margin,
-      signups: sig[i],
-      generations: gen[i],
-      activations: act[i],
-      newPaid: newP[i],
-      churned: churn[i],
+      signups: sigs,
+      generations: gens,
+      activations: acts,
+      newPaid: nPaid,
+      churned: chu,
       activePaid: runningPaid,
+      isToday,
+      projectedRevenue: isToday && dayProgress > 0 ? Math.round(rev / dayProgress) : undefined,
+      dayProgress: isToday ? Math.round(dayProgress * 100) : undefined,
     };
   });
 }
