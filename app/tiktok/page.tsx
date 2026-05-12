@@ -7,9 +7,34 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, ArrowRight, Loader2 } from 'lucide-react';
+import { Camera, ArrowRight, Loader2, MessageCircle, ShieldCheck, Zap } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { captureAttribution, track } from '@/lib/analytics';
+
+const sampleTexts = [
+  {
+    label: 'She said "maybe"',
+    text: "haha maybe, depends who's asking",
+    intent: 'Turn a soft maybe into a confident plan.',
+  },
+  {
+    label: 'Left on read',
+    text: 'opened 43 minutes ago',
+    intent: 'Double text without sounding desperate.',
+  },
+  {
+    label: 'Dry lol',
+    text: 'lol',
+    intent: 'Revive the convo without interrogating her.',
+  },
+];
+
+const trustChips = [
+  'No signup to try',
+  'No card',
+  'You send it yourself',
+  'Not robotic',
+];
 
 export default function TikTokLandingPage() {
   const router = useRouter();
@@ -47,6 +72,14 @@ export default function TikTokLandingPage() {
       sessionStorage.setItem('tw_prefill_message', text);
     } catch {}
     goToApp({ prefill: '1' });
+  };
+
+  const handleSample = (text: string, label: string) => {
+    setMsg(text);
+    track('tiktok_sample_click', { label });
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,20 +137,48 @@ export default function TikTokLandingPage() {
       </header>
 
       {/* Hero + input card */}
-      <main className="container mx-auto px-4 pt-6 pb-24 max-w-xl">
+      <main className="container mx-auto px-4 pt-6 pb-28 max-w-xl">
         <div className="text-center space-y-4 mb-7">
           <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/25 bg-fuchsia-500/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-200 shadow-lg shadow-fuchsia-500/10">
-            From TikTok? Start here
+            Saw the TikTok? Use it here
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            Paste the text. Get the reply.
+            Stop guessing what she meant.
             <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-1">
-              Send it in 10 seconds.
+              Get the text to send back.
             </span>
           </h1>
           <p className="text-sm text-white/45 leading-relaxed">
-            No signup &bull; 5 free replies/day &bull; Works for Hinge, Tinder, Bumble, IG, iMessage.
+            Paste the message or upload the screenshot. Gula reads the vibe, explains the move, and writes a reply that does not sound needy.
           </p>
+          <div className="flex flex-wrap justify-center gap-1.5 pt-1">
+            {trustChips.map((chip) => (
+              <span
+                key={chip}
+                className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold text-white/50"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-4 grid grid-cols-1 gap-2">
+          {sampleTexts.map((sample) => (
+            <button
+              key={sample.label}
+              onClick={() => handleSample(sample.text, sample.label)}
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.035] px-4 py-3 text-left transition-all hover:border-fuchsia-300/30 hover:bg-white/[0.06] active:scale-[0.99]"
+            >
+              <span>
+                <span className="block text-sm font-black text-white/85">{sample.label}</span>
+                <span className="block text-xs text-white/38">{sample.intent}</span>
+              </span>
+              <span className="rounded-full bg-fuchsia-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-fuchsia-200 group-hover:bg-fuchsia-500/15">
+                Try
+              </span>
+            </button>
+          ))}
         </div>
 
         {/* Input card */}
@@ -140,7 +201,7 @@ export default function TikTokLandingPage() {
             className="w-full min-h-[110px] max-h-[220px] p-4 rounded-2xl bg-black/30 border border-white/[0.08] text-white placeholder-white/30 resize-none focus:outline-none focus:border-fuchsia-400/60 focus:ring-4 focus:ring-fuchsia-500/10 transition-colors text-[15px] leading-relaxed"
           />
           <p className="mt-2 text-[11px] text-white/35">
-            Paste the exact message. We do not send anything for you.
+            Paste the exact message. Gula gives you options. You choose what to send.
           </p>
 
           {/* Actions */}
@@ -156,7 +217,7 @@ export default function TikTokLandingPage() {
               onClick={handlePasteSubmit}
               className="h-14 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10"
             >
-              Get my reply free <ArrowRight className="h-4 w-4" />
+              Decode + write reply <ArrowRight className="h-4 w-4" />
             </button>
             <button
               onClick={() => {
@@ -178,13 +239,29 @@ export default function TikTokLandingPage() {
             </button>
           </div>
 
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {[
+              { icon: MessageCircle, label: 'Reads the vibe' },
+              { icon: Zap, label: 'Fast reply' },
+              { icon: ShieldCheck, label: 'No auto-send' },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl border border-white/[0.06] bg-black/20 px-2 py-3 text-center"
+              >
+                <item.icon className="mx-auto mb-1 h-4 w-4 text-fuchsia-200/80" />
+                <div className="text-[10px] font-bold text-white/48">{item.label}</div>
+              </div>
+            ))}
+          </div>
+
           {/* Benefit chips (real, not fake stats) */}
           <div className="mt-5 flex flex-wrap justify-center gap-1.5">
             {[
               '5 free replies/day',
-              'No card',
               'Screenshot upload',
               'Replies under 18 words',
+              'Hinge, Tinder, IG, iMessage',
             ].map((b) => (
               <span
                 key={b}
@@ -193,6 +270,22 @@ export default function TikTokLandingPage() {
                 {b}
               </span>
             ))}
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-3xl border border-white/[0.07] bg-white/[0.035] p-5">
+          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-200/80">
+            Why this beats random rizz lines
+          </div>
+          <div className="mt-3 grid gap-3 text-sm">
+            <div className="rounded-2xl bg-black/20 p-3">
+              <div className="text-white/40 text-xs font-bold uppercase tracking-[0.12em]">Bad</div>
+              <div className="mt-1 text-white/72">Generic pickup lines that ignore the actual conversation.</div>
+            </div>
+            <div className="rounded-2xl bg-fuchsia-500/10 p-3 ring-1 ring-fuchsia-300/10">
+              <div className="text-fuchsia-200 text-xs font-bold uppercase tracking-[0.12em]">Gula</div>
+              <div className="mt-1 text-white/82">Reads context, flags neediness risk, then gives a short reply you can actually send.</div>
+            </div>
           </div>
         </div>
 
@@ -244,7 +337,7 @@ export default function TikTokLandingPage() {
               }}
               className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-2xl shadow-violet-600/30 transition-all active:scale-[0.98]"
             >
-              Get my reply free
+              Paste text or upload screenshot
             </button>
           </div>
         </div>
