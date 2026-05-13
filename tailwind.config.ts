@@ -17,6 +17,22 @@ const config: Config = {
       },
     },
     extend: {
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
+      minHeight: {
+        'touch': '44px',
+        'screen-dyn': ['100vh', '100dvh'] as unknown as string,
+      },
+      minWidth: {
+        'touch': '44px',
+      },
+      height: {
+        'screen-dyn': ['100vh', '100dvh'] as unknown as string,
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

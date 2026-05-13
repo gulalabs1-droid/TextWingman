@@ -2313,7 +2313,7 @@ export default function AppPage() {
     <>
     {/* Post-result Deep Analysis upsell — non-Pro, Fast-mode, one-time */}
     {showDeepUpsell && (
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9998] w-[calc(100%-2rem)] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
+      <div className="fixed bottom-safe-4 left-1/2 -translate-x-1/2 z-[9998] w-[calc(100%-2rem)] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
         <div className="rounded-2xl bg-gradient-to-br from-violet-600/95 to-fuchsia-600/95 border border-violet-400/40 shadow-2xl shadow-violet-600/40 backdrop-blur-sm p-4 flex items-center gap-3">
           <div className="text-2xl shrink-0" aria-hidden>🎯</div>
           <div className="flex-1 min-w-0">
@@ -2345,7 +2345,7 @@ export default function AppPage() {
     {lightMode && (
       <div
         style={{ filter: 'invert(1) hue-rotate(180deg) brightness(1.06) saturate(0.88) contrast(0.95)' }}
-        className="fixed bottom-4 right-4 z-[9999] flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/90 border border-gray-200 shadow-lg backdrop-blur"
+        className="fixed bottom-safe-4 right-4 z-[9999] flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/90 border border-gray-200 shadow-lg backdrop-blur"
       >
         <span className="text-[11px] font-semibold text-gray-700">☀️ Light preview</span>
         <a href="/app" className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition-colors">Exit →</a>
@@ -2363,7 +2363,7 @@ export default function AppPage() {
         <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
       </div>
 
-      <div className={`relative z-10 mx-auto px-5 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
+      <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Link href={userId ? '/dashboard' : '/pricing'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
@@ -2475,7 +2475,7 @@ export default function AppPage() {
         <FeatureTour />
 
         {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ── */}
-        <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 14.5rem)' }}>
+        <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 14.5rem - var(--kb-inset, 0px))' }}>
           {/* Hidden file inputs */}
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
           <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
@@ -3116,8 +3116,8 @@ export default function AppPage() {
             </div>
           </div>
 
-          {/* ─ Input — pinned at bottom, never cut off ─ */}
-          <div className="shrink-0 px-6 pb-5 pt-2 border-t border-white/[0.06]">
+          {/* ─ Input — pinned at bottom, never cut off, safe-area aware ─ */}
+          <div className="shrink-0 px-6 pb-safe-5 pt-2 border-t border-white/[0.06]">
             <div className="flex items-end gap-2">
               <button
                 onClick={() => coachFileInputRef.current?.click()}
@@ -3134,7 +3134,12 @@ export default function AppPage() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
                 rows={1}
                 disabled={strategyChatLoading}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[13px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
+                enterKeyHint="send"
+                autoCapitalize="sentences"
+                autoCorrect="on"
+                spellCheck
+                inputMode="text"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[16px] md:text-[13px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
                 style={{ minHeight: '42px' }}
                 placeholder={selectedContext ? (
                   getContextCategory(selectedContext) === 'professional'

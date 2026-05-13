@@ -1,11 +1,24 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import MobileViewportSync from "@/components/MobileViewportSync";
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5, // allow accessibility zoom
+  userScalable: true,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0f' },
+    { media: '(prefers-color-scheme: light)', color: '#0a0a0f' },
+  ],
+};
 
 export const metadata: Metadata = {
   title: "Text Wingman — Your Sharp Friend for Every Conversation",
@@ -44,13 +57,6 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    viewportFit: 'cover',
-  },
-  themeColor: '#0a0a0f',
 };
 
 export default function RootLayout({
@@ -60,10 +66,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark scroll-smooth">
-      <head>
-        <meta name="theme-color" content="#0a0a0f" />
-      </head>
       <body className={inter.className}>
+        <MobileViewportSync />
         {children}
         <Toaster />
         <Analytics />
