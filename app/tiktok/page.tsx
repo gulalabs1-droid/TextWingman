@@ -1,8 +1,8 @@
 'use client';
 
 // app/tiktok/page.tsx
-// Stripped-down landing for TikTok bio traffic.
-// No long-form sections — hero + input card that drops straight into /app with ?src=tiktok&prefill=... and Fast mode forced.
+// Stripped-down landing for short-form bio traffic.
+// No long-form sections — hero + input card that drops straight into /app with source attribution and Fast mode forced.
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -39,13 +39,19 @@ const trustChips = [
 export default function TikTokLandingPage() {
   const router = useRouter();
   const [msg, setMsg] = useState('');
+  const [source, setSource] = useState('shorts');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    captureAttribution();
-    track('tiktok_landing_view');
+    const attribution = captureAttribution();
+    const channel =
+      (attribution.utm_source as string | undefined) ||
+      (attribution.src as string | undefined) ||
+      'shorts';
+    setSource(channel);
+    track('shorts_landing_view', { source: channel });
   }, []);
 
   useEffect(() => {
@@ -56,7 +62,7 @@ export default function TikTokLandingPage() {
   }, [msg]);
 
   const goToApp = (extra: Record<string, string> = {}) => {
-    const params = new URLSearchParams({ src: 'tiktok', mode: 'fast', ...extra });
+    const params = new URLSearchParams({ src: source, mode: 'fast', ...extra });
     router.push(`/app?${params.toString()}`);
   };
 
@@ -66,7 +72,7 @@ export default function TikTokLandingPage() {
       textareaRef.current?.focus();
       return;
     }
-    track('tiktok_paste_submit', { length: text.length });
+    track('shorts_paste_submit', { source, length: text.length });
     // Stash message so /app can read it without exposing in the URL
     try {
       sessionStorage.setItem('tw_prefill_message', text);
@@ -76,7 +82,7 @@ export default function TikTokLandingPage() {
 
   const handleSample = (text: string, label: string) => {
     setMsg(text);
-    track('tiktok_sample_click', { label });
+    track('shorts_sample_click', { source, label });
     requestAnimationFrame(() => {
       textareaRef.current?.focus();
     });
@@ -86,7 +92,7 @@ export default function TikTokLandingPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    track('tiktok_upload_start', { size: file.size });
+    track('shorts_upload_start', { source, size: file.size });
     try {
       // Read to data URL, extract text server-side, then prefill the paste field in /app
       const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -103,18 +109,18 @@ export default function TikTokLandingPage() {
       const data = await res.json();
       const extracted: string | null = data?.extracted_text || data?.full_conversation || data?.last_received || null;
       if (!res.ok || !extracted) {
-        track('tiktok_upload_failed', { status: res.status });
+        track('shorts_upload_failed', { source, status: res.status });
         setUploading(false);
         alert(data?.error || 'Could not read that screenshot. Try pasting the text instead.');
         return;
       }
-      track('tiktok_upload_success', { length: extracted.length });
+      track('shorts_upload_success', { source, length: extracted.length });
       try {
         sessionStorage.setItem('tw_prefill_message', extracted);
       } catch {}
       goToApp({ prefill: '1', via: 'upload' });
     } catch (err) {
-      track('tiktok_upload_error');
+      track('shorts_upload_error', { source });
       setUploading(false);
       alert('Upload failed. Try pasting the text instead.');
     }
@@ -140,7 +146,7 @@ export default function TikTokLandingPage() {
       <main className="container mx-auto px-4 pt-6 pb-28 max-w-xl">
         <div className="text-center space-y-4 mb-7">
           <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/25 bg-fuchsia-500/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-200 shadow-lg shadow-fuchsia-500/10">
-            Saw the TikTok? Use it here
+            Saw the video? Use it here
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
             Stop guessing what she meant.
@@ -221,7 +227,7 @@ export default function TikTokLandingPage() {
             </button>
             <button
               onClick={() => {
-                track('tiktok_upload_click');
+                track('shorts_upload_click', { source });
                 fileInputRef.current?.click();
               }}
               disabled={uploading}
@@ -295,10 +301,20 @@ export default function TikTokLandingPage() {
             href="https://www.tiktok.com/@gulatextwingman"
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => track('tiktok_handle_click', { from: 'landing' })}
+            onClick={() => track('shorts_social_click', { source, platform: 'tiktok', from: 'landing' })}
             className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 hover:text-white/80 transition-colors"
           >
             <span aria-hidden>🎵</span> Follow @gulatextwingman on TikTok
+          </a>
+          <span className="mx-2 text-white/15">·</span>
+          <a
+            href="https://www.youtube.com/@gulatextwingman"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track('shorts_social_click', { source, platform: 'youtube', from: 'landing' })}
+            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 hover:text-white/80 transition-colors"
+          >
+            <span aria-hidden>▶</span> YouTube Shorts
           </a>
         </div>
 
@@ -314,7 +330,7 @@ export default function TikTokLandingPage() {
             <button
               key={p.key}
               onClick={() => {
-                track('tiktok_platform_tag_click', { platform: p.key });
+                track('shorts_platform_tag_click', { source, platform: p.key });
                 textareaRef.current?.focus();
               }}
               className="text-[11px] px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all"
@@ -331,7 +347,7 @@ export default function TikTokLandingPage() {
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => {
-                track('tiktok_sticky_cta_click');
+                track('shorts_sticky_cta_click', { source });
                 textareaRef.current?.focus();
                 textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }}

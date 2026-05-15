@@ -424,7 +424,7 @@ export default function AppPage() {
     localStorage.setItem('tw_use_v2', String(useV2));
   }, [useV2]);
 
-  // ── TikTok / paid-traffic entry: capture attribution, force Fast mode, prefill message ──
+  // ── Short-form / paid-traffic entry: capture attribution, force Fast mode, prefill message ──
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -438,7 +438,7 @@ export default function AppPage() {
       if (src || mode) {
         track('app_view', { src: src || undefined, mode: mode || undefined, via: via || undefined });
       }
-      if (mode === 'fast' || src === 'tiktok') {
+      if (mode === 'fast' || src === 'tiktok' || src === 'youtube') {
         setUseV2(false);
       }
       if (prefill === '1') {

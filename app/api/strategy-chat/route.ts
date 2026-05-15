@@ -219,6 +219,22 @@ export async function POST(req: Request) {
   if (!isPro) {
     const usageError = await trackFreeUsage(req, user?.id || null);
     if (usageError) return usageError;
+  } else {
+    // Log usage for Pro users (analytics only, no limit check)
+    const adminDb = getSupabaseAdmin();
+    if (adminDb && user?.id) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || '127.0.0.1';
+      const ua = req.headers.get('user-agent') || 'unknown';
+      const lang = req.headers.get('accept-language') || '';
+      const fp = crypto.createHash('sha256').update(`${ua}-${lang}`).digest('hex').substring(0, 32);
+      adminDb.from('usage_logs').insert({
+        ip_address: ip,
+        user_id: user.id,
+        user_agent: ua,
+        action: 'strategy_chat',
+        fingerprint: fp,
+      }).then(() => {});
+    }
   }
 
   // ─── Context extraction (Option 2) — Pro only, runs in parallel when thread exists ───

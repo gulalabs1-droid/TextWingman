@@ -47,24 +47,30 @@ export async function POST(request: NextRequest) {
           ? await generateRepliesWithAgent(message, context)
           : await generateReplies(message, context, customContext, userIntent);
         
-        // Save to reply history
+        // Save to reply history + log usage for analytics
         const supabaseAdmin = getSupabaseAdmin();
         if (supabaseAdmin) {
+          const userAgent = request.headers.get('user-agent') || 'unknown';
+          const lang = request.headers.get('accept-language') || '';
+          const fp = crypto.createHash('sha256').update(`${userAgent}-${lang}`).digest('hex').substring(0, 32);
           try {
-            const { error: historyError } = await supabaseAdmin
-              .from('reply_history')
-              .insert({
+            await Promise.all([
+              supabaseAdmin.from('reply_history').insert({
                 user_id: userId,
                 their_message: message,
                 generated_replies: JSON.stringify(replies),
                 context: context || null,
-              });
-            
-            if (historyError) {
-              console.error('Failed to save reply history:', historyError.message, historyError.details);
-            }
+              }),
+              supabaseAdmin.from('usage_logs').insert({
+                ip_address: ip,
+                user_id: userId,
+                user_agent: userAgent,
+                action: 'generate_reply',
+                fingerprint: fp,
+              }),
+            ]);
           } catch (insertErr) {
-            console.error('Reply history insert exception:', insertErr);
+            console.error('Reply history/usage insert exception:', insertErr);
           }
         }
         
