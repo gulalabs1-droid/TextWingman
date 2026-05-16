@@ -35,13 +35,16 @@ export default function PageViewTracker() {
           payload.utm = utm;
         }
 
-        navigator.sendBeacon?.('/api/track', JSON.stringify(payload)) ||
+        const body = JSON.stringify(payload);
+        const blob = new Blob([body], { type: 'application/json' });
+        if (!navigator.sendBeacon?.('/api/track', blob)) {
           fetch('/api/track', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body,
             keepalive: true,
           });
+        }
       } catch {
         // tracking must never break UX
       }

@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import MobileViewportSync from "@/components/MobileViewportSync";
+import { Suspense } from "react";
+import PageViewTracker from "@/components/PageViewTracker";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -68,6 +70,7 @@ export default function RootLayout({
     <html lang="en" className="dark scroll-smooth">
       <body className={inter.className}>
         <MobileViewportSync />
+        <Suspense fallback={null}><PageViewTracker /></Suspense>
         {children}
         <Toaster />
         <Analytics />

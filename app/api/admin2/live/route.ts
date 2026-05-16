@@ -10,6 +10,26 @@ type UsageLog = {
   created_at: string;
 };
 
+type PageViewLog = {
+  user_id: string | null;
+  ip_address: string | null;
+  created_at: string;
+  metadata: {
+    page?: string;
+    title?: string;
+    referrer?: string;
+    screen?: string;
+    device?: string;
+    browser?: string;
+    os?: string;
+    country?: string;
+    city?: string;
+    region?: string;
+    lang?: string;
+    utm?: Record<string, string>;
+  } | null;
+};
+
 type Profile = { id: string; email: string | null; full_name: string | null; created_at: string };
 type CopyLog = { user_id: string | null; tone: string | null; created_at: string };
 type SubEvent = { user_id: string; status: string; plan_type: string | null; updated_at: string; created_at: string };
@@ -32,11 +52,13 @@ export async function GET() {
     { data: signups24h },
     { data: copies24h },
     { data: subEvents24h },
+    { data: pageViews24h },
   ] = await Promise.all([
     db.from('usage_logs').select('user_id, ip_address, action, created_at').gte('created_at', h24).order('created_at', { ascending: false }).limit(2000),
     db.from('profiles').select('id, email, full_name, created_at').gte('created_at', h24).order('created_at', { ascending: false }).limit(200),
     db.from('copy_logs').select('user_id, tone, created_at').gte('created_at', h24).order('created_at', { ascending: false }).limit(500),
     db.from('subscriptions').select('user_id, status, plan_type, updated_at, created_at').gte('updated_at', h24).order('updated_at', { ascending: false }).limit(100),
+    db.from('usage_logs').select('user_id, ip_address, created_at, metadata').eq('action', 'page_view').gte('created_at', h24).order('created_at', { ascending: false }).limit(500),
   ]);
 
   const logs = (usage24h || []) as UsageLog[];
@@ -183,6 +205,45 @@ export async function GET() {
     }
   }
 
+  // ── Visitors (page_view logs with full metadata) ──
+  const pageViews = (pageViews24h || []) as PageViewLog[];
+  const visitors = pageViews.slice(0, 100).map(pv => ({
+    at: pv.created_at,
+    userId: pv.user_id,
+    ip: pv.ip_address,
+    email: pv.user_id ? (profileMap[pv.user_id]?.email || null) : null,
+    page: pv.metadata?.page || '/',
+    referrer: pv.metadata?.referrer || null,
+    device: pv.metadata?.device || null,
+    browser: pv.metadata?.browser || null,
+    os: pv.metadata?.os || null,
+    country: pv.metadata?.country || null,
+    city: pv.metadata?.city || null,
+    region: pv.metadata?.region || null,
+    screen: pv.metadata?.screen || null,
+    lang: pv.metadata?.lang || null,
+    utm: pv.metadata?.utm || null,
+  }));
+
+  // Visitor stats
+  const visitorCountToday = pageViews.filter(pv => pv.created_at >= todayIso).length;
+  const uniqueVisitorIps = new Set(pageViews.filter(pv => pv.created_at >= todayIso).map(pv => pv.ip_address)).size;
+  const pageBreakdown: Record<string, number> = {};
+  const countryBreakdown: Record<string, number> = {};
+  const deviceBreakdown: Record<string, number> = {};
+  const referrerBreakdown: Record<string, number> = {};
+  for (const pv of pageViews.filter(p => p.created_at >= todayIso)) {
+    const pg = pv.metadata?.page || '/';
+    pageBreakdown[pg] = (pageBreakdown[pg] || 0) + 1;
+    const ctry = pv.metadata?.country || 'unknown';
+    countryBreakdown[ctry] = (countryBreakdown[ctry] || 0) + 1;
+    const dev = pv.metadata?.device || 'unknown';
+    deviceBreakdown[dev] = (deviceBreakdown[dev] || 0) + 1;
+    let ref = 'direct';
+    try { if (pv.metadata?.referrer) ref = new URL(pv.metadata.referrer).hostname; } catch { /* invalid URL */ }
+    referrerBreakdown[ref] = (referrerBreakdown[ref] || 0) + 1;
+  }
+
   return NextResponse.json({
     serverTime: new Date().toISOString(),
     online: { m5: online5, m15: online15, h1: online60 },
@@ -192,6 +253,8 @@ export async function GET() {
       copies: todayCopies,
       upgrades: todayUpgrades,
       cancels: todayCancels,
+      pageViews: visitorCountToday,
+      uniqueVisitors: uniqueVisitorIps,
     },
     actionBreakdown,
     heatmap,
@@ -199,5 +262,12 @@ export async function GET() {
     feed: feed.slice(0, 60),
     topUsersToday,
     recentSignups: signups.slice(0, 15),
+    visitors,
+    visitorStats: {
+      pageBreakdown,
+      countryBreakdown,
+      deviceBreakdown,
+      referrerBreakdown,
+    },
   });
 }

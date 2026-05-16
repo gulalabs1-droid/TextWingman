@@ -3,23 +3,49 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Users, Zap, Copy, UserPlus, TrendingUp, TrendingDown, Activity, Pause, Play,
-  RefreshCw, Wifi, Eye, Crown,
+  RefreshCw, Wifi, Eye, Crown, Globe, Monitor, Smartphone, Tablet, MapPin,
 } from 'lucide-react';
 
 type FeedItem = { kind: string; at: string; userId: string | null; email: string | null; meta?: string };
+type Visitor = {
+  at: string;
+  userId: string | null;
+  ip: string | null;
+  email: string | null;
+  page: string;
+  referrer: string | null;
+  device: string | null;
+  browser: string | null;
+  os: string | null;
+  country: string | null;
+  city: string | null;
+  region: string | null;
+  screen: string | null;
+  lang: string | null;
+  utm: Record<string, string> | null;
+};
+
 type LiveData = {
   serverTime: string;
   online: { m5: number; m15: number; h1: number };
-  today: { signups: number; actions: number; copies: number; upgrades: number; cancels: number };
+  today: { signups: number; actions: number; copies: number; upgrades: number; cancels: number; pageViews: number; uniqueVisitors: number };
   actionBreakdown: Record<string, number>;
   heatmap: { hour: number; total: number; actions: Record<string, number> }[];
   activeUsersNow: { user_id: string; email: string; lastAction: string; lastSeen: string; count: number; ipCount: number }[];
   feed: FeedItem[];
   topUsersToday: { user_id: string; email: string; count: number }[];
   recentSignups: { id: string; email: string | null; full_name: string | null; created_at: string }[];
+  visitors: Visitor[];
+  visitorStats: {
+    pageBreakdown: Record<string, number>;
+    countryBreakdown: Record<string, number>;
+    deviceBreakdown: Record<string, number>;
+    referrerBreakdown: Record<string, number>;
+  };
 };
 
 const ACTION_COLORS: Record<string, string> = {
+  page_view:        'text-sky-300 bg-sky-500/10 border-sky-500/30',
   signup:           'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
   generate_reply:   'text-violet-300 bg-violet-500/10 border-violet-500/30',
   decode:           'text-blue-300 bg-blue-500/10 border-blue-500/30',
@@ -130,10 +156,12 @@ export default function Admin2Page() {
       </div>
 
       {/* ── KPI Strip ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 gap-2">
         <Kpi label="Online · 5m"  value={data.online.m5}  icon={<Wifi className="h-3 w-3" />} accent="emerald" pulse />
         <Kpi label="Online · 15m" value={data.online.m15} icon={<Eye className="h-3 w-3" />} accent="violet" />
         <Kpi label="Online · 1h"  value={data.online.h1}  icon={<Users className="h-3 w-3" />} accent="blue" />
+        <Kpi label="Page Views" value={data.today.pageViews} icon={<Eye className="h-3 w-3" />} accent="sky" />
+        <Kpi label="Unique Visitors" value={data.today.uniqueVisitors} icon={<Globe className="h-3 w-3" />} accent="cyan" />
         <Kpi label="Signups today" value={data.today.signups} icon={<UserPlus className="h-3 w-3" />} accent="emerald" />
         <Kpi label="Actions today" value={data.today.actions} icon={<Activity className="h-3 w-3" />} accent="fuchsia" />
         <Kpi label="Copies today"  value={data.today.copies}  icon={<Copy className="h-3 w-3" />} accent="teal" />
@@ -286,6 +314,108 @@ export default function Admin2Page() {
         </div>
       </div>
 
+      {/* ── VISITORS SECTION ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* ── Recent Visitors Stream ── */}
+        <div className="lg:col-span-2 rounded-lg bg-black/40 border border-white/[0.06] overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
+            <h2 className="text-[10px] font-bold text-white/50 uppercase tracking-widest flex items-center gap-1.5"><Globe className="h-3 w-3 text-sky-400" />Visitors · Live</h2>
+            <span className="text-[10px] text-white/25 font-mono">{data.visitors.length} visits · 24h</span>
+          </div>
+          <div className="max-h-[480px] overflow-y-auto font-mono text-[11px] divide-y divide-white/[0.03]">
+            {data.visitors.length === 0 && (
+              <div className="px-4 py-8 text-center text-white/30">No page views tracked yet — waiting for visitors…</div>
+            )}
+            {data.visitors.map((v, i) => (
+              <div key={i} className="px-4 py-2 hover:bg-white/[0.02] transition">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-white/30 w-10 shrink-0 text-right text-[10px]">{relTime(v.at, now)}</span>
+                  <span className="text-sky-300 font-medium truncate flex-1">{v.page}</span>
+                  <span className="flex items-center gap-1 text-[10px] text-white/40 shrink-0">
+                    {v.device === 'mobile' && <Smartphone className="h-3 w-3" />}
+                    {v.device === 'tablet' && <Tablet className="h-3 w-3" />}
+                    {v.device === 'desktop' && <Monitor className="h-3 w-3" />}
+                    {v.os && <span>{v.os}</span>}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 pl-12 text-[10px] text-white/30">
+                  {v.country && <span className="flex items-center gap-0.5"><MapPin className="h-2.5 w-2.5" />{v.city ? `${v.city}, ` : ''}{v.country}</span>}
+                  {v.browser && <span className="px-1 py-0.5 rounded bg-white/[0.04]">{v.browser}</span>}
+                  {v.email && <span className="text-violet-300/70">{shortEmail(v.email)}</span>}
+                  {!v.email && v.ip && <span className="text-white/20">·{v.ip.slice(-6)}</span>}
+                  {v.referrer && <span className="text-amber-300/60 truncate max-w-[200px]">← {v.referrer}</span>}
+                  {v.utm && Object.keys(v.utm).length > 0 && (
+                    <span className="text-emerald-300/60">{Object.entries(v.utm).map(([k,val]) => `${k}=${val}`).join(' ')}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Visitor Stats Sidebar ── */}
+        <div className="space-y-4">
+          {/* Pages breakdown */}
+          <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-4">
+            <h2 className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3">Pages · Today</h2>
+            <div className="space-y-1.5 max-h-[150px] overflow-y-auto">
+              {Object.entries(data.visitorStats.pageBreakdown).sort((a,b) => b[1]-a[1]).map(([page, count]) => (
+                <div key={page} className="flex items-center justify-between text-[11px]">
+                  <span className="text-white/60 truncate max-w-[160px]">{page}</span>
+                  <span className="text-sky-300 font-mono">{count}</span>
+                </div>
+              ))}
+              {Object.keys(data.visitorStats.pageBreakdown).length === 0 && <span className="text-white/30 text-xs">No data</span>}
+            </div>
+          </div>
+
+          {/* Countries */}
+          <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-4">
+            <h2 className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3">Countries · Today</h2>
+            <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
+              {Object.entries(data.visitorStats.countryBreakdown).sort((a,b) => b[1]-a[1]).map(([country, count]) => (
+                <div key={country} className="flex items-center justify-between text-[11px]">
+                  <span className="text-white/60">{country}</span>
+                  <span className="text-cyan-300 font-mono">{count}</span>
+                </div>
+              ))}
+              {Object.keys(data.visitorStats.countryBreakdown).length === 0 && <span className="text-white/30 text-xs">No data</span>}
+            </div>
+          </div>
+
+          {/* Devices */}
+          <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-4">
+            <h2 className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3">Devices · Today</h2>
+            <div className="flex items-center gap-3">
+              {Object.entries(data.visitorStats.deviceBreakdown).sort((a,b) => b[1]-a[1]).map(([dev, count]) => (
+                <div key={dev} className="flex items-center gap-1.5 text-[11px]">
+                  {dev === 'mobile' && <Smartphone className="h-3 w-3 text-fuchsia-300" />}
+                  {dev === 'tablet' && <Tablet className="h-3 w-3 text-amber-300" />}
+                  {dev === 'desktop' && <Monitor className="h-3 w-3 text-blue-300" />}
+                  <span className="text-white/60">{dev}</span>
+                  <span className="text-white/40 font-mono">{count}</span>
+                </div>
+              ))}
+              {Object.keys(data.visitorStats.deviceBreakdown).length === 0 && <span className="text-white/30 text-xs">No data</span>}
+            </div>
+          </div>
+
+          {/* Referrers */}
+          <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-4">
+            <h2 className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3">Traffic Sources · Today</h2>
+            <div className="space-y-1.5 max-h-[120px] overflow-y-auto">
+              {Object.entries(data.visitorStats.referrerBreakdown).sort((a,b) => b[1]-a[1]).map(([src, count]) => (
+                <div key={src} className="flex items-center justify-between text-[11px]">
+                  <span className="text-white/60 truncate max-w-[160px]">{src}</span>
+                  <span className="text-amber-300 font-mono">{count}</span>
+                </div>
+              ))}
+              {Object.keys(data.visitorStats.referrerBreakdown).length === 0 && <span className="text-white/30 text-xs">No data</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="text-center text-[10px] text-white/20 font-mono pt-2">
         last updated {new Date(data.serverTime).toLocaleTimeString()} · tick #{tick}
       </div>
@@ -293,7 +423,7 @@ export default function Admin2Page() {
   );
 }
 
-function Kpi({ label, value, icon, accent, pulse }: { label: string; value: number | string; icon: React.ReactNode; accent: 'emerald' | 'violet' | 'blue' | 'fuchsia' | 'teal' | 'red'; pulse?: boolean }) {
+function Kpi({ label, value, icon, accent, pulse }: { label: string; value: number | string; icon: React.ReactNode; accent: 'emerald' | 'violet' | 'blue' | 'fuchsia' | 'teal' | 'red' | 'sky' | 'cyan'; pulse?: boolean }) {
   const accents: Record<string, { text: string; bg: string; border: string }> = {
     emerald: { text: 'text-emerald-300', bg: 'bg-emerald-500/[0.07]', border: 'border-emerald-500/20' },
     violet:  { text: 'text-violet-300',  bg: 'bg-violet-500/[0.07]',  border: 'border-violet-500/20' },
@@ -301,6 +431,8 @@ function Kpi({ label, value, icon, accent, pulse }: { label: string; value: numb
     fuchsia: { text: 'text-fuchsia-300', bg: 'bg-fuchsia-500/[0.07]', border: 'border-fuchsia-500/20' },
     teal:    { text: 'text-teal-300',    bg: 'bg-teal-500/[0.07]',    border: 'border-teal-500/20' },
     red:     { text: 'text-red-300',     bg: 'bg-red-500/[0.07]',     border: 'border-red-500/20' },
+    sky:     { text: 'text-sky-300',     bg: 'bg-sky-500/[0.07]',     border: 'border-sky-500/20' },
+    cyan:    { text: 'text-cyan-300',    bg: 'bg-cyan-500/[0.07]',    border: 'border-cyan-500/20' },
   };
   const a = accents[accent];
   return (
