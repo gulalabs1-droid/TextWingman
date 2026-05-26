@@ -38,10 +38,26 @@ export default function FeatureTour() {
 
   useEffect(() => {
     const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (!dismissed) {
-      const timer = setTimeout(() => setVisible(true), 900);
-      return () => clearTimeout(timer);
-    }
+    if (dismissed) return;
+
+    // Skip tour for social traffic — let them use the tool immediately
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const src = params.get('src') || params.get('utm_source') || '';
+      const socialSources = ['tiktok', 'instagram', 'youtube', 'shorts', 'ig', 'reels'];
+      if (socialSources.includes(src.toLowerCase())) {
+        localStorage.setItem(STORAGE_KEY, 'social_skip');
+        return;
+      }
+      // Also skip if they arrived with a prefilled message (came from /tiktok flow)
+      if (params.get('prefill') === '1') {
+        localStorage.setItem(STORAGE_KEY, 'prefill_skip');
+        return;
+      }
+    } catch {}
+
+    const timer = setTimeout(() => setVisible(true), 900);
+    return () => clearTimeout(timer);
   }, []);
 
   const dismiss = () => {

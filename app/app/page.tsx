@@ -360,6 +360,7 @@ export default function AppPage() {
   const [activeCoachSessionId, setActiveCoachSessionId] = useState<string | null>(null);
   const [smartPreviewDismissed, setSmartPreviewDismissed] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const isSocialTraffic = useRef(false);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -438,8 +439,10 @@ export default function AppPage() {
       if (src || mode) {
         track('app_view', { src: src || undefined, mode: mode || undefined, via: via || undefined });
       }
-      if (mode === 'fast' || src === 'tiktok' || src === 'youtube') {
+      const socialSources = ['tiktok', 'youtube', 'instagram', 'ig', 'shorts', 'reels'];
+      if (mode === 'fast' || (src && socialSources.includes(src.toLowerCase()))) {
         setUseV2(false);
+        isSocialTraffic.current = true;
       }
       if (prefill === '1') {
         const msg = sessionStorage.getItem('tw_prefill_message');
@@ -462,14 +465,16 @@ export default function AppPage() {
   }, []);
 
   // One-time "Unlock Deep Analysis" upsell — fires after first Fast-mode response for non-Pro users
+  // Social traffic: delay until 2nd reply so they get value first
   const [showDeepUpsell, setShowDeepUpsell] = useState(false);
   const deepUpsellShown = useRef(false);
   useEffect(() => {
     if (deepUpsellShown.current) return;
     if (isPro) return;
     if (useV2) return; // only nudge Fast-mode users
-    const hasAssistantReply = strategyChatHistory.some(m => m.role === 'assistant');
-    if (!hasAssistantReply) return;
+    const assistantReplies = strategyChatHistory.filter(m => m.role === 'assistant').length;
+    const minReplies = isSocialTraffic.current ? 2 : 1;
+    if (assistantReplies < minReplies) return;
     try {
       if (localStorage.getItem('tw_deep_upsell_dismissed') === '1') return;
     } catch {}
@@ -482,6 +487,16 @@ export default function AppPage() {
     try { localStorage.setItem('tw_deep_upsell_dismissed', '1'); } catch {}
     try { track('deep_upsell_dismissed'); } catch {}
   };
+
+  // Track reply_generated when coach produces a new assistant message
+  const prevCoachLen = useRef(0);
+  useEffect(() => {
+    const assistantMsgs = strategyChatHistory.filter(m => m.role === 'assistant');
+    if (assistantMsgs.length > prevCoachLen.current && prevCoachLen.current >= 0) {
+      track('reply_generated', { source: isSocialTraffic.current ? 'social' : 'organic', count: assistantMsgs.length });
+    }
+    prevCoachLen.current = assistantMsgs.length;
+  }, [strategyChatHistory]);
 
   // Once-per-day V1/V2 mode reminder
   const [showModeReminder, setShowModeReminder] = useState(false);
@@ -1869,6 +1884,7 @@ export default function AppPage() {
     if (navigator.vibrate) navigator.vibrate(30);
     setCoachCopiedId(id);
     toast({ title: '✓ Copied' });
+    track('reply_copied', { from: 'coach', id });
     setTimeout(() => setCoachCopiedId(null), 2000);
   };
 
@@ -2191,13 +2207,21 @@ export default function AppPage() {
 
   // Handle Stripe checkout
   const handleCheckout = async (plan: 'weekly' | 'monthly' | 'annual') => {
+    track('upgrade_clicked', { plan, source: isSocialTraffic.current ? 'social' : 'organic' });
     // Require login before checkout
     if (!userId) {
       toast({
         title: 'Account Required',
         description: 'Please sign up or log in first to subscribe',
       });
-      window.location.href = `/login?redirect=/pricing&plan=${plan}`;
+      track('signup_started', { from: 'paywall', plan });
+      const loginParams = new URLSearchParams({ redirect: '/pricing', plan });
+      try {
+        const attr = JSON.parse(localStorage.getItem('tw_attribution') || '{}');
+        if (attr.utm_source) loginParams.set('utm_source', attr.utm_source);
+        if (attr.src) loginParams.set('src', attr.src);
+      } catch {}
+      window.location.href = `/login?${loginParams.toString()}`;
       return;
     }
     try {
@@ -4568,11 +4592,10 @@ export default function AppPage() {
                 {/* Suggestion chips — only when no history yet */}
                 {strategyChatHistory.length === 0 && !strategyChatLoading && (
                   <div className="px-3 pb-3 flex flex-wrap gap-1.5">
-                    {[
-                      'Should I ask what happened?',
-                      'Is this a good time to check in?',
-                      'How do I bring up plans?',
-                    ].map((chip) => (
+                    {(isSocialTraffic.current
+                      ? ['Paste her message', 'Help me reply to this']
+                      : ['Should I ask what happened?', 'Is this a good time to check in?', 'How do I bring up plans?']
+                    ).map((chip) => (
                       <button
                         key={chip}
                         onClick={() => { setStrategyChatInput(chip); }}
@@ -4581,6 +4604,14 @@ export default function AppPage() {
                         {chip}
                       </button>
                     ))}
+                    {isSocialTraffic.current && (
+                      <button
+                        onClick={() => coachFileInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-400/20 text-violet-300/70 text-[11px] font-medium hover:bg-violet-500/20 hover:text-violet-200 transition-all active:scale-95"
+                      >
+                        📸 Upload screenshot
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,39 +1,21 @@
 'use client';
 
 // app/tiktok/page.tsx
-// Stripped-down landing for short-form bio traffic.
-// No long-form sections — hero + input card that drops straight into /app with source attribution and Fast mode forced.
+// Mobile-optimized social landing for TikTok/YouTube/IG bio traffic.
+// Textarea + CTA above the fold. Example chips prefill. UTMs preserved through funnel.
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, ArrowRight, Loader2, MessageCircle, ShieldCheck, Zap } from 'lucide-react';
+import { Camera, ArrowRight, Loader2, Zap } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { captureAttribution, track } from '@/lib/analytics';
 
-const sampleTexts = [
-  {
-    label: 'She said "maybe"',
-    text: "haha maybe, depends who's asking",
-    intent: 'Turn a soft maybe into a confident plan.',
-  },
-  {
-    label: 'Left on read',
-    text: 'opened 43 minutes ago',
-    intent: 'Double text without sounding desperate.',
-  },
-  {
-    label: 'Dry lol',
-    text: 'lol',
-    intent: 'Revive the convo without interrogating her.',
-  },
-];
-
-const trustChips = [
-  'No signup to try',
-  'No card',
-  'You send it yourself',
-  'Not robotic',
+const exampleChips = [
+  { label: 'She said "maybe"', text: "haha maybe, depends who's asking" },
+  { label: 'Left on read', text: 'opened 43 minutes ago' },
+  { label: 'Dry "lol"', text: 'lol' },
+  { label: '"I\'m busy"', text: "i'm kinda busy this week tbh" },
 ];
 
 export default function TikTokLandingPage() {
@@ -41,8 +23,10 @@ export default function TikTokLandingPage() {
   const [msg, setMsg] = useState('');
   const [source, setSource] = useState('shorts');
   const [uploading, setUploading] = useState(false);
+  const [exampleClicked, setExampleClicked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const attribution = captureAttribution();
@@ -51,18 +35,30 @@ export default function TikTokLandingPage() {
       (attribution.src as string | undefined) ||
       'shorts';
     setSource(channel);
-    track('shorts_landing_view', { source: channel });
+    track('social_landing_view', { source: channel });
   }, []);
 
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 220) + 'px';
+    el.style.height = Math.min(el.scrollHeight, 200) + 'px';
   }, [msg]);
 
+  const buildUtmParams = () => {
+    const params: Record<string, string> = { src: source, mode: 'fast' };
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id'].forEach(k => {
+        const v = url.searchParams.get(k);
+        if (v) params[k] = v;
+      });
+    }
+    return params;
+  };
+
   const goToApp = (extra: Record<string, string> = {}) => {
-    const params = new URLSearchParams({ src: source, mode: 'fast', ...extra });
+    const params = new URLSearchParams({ ...buildUtmParams(), ...extra });
     router.push(`/app?${params.toString()}`);
   };
 
@@ -70,20 +66,20 @@ export default function TikTokLandingPage() {
     const text = msg.trim();
     if (!text) {
       textareaRef.current?.focus();
+      inputCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    track('shorts_paste_submit', { source, length: text.length });
-    // Stash message so /app can read it without exposing in the URL
-    try {
-      sessionStorage.setItem('tw_prefill_message', text);
-    } catch {}
+    track('decode_clicked', { source, length: text.length });
+    try { sessionStorage.setItem('tw_prefill_message', text); } catch {}
     goToApp({ prefill: '1' });
   };
 
   const handleSample = (text: string, label: string) => {
     setMsg(text);
-    track('shorts_sample_click', { source, label });
+    setExampleClicked(true);
+    track('example_clicked', { source, label });
     requestAnimationFrame(() => {
+      inputCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       textareaRef.current?.focus();
     });
   };
@@ -92,9 +88,8 @@ export default function TikTokLandingPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    track('shorts_upload_start', { source, size: file.size });
+    track('screenshot_upload_clicked', { source, size: file.size });
     try {
-      // Read to data URL, extract text server-side, then prefill the paste field in /app
       const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ''));
@@ -109,108 +104,74 @@ export default function TikTokLandingPage() {
       const data = await res.json();
       const extracted: string | null = data?.extracted_text || data?.full_conversation || data?.last_received || null;
       if (!res.ok || !extracted) {
-        track('shorts_upload_failed', { source, status: res.status });
+        track('screenshot_upload_failed', { source, status: res.status });
         setUploading(false);
         alert(data?.error || 'Could not read that screenshot. Try pasting the text instead.');
         return;
       }
-      track('shorts_upload_success', { source, length: extracted.length });
-      try {
-        sessionStorage.setItem('tw_prefill_message', extracted);
-      } catch {}
+      track('screenshot_upload_success', { source, length: extracted.length });
+      try { sessionStorage.setItem('tw_prefill_message', extracted); } catch {}
       goToApp({ prefill: '1', via: 'upload' });
-    } catch (err) {
-      track('shorts_upload_error', { source });
+    } catch {
+      track('screenshot_upload_error', { source });
       setUploading(false);
       alert('Upload failed. Try pasting the text instead.');
     }
   };
 
+  const hasFilled = msg.trim().length > 0;
+  const stickyLabel = hasFilled ? 'Decode this text now' : 'Paste text or upload screenshot';
+
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      {/* Thin top bar */}
-      <header className="container mx-auto px-4 py-5 flex items-center justify-between">
-        <Link href="/" className="transition-transform hover:scale-105">
-          <Logo size="md" showText={true} className="cursor-pointer" />
-        </Link>
+      {/* Minimal top bar */}
+      <header className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <Logo size="sm" showText={true} className="cursor-pointer opacity-70" />
         <Link
           href="/login?mode=signin"
-          onClick={() => track('tiktok_nav_login_click')}
-          className="text-white/50 hover:text-white text-sm transition-colors"
+          onClick={() => track('signup_started', { source, from: 'tiktok_nav' })}
+          className="text-white/40 hover:text-white text-xs font-medium transition-colors"
         >
           Sign in
         </Link>
       </header>
 
-      {/* Hero + input card */}
-      <main className="container mx-auto px-4 pt-6 pb-28 max-w-xl">
-        <div className="text-center space-y-4 mb-7">
-          <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-400/25 bg-fuchsia-500/10 px-4 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-200 shadow-lg shadow-fuchsia-500/10">
-            Saw the video? Use it here
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-[1.1]">
-            Stop guessing what she meant.
-            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-1">
-              Get the text to send back.
+      <main className="container mx-auto px-4 pb-28 max-w-lg">
+        {/* Hero — tight, above the fold */}
+        <div className="text-center space-y-2.5 mb-5">
+          <h1 className="text-[26px] sm:text-3xl font-black tracking-tight leading-[1.15]">
+            Paste the text she sent.
+            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
+              Get the reply in 10 seconds.
             </span>
           </h1>
-          <p className="text-sm text-white/45 leading-relaxed">
-            Paste the message or upload the screenshot. Gula reads the vibe, explains the move, and writes a reply that does not sound needy.
+          <p className="text-sm text-white/50">
+            No signup. No card. Try it before you send the wrong thing.
           </p>
-          <div className="flex flex-wrap justify-center gap-1.5 pt-1">
-            {trustChips.map((chip) => (
-              <span
-                key={chip}
-                className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold text-white/50"
-              >
-                {chip}
-              </span>
-            ))}
-          </div>
         </div>
 
-        <div className="mb-4 grid grid-cols-1 gap-2">
-          {sampleTexts.map((sample) => (
-            <button
-              key={sample.label}
-              onClick={() => handleSample(sample.text, sample.label)}
-              className="group flex items-center justify-between gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.035] px-4 py-3 text-left transition-all hover:border-fuchsia-300/30 hover:bg-white/[0.06] active:scale-[0.99]"
-            >
-              <span>
-                <span className="block text-sm font-black text-white/85">{sample.label}</span>
-                <span className="block text-xs text-white/38">{sample.intent}</span>
-              </span>
-              <span className="rounded-full bg-fuchsia-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-fuchsia-200 group-hover:bg-fuchsia-500/15">
-                Try
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Input card */}
-        <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-5 sm:p-6 backdrop-blur-sm">
-          <label className="block text-xs font-black text-fuchsia-200 uppercase tracking-[0.18em] mb-2">
-            What did they say?
-          </label>
+        {/* Input card — ABOVE FOLD on mobile */}
+        <div ref={inputCardRef} className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 sm:p-5 backdrop-blur-sm mb-5">
           <textarea
             ref={textareaRef}
             value={msg}
-            onChange={(e) => setMsg(e.target.value)}
+            onChange={(e) => {
+              setMsg(e.target.value);
+              if (e.target.value.trim().length > 0 && !exampleClicked) {
+                track('text_pasted', { source, length: e.target.value.length });
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
                 handlePasteSubmit();
               }
             }}
-            placeholder={`e.g. "haha maybe, depends who's asking"`}
-            rows={4}
-            className="w-full min-h-[110px] max-h-[220px] p-4 rounded-2xl bg-black/30 border border-white/[0.08] text-white placeholder-white/30 resize-none focus:outline-none focus:border-fuchsia-400/60 focus:ring-4 focus:ring-fuchsia-500/10 transition-colors text-[15px] leading-relaxed"
+            placeholder='Paste what they said…'
+            rows={3}
+            className="w-full min-h-[88px] max-h-[200px] p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] text-white placeholder-white/30 resize-none focus:outline-none focus:border-fuchsia-400/60 focus:ring-4 focus:ring-fuchsia-500/10 transition-colors text-[15px] leading-relaxed"
           />
-          <p className="mt-2 text-[11px] text-white/35">
-            Paste the exact message. Gula gives you options. You choose what to send.
-          </p>
 
-          {/* Actions */}
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
             <input
               ref={fileInputRef}
@@ -221,139 +182,128 @@ export default function TikTokLandingPage() {
             />
             <button
               onClick={handlePasteSubmit}
-              className="h-14 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10"
+              className="h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10"
             >
-              Decode + write reply <ArrowRight className="h-4 w-4" />
+              {hasFilled ? <>Decode this text now <ArrowRight className="h-4 w-4" /></> : <>Decode + write reply <Zap className="h-4 w-4" /></>}
             </button>
             <button
               onClick={() => {
-                track('shorts_upload_click', { source });
+                track('screenshot_upload_clicked', { source });
                 fileInputRef.current?.click();
               }}
               disabled={uploading}
-              className="h-12 rounded-2xl bg-white/[0.05] border border-white/[0.12] hover:bg-white/[0.10] text-white/80 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
+              className="h-[48px] rounded-2xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
             >
               {uploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Reading...
-                </>
+                <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</>
               ) : (
-                <>
-                  <Camera className="h-4 w-4" /> Upload screenshot
-                </>
+                <><Camera className="h-4 w-4" /> Upload screenshot</>
               )}
             </button>
           </div>
 
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            {[
-              { icon: MessageCircle, label: 'Reads the vibe' },
-              { icon: Zap, label: 'Fast reply' },
-              { icon: ShieldCheck, label: 'No auto-send' },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl border border-white/[0.06] bg-black/20 px-2 py-3 text-center"
-              >
-                <item.icon className="mx-auto mb-1 h-4 w-4 text-fuchsia-200/80" />
-                <div className="text-[10px] font-bold text-white/48">{item.label}</div>
-              </div>
-            ))}
-          </div>
+          <p className="mt-2.5 text-[11px] text-white/30 text-center">
+            5 free replies/day · Works with Hinge, Tinder, IG, iMessage
+          </p>
+        </div>
 
-          {/* Benefit chips (real, not fake stats) */}
-          <div className="mt-5 flex flex-wrap justify-center gap-1.5">
-            {[
-              '5 free replies/day',
-              'Screenshot upload',
-              'Replies under 18 words',
-              'Hinge, Tinder, IG, iMessage',
-            ].map((b) => (
-              <span
-                key={b}
-                className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-white/55"
+        {/* Example chips — tap to prefill */}
+        <div className="mb-6">
+          <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.16em] mb-2 px-1">Try an example</p>
+          <div className="grid grid-cols-2 gap-2">
+            {exampleChips.map((ex) => (
+              <button
+                key={ex.label}
+                onClick={() => handleSample(ex.text, ex.label)}
+                className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5 text-left transition-all hover:border-fuchsia-300/30 hover:bg-white/[0.06] active:scale-[0.97]"
               >
-                {b}
-              </span>
+                <span className="block text-[13px] font-bold text-white/80">{ex.label}</span>
+              </button>
             ))}
           </div>
         </div>
 
-        <div className="mt-5 rounded-3xl border border-white/[0.07] bg-white/[0.035] p-5">
-          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-fuchsia-200/80">
+        {/* Why this works — compact */}
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4 mb-6">
+          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-fuchsia-200/70 mb-2">
             Why this beats random rizz lines
           </div>
-          <div className="mt-3 grid gap-3 text-sm">
-            <div className="rounded-2xl bg-black/20 p-3">
-              <div className="text-white/40 text-xs font-bold uppercase tracking-[0.12em]">Bad</div>
-              <div className="mt-1 text-white/72">Generic pickup lines that ignore the actual conversation.</div>
+          <div className="grid gap-2 text-[13px]">
+            <div className="flex items-start gap-2">
+              <span className="text-red-400 text-[11px] font-bold mt-0.5">✗</span>
+              <span className="text-white/50">Generic pickup lines that ignore the actual conversation.</span>
             </div>
-            <div className="rounded-2xl bg-fuchsia-500/10 p-3 ring-1 ring-fuchsia-300/10">
-              <div className="text-fuchsia-200 text-xs font-bold uppercase tracking-[0.12em]">Gula</div>
-              <div className="mt-1 text-white/82">Reads context, flags neediness risk, then gives a short reply you can actually send.</div>
+            <div className="flex items-start gap-2">
+              <span className="text-emerald-400 text-[11px] font-bold mt-0.5">✓</span>
+              <span className="text-white/75">Reads context, flags neediness risk, gives a short reply you can actually send.</span>
             </div>
           </div>
         </div>
 
-        {/* TikTok handle — social proof, opens in new tab */}
-        <div className="mt-5 text-center">
-          <a
-            href="https://www.tiktok.com/@gulatextwingman"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => track('shorts_social_click', { source, platform: 'tiktok', from: 'landing' })}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 hover:text-white/80 transition-colors"
-          >
-            <span aria-hidden>🎵</span> Follow @gulatextwingman on TikTok
-          </a>
-          <span className="mx-2 text-white/15">·</span>
-          <a
-            href="https://www.youtube.com/@gulatextwingman"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => track('shorts_social_click', { source, platform: 'youtube', from: 'landing' })}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 hover:text-white/80 transition-colors"
-          >
-            <span aria-hidden>▶</span> YouTube Shorts
-          </a>
+        {/* Platform tags */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          {['Hinge', 'Tinder', 'Bumble', 'Instagram', 'iMessage'].map((p) => (
+            <span
+              key={p}
+              className="text-[11px] px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/35"
+            >
+              {p}
+            </span>
+          ))}
         </div>
 
-        {/* Tiny context tap-throughs to add keyword intent into the funnel */}
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {[
-            { label: 'Hinge', key: 'hinge' },
-            { label: 'Tinder', key: 'tinder' },
-            { label: 'Bumble', key: 'bumble' },
-            { label: 'Instagram', key: 'ig' },
-            { label: 'iMessage', key: 'imessage' },
-          ].map((p) => (
-            <button
-              key={p.key}
-              onClick={() => {
-                track('shorts_platform_tag_click', { source, platform: p.key });
-                textareaRef.current?.focus();
-              }}
-              className="text-[11px] px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all"
+        {/* Social links — pushed below the fold */}
+        <div className="text-center pt-4 border-t border-white/[0.05]">
+          <p className="text-[10px] text-white/20 mb-2">Follow for more</p>
+          <div className="flex items-center justify-center gap-4">
+            <a
+              href="https://www.tiktok.com/@gulatextwingman"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('social_outbound_click', { source, platform: 'tiktok' })}
+              className="text-[11px] text-white/30 hover:text-white/70 transition-colors"
             >
-              {p.label}
-            </button>
-          ))}
+              TikTok
+            </a>
+            <a
+              href="https://www.youtube.com/@gulatextwingman"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('social_outbound_click', { source, platform: 'youtube' })}
+              className="text-[11px] text-white/30 hover:text-white/70 transition-colors"
+            >
+              YouTube
+            </a>
+            <a
+              href="https://www.instagram.com/gulatextwingman"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('social_outbound_click', { source, platform: 'instagram' })}
+              className="text-[11px] text-white/30 hover:text-white/70 transition-colors"
+            >
+              Instagram
+            </a>
+          </div>
         </div>
       </main>
 
-      {/* Sticky mobile CTA — always present, always goes to input */}
+      {/* Sticky mobile CTA — text changes based on textarea state */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
         <div className="p-4 pointer-events-auto bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent">
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => {
-                track('shorts_sticky_cta_click', { source });
-                textareaRef.current?.focus();
-                textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                track('decode_clicked', { source, from: 'sticky_cta', filled: hasFilled });
+                if (hasFilled) {
+                  handlePasteSubmit();
+                } else {
+                  inputCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  textareaRef.current?.focus();
+                }
               }}
-              className="w-full h-12 text-base font-bold rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-2xl shadow-violet-600/30 transition-all active:scale-[0.98]"
+              className="w-full h-12 text-[15px] font-black rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-2xl shadow-violet-600/30 transition-all active:scale-[0.98]"
             >
-              Paste text or upload screenshot
+              {stickyLabel}
             </button>
           </div>
         </div>
