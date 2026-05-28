@@ -355,6 +355,7 @@ export default function AppPage() {
   const threadEndRef = useRef<HTMLDivElement>(null);
   const coachEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
+  const coachCardRef = useRef<HTMLDivElement>(null);
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const coachSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const [activeCoachSessionId, setActiveCoachSessionId] = useState<string | null>(null);
@@ -402,14 +403,50 @@ export default function AppPage() {
     'How do I follow up without being pushy?',
   ];
 
-  // Auto-resize + focus coach textarea when input is set programmatically (chip tap, Smart Preview)
+  // Auto-resize coach textarea when input changes. Only steal focus when the
+  // input was set programmatically (chip tap, Smart Preview) — re-focusing on
+  // every keystroke makes the caret jump and the iOS keyboard flicker, which
+  // felt like the field "getting stuck" while typing.
   useEffect(() => {
     const el = coachTextareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-    if (strategyChatInput.trim()) el.focus();
+    if (strategyChatInput.trim() && document.activeElement !== el) el.focus();
   }, [strategyChatInput]);
+
+  // Size the Coach card to fill the real available space instead of a fixed
+  // magic offset. Measures the card's actual top and fills down to the bottom
+  // of the *visual* viewport — which already shrinks when the keyboard opens,
+  // so it adapts to the usage bar, trial banner, notch/safe-areas and keyboard
+  // automatically (fixes the card feeling small/cramped on mobile).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const el = coachCardRef.current;
+    if (!el) return;
+    const recompute = () => {
+      const top = el.getBoundingClientRect().top;
+      const vh = window.visualViewport?.height ?? window.innerHeight;
+      const bottomGap = 12; // breathing room above the bottom safe area
+      const h = Math.max(380, vh - top - bottomGap);
+      el.style.height = `${h}px`;
+    };
+    recompute();
+    // Re-measure after layout settles (fonts/banners) and on viewport changes.
+    const raf = requestAnimationFrame(recompute);
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', recompute);
+    vv?.addEventListener('scroll', recompute);
+    window.addEventListener('resize', recompute);
+    window.addEventListener('orientationchange', recompute);
+    return () => {
+      cancelAnimationFrame(raf);
+      vv?.removeEventListener('resize', recompute);
+      vv?.removeEventListener('scroll', recompute);
+      window.removeEventListener('resize', recompute);
+      window.removeEventListener('orientationchange', recompute);
+    };
+  }, [appMode, usageCount, isPro, trialDaysLeft, strategyChatHistory.length]);
 
   // Rotate placeholder text every 4s when input is empty
   useEffect(() => {
@@ -2498,8 +2535,10 @@ export default function AppPage() {
         {/* Feature Tour — shows once on first visit */}
         <FeatureTour />
 
-        {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ── */}
-        <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 14.5rem - var(--kb-inset, 0px))' }}>
+        {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ──
+            Height is measured at runtime (see coachCardRef effect); the calc() is just the
+            pre-hydration fallback so there's no layout flash on first paint. */}
+        <div ref={coachCardRef} className="rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 14.5rem - var(--kb-inset, 0px))' }}>
           {/* Hidden file inputs */}
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
           <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />

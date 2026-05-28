@@ -10,6 +10,19 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.6.1',
+    date: '2026-05-28',
+    title: 'Mobile Coach — Smoother Typing & a Bigger Canvas',
+    description: 'A focused pass on the mobile Coach experience. Typing no longer stutters or "jumps," and the Coach now fills your whole screen instead of leaving dead space at the bottom.',
+    type: 'fix',
+    highlights: [
+      'Fixed the typing stutter — the input no longer re-grabs focus on every keystroke, so the caret stays put and the keyboard stops flickering on iOS',
+      'Coach now auto-sizes to the real visible screen height instead of a fixed estimate — bigger chat area, no wasted space, adapts to the notch, usage bar, and trial banner',
+      'Keyboard-aware layout — the Coach recalculates instantly when the keyboard opens or closes, keeping the input pinned and visible',
+      'Smoother resize on rotate and when banners appear/disappear',
+    ],
+  },
+  {
     version: '4.6.0',
     date: '2026-03-03',
     title: 'Context-Aware Coaching — Friend, Work, Family & More',
