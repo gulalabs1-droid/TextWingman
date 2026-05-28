@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  BarChart3, Users, CreditCard, Sparkles, Beaker, Wrench, TrendingUp, LayoutDashboard, LogOut, Activity,
+  BarChart3, Users, CreditCard, Sparkles, Beaker, Wrench, TrendingUp, LayoutDashboard, LogOut, Activity, Link2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: '/admin/billing', label: 'Billing', icon: CreditCard },
   { href: '/admin/content', label: 'Content', icon: BarChart3 },
   { href: '/admin/experiments', label: 'Experiments', icon: Beaker },
+  { href: '/admin/links', label: 'Links', icon: Link2 },
   { href: '/admin/tools', label: 'Tools', icon: Wrench },
 ];
 
