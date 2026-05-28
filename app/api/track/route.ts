@@ -12,19 +12,46 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
+// Clamp untrusted client strings so a malicious caller can't bloat the DB.
+const clamp = (v: unknown, max: number): string | null => {
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  if (!t) return null;
+  return t.slice(0, max);
+};
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ ok: false }, { status: 400 });
+    }
     const { page, referrer, screen, utm, title } = body as {
-      page?: string;
-      referrer?: string;
-      screen?: string;
-      utm?: Record<string, string>;
-      title?: string;
+      page?: unknown;
+      referrer?: unknown;
+      screen?: unknown;
+      utm?: unknown;
+      title?: unknown;
     };
 
-    if (!page) {
+    const safePage = clamp(page, 512);
+    if (!safePage) {
       return NextResponse.json({ ok: false }, { status: 400 });
+    }
+    const safeReferrer = clamp(referrer, 512);
+    const safeScreen = clamp(screen, 32);
+    const safeTitle = clamp(title, 256);
+
+    // Whitelist + clamp UTM keys/values; ignore anything oversized or unexpected.
+    const allowedUtm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'via', 'video_id'];
+    let safeUtm: Record<string, string> | undefined;
+    if (utm && typeof utm === 'object') {
+      const entries: [string, string][] = [];
+      for (const k of allowedUtm) {
+        const val = clamp((utm as Record<string, unknown>)[k], 128);
+        if (val) entries.push([k, val]);
+      }
+      if (entries.length > 0) safeUtm = Object.fromEntries(entries);
     }
 
     const db = getSupabaseAdmin();
@@ -75,10 +102,10 @@ export async function POST(request: NextRequest) {
     else if (/Linux/.test(userAgent)) os = 'linux';
 
     const metadata = {
-      page,
-      title: title || null,
-      referrer: referrer || null,
-      screen: screen || null,
+      page: safePage,
+      title: safeTitle,
+      referrer: safeReferrer,
+      screen: safeScreen,
       device,
       browser,
       os,
@@ -88,7 +115,7 @@ export async function POST(request: NextRequest) {
       latitude,
       longitude,
       lang: lang.split(',')[0] || null,
-      ...(utm && Object.keys(utm).length > 0 ? { utm } : {}),
+      ...(safeUtm ? { utm: safeUtm } : {}),
     };
 
     await db.from('usage_logs').insert({

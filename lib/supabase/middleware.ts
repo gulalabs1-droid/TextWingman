@@ -40,8 +40,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // If logged in, check onboarding status
-  if (user) {
+  // If logged in, check onboarding status — but ONLY on routes that branch on it.
+  // Skipping this avoids an extra profiles DB roundtrip on every /app load and
+  // every /api/track beacon, which the session-refresh matcher also covers.
+  const needsOnboardingCheck =
+    pathname === '/login' ||
+    pathname === '/onboarding' ||
+    pathname.startsWith('/dashboard')
+
+  if (user && needsOnboardingCheck) {
     // Fetch profile to check onboarding status
     const { data: profile } = await supabase
       .from('profiles')
