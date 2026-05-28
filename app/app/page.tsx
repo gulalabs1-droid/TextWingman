@@ -689,9 +689,14 @@ export default function AppPage() {
     threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thread]);
 
-  // Auto-scroll coach chat
+  // Auto-scroll coach chat. Scroll the inner container directly instead of
+  // scrollIntoView — the latter bubbles up to the document (which has global
+  // smooth-scroll) and can jump the whole page on mobile when a reply arrives.
   useEffect(() => {
-    coachEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const end = coachEndRef.current;
+    const container = end?.parentElement;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   }, [strategyChatHistory, strategyChatLoading]);
 
   // Auto-save thread after 2+ messages (1.5s debounce)

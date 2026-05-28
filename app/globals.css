@@ -118,6 +118,23 @@
     -webkit-transform: translateZ(0);
   }
 
+  /* Respect users who ask their OS for less motion — disables decorative
+     animations, transitions, and smooth-scroll for accessibility and to keep
+     low-end devices smooth. Only triggers when the user opts in at the OS level. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   /* Smooth textarea/input focus on mobile (prevents iOS zoom on focus).
      Covers all text-bearing input types including search/tel/url/number. */
   textarea,

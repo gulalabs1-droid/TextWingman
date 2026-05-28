@@ -10,6 +10,19 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.6.2',
+    date: '2026-05-28',
+    title: 'Smoother Everywhere — Scroll, Motion & Accessibility Polish',
+    description: 'A cross-device polish pass. The Coach chat now scrolls cleanly without the page jumping on mobile, and the whole app respects your system "reduce motion" setting for a calmer, faster experience.',
+    type: 'improvement',
+    highlights: [
+      'Fixed the page-jump when a Coach reply arrives — the chat now scrolls inside its own panel instead of yanking the whole page on mobile',
+      'Reduced-motion support — if you\'ve turned on "reduce motion" in your phone or computer settings, decorative animations and smooth-scroll now stand down automatically',
+      'Lighter on low-end devices — fewer forced animations means less jank and better battery',
+      'Consistent feel across mobile and desktop',
+    ],
+  },
+  {
     version: '4.6.1',
     date: '2026-05-28',
     title: 'Mobile Coach — Smoother Typing & a Bigger Canvas',
