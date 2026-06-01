@@ -10,6 +10,19 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.7.0',
+    date: '2026-05-31',
+    title: 'Desktop Split View + Faster Image Loading',
+    description: 'Big-screen Coach gets a proper two-pane layout, and screenshots load lighter across the board.',
+    type: 'feature',
+    highlights: [
+      'Desktop split view — on large screens, your saved conversations now sit in a sidebar right next to the Coach, so you can jump between chats in one click without opening a drawer',
+      'Click any conversation to load it, hit New to start fresh, or hover to delete — all without leaving the screen',
+      'Mobile is untouched — the streamlined single-column flow stays exactly as it was on phones and tablets',
+      'Screenshots now lazy-load and decode off the main thread, so long Coach histories scroll smoother',
+    ],
+  },
+  {
     version: '4.6.2',
     date: '2026-05-28',
     title: 'Smoother Everywhere — Scroll, Motion & Accessibility Polish',
