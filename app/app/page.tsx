@@ -2429,7 +2429,7 @@ export default function AppPage() {
         <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
       </div>
 
-      <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
+      <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl lg:max-w-5xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Link href={userId ? '/dashboard' : '/pricing'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
@@ -2541,9 +2541,72 @@ export default function AppPage() {
         <FeatureTour />
 
         {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ──
-            Height is measured at runtime (see coachCardRef effect); the calc() is just the
-            pre-hydration fallback so there's no layout flash on first paint. */}
-        <div ref={coachCardRef} className="rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col" style={{ height: 'calc(100dvh - 14.5rem - var(--kb-inset, 0px))' }}>
+            On large screens this becomes a split view: a saved-conversations sidebar on the
+            left and the Coach card on the right. The wrapper's height is measured at runtime
+            (see coachCardRef effect); the calc() is the pre-hydration fallback. */}
+        <div ref={coachCardRef} className="flex gap-4" style={{ height: 'calc(100dvh - 14.5rem - var(--kb-inset, 0px))' }}>
+          {/* ── Saved conversations sidebar — desktop only (mobile keeps the in-card flow) ── */}
+          <aside className="hidden lg:flex lg:flex-col w-72 shrink-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between px-4 pt-5 pb-3 border-b border-white/[0.06]">
+              <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Conversations</span>
+              <button
+                onClick={handleNewThread}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.10] text-white/60 hover:bg-white/[0.12] hover:text-white/80 text-[11px] font-bold transition-all active:scale-95"
+              >
+                <Plus className="h-3 w-3" /> New
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-2 py-2 min-h-0">
+              {savedThreads.length === 0 ? (
+                <div className="text-center py-10 px-3">
+                  <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
+                    <MessageCircle className="h-5 w-5 text-white/20" />
+                  </div>
+                  <p className="text-white/25 text-xs leading-relaxed">Your conversations save here automatically</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {[...savedThreads]
+                    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                    .map(t => {
+                      const isActive = activeCoachSessionId === t.id || activeThreadId === t.id;
+                      return (
+                        <div
+                          key={t.id}
+                          onClick={() => handleLoadThread(t)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLoadThread(t); } }}
+                          className={`group w-full flex items-center gap-2.5 p-2.5 rounded-2xl transition-all cursor-pointer active:scale-[0.98] ${
+                            isActive
+                              ? 'bg-violet-500/15 border border-violet-500/20'
+                              : 'border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
+                          }`}
+                        >
+                          <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-violet-500/20' : 'bg-white/[0.05]'}`}>
+                            <Sparkles className={`h-3 w-3 ${isActive ? 'text-violet-400' : 'text-white/30'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white/80 text-[13px] font-semibold truncate">{t.name}</p>
+                            <p className="text-white/25 text-[10px] mt-0.5">{t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}</p>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all shrink-0"
+                            aria-label="Delete conversation"
+                          >
+                            <Trash2 className="h-3 w-3 text-red-400" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* ── Coach card ── */}
+          <div className="flex-1 min-w-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col">
           {/* Hidden file inputs */}
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
           <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
@@ -2828,7 +2891,7 @@ export default function AppPage() {
                         <div className={`flex gap-2 flex-wrap ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in zoom-in-95 duration-500`}>
                           {msg.images.map((img, imgIdx) => (
                             <div key={imgIdx} className="relative rounded-2xl overflow-hidden border border-white/[0.10] shadow-xl shadow-black/40 max-w-[180px] hover:scale-[1.02] transition-transform">
-                              <img src={img} alt={`Screenshot ${imgIdx + 1}`} className="w-full h-auto max-h-[240px] object-cover" />
+                              <img src={img} alt={`Screenshot ${imgIdx + 1}`} loading="lazy" decoding="async" className="w-full h-auto max-h-[240px] object-cover" />
                               <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.08]" />
                             </div>
                           ))}
@@ -3242,8 +3305,9 @@ export default function AppPage() {
               </div>
             )}
           </div>
+          </div>
         </div>
-        {/* End of Coach Card */}
+        {/* End of Coach split view */}
 
         <div className="space-y-4">
             {/* ===== REPLY MODE (hidden, logic preserved) ===== */}
@@ -3531,6 +3595,7 @@ export default function AppPage() {
                   <img 
                     src={screenshotPreview} 
                     alt="Screenshot preview" 
+                    decoding="async"
                     className="w-full max-h-48 object-cover opacity-90"
                   />
                   {extracting && (
@@ -3862,7 +3927,7 @@ export default function AppPage() {
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
-                  <img src={screenshotPreview} alt="Screenshot preview" className="w-full max-h-48 object-cover opacity-90" />
+                  <img src={screenshotPreview} alt="Screenshot preview" decoding="async" className="w-full max-h-48 object-cover opacity-90" />
                   {extracting && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <div className="flex items-center gap-3">
@@ -4054,7 +4119,7 @@ export default function AppPage() {
             {/* Screenshot preview */}
             {screenshotPreview && (
               <div className="relative rounded-2xl overflow-hidden border border-cyan-500/20">
-                <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-40 object-cover opacity-70" />
+                <img src={screenshotPreview} alt="Screenshot" decoding="async" className="w-full max-h-40 object-cover opacity-70" />
                 <button
                   onClick={clearScreenshot}
                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-all"
