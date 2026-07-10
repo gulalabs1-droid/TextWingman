@@ -23,8 +23,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Text Wingman — Your Sharp Friend for Every Conversation",
-  description: "AI reads your conversation, coaches the move, writes the reply, and checks your vibe before you send. Free — Vibe Check, Tone Translator, Screenshot AI, Strategy Coach.",
+  title: "Text Wingman — Get the Best Dating Text Reply",
+  description: "Paste their message or upload a screenshot. Get short, confident dating-text replies plus why they work. Start free with no account or card.",
   keywords: ["AI text replies", "what to text back", "texting help", "AI wingman", "dating app reply", "how to reply to text", "vibe check", "tone translator", "text message assistant"],
   authors: [{ name: "Gula Labs" }],
   creator: "Gula Labs",
@@ -43,16 +43,16 @@ export const metadata: Metadata = {
     'mobile-web-app-capable': 'yes',
   },
   openGraph: {
-    title: "Text Wingman — Your Sharp Friend for Every Conversation",
-    description: "AI reads your conversation, coaches the move, writes the reply, and checks your vibe before you send. Free.",
+    title: "Stop Overthinking Your Next Text | Text Wingman",
+    description: "Paste their message or upload a screenshot. Get the best dating-text reply plus why it works. Free to try.",
     type: "website",
     locale: "en_US",
     siteName: "Text Wingman",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Text Wingman — AI Texting Companion",
-    description: "AI reads your conversation, coaches the move, writes the reply, and checks your vibe before you send.",
+    title: "Stop Overthinking Your Next Text | Text Wingman",
+    description: "Paste their message or upload a screenshot. Get the best dating-text reply plus why it works.",
     creator: "@gulalabs",
   },
   robots: {

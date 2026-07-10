@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, Check, ArrowRight, Shield, Camera, Target, TrendingUp, ChevronDown, Brain, Zap, Upload, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Sparkles, Check, ArrowRight, Shield, Camera, Target, TrendingUp, ChevronDown, Brain, Zap, Upload, Loader2, Copy, EyeOff, Send } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { captureAttribution, track } from "@/lib/analytics";
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -19,16 +21,14 @@ const jsonLd = {
     { '@type': 'Offer', price: '99.99', priceCurrency: 'USD', description: 'Pro Annual — Best Value' },
   ],
   featureList: [
-    'Deep Analysis — upload a screenshot, get 6 reply options scored by a critic agent with a clear winner',
-    'AI texting coach — ask anything, get strategy + replies in one chat',
-    'Screenshot upload — instant full conversation analysis',
-    'Visible scoring metrics — Neediness Risk, Clarity, Forward Motion, Tone Match on every candidate',
-    'Strategy breakdown — momentum, balance, energy, sharp one-liner on every analysis',
-    'Conversation intelligence — detects tone, unanswered questions, power dynamics',
+    'Get the best reply — paste what they said or upload a screenshot, get the reply plus why it works',
+    'Multiple reply options, scored so you can choose confidently',
+    'Replies ranked for confidence, clarity, and forward momentum',
+    'Reads the conversation context and tone before it writes',
+    'Screenshot upload — reads the whole conversation for you',
     'Decode mode — understand what their message really means',
-    'Conversation Revive — re-engage dead threads',
-    'Opener generator — first messages for any situation',
-    'Verified pipeline — every reply quality-checked for neediness, strategy alignment, and natural voice',
+    'Revive dead conversations without looking thirsty',
+    'Openers — first messages that actually get a reply',
     'Session history — auto-saved, resume anytime',
   ],
   creator: { '@type': 'Organization', name: 'Gula Labs', url: 'https://textwingman.com' },
@@ -38,18 +38,45 @@ const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
-    { '@type': 'Question', name: 'Is Text Wingman free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial. Pro unlocks unlimited everything + the verified pipeline.' } },
-    { '@type': 'Question', name: 'Can you see my conversations?', acceptedAnswer: { '@type': 'Answer', text: 'No. Messages are processed in real-time and never stored on our servers. We don\'t connect to your messaging apps.' } },
-    { '@type': 'Question', name: 'What apps does it work with?', acceptedAnswer: { '@type': 'Answer', text: 'All of them — iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Messenger, Telegram, LinkedIn, and more.' } },
-    { '@type': 'Question', name: 'How is this different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'ChatGPT gives you a generic reply. Wingman reads the conversation context, weighs the tone, and gives you short dating-text replies with the strategy behind them.' } },
+    { '@type': 'Question', name: 'Is Text Wingman free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 5 replies plus 1 decode, 1 opener, and 1 revive every day — no account, no card. Pro unlocks unlimited replies and more reply options to choose from.' } },
+    { '@type': 'Question', name: 'Are my messages private?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. We never send messages for you and we never sell your data or use your conversations to train public AI models. You choose what to paste or upload, and you can delete your history anytime.' } },
+    { '@type': 'Question', name: 'What apps does it work with?', acceptedAnswer: { '@type': 'Answer', text: 'Hinge, Tinder, Bumble, Instagram, iMessage, WhatsApp, Snapchat, Facebook Dating, and more — anything with text.' } },
+    { '@type': 'Question', name: 'How is this different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'ChatGPT gives you a generic reply. Wingman reads the conversation context and tone, then gives you short dating-text replies with the reason each one works.' } },
     { '@type': 'Question', name: 'Will people know I\'m using AI?', acceptedAnswer: { '@type': 'Answer', text: 'No. Every reply sounds like a real person — lowercase, casual, no emojis, no formal sentences. The 18-word limit keeps it natural.' } },
   ],
 };
 
+const EXAMPLE_CHIPS = [
+  { label: 'She said "maybe"', text: "haha maybe, depends who's asking" },
+  { label: 'Left on read', text: 'opened 43 minutes ago, no reply' },
+  { label: 'Dry "lol"', text: 'lol' },
+  { label: '"I\'m busy this week"', text: "i'm kinda busy this week tbh" },
+];
+
 export default function HomePage() {
+  const router = useRouter();
   const [showSticky, setShowSticky] = useState(false);
   const compRef = useRef<HTMLDivElement>(null);
   const [compVisible, setCompVisible] = useState(false);
+
+  // ── Hero interactive demo ──────────────────────────────
+  const [heroMsg, setHeroMsg] = useState('');
+  const [source, setSource] = useState('web');
+  const [uploading, setUploading] = useState(false);
+  const demoStarted = useRef(false);
+  const heroInputRef = useRef<HTMLTextAreaElement>(null);
+  const heroCardRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const attribution = captureAttribution();
+    const platform =
+      (attribution.utm_source as string | undefined) ||
+      (attribution.src as string | undefined) ||
+      'web';
+    setSource(platform);
+    track('landing_view', { source: platform, platform });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setShowSticky(window.scrollY > 600);
@@ -62,6 +89,87 @@ export default function HomePage() {
     if (compRef.current) obs.observe(compRef.current);
     return () => obs.disconnect();
   }, []);
+
+  const markDemoStarted = (via: string) => {
+    if (demoStarted.current) return;
+    demoStarted.current = true;
+    track('hero_demo_started', { source, platform: source, via });
+  };
+
+  const buildParams = (extra: Record<string, string> = {}) => {
+    const params: Record<string, string> = { src: source, ...extra };
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id'].forEach(k => {
+        const v = url.searchParams.get(k);
+        if (v) params[k] = v;
+      });
+    }
+    return new URLSearchParams(params).toString();
+  };
+
+  const goToApp = (text: string | null, via: string) => {
+    if (text) {
+      try { sessionStorage.setItem('tw_prefill_message', text); } catch {}
+      router.push(`/app?${buildParams({ prefill: '1', via })}`);
+    } else {
+      router.push(`/app?${buildParams()}`);
+    }
+  };
+
+  const handleGetReply = () => {
+    const text = heroMsg.trim();
+    markDemoStarted('paste');
+    if (!text) {
+      heroInputRef.current?.focus();
+      heroCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    goToApp(text, 'paste');
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    markDemoStarted('upload');
+    track('screenshot_upload_started', { source, platform: source, size: file.size });
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch('/api/extract-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: dataUrl }),
+      });
+      const data = await res.json();
+      const extracted: string | null = data?.extracted_text || data?.full_conversation || data?.last_received || null;
+      if (!res.ok || !extracted) {
+        setUploading(false);
+        goToApp(null, 'upload');
+        return;
+      }
+      goToApp(extracted, 'upload');
+    } catch {
+      setUploading(false);
+      goToApp(null, 'upload');
+    }
+  };
+
+  const handleChip = (text: string) => {
+    setHeroMsg(text);
+    markDemoStarted('chip');
+    requestAnimationFrame(() => {
+      heroCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      heroInputRef.current?.focus();
+    });
+  };
+
+  const hasText = heroMsg.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
@@ -85,91 +193,118 @@ export default function HomePage() {
       </nav>
 
       {/* ═══ HERO ═══ */}
-      <section className="container mx-auto px-4 pt-16 pb-16 md:pt-24 md:pb-24">
-        <div className="max-w-4xl mx-auto text-center space-y-6 mb-14 md:mb-20">
+      <section className="container mx-auto px-4 pt-12 pb-14 md:pt-20 md:pb-24">
+        <div className="max-w-2xl mx-auto text-center space-y-5 mb-8 md:mb-10">
           <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
             <Sparkles className="h-3.5 w-3.5" />
             Built for Hinge, Tinder, Bumble, Instagram &amp; iMessage
           </div>
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-[1.05]">
-            AI texting coach
-            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-2">for dating apps.</span>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.08]">
+            Stop overthinking
+            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-1">your next text.</span>
           </h1>
-          <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed">
-            Upload a screenshot or paste what they sent. Text Wingman reads the context, scores your options, and gives you the best reply in seconds.
+          <p className="text-base md:text-xl text-white/55 max-w-xl mx-auto leading-relaxed">
+            Paste what they said or upload a screenshot. Get the best reply, plus why it works.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <Link href="/app" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-xl shadow-violet-600/25 px-8 h-14 text-base flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]">
-              Try it free <ArrowRight className="h-4 w-4" />
-            </Link>
-            <p className="text-white/25 text-xs">No sign-up required &bull; 5 free replies/day &bull; no card</p>
-          </div>
         </div>
 
-        {/* Animated Live Demo */}
-        <div className="max-w-2xl mx-auto">
-          <Link href="/app" className="block group">
-            <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-3xl p-5 sm:p-7 hover:bg-white/[0.06] transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-violet-500/5 group-hover:border-white/[0.14] overflow-hidden">
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                  <Sparkles className="h-3.5 w-3.5 text-white" />
-                </div>
-                <span className="text-white/70 text-sm font-bold">Coach</span>
-                <span className="ml-auto px-2 py-0.5 rounded-lg text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/15">Deep Analysis</span>
-              </div>
+        {/* Interactive demo — input + actions */}
+        <div ref={heroCardRef} className="max-w-xl mx-auto">
+          <div className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.10] rounded-3xl p-4 sm:p-5 shadow-2xl shadow-violet-500/5">
+            <textarea
+              ref={heroInputRef}
+              value={heroMsg}
+              onChange={(e) => {
+                setHeroMsg(e.target.value);
+                if (e.target.value.trim().length > 0) markDemoStarted('type');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleGetReply(); }
+              }}
+              placeholder="Paste their message…"
+              rows={2}
+              className="w-full min-h-[64px] max-h-[180px] p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] text-white placeholder-white/30 resize-none focus:outline-none focus:border-fuchsia-400/60 focus:ring-4 focus:ring-fuchsia-500/10 transition-colors text-[15px] leading-relaxed"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              onChange={handleUpload}
+              className="hidden"
+            />
+            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={handleGetReply}
+                className="flex-1 h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10"
+              >
+                Get my reply free <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => { markDemoStarted('upload_click'); fileInputRef.current?.click(); }}
+                disabled={uploading}
+                className="h-[52px] sm:w-auto px-5 rounded-2xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
+              >
+                {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</> : <><Camera className="h-4 w-4" /> Upload a screenshot</>}
+              </button>
+            </div>
+            <p className="mt-3 text-[11px] text-white/35 text-center">No account. No card. First reply in seconds.</p>
 
-              {/* User message — fades in */}
-              <div className="flex justify-end mb-3 animate-[fadeSlideUp_0.6s_ease-out_0.3s_both]">
-                <div className="bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 border border-violet-500/15 rounded-2xl rounded-br-md px-4 py-2.5 max-w-[85%]">
-                  <p className="text-white/85 text-[13px] leading-relaxed">she said &ldquo;haha maybe, depends who&apos;s asking&rdquo; after I asked for drinks</p>
-                </div>
-              </div>
+            {/* Example chips */}
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              {EXAMPLE_CHIPS.map((ex) => (
+                <button
+                  key={ex.label}
+                  onClick={() => handleChip(ex.text)}
+                  className="rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[12px] font-semibold text-white/60 hover:border-fuchsia-300/30 hover:bg-white/[0.06] hover:text-white/85 transition-all active:scale-[0.97]"
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-              {/* Coach analysis — fades in with delay */}
-              <div className="flex justify-start mb-4 animate-[fadeSlideUp_0.6s_ease-out_0.8s_both]">
-                <div className="max-w-[95%] space-y-2.5">
-                  {/* Strategy pills */}
-                  <div className="flex flex-wrap gap-1.5 px-1 animate-[fadeSlideUp_0.4s_ease-out_1.0s_both]">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 flex items-center gap-1"><TrendingUp className="h-2.5 w-2.5" />Rising</span>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-white/[0.06] text-white/40 border border-white/[0.08]">Balanced</span>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400/60 border border-emerald-500/15">escalate</span>
-                  </div>
-                  <p className="text-[11px] text-white/40 italic px-1 animate-[fadeSlideUp_0.4s_ease-out_1.2s_both]">&ldquo;Playful interest. Lead with confidence, but keep it light.&rdquo;</p>
-                  {/* Winner card */}
-                  <div className="relative animate-[fadeSlideUp_0.5s_ease-out_1.4s_both]">
-                    <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 z-10">
-                      <Shield className="h-2.5 w-2.5 text-amber-400" />
-                      <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Winner</span>
-                    </div>
-                    <div className="mt-1 px-4 pt-5 pb-3 rounded-xl bg-amber-500/[0.08] border border-amber-500/20">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400">🎯 Clean Direct</span>
-                        <span className="text-[10px] text-amber-400/50">Copy →</span>
-                      </div>
-                      <p className="text-[13px] text-white/90 font-medium">someone with good taste and a Friday plan</p>
-                      <p className="text-[9px] text-amber-400/40 mt-1">💡 Confident, specific, keeps the invite alive</p>
-                    </div>
-                  </div>
-                  {/* Backup card */}
-                  <div className="px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] animate-[fadeSlideUp_0.5s_ease-out_1.7s_both]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[9px] font-bold text-white/30 uppercase">Backup</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-400">😏 Playful Tease</span>
-                    </div>
-                    <p className="text-[12px] text-white/65">dangerous question. Friday at 8?</p>
-                  </div>
-                  <p className="text-[9px] text-white/20 px-1 animate-[fadeSlideUp_0.4s_ease-out_2.0s_both]">+ 4 more candidates · tap to see all scores</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <p className="text-white/20 text-xs">Drop a screenshot. Get the read. Send the winner.</p>
-                <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-violet-600/20 group-hover:scale-105 transition-transform shrink-0 ml-4">
-                  Try it <ArrowRight className="h-4 w-4" />
-                </div>
+          {/* Compact reply-result preview — visible immediately below the action (mobile-first proof) */}
+          <div className="mt-4 rounded-3xl bg-white/[0.03] border border-white/[0.08] p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/30">Live example</span>
+              <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 flex items-center gap-1"><TrendingUp className="h-2.5 w-2.5" />Rising</span>
+            </div>
+            {/* Their message */}
+            <div className="flex justify-start mb-3">
+              <div className="bg-white/[0.05] border border-white/[0.08] rounded-2xl rounded-bl-md px-3.5 py-2 max-w-[85%]">
+                <p className="text-white/70 text-[13px] leading-relaxed">haha maybe, depends who&apos;s asking</p>
               </div>
             </div>
-          </Link>
+            {/* Best reply */}
+            <div className="relative">
+              <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-500/20 border border-violet-500/30 z-10">
+                <Sparkles className="h-2.5 w-2.5 text-violet-300" />
+                <span className="text-[9px] font-bold text-violet-200 uppercase tracking-wider">Best reply</span>
+              </div>
+              <div className="mt-1 px-4 pt-5 pb-3 rounded-xl bg-violet-500/[0.08] border border-violet-500/20">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[14px] text-white font-medium">someone with good taste and a friday plan</p>
+                  <button
+                    onClick={() => {
+                      try { navigator.clipboard?.writeText('someone with good taste and a friday plan'); } catch {}
+                      track('copy_clicked', { source, platform: source, location: 'hero_preview' });
+                    }}
+                    className="shrink-0 text-white/40 hover:text-white transition-colors"
+                    aria-label="Copy reply"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-[11px] text-violet-300/50 mt-1.5">Why it works: confident, specific, keeps the invite alive.</p>
+              </div>
+            </div>
+            <button
+              onClick={handleGetReply}
+              className="mt-3 w-full text-center text-[13px] font-bold text-violet-300 hover:text-violet-200 transition-colors"
+            >
+              Try it with your own text →
+            </button>
+          </div>
         </div>
       </section>
 
@@ -200,9 +335,9 @@ export default function HomePage() {
         </div>
         <div className="max-w-3xl mx-auto grid md:grid-cols-3 gap-6">
           {[
-            { n: '1', icon: <Upload className="h-5 w-5 text-violet-400" />, title: 'Drop it in', desc: 'Screenshot, paste their message, or just ask Coach what to do.' },
-            { n: '2', icon: <Brain className="h-5 w-5 text-fuchsia-400" />, title: 'Coach reads everything', desc: 'Tone, momentum, power dynamics, unanswered questions — nothing gets missed.' },
-            { n: '3', icon: <Zap className="h-5 w-5 text-emerald-400" />, title: 'Send with confidence', desc: '3 verified reply options under 18 words. No neediness, no generic fluff.' },
+            { n: '1', icon: <Upload className="h-5 w-5 text-violet-400" />, title: 'Paste it or screenshot it', desc: 'Drop in what they said, or upload the whole conversation as a screenshot.' },
+            { n: '2', icon: <Brain className="h-5 w-5 text-fuchsia-400" />, title: 'It reads the whole vibe', desc: 'Conversation context and tone, momentum, and anything you left unanswered.' },
+            { n: '3', icon: <Zap className="h-5 w-5 text-emerald-400" />, title: 'Send with confidence', desc: 'A few reply options under 18 words, each with why it works. Pick and send.' },
           ].map(step => (
             <div key={step.n} className="text-center space-y-4 group">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center group-hover:border-violet-500/30 group-hover:shadow-lg group-hover:shadow-violet-500/10 transition-all duration-300">
@@ -272,8 +407,8 @@ export default function HomePage() {
             </div>
             <div className={`bg-emerald-500/[0.06] border border-emerald-500/15 rounded-xl p-3 transition-all duration-500 delay-700 ${compVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
               <p className="text-emerald-300/60 text-[10px] font-bold uppercase mb-1.5">You send</p>
-              <p className="text-emerald-200 text-sm font-semibold">&ldquo;come through then&rdquo;</p>
-              <p className="text-emerald-400/60 text-[11px] mt-2">3 words. She&apos;s on her way.</p>
+              <p className="text-emerald-200 text-sm font-semibold">&ldquo;then let&apos;s fix that. drinks friday?&rdquo;</p>
+              <p className="text-emerald-400/60 text-[11px] mt-2">Confident, specific, and easy to answer.</p>
             </div>
           </div>
         </div>
@@ -288,18 +423,18 @@ export default function HomePage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">One coach. Every situation.</h2>
-            <p className="text-white/50">No tabs. No modes. Just tell Coach what you need.</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">More than a generic AI reply.</h2>
+          <p className="text-white/50">It reads the dating context before it writes the text.</p>
           </div>
         </div>
         <div className="flex gap-4 overflow-x-auto px-4 pb-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible md:px-0 md:pb-0 max-w-4xl md:mx-auto scrollbar-hide">
           {[
-            { icon: '🏆', title: 'Deep Analysis', desc: '6 candidates scored by a critic agent. Winner badge. Backup option.' },
-            { icon: '🎯', title: 'Context-aware mode', desc: 'Dating, friend, or work — Coach changes its whole coaching approach for each.' },
-            { icon: '📊', title: 'Visible metrics', desc: 'Neediness Risk, Clarity, Forward Motion — see exactly why it won.' },
+            { icon: '🏆', title: 'Ranked replies', desc: 'Compare a few different vibes and see which reply fits the moment best.' },
+            { icon: '🎯', title: 'Reads the context', desc: 'It notices tone, momentum, and what happened earlier in the conversation.' },
+            { icon: '📊', title: 'Explains the choice', desc: 'See why a reply works before you decide to send it.' },
             { icon: '🔍', title: 'Decode messages', desc: 'Intent, subtext, red/green flags revealed.' },
             { icon: '🔥', title: 'Revive dead chats', desc: 'Re-engage without looking thirsty.' },
-            { icon: '📸', title: 'Screenshot upload', desc: 'Drop it in — triggers the full analysis pipeline.' },
+            { icon: '📸', title: 'Screenshot upload', desc: 'Upload the conversation instead of typing every message again.' },
           ].map((f) => (
             <div key={f.title} className="min-w-[220px] snap-center md:min-w-0 bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:bg-white/[0.06] hover:border-violet-500/20 hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-500/5 transition-all duration-300 group">
               <span className="text-3xl block mb-4 group-hover:scale-110 transition-transform duration-300">{f.icon}</span>
@@ -310,25 +445,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ SCENARIOS — 6 cards across 3 categories ═══ */}
+      {/* ═══ SCENARIOS — dating-first intent matching ═══ */}
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Built for every situation.</h2>
-          <p className="text-white/50">Coach knows who you&apos;re talking to and changes its whole approach.</p>
-          <div className="flex items-center justify-center gap-3 mt-5">
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-pink-500/10 text-pink-300 border border-pink-500/20">💘 Dating</span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-300 border border-blue-500/20">🤝 Friends</span>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">💼 Work</span>
-          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Built for the texts you overthink.</h2>
+          <p className="text-white/50">From the first message to the conversation you thought was dead.</p>
         </div>
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
           {[
-            { emoji: '💘', tag: 'Dating', tagColor: 'bg-pink-500/10 text-pink-300 border-pink-500/20', title: 'The crush you can\'t read', desc: 'Left on delivered for 6 hours then replied "lol sorry I fell asleep." Coach reads the momentum and gives you the exact move.', color: 'border-pink-500/20 hover:border-pink-500/30' },
-            { emoji: '💔', tag: 'Dating', tagColor: 'bg-pink-500/10 text-pink-300 border-pink-500/20', title: 'The ex who texted back', desc: '"Hey, been thinking about you" at 1am. Not too eager, not too cold — Coach walks the line perfectly.', color: 'border-red-500/20 hover:border-red-500/30' },
-            { emoji: '🧊', tag: 'Dating', tagColor: 'bg-pink-500/10 text-pink-300 border-pink-500/20', title: 'The convo that died', desc: 'Talking every day, then nothing for 4 days. Coach writes the re-engagement without looking thirsty.', color: 'border-cyan-500/20 hover:border-cyan-500/30' },
-            { emoji: '🤝', tag: 'Friend', tagColor: 'bg-blue-500/10 text-blue-300 border-blue-500/20', title: 'The friendship that\'s drifting', desc: 'You used to talk every day. Now it\'s been two weeks. Coach helps you reach back without making it weird.', color: 'border-blue-500/20 hover:border-blue-500/30' },
-            { emoji: '😬', tag: 'Friend', tagColor: 'bg-blue-500/10 text-blue-300 border-blue-500/20', title: 'After the awkward moment', desc: 'Said something weird, or they did. Coach helps you address it directly and move on — no over-apologizing.', color: 'border-indigo-500/20 hover:border-indigo-500/30' },
-            { emoji: '💼', tag: 'Work', tagColor: 'bg-amber-500/10 text-amber-300 border-amber-500/20', title: 'The message to your boss', desc: 'Asking for something, pushing back, or following up. Coach calibrates for professional dynamics — clear ask, right tone.', color: 'border-amber-500/20 hover:border-amber-500/30' },
+            { emoji: '💘', tag: 'Decode', tagColor: 'bg-pink-500/10 text-pink-300 border-pink-500/20', title: 'The message you can\'t read', desc: 'Figure out whether they are flirting, being polite, or pulling away before you reply.', color: 'border-pink-500/20 hover:border-pink-500/30' },
+            { emoji: '🎯', tag: 'Reply', tagColor: 'bg-violet-500/10 text-violet-300 border-violet-500/20', title: 'The reply that needs a move', desc: 'Turn “maybe,” “lol,” or a dry answer into something confident and easy to respond to.', color: 'border-violet-500/20 hover:border-violet-500/30' },
+            { emoji: '🧊', tag: 'Revive', tagColor: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20', title: 'The conversation that died', desc: 'Reopen the chat without double-texting like you have been waiting by the phone.', color: 'border-cyan-500/20 hover:border-cyan-500/30' },
           ].map((s, i) => (
             <div key={i} className={`bg-white/[0.03] border ${s.color} rounded-2xl p-6 transition-all hover:bg-white/[0.05] hover:-translate-y-1 hover:shadow-lg duration-300`}>
               <div className="flex items-start justify-between mb-4">
@@ -344,6 +471,33 @@ export default function HomePage() {
           <Link href="/app" className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-lg shadow-violet-600/20 px-8 py-3.5 transition-all hover:scale-[1.02] active:scale-[0.98]">
             Handle it now — free <ArrowRight className="h-4 w-4" />
           </Link>
+        </div>
+      </section>
+
+      {/* ═══ TRUST — accurate to the published privacy policy ═══ */}
+      <section className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto rounded-3xl border border-white/[0.09] bg-gradient-to-br from-white/[0.05] to-violet-500/[0.04] p-6 md:p-8">
+          <div className="grid md:grid-cols-[1.1fr_1.9fr] gap-7 items-center">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-400 mb-3">Private by design</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-white">You choose what to share.</h2>
+              <p className="mt-3 text-sm leading-relaxed text-white/45">Text Wingman never connects to your dating or messaging apps.</p>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {[
+                { icon: <EyeOff className="h-5 w-5" />, title: 'No inbox access', text: 'We cannot read messages you do not paste or upload.' },
+                { icon: <Send className="h-5 w-5" />, title: 'You press send', text: 'We suggest replies. We never message anyone for you.' },
+                { icon: <Shield className="h-5 w-5" />, title: 'Not sold or trained on', text: 'Your conversations are not sold or used to train public AI models.' },
+              ].map(item => (
+                <div key={item.title} className="rounded-2xl border border-white/[0.08] bg-black/20 p-4">
+                  <div className="text-emerald-400 mb-3">{item.icon}</div>
+                  <h3 className="text-sm font-bold text-white">{item.title}</h3>
+                  <p className="mt-1.5 text-xs leading-relaxed text-white/40">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="mt-5 text-center text-[11px] text-white/30">Signed-in users can save and delete conversation history. <Link href="/privacy" className="underline underline-offset-2 hover:text-white/60">Read the privacy policy</Link>.</p>
         </div>
       </section>
 
@@ -366,8 +520,7 @@ export default function HomePage() {
               <li className="flex items-center gap-3 text-white/70 text-sm"><Check className="h-4 w-4 text-emerald-500 shrink-0" /> Full Coach access</li>
               <li className="flex items-center gap-3 text-white/70 text-sm"><Check className="h-4 w-4 text-emerald-500 shrink-0" /> Screenshot upload</li>
               <li className="flex items-center gap-3 text-white/70 text-sm"><Check className="h-4 w-4 text-emerald-500 shrink-0" /> 1 decode + 1 opener + 1 revive / day</li>
-              <li className="flex items-center gap-3 text-white/30 text-sm"><Lock className="h-4 w-4 text-white/15 shrink-0" /> V2 Verified pipeline</li>
-              <li className="flex items-center gap-3 text-white/30 text-sm"><Lock className="h-4 w-4 text-white/15 shrink-0" /> Unlimited everything</li>
+              <li className="flex items-center gap-3 text-white/70 text-sm"><Check className="h-4 w-4 text-emerald-500 shrink-0" /> No account or card required</li>
             </ul>
             <Link href="/app" className="w-full h-12 text-sm font-bold rounded-xl bg-white/[0.06] border border-white/[0.12] text-white hover:bg-white/[0.10] transition-all flex items-center justify-center">Start Free →</Link>
             <p className="text-xs text-center text-white/25 mt-3">No credit card required</p>
@@ -381,7 +534,7 @@ export default function HomePage() {
             </div>
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3 text-white text-sm font-medium"><Check className="h-4 w-4 text-emerald-400 shrink-0" /> Unlimited replies + Coach</li>
-              <li className="flex items-center gap-3 text-white text-sm font-medium"><Shield className="h-4 w-4 text-emerald-400 shrink-0" /> V2 Verified pipeline + Strategy</li>
+              <li className="flex items-center gap-3 text-white text-sm font-medium"><Shield className="h-4 w-4 text-emerald-400 shrink-0" /> More ranked reply options + strategy</li>
               <li className="flex items-center gap-3 text-white/70 text-sm"><Check className="h-4 w-4 text-emerald-400 shrink-0" /> Unlimited decodes, openers, revives</li>
               <li className="flex items-center gap-3 text-white/70 text-sm"><Check className="h-4 w-4 text-emerald-400 shrink-0" /> Session history — auto-saved</li>
               <li className="flex items-center gap-3 text-white/70 text-sm"><Check className="h-4 w-4 text-emerald-400 shrink-0" /> Cancel anytime</li>
@@ -417,11 +570,11 @@ export default function HomePage() {
         </div>
         <div className="max-w-2xl mx-auto space-y-3">
           {[
-            { q: 'Is it actually free?', a: 'Yes. 5 replies, 1 decode, 1 opener, and 1 revive per day — no credit card, no trial expiration. Pro unlocks unlimited everything + V2 Verified pipeline.' },
-            { q: 'Can you see my conversations?', a: 'No. Messages are processed in real-time and never stored. We don\'t connect to your messaging apps.' },
-            { q: 'What apps does it work with?', a: 'All of them. iMessage, WhatsApp, Instagram, Tinder, Hinge, Bumble, Facebook Dating, Snapchat, Telegram, LinkedIn — anything with text.' },
-            { q: 'How is this different from ChatGPT?', a: 'ChatGPT gives you one generic paragraph. Wingman runs a full analysis — 6 reply options generated and scored against each other by a critic agent. You see a winner, a backup, strategy pills, and visible metrics. No guessing. No robotic sentences.' },
-            { q: 'Does it work for texts outside of dating?', a: 'Yes — and the coaching actually changes based on who you\'re texting. Select Friend or Work and Coach switches to a completely different mode. Work messages get professional calibration (clarity, no slang, power dynamics). Friend messages get warmth and honesty without pressure. Dating is still the core focus, but everything else is fully supported.' },
+            { q: 'Is it actually free?', a: 'Yes. You get 5 replies plus 1 decode, 1 opener, and 1 revive every day. You do not need an account or credit card to start.' },
+            { q: 'Are my conversations private?', a: 'You choose what to paste or upload. We never connect to your messaging apps, sell your conversations, or use them to train public AI models. Signed-in users can save and delete their history.' },
+            { q: 'What apps does it work with?', a: 'Hinge, Tinder, Bumble, Instagram, iMessage, WhatsApp, Snapchat, Facebook Dating, and anything else with text.' },
+            { q: 'How is this different from ChatGPT?', a: 'Text Wingman is built specifically for dating conversations. It reads the context and tone, gives you short reply options, and explains why each one fits the moment.' },
+            { q: 'Does it work outside of dating?', a: 'Yes. Friend, work, family, and ex modes are available inside the app, while dating remains the main focus.' },
             { q: 'Will people know I\'m using AI?', a: 'No. Every reply sounds like a real person — lowercase, casual, no emojis. The 18-word limit keeps it natural. Plus you can edit any reply.' },
           ].map((faq, i) => (
             <details key={i} className="group bg-white/[0.02] backdrop-blur-sm border border-white/[0.08] rounded-2xl overflow-hidden hover:bg-white/[0.05] hover:border-white/[0.14] transition-all duration-300">
