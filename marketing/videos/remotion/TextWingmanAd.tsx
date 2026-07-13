@@ -78,6 +78,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
   return (
     <AbsoluteFill
       style={{
+        overflow: "hidden",
         background:
           `radial-gradient(circle at ${26 + drift / 9}% 10%, ${accent}47, transparent 32%), radial-gradient(circle at 82% 26%, rgba(236,95,199,0.24), transparent 30%), linear-gradient(180deg, #050508 0%, #0b0c12 50%, #050508 100%)`,
         color: brand.ink,
@@ -89,6 +90,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
         style={{
           position: "absolute",
           inset: 0,
+          zIndex: 0,
           backgroundImage:
             "linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
           backgroundSize: "54px 54px",
@@ -99,6 +101,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
       <div
         style={{
           position: "absolute",
+          zIndex: 0,
           left: -180,
           top: 330,
           width: 520,
@@ -112,6 +115,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
       <div
         style={{
           position: "absolute",
+          zIndex: 0,
           right: -190,
           top: 760,
           width: 470,
@@ -125,6 +129,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
         style={{
           position: "absolute",
           inset: 54,
+          zIndex: 0,
           borderRadius: 44,
           border: `2px solid ${brand.line}`,
           boxShadow: "inset 0 0 80px rgba(255,255,255,0.035)",
@@ -133,6 +138,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
       <div
         style={{
           position: "absolute",
+          zIndex: 2,
           top: 82,
           left: 82,
           right: 82,
@@ -172,7 +178,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
           <span>{scriptId}</span>
         </div>
       </div>
-      {children}
+      <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>{children}</div>
     </AbsoluteFill>
   );
 };
@@ -1224,6 +1230,109 @@ const SpeedrunTemplate: React.FC<VideoProps> = ({ script }) => {
   );
 };
 
+const CoachScorecardTemplate: React.FC<VideoProps> = ({ script }) => {
+  const frame = useCurrentFrame();
+  const candidateScores = [72, 81, 64, 93, 76, 68];
+
+  return (
+    <NativeStage script={script} badge="coach scorecard" whyDelay={390}>
+      <IncomingCard text={script.incoming} delay={48} />
+      <NativePanel delay={100} style={{ marginBottom: 18, padding: 22 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18 }}>
+          <MiniKicker label="whole thread read" color={brand.gold} />
+          <div style={{ color: brand.quiet, fontSize: 19, fontWeight: 900 }}>
+            6 CANDIDATES
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+          {[
+            ["neediness risk", 18, brand.red],
+            ["clarity", 94, brand.green],
+            ["forward motion", 91, brand.purple],
+          ].map(([label, value, color], index) => (
+            <div key={String(label)}>
+              <div
+                style={{
+                  color: brand.quiet,
+                  fontSize: 17,
+                  fontWeight: 850,
+                  minHeight: 42,
+                }}
+              >
+                {label}
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: String(color),
+                  fontSize: 34,
+                  lineHeight: 1,
+                  fontWeight: 950,
+                  opacity: ease(frame, 128 + index * 12, 140 + index * 12),
+                }}
+              >
+                {value}%
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+          {candidateScores.map((score, index) => {
+            const isWinner = score === 93;
+            const progress = ease(frame, 172 + index * 9, 184 + index * 9);
+            return (
+              <div
+                key={score}
+                style={{
+                  flex: 1,
+                  height: 48,
+                  borderRadius: 14,
+                  display: "grid",
+                  placeItems: "center",
+                  background: isWinner ? `${brand.green}25` : "rgba(255,255,255,0.055)",
+                  border: `2px solid ${isWinner ? `${brand.green}88` : "rgba(255,255,255,0.09)"}`,
+                  color: isWinner ? brand.green : brand.quiet,
+                  fontSize: 19,
+                  fontWeight: 950,
+                  opacity: progress,
+                  transform: `translateY(${(1 - progress) * 8}px)`,
+                }}
+              >
+                {score}
+              </div>
+            );
+          })}
+        </div>
+      </NativePanel>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 0.85fr", gap: 16 }}>
+        <ReplyCard
+          label="winner"
+          text={script.goodReply}
+          tone="good"
+          delay={244}
+          style={{ marginBottom: 0, minHeight: 180 }}
+        />
+        <NativePanel
+          delay={278}
+          style={{
+            marginBottom: 0,
+            minHeight: 180,
+            padding: 22,
+            background: "rgba(251,191,36,0.10)",
+            borderColor: "rgba(251,191,36,0.28)",
+          }}
+        >
+          <MiniKicker label="backup" color={brand.gold} />
+          <div style={{ color: brand.ink, fontSize: 25, lineHeight: 1.15, fontWeight: 880 }}>
+            {script.badReply}
+          </div>
+        </NativePanel>
+      </div>
+    </NativeStage>
+  );
+};
+
 export const TextWingmanAd: React.FC<VideoProps> = ({ script }) => {
   switch (script.template) {
     case "group-chat":
@@ -1250,6 +1359,8 @@ export const TextWingmanAd: React.FC<VideoProps> = ({ script }) => {
       return <FuneralTemplate script={script} />;
     case "speedrun":
       return <SpeedrunTemplate script={script} />;
+    case "coach-scorecard":
+      return <CoachScorecardTemplate script={script} />;
     default:
       return <WrongRightTemplate script={script} />;
   }

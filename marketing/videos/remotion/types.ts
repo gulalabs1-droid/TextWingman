@@ -11,7 +11,8 @@ export type VideoTemplate =
   | "scanner"
   | "comment-bait"
   | "funeral"
-  | "speedrun";
+  | "speedrun"
+  | "coach-scorecard";
 
 export type VideoScript = {
   id: string;

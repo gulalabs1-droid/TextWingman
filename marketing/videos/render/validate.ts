@@ -21,6 +21,7 @@ const validTemplates = new Set([
   "comment-bait",
   "funeral",
   "speedrun",
+  "coach-scorecard",
 ]);
 const errors: string[] = [];
 const warnings: string[] = [];
