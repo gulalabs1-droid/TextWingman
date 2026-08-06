@@ -40,6 +40,40 @@ This is the comparison point for the next content batch. Counts are public profi
 | Text Wingman - She Canceled Last Minute_1080p_caption.mp4 | No matching `cancel` caption in the visible Instagram inventory | Instagram published; caption CTA is `CANCEL`; do not repost until its first 24-hour read is recorded |
 | Texting Autopsy_ The Trouble Text_1080p_caption.mp4 | Too close to existing Instagram Cause of Death/autopsy framing | Hold; do not use in the next three posts |
 
+## Queue fill completed - 2026-08-06
+
+The bounded queue test uses distinct time slots and avoids reusing the same file on the same platform. Existing evening posts remain in the TikTok cadence; the new daytime slots bring Aug 15-17 to three TikTok posts per day.
+
+### YouTube - @gulatextwingman
+
+| Scheduled slot | Asset / title |
+| --- | --- |
+| Aug 15, 12:15 PM | `This Text Sounds Risky. Fix It Before You Send It #shorts` |
+| Aug 15, 5:30 PM | `Stop Overthinking the Text. Use This Move #shorts` |
+| Aug 15, 8:45 PM | `“Haha Maybe” Is Not a No. Read the Tone #shorts` |
+| Aug 16, 12:15 PM | `Left on Read? Do Not Send the Panic Apology #shorts` |
+| Aug 16, 5:30 PM | `Three Texting Mistakes That Kill the Tension #shorts` |
+| Aug 16, 8:45 PM | `Your Text Was Not Too Honest. It Was Too Intense #shorts` |
+| Aug 17, 12:15 PM | `What Is Your Most Delusional Texting Thought? #shorts` |
+
+YouTube Studio confirmed these as `Scheduled` or `Video processing` with the requested public date/time. It now has three new entries on Aug 15 and Aug 16; the available non-redundant inventory supported one additional Aug 17 slot without recycling a prior premise.
+
+### TikTok - @gulatextwingman
+
+| Scheduled slot | Caption / asset |
+| --- | --- |
+| Aug 15, 12:15 PM | `RISKY` - `heygen-stop-risky-text.mp4` |
+| Aug 15, 5:15 PM | `OVERTHINK` - `Text Wingman - Unlimited Edition_1080p_caption.mp4` |
+| Aug 16, 3:15 PM | `MAYBE` - `Text Wingman - Haha Maybe Reset_1080p_caption.mp4` |
+| Aug 16, 5:15 PM | `RESET` - `Text Wingman - Left On Read Apology Trap_1080p_caption.mp4` |
+| Aug 17, 3:15 PM | `AUTOPSY` - `Texting Autopsy_ The Trouble Text_1080p_caption.mp4` |
+| Aug 17, 5:15 PM | `INTENSE` - `textwingman trialvid/video 2.mp4` |
+| Aug 18, 3:25 PM | `DELUSIONAL` - `textwingman trialvid/video-1.mp4` |
+
+TikTok Studio owner rows visibly show the new captions and scheduled dates after each submission. Existing posts at approximately 8:45-8:50 PM complete the third daily slot on Aug 15-17; Aug 18 currently has the extra daytime test only.
+
+The new local HeyGen export `heygen-stop-risky-text.mp4` was used. The newer HeyGen Video Agent projects remain available in the workspace for the next batch; their rendered download controls were inspected, but no unverified scene fragments were used as full uploads.
+
 ## HeyGen batch created this pass
 
 These are new Video Agent projects, not reused prompts. They are still rendering/finishing motion graphics in HeyGen and should be reviewed before download or cross-platform upload.
