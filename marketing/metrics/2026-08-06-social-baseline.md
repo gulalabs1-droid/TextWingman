@@ -14,7 +14,7 @@ This is the comparison point for the next content batch. Counts are public profi
 
 ### YouTube - @gulatextwingman
 
-- Profile: 3 subscribers, 40 videos.
+- Profile: 3 subscribers; YouTube Studio owner inventory now shows 58 rows, including public and scheduled Shorts.
 - Strongest visible Shorts: What Are You Looking For (1.7K), Handling Maybe (1.4K), The Move That Saves The Chat (285), ChatGPT Sounds Too Formal (204), I Came From the Future (192), and Why Are You Single? (133).
 - Lower performers include several near-duplicate advice titles and generic product ads.
 - Interpretation: curiosity and recognizable tension are winning. The next batch should not repeat Maybe, What Are You Looking For, ChatGPT Formal, Busy, Lol, The Move, or Right Move until a meaningfully different creative is ready.
@@ -33,12 +33,12 @@ This is the comparison point for the next content batch. Counts are public profi
 | --- | --- | --- |
 | The Screenshot Exorcist_1080p_caption.mp4 | No matching title in the visible TikTok or YouTube inventories | Instagram published; YouTube scheduled for Aug 7, 2026 at 12:15 PM, link `https://youtube.com/shorts/SDIOBIumjI4` |
 | Gula Test 01 - What She Actually Heard_1080p.mp4 | Already present in TikTok public inventory; no earlier matching Instagram post observed | Instagram published; do not re-upload to TikTok |
-| Gula Test 02 - Choose Your Reply_1080p.mp4 | No matching public YouTube title; not visible in the refreshed TikTok public list | Instagram published; YouTube scheduled for Aug 8, 2026 at 12:15 PM, link `https://youtube.com/shorts/oV0J7sFm0yU`; TikTok Studio accepted a same-day queue submission, but the scheduled item was not exposed in the refreshed content table |
+| Gula Test 02 - Choose Your Reply_1080p.mp4 | YouTube has the related scheduled quiz slot; no exact TikTok owner-row match after the refreshed scroll audit | Instagram published; YouTube scheduled for Aug 8, 2026 at 12:15 PM, link `https://youtube.com/shorts/oV0J7sFm0yU`; TikTok acceptance is historical but not fully verified in the current owner table |
 | Gula Test 03 - Fix It Live_1080p.mp4 | Already present in TikTok public inventory; no earlier matching YouTube title was observed | Do not re-upload to TikTok; use only if a later YouTube slot is needed |
-| Texting Time Machine_1080p_caption.mp4 | No matching title in the refreshed public TikTok or YouTube inventories | TikTok Studio accepted a scheduled submission for Aug 7, 2026 at 6:45 PM; verify the scheduled tab before adding another TikTok slot |
+| Texting Time Machine_1080p_caption.mp4 | The same premise appears as YouTube `I Came From the Future. Do Not Send That Text` and a TikTok rewind caption, but neither owner table exposes the local filename | Treat as premise-used, not a clean unused test; do not re-upload until the exact exported file is identified |
 | Text Wingman - Double Text Without Begging_1080p_caption.mp4 | No matching `double` or `begging` caption in the visible Instagram inventory | Instagram published; caption CTA is `DOUBLE`; do not repost until its first 24-hour read is recorded |
 | Text Wingman - She Canceled Last Minute_1080p_caption.mp4 | No matching `cancel` caption in the visible Instagram inventory | Instagram published; caption CTA is `CANCEL`; do not repost until its first 24-hour read is recorded |
-| Texting Autopsy_ The Trouble Text_1080p_caption.mp4 | Too close to existing Instagram Cause of Death/autopsy framing | Hold; do not use in the next three posts |
+| Texting Autopsy_ The Trouble Text_1080p_caption.mp4 | Verified in the current TikTok and YouTube queues; still too close to Instagram Cause of Death/autopsy framing | Used on TikTok/YouTube; hold for Instagram |
 
 ## Queue fill completed - 2026-08-06
 
@@ -56,7 +56,7 @@ The bounded queue test uses distinct time slots and avoids reusing the same file
 | Aug 16, 8:45 PM | `Your Text Was Not Too Honest. It Was Too Intense #shorts` |
 | Aug 17, 12:15 PM | `What Is Your Most Delusional Texting Thought? #shorts` |
 
-YouTube Studio confirmed these as `Scheduled` or `Video processing` with the requested public date/time. It now has three new entries on Aug 15 and Aug 16; the available non-redundant inventory supported one additional Aug 17 slot without recycling a prior premise.
+YouTube Studio confirmed these as `Scheduled` or `Video processing` with the requested public date/time. The refreshed owner inventory now shows 58 total rows, with three new entries on Aug 15 and Aug 16 and one new Aug 17 slot.
 
 ### TikTok - @gulatextwingman
 
@@ -76,13 +76,19 @@ The new local HeyGen export `heygen-stop-risky-text.mp4` was used. The newer Hey
 
 ## HeyGen batch created this pass
 
-These are new Video Agent projects, not reused prompts. They are still rendering/finishing motion graphics in HeyGen and should be reviewed before download or cross-platform upload.
+These are new Video Agent projects, not reused prompts. A fresh HeyGen audit now shows all three as ready, but none appears in the current YouTube or TikTok owner inventories yet.
 
 | Project | Test variable | Status |
 | --- | --- | --- |
-| [Interview Answer Test](https://app.heygen.com/video-agent/383e928d9ab54215b76a8a7c00947753) | Curiosity/quiz structure; Marcus avatar; `LOOKING` CTA | Generated plan, music, captions, and scenes; finishing motion graphic |
-| [2AM Ex Text](https://app.heygen.com/video-agent/451105685678449eac71b4a2a78867c6) | Reaction-first UGC; female creator direction; `EX` CTA | Generated plan, music, captions, and scenes; finishing render |
-| [I’ll Let You Know Decoder](https://app.heygen.com/video-agent/18455c4afa1541d3b355f083c00fd0f0) | Game-show diagnosis; Shane avatar; `DECODER` CTA | Generated voice, plan, music, captions, and scenes; finishing motion graphic |
+| [Interview Answer Test](https://app.heygen.com/video-agent/383e928d9ab54215b76a8a7c00947753) | Curiosity/quiz structure; male creator; `LOOKING` CTA | Ready in HeyGen; not found in YouTube/TikTok owner inventories |
+| [2AM Ex Text](https://app.heygen.com/video-agent/451105685678449eac71b4a2a78867c6) | Reaction-first UGC; creator direction; `EX` CTA | Ready in HeyGen; not found in YouTube/TikTok owner inventories |
+| [I’ll Let You Know Decoder](https://app.heygen.com/video-agent/18455c4afa1541d3b355f083c00fd0f0) | Game-show diagnosis; Shane avatar; `DECODER` CTA | Ready in HeyGen with artifact `video_ybsw4i`; not found in YouTube/TikTok owner inventories |
+
+## Reconciliation result - 2026-08-06
+
+- Distinct, relevant full-length local exports are represented by a public or scheduled YouTube/TikTok premise, with the two identity caveats recorded above. Exact duplicate filenames, four HeyGen scene fragments, and unrelated landscape/news clips are not additional unused Wingman videos.
+- The three newest HeyGen projects above are the clear unused batch. They are finished in HeyGen but have not been downloaded and distributed.
+- Therefore the accurate answer is: the downloaded library is effectively accounted for after deduplication, but not every HeyGen project has been used. The next distribution work should start with those three ready projects, not another old local filename.
 
 ## Next-batch rules
 
