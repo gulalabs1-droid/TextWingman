@@ -21,8 +21,9 @@ This is the comparison point for the next content batch. Counts are public profi
 
 ### Instagram - @textwingmangula
 
-- Profile: 24 posts, 0 followers, 1 following.
-- Visible Reels: 12. View counts observed: 3, 1, 117, 25, 6, 4, 115, 98, 117, 52, 21, 104.
+- Profile: 27 posts, 0 followers, 1 following.
+- Three distinct Reels were confirmed published during this pass. The account had 24 posts at the start of the pass.
+- The earlier visible Reels had view counts of 3, 1, 117, 25, 6, 4, 115, 98, 117, 52, 21, and 104; the three new posts need a 24-hour read before comparison.
 - Existing captions already cover leverage, essays, cause-of-death/autopsy, neediness, and a generic Coach CTA.
 - Interpretation: the profile is publishing, but it does not yet have audience proof. New Reels should use distinct visual premises and a single comment prompt, not another generic "try the app" ad.
 
@@ -30,10 +31,11 @@ This is the comparison point for the next content batch. Counts are public profi
 
 | Asset | Cross-platform check | Status |
 | --- | --- | --- |
-| The Screenshot Exorcist_1080p_caption.mp4 | No matching title in the visible TikTok or YouTube inventories; not represented in the visible Instagram captions | Instagram share attempted; final publication not confirmed because the composer stalled at Sharing |
-| Gula Test 01 - What She Actually Heard_1080p.mp4 | No matching title in the visible inventories | Ready candidate |
-| Gula Test 02 - Choose Your Reply_1080p.mp4 | No matching title in the visible inventories | Ready candidate |
-| Gula Test 03 - Fix It Live_1080p.mp4 | No matching title in the visible inventories | Ready candidate |
+| The Screenshot Exorcist_1080p_caption.mp4 | No matching title in the visible TikTok or YouTube inventories | Instagram published; YouTube scheduled for Aug 7, 2026 at 12:15 PM, link `https://youtube.com/shorts/SDIOBIumjI4` |
+| Gula Test 01 - What She Actually Heard_1080p.mp4 | Already present in TikTok public inventory; no earlier matching Instagram post observed | Instagram published; do not re-upload to TikTok |
+| Gula Test 02 - Choose Your Reply_1080p.mp4 | No matching public YouTube title; not visible in the refreshed TikTok public list | Instagram published; YouTube scheduled for Aug 8, 2026 at 12:15 PM, link `https://youtube.com/shorts/oV0J7sFm0yU`; TikTok Studio accepted a same-day queue submission, but the scheduled item was not exposed in the refreshed content table |
+| Gula Test 03 - Fix It Live_1080p.mp4 | Already present in TikTok public inventory; no earlier matching YouTube title was observed | Do not re-upload to TikTok; use only if a later YouTube slot is needed |
+| Texting Time Machine_1080p_caption.mp4 | No matching title in the refreshed public TikTok or YouTube inventories | TikTok Studio accepted a scheduled submission for Aug 7, 2026 at 6:45 PM; verify the scheduled tab before adding another TikTok slot |
 | Texting Autopsy_ The Trouble Text_1080p_caption.mp4 | Too close to existing Instagram Cause of Death/autopsy framing | Hold; do not use in the next three posts |
 
 ## Next-batch rules
@@ -48,4 +50,4 @@ This is the comparison point for the next content batch. Counts are public profi
 
 ## Website patch status
 
-The local patch aligns the homepage and social landing page to the same promise, fixes the Instagram destination, removes production demo-mode fallbacks, removes `/app` from the sitemap, and uses the deployed Vercel domain consistently. Local verification passed; deployment is pending Vercel authentication.
+The local patch aligns the homepage and social landing page to the same promise, fixes the Instagram destination, removes production demo-mode fallbacks, removes `/app` from the sitemap, and uses the deployed Vercel domain consistently. Local verification passed. Commit `b1085af` contains the patch, but deployment is pending: Vercel CLI has no credentials and GitHub denied the authenticated `ctgula` user permission to push to `gulalabs1-droid/TextWingman.git`.
