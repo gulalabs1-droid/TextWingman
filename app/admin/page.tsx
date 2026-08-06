@@ -12,7 +12,7 @@ import {
 } from './components/AdminCharts';
 import { mockAdminOverview, mockFunnel, mockRevenueByDay, mockDailyBreakdown } from '@/lib/admin-demo-data';
 
-const isDemoMode = true; // flip to false to show live data
+const isDemoMode = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ADMIN_DEMO_MODE === 'true';
 
 type ActivityItem = { action: string; user_id: string | null; email: string | null; created_at: string };
 

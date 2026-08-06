@@ -140,13 +140,13 @@ export default function TikTokLandingPage() {
         {/* Hero — tight, above the fold */}
         <div className="text-center space-y-2.5 mb-5">
           <h1 className="text-[26px] sm:text-3xl font-black tracking-tight leading-[1.15]">
-            Paste the text she sent.
+            Paste the text they sent.
             <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
               Get the reply in 10 seconds.
             </span>
           </h1>
           <p className="text-sm text-white/50">
-            No signup. No card. Try it before you send the wrong thing.
+            Paste it or upload the thread. See the read, then send the reply that sounds like you.
           </p>
         </div>
 
@@ -203,7 +203,7 @@ export default function TikTokLandingPage() {
           </div>
 
           <p className="mt-2.5 text-[11px] text-white/30 text-center">
-            5 free replies/day · Works with Hinge, Tinder, IG, iMessage
+            No inbox access · 5 free replies/day · Works with Hinge, Tinder, IG, iMessage
           </p>
         </div>
 
@@ -275,7 +275,7 @@ export default function TikTokLandingPage() {
               YouTube
             </a>
             <a
-              href="https://www.instagram.com/gulatextwingman"
+              href="https://www.instagram.com/textwingmangula/"
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('social_outbound_click', { source, platform: 'instagram' })}

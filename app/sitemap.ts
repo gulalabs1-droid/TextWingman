@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://textwingman.com';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://gula-agents2.vercel.app';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date().toISOString();
@@ -8,7 +8,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Core pages
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
-    { url: `${BASE_URL}/app`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${BASE_URL}/features`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${BASE_URL}/pricing`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${BASE_URL}/changelog`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },

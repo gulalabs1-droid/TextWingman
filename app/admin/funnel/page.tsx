@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, TrendingUp, RefreshCw, ArrowDown } from 'lucide-react';
 import { mockFunnelData, mockFunnel } from '@/lib/admin-demo-data';
 
-const isDemoMode = true; // flip to false to show live data
+const isDemoMode = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ADMIN_DEMO_MODE === 'true';
 
 type FunnelData = {
   totalUsers: number;

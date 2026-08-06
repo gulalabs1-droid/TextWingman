@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { mockBillingData } from '@/lib/admin-demo-data';
 
-const isDemoMode = true; // flip to false to show live data
+const isDemoMode = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ADMIN_DEMO_MODE === 'true';
 
 type BillingData = {
   totalSubs: number;

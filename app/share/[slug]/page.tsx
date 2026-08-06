@@ -188,7 +188,7 @@ export default function SharePage() {
             </Link>
           </Button>
           <p className="text-purple-300 text-sm">
-            Get 3 free AI replies every day ⚡
+            Get 5 free replies every day, plus screenshot help ⚡
           </p>
         </div>
 

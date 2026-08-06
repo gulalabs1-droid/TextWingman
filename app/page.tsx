@@ -14,7 +14,7 @@ const jsonLd = {
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web',
   description: 'AI texting coach for dating apps. Upload a screenshot or paste what they sent, then get the best reply with the strategy behind it.',
-  url: 'https://textwingman.com',
+  url: 'https://gula-agents2.vercel.app',
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
     { '@type': 'Offer', price: '9.99', priceCurrency: 'USD', description: 'Pro Weekly — Unlimited' },
@@ -31,7 +31,7 @@ const jsonLd = {
     'Openers — first messages that actually get a reply',
     'Session history — auto-saved, resume anytime',
   ],
-  creator: { '@type': 'Organization', name: 'Gula Labs', url: 'https://textwingman.com' },
+  creator: { '@type': 'Organization', name: 'Gula Labs', url: 'https://gula-agents2.vercel.app' },
 };
 
 const faqJsonLd = {
@@ -200,11 +200,11 @@ export default function HomePage() {
             Built for Hinge, Tinder, Bumble, Instagram &amp; iMessage
           </div>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.08]">
-            Stop overthinking
-            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-1">your next text.</span>
+            Turn a confusing text into
+            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-1">a confident next move.</span>
           </h1>
           <p className="text-base md:text-xl text-white/55 max-w-xl mx-auto leading-relaxed">
-            Paste what they said or upload a screenshot. Get the best reply, plus why it works.
+            Paste their message or upload the conversation. Get the read, three natural replies, and why the move works.
           </p>
         </div>
 
@@ -237,7 +237,7 @@ export default function HomePage() {
                 onClick={handleGetReply}
                 className="flex-1 h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10"
               >
-                Get my reply free <ArrowRight className="h-4 w-4" />
+                Try a real text free <ArrowRight className="h-4 w-4" />
               </button>
               <button
                 onClick={() => { markDemoStarted('upload_click'); fileInputRef.current?.click(); }}
@@ -247,7 +247,7 @@ export default function HomePage() {
                 {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</> : <><Camera className="h-4 w-4" /> Upload a screenshot</>}
               </button>
             </div>
-            <p className="mt-3 text-[11px] text-white/35 text-center">No account. No card. First reply in seconds.</p>
+            <p className="mt-3 text-[11px] text-white/35 text-center">No inbox access. No card. First reply in seconds.</p>
 
             {/* Example chips */}
             <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -617,6 +617,8 @@ export default function HomePage() {
               <Link href="/privacy" className="hover:text-white/60 transition">Privacy</Link>
               <Link href="/contact" className="hover:text-white/60 transition">Contact</Link>
               <a href="https://www.tiktok.com/@gulatextwingman" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">TikTok</a>
+              <a href="https://www.youtube.com/@gulatextwingman" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">YouTube</a>
+              <a href="https://www.instagram.com/textwingmangula/" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">Instagram</a>
             </div>
             <p className="text-xs text-white/20">&copy; {new Date().getFullYear()} Text Wingman. All rights reserved.</p>
           </div>

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Users, Search, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { mockUsers } from '@/lib/admin-demo-data';
 
-const isDemoMode = true; // flip to false to show live data
+const isDemoMode = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ADMIN_DEMO_MODE === 'true';
 
 type UserRow = {
   id: string;

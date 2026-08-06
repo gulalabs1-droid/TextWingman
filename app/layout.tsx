@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Gula Labs" }],
   creator: "Gula Labs",
   publisher: "Gula Labs",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://gula-agents2.vercel.app'),
   applicationName: 'Text Wingman',
   appleWebApp: {
     capable: true,
