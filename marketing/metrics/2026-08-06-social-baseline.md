@@ -21,8 +21,8 @@ This is the comparison point for the next content batch. Counts are public profi
 
 ### Instagram - @textwingmangula
 
-- Profile: 27 posts, 0 followers, 1 following.
-- Three distinct Reels were confirmed published during this pass. The account had 24 posts at the start of the pass.
+- Profile: 29 posts, 0 followers, 1 following.
+- Five distinct Reels were confirmed published during the two most recent passes. The account had 24 posts before that work began.
 - The earlier visible Reels had view counts of 3, 1, 117, 25, 6, 4, 115, 98, 117, 52, 21, and 104; the three new posts need a 24-hour read before comparison.
 - Existing captions already cover leverage, essays, cause-of-death/autopsy, neediness, and a generic Coach CTA.
 - Interpretation: the profile is publishing, but it does not yet have audience proof. New Reels should use distinct visual premises and a single comment prompt, not another generic "try the app" ad.
@@ -36,7 +36,19 @@ This is the comparison point for the next content batch. Counts are public profi
 | Gula Test 02 - Choose Your Reply_1080p.mp4 | No matching public YouTube title; not visible in the refreshed TikTok public list | Instagram published; YouTube scheduled for Aug 8, 2026 at 12:15 PM, link `https://youtube.com/shorts/oV0J7sFm0yU`; TikTok Studio accepted a same-day queue submission, but the scheduled item was not exposed in the refreshed content table |
 | Gula Test 03 - Fix It Live_1080p.mp4 | Already present in TikTok public inventory; no earlier matching YouTube title was observed | Do not re-upload to TikTok; use only if a later YouTube slot is needed |
 | Texting Time Machine_1080p_caption.mp4 | No matching title in the refreshed public TikTok or YouTube inventories | TikTok Studio accepted a scheduled submission for Aug 7, 2026 at 6:45 PM; verify the scheduled tab before adding another TikTok slot |
+| Text Wingman - Double Text Without Begging_1080p_caption.mp4 | No matching `double` or `begging` caption in the visible Instagram inventory | Instagram published; caption CTA is `DOUBLE`; do not repost until its first 24-hour read is recorded |
+| Text Wingman - She Canceled Last Minute_1080p_caption.mp4 | No matching `cancel` caption in the visible Instagram inventory | Instagram published; caption CTA is `CANCEL`; do not repost until its first 24-hour read is recorded |
 | Texting Autopsy_ The Trouble Text_1080p_caption.mp4 | Too close to existing Instagram Cause of Death/autopsy framing | Hold; do not use in the next three posts |
+
+## HeyGen batch created this pass
+
+These are new Video Agent projects, not reused prompts. They are still rendering/finishing motion graphics in HeyGen and should be reviewed before download or cross-platform upload.
+
+| Project | Test variable | Status |
+| --- | --- | --- |
+| [Interview Answer Test](https://app.heygen.com/video-agent/383e928d9ab54215b76a8a7c00947753) | Curiosity/quiz structure; Marcus avatar; `LOOKING` CTA | Generated plan, music, captions, and scenes; finishing motion graphic |
+| [2AM Ex Text](https://app.heygen.com/video-agent/451105685678449eac71b4a2a78867c6) | Reaction-first UGC; female creator direction; `EX` CTA | Generated plan, music, captions, and scenes; finishing render |
+| [I’ll Let You Know Decoder](https://app.heygen.com/video-agent/18455c4afa1541d3b355f083c00fd0f0) | Game-show diagnosis; Shane avatar; `DECODER` CTA | Generated voice, plan, music, captions, and scenes; finishing motion graphic |
 
 ## Next-batch rules
 
