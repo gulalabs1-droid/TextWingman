@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateAdminSecret } from '@/lib/isAdmin';
 
+export const dynamic = 'force-dynamic';
+
 // Stripe price mapping for MRR calculation
 const PRICE_MAP: Record<string, { amount: number; interval: 'week' | 'month' | 'year' }> = {
   'weekly': { amount: 9.99, interval: 'week' },
