@@ -7,6 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import MobileViewportSync from "@/components/MobileViewportSync";
 import { Suspense } from "react";
 import PageViewTracker from "@/components/PageViewTracker";
+import { SITE_URL } from "@/lib/site";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,7 +30,10 @@ export const metadata: Metadata = {
   authors: [{ name: "Gula Labs" }],
   creator: "Gula Labs",
   publisher: "Gula Labs",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://gula-agents2.vercel.app'),
+  metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: SITE_URL,
+  },
   applicationName: 'Text Wingman',
   appleWebApp: {
     capable: true,
@@ -48,12 +52,22 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     siteName: "Text Wingman",
+    url: SITE_URL,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Text Wingman — your sharp friend for every conversation",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Stop Overthinking Your Next Text | Text Wingman",
     description: "Paste their message or upload a screenshot. Get the best dating-text reply plus why it works.",
     creator: "@gulalabs",
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,

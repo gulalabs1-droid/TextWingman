@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Sparkles, Check, ArrowRight, Shield, Camera, Target, TrendingUp, ChevronDown, Brain, Zap, Upload, Loader2, Copy, EyeOff, Send } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { captureAttribution, track } from "@/lib/analytics";
+import { SITE_URL, SOCIAL_LINKS } from "@/lib/site";
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -14,7 +15,7 @@ const jsonLd = {
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web',
   description: 'AI texting coach for dating apps. Upload a screenshot or paste what they sent, then get the best reply with the strategy behind it.',
-  url: 'https://gula-agents2.vercel.app',
+  url: SITE_URL,
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
     { '@type': 'Offer', price: '9.99', priceCurrency: 'USD', description: 'Pro Weekly — Unlimited' },
@@ -31,7 +32,7 @@ const jsonLd = {
     'Openers — first messages that actually get a reply',
     'Session history — auto-saved, resume anytime',
   ],
-  creator: { '@type': 'Organization', name: 'Gula Labs', url: 'https://gula-agents2.vercel.app' },
+  creator: { '@type': 'Organization', name: 'Gula Labs', url: SITE_URL },
 };
 
 const faqJsonLd = {
@@ -616,9 +617,9 @@ export default function HomePage() {
               <Link href="/terms" className="hover:text-white/60 transition">Terms</Link>
               <Link href="/privacy" className="hover:text-white/60 transition">Privacy</Link>
               <Link href="/contact" className="hover:text-white/60 transition">Contact</Link>
-              <a href="https://www.tiktok.com/@gulatextwingman" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">TikTok</a>
-              <a href="https://www.youtube.com/@gulatextwingman" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">YouTube</a>
-              <a href="https://www.instagram.com/textwingmangula/" target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">Instagram</a>
+              <a href={SOCIAL_LINKS.tiktok} target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">TikTok</a>
+              <a href={SOCIAL_LINKS.youtube} target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">YouTube</a>
+              <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-white/60 transition">Instagram</a>
             </div>
             <p className="text-xs text-white/20">&copy; {new Date().getFullYear()} Text Wingman. All rights reserved.</p>
           </div>

@@ -59,6 +59,10 @@ export default async function OGImage() {
             lineHeight: 1.1,
             marginBottom: '20px',
             maxWidth: '900px',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           Your sharp friend for{' '}

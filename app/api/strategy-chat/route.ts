@@ -1,6 +1,6 @@
 // app/api/strategy-chat/route.ts
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
@@ -347,11 +347,12 @@ FLOW:
     { role: "user", content: userMessage.trim() },
   ];
 
+  // The free path should feel immediate; Pro keeps the higher-quality model.
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: isPro ? "gpt-4o" : "gpt-4o-mini",
     messages,
     temperature: 0.75,
-    max_tokens: 1000,
+    max_tokens: isPro ? 1000 : 700,
   });
 
   const raw = completion.choices[0].message.content || "";

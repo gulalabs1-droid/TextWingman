@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, PRICING } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
+import { SITE_URL } from '@/lib/site';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
     const userEmail = user.email || '';
 
     const planConfig = PRICING[plan as keyof typeof PRICING];
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const origin = request.headers.get('origin') || SITE_URL;
 
     // Create Stripe Checkout session
     const sessionParams: Record<string, unknown> = {

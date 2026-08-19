@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Camera, ArrowRight, Loader2, Zap } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { captureAttribution, track } from '@/lib/analytics';
+import { SOCIAL_LINKS } from '@/lib/site';
 
 const exampleChips = [
   { label: 'She said "maybe"', text: "haha maybe, depends who's asking" },
@@ -257,7 +258,7 @@ export default function TikTokLandingPage() {
           <p className="text-[10px] text-white/20 mb-2">Follow for more</p>
           <div className="flex items-center justify-center gap-4">
             <a
-              href="https://www.tiktok.com/@gulatextwingman"
+              href={SOCIAL_LINKS.tiktok}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('social_outbound_click', { source, platform: 'tiktok' })}
@@ -266,7 +267,7 @@ export default function TikTokLandingPage() {
               TikTok
             </a>
             <a
-              href="https://www.youtube.com/@gulatextwingman"
+              href={SOCIAL_LINKS.youtube}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('social_outbound_click', { source, platform: 'youtube' })}
@@ -275,7 +276,7 @@ export default function TikTokLandingPage() {
               YouTube
             </a>
             <a
-              href="https://www.instagram.com/textwingmangula/"
+              href={SOCIAL_LINKS.instagram}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => track('social_outbound_click', { source, platform: 'instagram' })}

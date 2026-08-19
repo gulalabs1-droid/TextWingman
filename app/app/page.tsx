@@ -2128,7 +2128,8 @@ export default function AppPage() {
     setTheyRepliedInput('');
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    // Keep the client ceiling just below the route's 60s Vercel budget.
+    const timeout = setTimeout(() => controller.abort(), 55000);
 
     // Build rich chat history — include what the coach actually suggested
     const richHistory = strategyChatHistory.map((m) => {
