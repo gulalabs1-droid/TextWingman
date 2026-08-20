@@ -11,6 +11,7 @@ import { Camera, ArrowRight, Loader2, Zap } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { captureAttribution, track } from '@/lib/analytics';
 import { SOCIAL_LINKS } from '@/lib/site';
+import { useToast } from '@/components/ui/use-toast';
 
 const exampleChips = [
   { label: 'She said "maybe"', text: "haha maybe, depends who's asking" },
@@ -28,15 +29,23 @@ export default function TikTokLandingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputCardRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const attribution = captureAttribution();
-    const channel =
-      (attribution.utm_source as string | undefined) ||
-      (attribution.src as string | undefined) ||
-      'shorts';
+    captureAttribution();
+    const url = new URL(window.location.href);
+    const explicitSource = url.searchParams.get('utm_source') || url.searchParams.get('src');
+    const referrer = document.referrer.toLowerCase();
+    const referredPlatform = referrer.includes('tiktok')
+      ? 'tiktok'
+      : referrer.includes('youtube') || referrer.includes('youtu.be')
+        ? 'youtube'
+        : referrer.includes('instagram')
+          ? 'instagram'
+          : null;
+    const channel = explicitSource || referredPlatform || 'shorts';
     setSource(channel);
-    track('social_landing_view', { source: channel });
+    track('social_landing_view', { source: channel, referrerPlatform: referredPlatform || 'direct' });
   }, []);
 
   useEffect(() => {
@@ -105,18 +114,29 @@ export default function TikTokLandingPage() {
       const data = await res.json();
       const extracted: string | null = data?.extracted_text || data?.full_conversation || data?.last_received || null;
       if (!res.ok || !extracted) {
-        track('screenshot_upload_failed', { source, status: res.status });
+        track('screenshot_upload_failed', {
+          source,
+          reason: !res.ok ? `http_${res.status}` : 'no_text_found',
+        });
         setUploading(false);
-        alert(data?.error || 'Could not read that screenshot. Try pasting the text instead.');
+        toast({
+          title: 'Could not read that screenshot',
+          description: data?.error || 'Try a clearer crop or paste the text instead.',
+          variant: 'destructive',
+        });
         return;
       }
-      track('screenshot_upload_success', { source, length: extracted.length });
+      track('screenshot_upload_succeeded', { source, textLength: extracted.length });
       try { sessionStorage.setItem('tw_prefill_message', extracted); } catch {}
       goToApp({ prefill: '1', via: 'upload' });
     } catch {
-      track('screenshot_upload_error', { source });
+      track('screenshot_upload_failed', { source, reason: 'network_or_reader_error' });
       setUploading(false);
-      alert('Upload failed. Try pasting the text instead.');
+      toast({
+        title: 'Upload failed',
+        description: 'Try again or paste the text instead.',
+        variant: 'destructive',
+      });
     }
   };
 

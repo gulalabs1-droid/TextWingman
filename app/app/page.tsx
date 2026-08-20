@@ -362,6 +362,7 @@ export default function AppPage() {
   const [smartPreviewDismissed, setSmartPreviewDismissed] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const isSocialTraffic = useRef(false);
+  const autoRunPrefill = useRef<string | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -477,14 +478,24 @@ export default function AppPage() {
         track('app_view', { src: src || undefined, mode: mode || undefined, via: via || undefined });
       }
       const socialSources = ['tiktok', 'youtube', 'instagram', 'ig', 'shorts', 'reels'];
-      if (mode === 'fast' || (src && socialSources.includes(src.toLowerCase()))) {
+      const isFastEntry = mode === 'fast' || Boolean(src && socialSources.includes(src.toLowerCase()));
+      if (isFastEntry) {
         setUseV2(false);
         isSocialTraffic.current = true;
       }
       if (prefill === '1') {
         const msg = sessionStorage.getItem('tw_prefill_message');
         if (msg) {
-          setStrategyChatInput(msg);
+          // A prefilled message is an intent to get a reply, not an invitation
+          // to hunt through the workspace for the right mode.
+          const shouldAutoRun = isFastEntry || via === 'paste' || via === 'upload';
+          if (shouldAutoRun) {
+            setAppMode('reply');
+            setMessage(msg);
+            autoRunPrefill.current = msg;
+          } else {
+            setStrategyChatInput(msg);
+          }
           sessionStorage.removeItem('tw_prefill_message');
           track('app_prefill_loaded', { length: msg.length, via: via || 'paste' });
         }
@@ -836,6 +847,18 @@ export default function AppPage() {
       } else {
         throw new Error('No replies received from server');
       }
+
+      const generatedCount = (isPro && useV2 && data.shorter && data.spicier && data.softer)
+        ? 3
+        : Array.isArray(data.replies)
+          ? data.replies.filter((r: any) => r && r.tone && r.text).length
+          : 0;
+      track('reply_generated', {
+        source: isSocialTraffic.current ? 'social' : 'organic',
+        mode: 'reply',
+        engine: isPro && useV2 ? 'verified' : 'fast',
+        count: generatedCount,
+      });
       
       // Refresh usage count from server
       const usageRes = await fetch('/api/usage');
@@ -859,6 +882,11 @@ export default function AppPage() {
       });
     } catch (error) {
       console.error('Generation error:', error);
+      track('reply_generation_failed', {
+        source: isSocialTraffic.current ? 'social' : 'organic',
+        mode: 'reply',
+        reason: error instanceof Error ? error.message.slice(0, 120) : 'unknown',
+      });
       toast({
         title: "Oops! Something went wrong",
         description: error instanceof Error ? error.message : "Failed to generate replies. Please try again.",
@@ -869,6 +897,30 @@ export default function AppPage() {
       setV2Step(null);
     }
   };
+
+  // Social and landing-page prefill links should deliver the promised first
+  // result without making a new visitor find and press a second button.
+  useEffect(() => {
+    const pending = autoRunPrefill.current;
+    if (!pending) return;
+    if (message !== pending) {
+      if (message.trim() !== pending.trim()) autoRunPrefill.current = null;
+      return;
+    }
+    if (appMode !== 'reply' || loading) return;
+
+    autoRunPrefill.current = null;
+    const timer = window.setTimeout(() => {
+      track('prefill_autorun_started', {
+        source: isSocialTraffic.current ? 'social' : 'organic',
+        mode: 'reply',
+      });
+      void handleGenerate();
+    }, 160);
+    return () => window.clearTimeout(timer);
+    // The dependency set intentionally tracks the state gate, not the inline handler.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appMode, loading, message]);
 
   // Regenerate replies (regular flow) — re-calls API with same thread context, no re-add
   const handleRegenerate = async () => {
@@ -1126,6 +1178,12 @@ export default function AppPage() {
       await navigator.clipboard.writeText(text);
       setCopied(tone);
       setPendingSent({ tone: tone as Reply['tone'], text });
+      track('reply_copied', {
+        source: isSocialTraffic.current ? 'social' : 'organic',
+        mode: 'reply',
+        tone,
+        engine: isPro && useV2 ? 'verified' : 'fast',
+      });
       toast({
         title: (isPro && useV2) ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
         description: "Tap 'I sent this' to continue the thread",
@@ -1522,6 +1580,11 @@ export default function AppPage() {
     setScreenshotPreview(null);
     setShowThread(true);
     setShowExamples(false);
+    track('thread_continued', {
+      source: isSocialTraffic.current ? 'social' : 'organic',
+      via: 'screenshot_scan',
+      messages: newThread.length,
+    });
     toast({ title: '✓ Loaded into thread', description: 'Pick a reply or keep the conversation going' });
   };
 
@@ -1662,6 +1725,11 @@ export default function AppPage() {
 
   const handleMarkSent = (reply: Reply) => {
     addToThread('you', reply.text);
+    track('reply_marked_sent', {
+      source: isSocialTraffic.current ? 'social' : 'organic',
+      mode: 'reply',
+      tone: reply.tone,
+    });
     setPendingSent(null);
     setCustomSent('');
     setShowCustomSent(false);
@@ -1680,6 +1748,11 @@ export default function AppPage() {
   const handleCustomSentSubmit = () => {
     if (!customSent.trim()) return;
     addToThread('you', customSent.trim());
+    track('reply_marked_sent', {
+      source: isSocialTraffic.current ? 'social' : 'organic',
+      mode: 'reply',
+      tone: 'custom',
+    });
     setPendingSent(null);
     setCustomSent('');
     setShowCustomSent(false);

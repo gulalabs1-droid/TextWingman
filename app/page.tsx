@@ -7,6 +7,7 @@ import { Sparkles, Check, ArrowRight, Shield, Camera, Target, TrendingUp, Chevro
 import { Logo } from "@/components/Logo";
 import { captureAttribution, track } from "@/lib/analytics";
 import { SITE_URL, SOCIAL_LINKS } from "@/lib/site";
+import { useToast } from "@/components/ui/use-toast";
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -68,6 +69,7 @@ export default function HomePage() {
   const heroInputRef = useRef<HTMLTextAreaElement>(null);
   const heroCardRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const attribution = captureAttribution();
@@ -151,13 +153,28 @@ export default function HomePage() {
       const extracted: string | null = data?.extracted_text || data?.full_conversation || data?.last_received || null;
       if (!res.ok || !extracted) {
         setUploading(false);
-        goToApp(null, 'upload');
+        track('screenshot_upload_failed', {
+          source,
+          platform: source,
+          reason: !res.ok ? `http_${res.status}` : 'no_text_found',
+        });
+        toast({
+          title: 'Could not read that screenshot',
+          description: 'Try a clearer crop or paste the message instead.',
+          variant: 'destructive',
+        });
         return;
       }
+      track('screenshot_upload_succeeded', { source, platform: source, textLength: extracted.length });
       goToApp(extracted, 'upload');
     } catch {
       setUploading(false);
-      goToApp(null, 'upload');
+      track('screenshot_upload_failed', { source, platform: source, reason: 'network_or_reader_error' });
+      toast({
+        title: 'Upload failed',
+        description: 'Try again or paste the message instead.',
+        variant: 'destructive',
+      });
     }
   };
 
