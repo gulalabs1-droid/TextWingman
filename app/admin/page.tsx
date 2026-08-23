@@ -21,6 +21,7 @@ type OverviewData = {
   signups: { h24: number; d7: number; d30: number };
   generations: { total: number; h24: number; d7: number; d30: number };
   activatedUsers: number;
+  anonymous?: { people: number; people7d: number; activated: number };
   paidUsers: number;
   freeUsers: number;
   mrr: number;
@@ -94,6 +95,7 @@ export default function AdminOverviewPage() {
     { label: 'Signups (7d)', value: data.signups.d7, sub: `${data.signups.h24} today`, icon: UserCheck, color: 'text-violet-400', bg: 'bg-violet-500/10', spark: signupSpark, sparkColor: '#8b5cf6', growthPct: data.signupGrowthPct },
     { label: 'Generations (7d)', value: data.generations.d7, sub: `${data.generations.h24} today`, icon: Zap, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', spark: genSpark, sparkColor: '#c026d3', growthPct: data.genGrowthPct },
     { label: 'Activated', value: data.activatedUsers, sub: `${data.activationRate}% rate`, icon: Activity, color: 'text-orange-400', bg: 'bg-orange-500/10', spark: signupSpark, sparkColor: '#fb923c', growthPct: null },
+    { label: 'Anonymous People', value: data.anonymous?.people ?? 0, sub: `${data.anonymous?.activated ?? 0} generated a reply`, icon: Bot, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', spark: signupSpark, sparkColor: '#c026d3', growthPct: null },
   ];
 
   const funnelStages = [

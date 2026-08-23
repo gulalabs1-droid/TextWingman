@@ -56,9 +56,39 @@ export async function GET() {
     db.from('usage_logs').select('created_at, action, user_id').gte('created_at', h24).order('created_at', { ascending: false }).limit(25),
   ]);
 
-  // Activated users (generated >= 1 reply)
-  const { data: activatedRows } = await db.from('usage_logs').select('user_id').not('user_id', 'is', null);
-  const activatedUsers = new Set(activatedRows?.map(r => r.user_id)).size;
+  // Activated = performed a real product action (not just a page view).
+  // Counted for registered users AND anonymous visitors, because most usage on
+  // this product happens with no account at all.
+  const { data: activatedRows } = await db
+    .from('usage_logs')
+    .select('user_id, fingerprint, ip_address')
+    .neq('action', 'page_view');
+
+  const activatedRegistered = new Set(
+    (activatedRows || []).filter(r => r.user_id).map(r => r.user_id)
+  ).size;
+
+  const activatedAnonymous = new Set(
+    (activatedRows || [])
+      .filter(r => !r.user_id)
+      .map(r => `${r.fingerprint || 'nofp'}:${r.ip_address || 'noip'}`)
+  ).size;
+
+  const activatedUsers = activatedRegistered;
+
+  // Anonymous reach (people we have no account for)
+  const { data: anonRows } = await db
+    .from('usage_logs')
+    .select('fingerprint, ip_address, created_at')
+    .is('user_id', null);
+
+  const anonKey = (r: { fingerprint: string | null; ip_address: string | null }) =>
+    `${r.fingerprint || 'nofp'}:${r.ip_address || 'noip'}`;
+
+  const anonPeople = new Set((anonRows || []).map(anonKey)).size;
+  const anonPeople7d = new Set(
+    (anonRows || []).filter(r => r.created_at >= d7).map(anonKey)
+  ).size;
 
   // Fetch profile emails for recent activity feed
   const activityUserIds = [...new Set((recentEvents || []).map(e => e.user_id).filter(Boolean))];
@@ -132,6 +162,12 @@ export async function GET() {
     signups: { h24: signups24h || 0, d7: signups7d || 0, d30: signups30d || 0 },
     generations: { total: totalGenerations || 0, h24: gen24h || 0, d7: gen7d || 0, d30: gen30d || 0 },
     activatedUsers,
+    // Anonymous (no-account) reach — most real usage happens here.
+    anonymous: {
+      people: anonPeople,
+      people7d: anonPeople7d,
+      activated: activatedAnonymous,
+    },
     paidUsers,
     freeUsers,
     mrr: Math.round(mrr * 100) / 100,
