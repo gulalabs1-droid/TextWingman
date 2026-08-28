@@ -17,6 +17,7 @@ import {
   Mail
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import { PLAN_PRICES } from '@/lib/pricing';
 import { useToast } from '@/hooks/use-toast';
 
 const fadeIn = {
@@ -298,7 +299,7 @@ export default function V2TeaserPage() {
                       'Quick A/B/C replies',
                       'Tone toggles (Shorter / Spicier / Softer)',
                       'Share-card (They said / I said)',
-                      '3 free/day · Pro $9.99/week'
+                      `3 free/day · Pro ${PLAN_PRICES.weekly.displayAmount}/week`
                     ].map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-3">
                         <CheckCircle2 className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />

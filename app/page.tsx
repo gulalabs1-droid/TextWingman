@@ -7,6 +7,7 @@ import { Sparkles, Check, ArrowRight, Shield, Camera, Target, TrendingUp, Chevro
 import { Logo } from "@/components/Logo";
 import { captureAttribution, track } from "@/lib/analytics";
 import { SITE_URL, SOCIAL_LINKS } from "@/lib/site";
+import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_SAVINGS_PERCENT, ANNUAL_WEEKLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from "@/lib/pricing";
 import { useToast } from "@/components/ui/use-toast";
 
 const jsonLd = {
@@ -19,8 +20,8 @@ const jsonLd = {
   url: SITE_URL,
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
-    { '@type': 'Offer', price: '9.99', priceCurrency: 'USD', description: 'Pro Weekly — Unlimited' },
-    { '@type': 'Offer', price: '99.99', priceCurrency: 'USD', description: 'Pro Annual — Best Value' },
+    { '@type': 'Offer', price: String(PLAN_PRICES.weekly.amount), priceCurrency: 'USD', description: 'Pro Weekly — Unlimited' },
+    { '@type': 'Offer', price: String(PLAN_PRICES.annual.amount), priceCurrency: 'USD', description: 'Pro Annual — Best Value' },
   ],
   featureList: [
     'Get the best reply — paste what they said or upload a screenshot, get the reply plus why it works',
@@ -548,7 +549,7 @@ export default function HomePage() {
             <div className="mb-6 pt-2">
               <h3 className="text-xl font-bold text-white">Pro Weekly</h3>
               <p className="text-white/40 text-sm">Full access. Cancel anytime.</p>
-              <div className="mt-4 flex items-end gap-2"><span className="text-4xl font-black text-white">$9.99</span><span className="text-white/40 mb-1">/week</span></div>
+              <div className="mt-4 flex items-end gap-2"><span className="text-4xl font-black text-white">{PLAN_PRICES.weekly.displayAmount}</span><span className="text-white/40 mb-1">{PLAN_PRICES.weekly.displayInterval}</span></div>
             </div>
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3 text-white text-sm font-medium"><Check className="h-4 w-4 text-emerald-400 shrink-0" /> Unlimited replies + Coach</li>
@@ -558,15 +559,15 @@ export default function HomePage() {
               <li className="flex items-center gap-3 text-white/70 text-sm"><Check className="h-4 w-4 text-emerald-400 shrink-0" /> Cancel anytime</li>
             </ul>
             <Link href="/pricing" className="w-full h-14 text-base font-black rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 shadow-xl shadow-violet-600/20 hover:scale-[1.02] transition-all flex items-center justify-center animate-[gentlePulse_3s_ease-in-out_infinite]">Get Pro →</Link>
-            <p className="text-xs text-center text-white/30 mt-3">7-day free trial available</p>
+            <p className="text-xs text-center text-white/30 mt-3">7-day free trial — no card required</p>
           </div>
           <div className="relative bg-white/[0.03] border border-emerald-500/20 rounded-3xl p-6 hover:bg-white/[0.05] transition-all duration-300">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-5 py-1.5 rounded-full text-xs font-black shadow-lg shadow-emerald-500/30 whitespace-nowrap">SAVE 80%</div>
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-5 py-1.5 rounded-full text-xs font-black shadow-lg shadow-emerald-500/30 whitespace-nowrap">SAVE {ANNUAL_SAVINGS_PERCENT}%</div>
             <div className="mb-6 pt-2">
               <h3 className="text-xl font-bold text-white">Pro Annual</h3>
-              <p className="text-white/40 text-sm">Best value — $1.92/week</p>
-              <div className="mt-4 flex items-end gap-2"><span className="text-4xl font-black text-white">$99.99</span><span className="text-white/40 mb-1">/year</span></div>
-              <p className="text-emerald-400 text-xs font-bold mt-1">Save $419 vs weekly</p>
+              <p className="text-white/40 text-sm">Best value — {ANNUAL_WEEKLY_EQUIVALENT_DISPLAY}/week</p>
+              <div className="mt-4 flex items-end gap-2"><span className="text-4xl font-black text-white">{PLAN_PRICES.annual.displayAmount}</span><span className="text-white/40 mb-1">{PLAN_PRICES.annual.displayInterval}</span></div>
+              <p className="text-emerald-400 text-xs font-bold mt-1">Save {ANNUAL_SAVINGS_DISPLAY} vs weekly</p>
             </div>
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3 text-white text-sm font-medium"><Sparkles className="h-4 w-4 text-emerald-400 shrink-0" /> Everything in Pro</li>

@@ -11,6 +11,7 @@ import {
   type FunnelUsageRow,
 } from '@/lib/admin-funnel';
 import { isAdminEmail } from '@/lib/isAdmin';
+import { PLAN_PRICES } from '@/lib/pricing';
 
 const DAY = 86_400_000;
 const TRACKING_ERROR_EVENTS = new Set([
@@ -173,9 +174,10 @@ function isMissingRelation(error: { code?: string; message?: string } | null | u
 }
 
 function priceToMrr(planType: string | null | undefined): number {
-  if (planType === 'weekly') return 9.99 * 52 / 12;
-  if (planType === 'annual') return 99.99 / 12;
-  return 29.99;
+  if (planType === 'weekly') return PLAN_PRICES.weekly.amount * 52 / 12;
+  if (planType === 'annual') return PLAN_PRICES.annual.amount / 12;
+  // Unknown plans must not inflate revenue with a legacy monthly default.
+  return 0;
 }
 
 function weekStart(iso: string): string {

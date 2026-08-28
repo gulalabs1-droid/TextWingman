@@ -6,6 +6,7 @@ import { Crown, Check, ArrowLeft, CheckCircle2, Sparkles, Target, Shield } from 
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
+import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_WEEKLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from '@/lib/pricing'
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null)
@@ -195,7 +196,7 @@ export default function PricingPage() {
                 >
                   {loading === 'trial' ? 'Loading...' : 'Start Free Trial →'}
                 </button>
-                <p className="text-xs text-white/20 mt-3">Converts to $9.99/week after trial. Cancel anytime.</p>
+                <p className="text-xs text-white/20 mt-3">Trial pauses if no payment method is added. Add one to continue at {PLAN_PRICES.weekly.displayAmount}/week. Cancel anytime.</p>
               </div>
             </div>
           )}
@@ -211,10 +212,10 @@ export default function PricingPage() {
               <div className="text-center mb-6 pt-2">
                 <h3 className="text-xl font-black text-white mb-1">Annual</h3>
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-black text-white">$99.99</span>
-                  <span className="text-white/30 text-sm">/year</span>
+                  <span className="text-4xl font-black text-white">{PLAN_PRICES.annual.displayAmount}</span>
+                  <span className="text-white/30 text-sm">{PLAN_PRICES.annual.displayInterval}</span>
                 </div>
-                <p className="text-emerald-400 text-xs font-bold mt-1.5">Save $420 vs weekly — $1.92/week</p>
+                <p className="text-emerald-400 text-xs font-bold mt-1.5">Save {ANNUAL_SAVINGS_DISPLAY} vs weekly — {ANNUAL_WEEKLY_EQUIVALENT_DISPLAY}/week</p>
               </div>
               <ul className="space-y-2.5 mb-7">
                 <li className="flex items-center gap-2.5 text-white/80 text-sm">
@@ -247,8 +248,8 @@ export default function PricingPage() {
               <div className="text-center mb-6">
                 <h3 className="text-xl font-black text-white mb-1">Weekly</h3>
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-black text-white">$9.99</span>
-                  <span className="text-white/30 text-sm">/week</span>
+                  <span className="text-4xl font-black text-white">{PLAN_PRICES.weekly.displayAmount}</span>
+                  <span className="text-white/30 text-sm">{PLAN_PRICES.weekly.displayInterval}</span>
                 </div>
                 <p className="text-white/30 text-xs mt-1.5">Flexible — cancel anytime</p>
               </div>

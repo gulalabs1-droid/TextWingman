@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateAdminSecret } from '@/lib/isAdmin';
+import { PLAN_PRICES } from '@/lib/pricing';
 
 export const dynamic = 'force-dynamic';
 
 // Stripe price mapping for MRR calculation
 const PRICE_MAP: Record<string, { amount: number; interval: 'week' | 'month' | 'year' }> = {
-  'weekly': { amount: 9.99, interval: 'week' },
-  'monthly': { amount: 29.99, interval: 'month' },
-  'annual': { amount: 99.99, interval: 'year' },
+  'weekly': { amount: PLAN_PRICES.weekly.amount, interval: 'week' },
+  'annual': { amount: PLAN_PRICES.annual.amount, interval: 'year' },
 };
 
 function getSupabaseAdmin() {
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     let mrr = 0;
     if (activeSubscriptions) {
       for (const sub of activeSubscriptions) {
-        const planType = sub.plan_type || 'monthly';
+        const planType = sub.plan_type || 'unknown';
         const priceInfo = PRICE_MAP[planType];
         if (priceInfo) {
           // Convert all to monthly equivalent

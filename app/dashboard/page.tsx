@@ -9,6 +9,7 @@ import { MessageCircle, Zap, Crown, Sparkles, TrendingUp, Settings, Shield, Mega
 import { LATEST_UPDATE, CURRENT_VERSION } from '@/lib/changelog'
 import { isAdminEmail } from '@/lib/isAdmin'
 import { Logo } from '@/components/Logo'
+import { PLAN_PRICES } from '@/lib/pricing'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -248,7 +249,7 @@ export default async function DashboardPage() {
                   <p className="text-white/25 text-xs">Unlimited replies + Strategy + Verified pipeline</p>
                 </div>
               </div>
-              <span className="text-violet-400/50 text-xs font-bold hidden sm:block">$9.99/wk →</span>
+              <span className="text-violet-400/50 text-xs font-bold hidden sm:block">{PLAN_PRICES.weekly.displayAmount}/wk →</span>
             </div>
           </Link>
         )}

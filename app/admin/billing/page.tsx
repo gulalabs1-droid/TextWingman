@@ -19,6 +19,18 @@ type BillingData = {
   upcomingRenewals: { user_id: string; plan_type: string; current_period_end: string; profiles: { email: string } }[];
   mismatches: { id: string; email: string; plan: string }[];
   recentEvents: { id: string; action?: string | null; event_type?: string | null; created_at: string; metadata?: Record<string, unknown> | null; payload?: Record<string, unknown> | null }[];
+  stripeHealth?: {
+    connected: boolean;
+    checkedAt: string;
+    activeSubs: number;
+    canceledSubs: number;
+    databaseActiveSubs: number;
+    staleDatabaseSubs: number;
+    orphanedStripeSubs: number;
+    priceMismatches: number;
+    unknownActivePrices: number;
+    hasMore: boolean;
+  };
 };
 
 function downloadCSV(data: Record<string, unknown>[], filename: string) {
@@ -114,6 +126,40 @@ export default function BillingPage() {
           </Card>
         ))}
       </div>
+
+      {/* Stripe source-of-truth reconciliation */}
+      {data.stripeHealth && (
+        <Card className={`border ${data.stripeHealth.connected && data.stripeHealth.staleDatabaseSubs === 0 && data.stripeHealth.orphanedStripeSubs === 0 && data.stripeHealth.priceMismatches === 0 && data.stripeHealth.unknownActivePrices === 0 ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-amber-500/30 bg-amber-500/10'}`}>
+          <CardHeader className="pb-2">
+            <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${data.stripeHealth.connected && data.stripeHealth.staleDatabaseSubs === 0 && data.stripeHealth.orphanedStripeSubs === 0 && data.stripeHealth.priceMismatches === 0 && data.stripeHealth.unknownActivePrices === 0 ? 'text-emerald-300' : 'text-amber-300'}`}>
+              {data.stripeHealth.connected ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+              Stripe source of truth
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!data.stripeHealth.connected ? (
+              <p className="text-amber-200/80 text-sm">Stripe could not be checked. Do not rely on the app-side subscription count until the connection is restored.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div><p className="text-white/40">Stripe active</p><p className="text-white font-bold text-lg">{data.stripeHealth.activeSubs}</p></div>
+                  <div><p className="text-white/40">App active</p><p className="text-white font-bold text-lg">{data.stripeHealth.databaseActiveSubs}</p></div>
+                  <div><p className="text-white/40">Stale app rows</p><p className={`font-bold text-lg ${data.stripeHealth.staleDatabaseSubs ? 'text-amber-300' : 'text-white'}`}>{data.stripeHealth.staleDatabaseSubs}</p></div>
+                  <div><p className="text-white/40">Stripe-only rows</p><p className={`font-bold text-lg ${data.stripeHealth.orphanedStripeSubs ? 'text-amber-300' : 'text-white'}`}>{data.stripeHealth.orphanedStripeSubs}</p></div>
+                </div>
+                {(data.stripeHealth.priceMismatches > 0 || data.stripeHealth.unknownActivePrices > 0 || data.stripeHealth.hasMore) && (
+                  <p className="mt-3 text-amber-200/80 text-xs">
+                    {data.stripeHealth.priceMismatches > 0 ? `${data.stripeHealth.priceMismatches} price mismatch(es). ` : ''}
+                    {data.stripeHealth.unknownActivePrices > 0 ? `${data.stripeHealth.unknownActivePrices} active subscription(s) use an unrecognized price. ` : ''}
+                    {data.stripeHealth.hasMore ? 'More than 100 Stripe subscriptions exist; reconciliation is partial.' : ''}
+                  </p>
+                )}
+                <p className="mt-3 text-white/35 text-xs">Checked {new Date(data.stripeHealth.checkedAt).toLocaleString()}. Reconcile flagged rows before changing access or revenue reporting.</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Orphaned Subscriptions */}
       {data.orphaned.length > 0 && (

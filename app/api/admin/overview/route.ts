@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { getAdminSupabase, requireAdmin } from '@/lib/admin';
 import { getCanonicalFunnel } from '@/lib/admin-funnel';
 import { isAdminEmail } from '@/lib/isAdmin';
+import { PLAN_PRICES } from '@/lib/pricing';
 
 const PRICE_MAP: Record<string, { amount: number; interval: 'week' | 'month' | 'year' }> = {
-  weekly: { amount: 9.99, interval: 'week' },
-  monthly: { amount: 29.99, interval: 'month' },
-  annual: { amount: 99.99, interval: 'year' },
+  weekly: { amount: PLAN_PRICES.weekly.amount, interval: 'week' },
+  annual: { amount: PLAN_PRICES.annual.amount, interval: 'year' },
 };
 
 function growth(current: number, previous: number): number {
@@ -47,7 +47,7 @@ export async function GET() {
     let mrr = 0;
     const planBreakdown: Record<string, number> = {};
     for (const subscription of externalActiveSubs) {
-      const plan = subscription.plan_type || 'monthly';
+      const plan = subscription.plan_type || 'unknown';
       planBreakdown[plan] = (planBreakdown[plan] || 0) + 1;
       const price = PRICE_MAP[plan];
       if (!price) continue;

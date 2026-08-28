@@ -13,6 +13,7 @@ import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
 import { captureAttribution, track } from '@/lib/analytics';
+import { PLAN_PRICES } from '@/lib/pricing';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -2322,7 +2323,7 @@ export default function AppPage() {
   };
 
   // Handle Stripe checkout
-  const handleCheckout = async (plan: 'weekly' | 'monthly' | 'annual') => {
+  const handleCheckout = async (plan: 'weekly' | 'annual') => {
     track('upgrade_clicked', { plan, source: isSocialTraffic.current ? 'social' : 'organic' });
     // Require login before checkout
     if (!userId) {
@@ -2429,14 +2430,14 @@ export default function AppPage() {
                 className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl relative"
               >
                 <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">Best Value</span>
-                Unlock Pro - $99.99/year
+                Unlock Pro - {PLAN_PRICES.annual.displayAmount}/year
               </Button>
               <Button 
                 onClick={() => handleCheckout('weekly')}
                 variant="outline"
                 className="w-full h-12 border-2 border-purple-300 text-purple-700 font-semibold rounded-2xl hover:bg-purple-50"
               >
-                $9.99/week
+                {PLAN_PRICES.weekly.displayAmount}/week
               </Button>
               <p className="text-xs text-gray-500">Cancel anytime</p>
             </div>

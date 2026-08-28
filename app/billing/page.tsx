@@ -8,11 +8,12 @@ import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, CreditCard, Calendar, CheckCircle, Clock, Mail, Download, Crown, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
+import { PLAN_PRICES } from '@/lib/pricing';
 
 const supabase = createClient();
 
 type Subscription = {
-  plan_type: 'weekly' | 'annual';
+  plan_type: 'weekly' | 'annual' | 'unknown';
   status: 'active' | 'trialing' | 'canceled' | 'past_due';
   current_period_end: string;
   created_at: string;
@@ -69,9 +70,9 @@ export default function BillingPage() {
 
   const getPlanPrice = (planType: string) => {
     switch (planType) {
-      case 'weekly': return '$9.99/week';
-      case 'annual': return '$99.99/year';
-      default: return '$9.99/week';
+      case 'weekly': return `${PLAN_PRICES.weekly.displayAmount}${PLAN_PRICES.weekly.displayInterval}`;
+      case 'annual': return `${PLAN_PRICES.annual.displayAmount}${PLAN_PRICES.annual.displayInterval}`;
+      default: return 'Plan unavailable';
     }
   };
 

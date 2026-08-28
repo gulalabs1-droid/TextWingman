@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { PLAN_PRICES } from '@/lib/pricing';
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-04-10',
@@ -6,11 +7,19 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export const PRICING = {
   weekly: {
-    price: 9.99,
+    price: PLAN_PRICES.weekly.amount,
     priceId: process.env.STRIPE_PRICE_ID_WEEKLY || 'price_weekly',
   },
   annual: {
-    price: 99.99,
+    price: PLAN_PRICES.annual.amount,
     priceId: process.env.STRIPE_PRICE_ID_ANNUAL || 'price_annual',
   },
 };
+
+export type BillingPlan = keyof typeof PRICING;
+
+export function planForStripePriceId(priceId: string | null | undefined): BillingPlan | null {
+  if (priceId === PRICING.weekly.priceId) return 'weekly';
+  if (priceId === PRICING.annual.priceId) return 'annual';
+  return null;
+}

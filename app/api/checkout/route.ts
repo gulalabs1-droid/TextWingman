@@ -57,6 +57,14 @@ export async function POST(request: NextRequest) {
           email: userEmail,
         },
         ...(trial ? { trial_period_days: 7 } : {}),
+        ...(trial ? {
+          trial_settings: {
+            end_behavior: {
+              // No-card trials should pause instead of silently creating an invoice.
+              missing_payment_method: 'pause',
+            },
+          },
+        } : {}),
       },
     };
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe';
+import { planForStripePriceId, stripe } from '@/lib/stripe';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 
@@ -58,10 +58,11 @@ export async function POST(request: NextRequest) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
           const priceId = subscription.items.data[0]?.price?.id;
           
-          // Determine plan type from price ID
-          let planType = 'weekly';
-          if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) planType = 'monthly';
-          if (priceId === process.env.STRIPE_PRICE_ID_ANNUAL) planType = 'annual';
+          // Never guess a plan when Stripe sends an unknown or legacy price.
+          const planType = planForStripePriceId(priceId) || 'unknown';
+          if (planType === 'unknown') {
+            console.error('Unsupported Stripe price on checkout:', { sessionId: session.id, priceId });
+          }
 
           // Get user_id from client_reference_id (preferred) or metadata
           const userId = session.client_reference_id || session.metadata?.user_id;
@@ -101,9 +102,10 @@ export async function POST(request: NextRequest) {
         console.log('Subscription created:', subscription.id);
         
         const priceId = subscription.items.data[0]?.price?.id;
-        let planType = 'weekly';
-        if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) planType = 'monthly';
-        if (priceId === process.env.STRIPE_PRICE_ID_ANNUAL) planType = 'annual';
+        const planType = planForStripePriceId(priceId) || 'unknown';
+        if (planType === 'unknown') {
+          console.error('Unsupported Stripe price on subscription create:', { subscriptionId: subscription.id, priceId });
+        }
         
         // Get user_id from subscription metadata
         const userId = subscription.metadata?.user_id;
@@ -140,9 +142,10 @@ export async function POST(request: NextRequest) {
         console.log('Subscription updated:', subscription.id, 'status:', subscription.status);
         
         const priceId = subscription.items.data[0]?.price?.id;
-        let planType = 'weekly';
-        if (priceId === process.env.STRIPE_PRICE_ID_MONTHLY) planType = 'monthly';
-        if (priceId === process.env.STRIPE_PRICE_ID_ANNUAL) planType = 'annual';
+        const planType = planForStripePriceId(priceId) || 'unknown';
+        if (planType === 'unknown') {
+          console.error('Unsupported Stripe price on subscription update:', { subscriptionId: subscription.id, priceId });
+        }
         
         // Update subscription - Stripe is the ONLY writer
         const { error } = await getSupabase()
