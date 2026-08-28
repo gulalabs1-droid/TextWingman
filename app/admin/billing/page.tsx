@@ -30,6 +30,10 @@ type BillingData = {
     priceMismatches: number;
     unknownActivePrices: number;
     hasMore: boolean;
+    priceConfig: {
+      weekly: { configured: boolean; active: boolean; amountCents: number | null; currency: string | null; interval: string | null; intervalCount: number | null; matchesApp: boolean };
+      annual: { configured: boolean; active: boolean; amountCents: number | null; currency: string | null; interval: string | null; intervalCount: number | null; matchesApp: boolean };
+    };
   };
 };
 
@@ -95,6 +99,16 @@ export default function BillingPage() {
   }
   if (!data) return <p className="text-center text-red-600 py-20">Failed to load</p>;
 
+  const stripeIsHealthy = Boolean(
+    data.stripeHealth?.connected &&
+    data.stripeHealth.staleDatabaseSubs === 0 &&
+    data.stripeHealth.orphanedStripeSubs === 0 &&
+    data.stripeHealth.priceMismatches === 0 &&
+    data.stripeHealth.unknownActivePrices === 0 &&
+    data.stripeHealth.priceConfig.weekly.matchesApp &&
+    data.stripeHealth.priceConfig.annual.matchesApp,
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -129,10 +143,10 @@ export default function BillingPage() {
 
       {/* Stripe source-of-truth reconciliation */}
       {data.stripeHealth && (
-        <Card className={`border ${data.stripeHealth.connected && data.stripeHealth.staleDatabaseSubs === 0 && data.stripeHealth.orphanedStripeSubs === 0 && data.stripeHealth.priceMismatches === 0 && data.stripeHealth.unknownActivePrices === 0 ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-amber-500/30 bg-amber-500/10'}`}>
+        <Card className={`border ${stripeIsHealthy ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-amber-500/30 bg-amber-500/10'}`}>
           <CardHeader className="pb-2">
-            <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${data.stripeHealth.connected && data.stripeHealth.staleDatabaseSubs === 0 && data.stripeHealth.orphanedStripeSubs === 0 && data.stripeHealth.priceMismatches === 0 && data.stripeHealth.unknownActivePrices === 0 ? 'text-emerald-300' : 'text-amber-300'}`}>
-              {data.stripeHealth.connected ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+            <CardTitle className={`text-sm font-semibold flex items-center gap-2 ${stripeIsHealthy ? 'text-emerald-300' : 'text-amber-300'}`}>
+              {stripeIsHealthy ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
               Stripe source of truth
             </CardTitle>
           </CardHeader>
@@ -146,6 +160,10 @@ export default function BillingPage() {
                   <div><p className="text-white/40">App active</p><p className="text-white font-bold text-lg">{data.stripeHealth.databaseActiveSubs}</p></div>
                   <div><p className="text-white/40">Stale app rows</p><p className={`font-bold text-lg ${data.stripeHealth.staleDatabaseSubs ? 'text-amber-300' : 'text-white'}`}>{data.stripeHealth.staleDatabaseSubs}</p></div>
                   <div><p className="text-white/40">Stripe-only rows</p><p className={`font-bold text-lg ${data.stripeHealth.orphanedStripeSubs ? 'text-amber-300' : 'text-white'}`}>{data.stripeHealth.orphanedStripeSubs}</p></div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                  <span className={data.stripeHealth.priceConfig.weekly.matchesApp ? 'text-emerald-300' : 'text-amber-200'}>Weekly price: {data.stripeHealth.priceConfig.weekly.matchesApp ? 'matches Stripe' : 'needs attention'}</span>
+                  <span className={data.stripeHealth.priceConfig.annual.matchesApp ? 'text-emerald-300' : 'text-amber-200'}>Annual price: {data.stripeHealth.priceConfig.annual.matchesApp ? 'matches Stripe' : 'needs attention'}</span>
                 </div>
                 {(data.stripeHealth.priceMismatches > 0 || data.stripeHealth.unknownActivePrices > 0 || data.stripeHealth.hasMore) && (
                   <p className="mt-3 text-amber-200/80 text-xs">

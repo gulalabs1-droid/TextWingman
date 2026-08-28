@@ -1,6 +1,39 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, getAdminSupabase } from '@/lib/admin';
 import { planForStripePriceId, stripe } from '@/lib/stripe';
+import { PLAN_PRICES } from '@/lib/pricing';
+import type Stripe from 'stripe';
+
+type PriceHealth = {
+  configured: boolean;
+  active: boolean;
+  amountCents: number | null;
+  currency: string | null;
+  interval: string | null;
+  intervalCount: number | null;
+  matchesApp: boolean;
+};
+
+function inspectPrice(price: Stripe.Price | null, configured: boolean, expectedAmount: number, expectedInterval: string): PriceHealth {
+  const amountCents = price?.unit_amount ?? null;
+  const interval = price?.recurring?.interval ?? null;
+  const intervalCount = price?.recurring?.interval_count ?? null;
+  return {
+    configured,
+    active: Boolean(price?.active),
+    amountCents,
+    currency: price?.currency ?? null,
+    interval,
+    intervalCount,
+    matchesApp: Boolean(
+      price?.active &&
+      price?.currency === 'usd' &&
+      amountCents === Math.round(expectedAmount * 100) &&
+      interval === expectedInterval &&
+      intervalCount === 1,
+    ),
+  };
+}
 
 export async function GET() {
   const { isAdmin } = await requireAdmin();
@@ -54,6 +87,10 @@ export async function GET() {
     priceMismatches: number;
     unknownActivePrices: number;
     hasMore: boolean;
+    priceConfig: {
+      weekly: PriceHealth;
+      annual: PriceHealth;
+    };
   } = {
     connected: false,
     checkedAt: new Date().toISOString(),
@@ -65,10 +102,18 @@ export async function GET() {
     priceMismatches: 0,
     unknownActivePrices: 0,
     hasMore: false,
+    priceConfig: {
+      weekly: inspectPrice(null, Boolean(process.env.STRIPE_PRICE_ID_WEEKLY), PLAN_PRICES.weekly.amount, 'week'),
+      annual: inspectPrice(null, Boolean(process.env.STRIPE_PRICE_ID_ANNUAL), PLAN_PRICES.annual.amount, 'year'),
+    },
   };
 
   try {
-    const stripeResult = await stripe.subscriptions.list({ status: 'all', limit: 100 });
+    const [stripeResult, weeklyPrice, annualPrice] = await Promise.all([
+      stripe.subscriptions.list({ status: 'all', limit: 100 }),
+      process.env.STRIPE_PRICE_ID_WEEKLY ? stripe.prices.retrieve(process.env.STRIPE_PRICE_ID_WEEKLY).catch(() => null) : Promise.resolve(null),
+      process.env.STRIPE_PRICE_ID_ANNUAL ? stripe.prices.retrieve(process.env.STRIPE_PRICE_ID_ANNUAL).catch(() => null) : Promise.resolve(null),
+    ]);
     const stripeRows = stripeResult.data;
     const stripeActiveRows = stripeRows.filter(s => ['active', 'trialing'].includes(s.status));
     const stripeActiveIds = new Set(stripeActiveRows.map(s => s.id));
@@ -90,6 +135,10 @@ export async function GET() {
       }).length,
       unknownActivePrices: stripeActiveRows.filter(s => !planForStripePriceId(s.items.data[0]?.price?.id)).length,
       hasMore: stripeResult.has_more,
+      priceConfig: {
+        weekly: inspectPrice(weeklyPrice, Boolean(process.env.STRIPE_PRICE_ID_WEEKLY), PLAN_PRICES.weekly.amount, 'week'),
+        annual: inspectPrice(annualPrice, Boolean(process.env.STRIPE_PRICE_ID_ANNUAL), PLAN_PRICES.annual.amount, 'year'),
+      },
     };
   } catch (error) {
     console.error('Stripe billing health check failed:', error);
