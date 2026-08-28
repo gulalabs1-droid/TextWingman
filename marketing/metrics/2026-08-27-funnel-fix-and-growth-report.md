@@ -119,7 +119,7 @@ Do not call a creative a winner from views alone. A winner creates profile visit
 ### Production and measurement
 
 - Growth OS is live at `/admin/growth` with no setup or missing-table warning. The migration-backed controls, funnel, measurement health, campaign links, creative registry, and lead queue all load in production.
-- The canonical funnel repair is deployed from commits `6694f73`, `f018292b`, `7fc30e3`, and `e51da2b`. The changes exclude verification probes, standardize weekly-plan MRR as `amount * 52 / 12`, record completed free replies after generation, and separate live reply requests from reply successes.
+- The canonical funnel repair is deployed from commits `6694f73`, `f018292b`, `7fc30e3`, `e51da2b`, and `f1d1f48`. The changes exclude verification probes, standardize weekly-plan MRR as `amount * 52 / 12`, record completed free replies after generation, separate live reply requests from reply successes, and count the site's current paste/submit events as composer intent.
 - Three UTM validation journeys were run for TikTok, YouTube, and Instagram: landing view, example/paste, generate, and copy. Their events are recorded, but tagged `next_move_test`/`probe-*` traffic is intentionally excluded from customer and creative totals.
 
 ### Current first-party numbers
