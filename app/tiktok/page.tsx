@@ -94,6 +94,14 @@ export default function TikTokLandingPage() {
     });
   };
 
+  const handleInstantDemo = () => {
+    const example = exampleChips[0];
+    track('example_clicked', { source, label: example.label, mode: 'instant_demo' });
+    try { sessionStorage.setItem('tw_prefill_message', example.text); } catch {}
+    // Let cold visitors see the product value without requiring two form actions.
+    goToApp({ prefill: '1', via: 'paste' });
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -141,7 +149,7 @@ export default function TikTokLandingPage() {
   };
 
   const hasFilled = msg.trim().length > 0;
-  const stickyLabel = hasFilled ? 'Decode this text now' : 'Paste text or upload screenshot';
+  const stickyLabel = hasFilled ? 'Get the read + 3 replies' : 'Paste text or see a demo';
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -205,7 +213,7 @@ export default function TikTokLandingPage() {
               onClick={handlePasteSubmit}
               className="h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10"
             >
-              {hasFilled ? <>Decode this text now <ArrowRight className="h-4 w-4" /></> : <>Decode + write reply <Zap className="h-4 w-4" /></>}
+              {hasFilled ? <>Get the read + 3 replies <ArrowRight className="h-4 w-4" /></> : <>Get a free reply in 10 sec <Zap className="h-4 w-4" /></>}
             </button>
             <button
               onClick={() => {
@@ -226,6 +234,14 @@ export default function TikTokLandingPage() {
           <p className="mt-2.5 text-[11px] text-white/30 text-center">
             No inbox access · 5 free replies/day · Works with Hinge, Tinder, IG, iMessage
           </p>
+
+          <button
+            onClick={handleInstantDemo}
+            className="mt-3 w-full rounded-xl border border-fuchsia-300/15 bg-fuchsia-300/[0.06] px-3 py-2.5 text-left text-[12px] text-fuchsia-100/80 transition-colors hover:border-fuchsia-300/30 hover:bg-fuchsia-300/[0.10]"
+          >
+            <span className="font-bold text-fuchsia-100">No text handy?</span>{' '}
+            See what Text Wingman would send for “maybe” <ArrowRight className="ml-1 inline h-3 w-3" />
+          </button>
         </div>
 
         {/* Example chips — tap to prefill */}
