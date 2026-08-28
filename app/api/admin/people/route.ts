@@ -1,23 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, getAdminSupabase } from '@/lib/admin';
+import { isPageViewAction, isProductAction, isProductSuccessAction, normalizeEventName } from '@/lib/analytics-events';
+import { isInternalTraffic, personKey, sourceOf, type FunnelUsageRow } from '@/lib/admin-funnel';
+import { isAdminEmail } from '@/lib/isAdmin';
 
 export const dynamic = 'force-dynamic';
 
-// Unified "people" feed: anonymous visitors AND registered users.
-// Backed by the public.admin_people / public.admin_people_weekly SQL views so
-// the heavy grouping happens in Postgres, not here.
-
+type ProfileRow = { id: string; email: string | null; created_at: string };
+type Metadata = {
+  page?: string;
+  referrer?: string;
+  visitor_id?: string;
+  device?: string;
+  os?: string;
+  browser?: string;
+  country?: string;
+  city?: string;
+  region?: string;
+  user_agent?: string;
+  utm?: Record<string, unknown>;
+};
 type PersonRow = {
   person_key: string;
   is_registered: boolean;
   user_id: string | null;
+  email: string | null;
+  channel: string;
+  activated: boolean;
   first_seen: string;
   last_seen: string;
   events: number;
   page_views: number;
   product_actions: number;
   replies: number;
-  ips: number;
   landing_page: string | null;
   first_referrer: string | null;
   utm_source: string | null;
@@ -42,144 +57,199 @@ type WeekRow = {
   new_registered: number;
   activated: number;
   took_action: number;
-  total_replies: number | string | null;
-  total_page_views: number | string | null;
+  total_replies: number;
+  total_page_views: number;
 };
 
-const RANGE_DAYS: Record<string, number | null> = {
-  '7': 7,
-  '30': 30,
-  '90': 90,
-  all: null,
-};
+const RANGE_DAYS: Record<string, number | null> = { '7': 7, '30': 30, '90': 90, all: null };
 
-// Derive a human acquisition channel. Falls back to referrer host, then landing
-// page, so social traffic without UTMs still gets attributed instead of
-// silently collapsing into "unknown".
-function channelOf(p: PersonRow): string {
-  const explicit = p.utm_source || p.utm_platform;
-  if (explicit) return explicit.toLowerCase();
-
-  const ref = p.first_referrer;
-  if (ref) {
-    try {
-      const host = new URL(ref).hostname.replace(/^www\./, '');
-      if (host.includes('tiktok')) return 'tiktok';
-      if (host.includes('youtube') || host.includes('youtu.be')) return 'youtube';
-      if (host.includes('instagram')) return 'instagram';
-      if (host.includes('google')) return 'google';
-      if (host.includes('reddit')) return 'reddit';
-      if (host) return host;
-    } catch {
-      // not a parseable URL — ignore
-    }
-  }
-
-  if (p.landing_page === '/tiktok') return 'tiktok (landing)';
-  return 'direct';
+function metadataOf(log: FunnelUsageRow): Metadata {
+  return log.metadata && typeof log.metadata === 'object' ? log.metadata as Metadata : {};
 }
 
-function tally(rows: PersonRow[], key: (p: PersonRow) => string | null) {
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function utmValue(log: FunnelUsageRow, key: string): string | null {
+  const utm = metadataOf(log).utm || {};
+  return stringValue(utm[key]);
+}
+
+function emptyPerson(log: FunnelUsageRow, profile?: ProfileRow): PersonRow {
+  const metadata = metadataOf(log);
+  const page = stringValue(metadata.page);
+  const source = sourceOf(log);
+  return {
+    person_key: profile ? `user:${profile.id}` : personKey(log),
+    is_registered: Boolean(profile?.id || log.user_id),
+    user_id: profile?.id || log.user_id || null,
+    email: profile?.email || null,
+    channel: source,
+    activated: false,
+    first_seen: profile?.created_at || log.created_at,
+    last_seen: log.created_at || profile?.created_at || new Date().toISOString(),
+    events: 0,
+    page_views: 0,
+    product_actions: 0,
+    replies: 0,
+    landing_page: page,
+    first_referrer: stringValue(metadata.referrer),
+    utm_source: utmValue(log, 'utm_source') || utmValue(log, 'src'),
+    utm_medium: utmValue(log, 'utm_medium'),
+    utm_campaign: utmValue(log, 'utm_campaign'),
+    utm_platform: utmValue(log, 'platform'),
+    video_id: utmValue(log, 'video_id'),
+    device: stringValue(metadata.device),
+    os: stringValue(metadata.os),
+    browser: stringValue(metadata.browser),
+    country: stringValue(metadata.country),
+    city: stringValue(metadata.city),
+    region: stringValue(metadata.region),
+    last_ip: log.ip_address || null,
+    user_agent: log.user_agent || null,
+  };
+}
+
+function addLog(person: PersonRow, log: FunnelUsageRow) {
+  const metadata = metadataOf(log);
+  const event = normalizeEventName(log.action);
+  person.first_seen = log.created_at < person.first_seen ? log.created_at : person.first_seen;
+  person.last_seen = log.created_at > person.last_seen ? log.created_at : person.last_seen;
+  person.events += 1;
+  if (isPageViewAction(event)) person.page_views += 1;
+  if (isProductAction(event)) person.product_actions += 1;
+  if (isProductSuccessAction(event)) {
+    person.replies += 1;
+    person.activated = true;
+  }
+  if (!person.landing_page && stringValue(metadata.page)) person.landing_page = stringValue(metadata.page);
+  if (!person.first_referrer && stringValue(metadata.referrer)) person.first_referrer = stringValue(metadata.referrer);
+  person.utm_source ||= utmValue(log, 'utm_source') || utmValue(log, 'src');
+  person.utm_medium ||= utmValue(log, 'utm_medium');
+  person.utm_campaign ||= utmValue(log, 'utm_campaign');
+  person.video_id ||= utmValue(log, 'video_id');
+  person.device ||= stringValue(metadata.device);
+  person.os ||= stringValue(metadata.os);
+  person.browser ||= stringValue(metadata.browser);
+  person.country ||= stringValue(metadata.country);
+  person.city ||= stringValue(metadata.city);
+  person.region ||= stringValue(metadata.region);
+  person.last_ip = log.ip_address || person.last_ip;
+  person.user_agent ||= log.user_agent || null;
+  const incomingSource = sourceOf(log);
+  if (person.channel === 'direct' && incomingSource !== 'direct') person.channel = incomingSource;
+}
+
+function weekStart(iso: string): string {
+  const date = new Date(iso);
+  date.setUTCHours(0, 0, 0, 0);
+  const mondayOffset = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - mondayOffset);
+  return date.toISOString().slice(0, 10);
+}
+
+function buildWeeks(people: PersonRow[]): WeekRow[] {
+  const map = new Map<string, WeekRow>();
+  for (const person of people) {
+    const key = weekStart(person.first_seen);
+    const row = map.get(key) || { week_start: key, new_people: 0, new_anonymous: 0, new_registered: 0, activated: 0, took_action: 0, total_replies: 0, total_page_views: 0 };
+    row.new_people += 1;
+    if (person.is_registered) row.new_registered += 1;
+    else row.new_anonymous += 1;
+    if (person.activated) row.activated += 1;
+    if (person.product_actions > 0) row.took_action += 1;
+    row.total_replies += person.replies;
+    row.total_page_views += person.page_views;
+    map.set(key, row);
+  }
+  return [...map.values()].sort((a, b) => b.week_start.localeCompare(a.week_start)).slice(0, 12);
+}
+
+function tally(rows: PersonRow[], key: (person: PersonRow) => string | null) {
   const map = new Map<string, { label: string; count: number; activated: number }>();
-  for (const p of rows) {
-    const label = key(p) || 'unknown';
-    const cur = map.get(label) || { label, count: 0, activated: 0 };
-    cur.count += 1;
-    if (p.replies > 0) cur.activated += 1;
-    map.set(label, cur);
+  for (const person of rows) {
+    const label = key(person) || 'unknown';
+    const current = map.get(label) || { label, count: 0, activated: 0 };
+    current.count += 1;
+    if (person.activated) current.activated += 1;
+    map.set(label, current);
   }
   return [...map.values()].sort((a, b) => b.count - a.count);
 }
 
 export async function GET(request: NextRequest) {
-  const { isAdmin } = await requireAdmin();
+  const { user, isAdmin } = await requireAdmin();
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getAdminSupabase();
   const url = new URL(request.url);
   const range = url.searchParams.get('range') || '30';
   const type = url.searchParams.get('type') || 'all';
-  const search = (url.searchParams.get('search') || '').trim();
-  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+  const search = (url.searchParams.get('search') || '').trim().toLowerCase();
+  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
   const limit = 100;
-
   const days = RANGE_DAYS[range] ?? null;
-  const since = days ? new Date(Date.now() - days * 86400_000).toISOString() : null;
+  const selectedSince = days ? new Date(Date.now() - days * 86400_000).toISOString() : null;
+  const querySince = new Date(Date.now() - 90 * 86400_000).toISOString();
 
-  // ── People in range (bounded projection, aggregated below) ──
-  let q = db.from('admin_people').select('*').order('first_seen', { ascending: false }).limit(5000);
-  if (since) q = q.gte('first_seen', since);
-  if (type === 'anon') q = q.eq('is_registered', false);
-  if (type === 'registered') q = q.eq('is_registered', true);
-
-  const [{ data: peopleRaw, error: peopleErr }, { data: weeksRaw }] = await Promise.all([
-    q,
-    db.from('admin_people_weekly').select('*').order('week_start', { ascending: false }).limit(12),
+  const [{ data: profileRows, error: profileError }, { data: rawLogs, error: logError }] = await Promise.all([
+    db.from('profiles').select('id, email, created_at').limit(50000),
+    db.from('usage_logs')
+      .select('id, user_id, ip_address, fingerprint, user_agent, action, created_at, metadata')
+      .gte('created_at', querySince)
+      .order('created_at', { ascending: false })
+      .limit(50000),
   ]);
+  if (profileError || logError) return NextResponse.json({ error: profileError?.message || logError?.message || 'Failed to load people' }, { status: 500 });
 
-  if (peopleErr) {
-    return NextResponse.json({ error: peopleErr.message }, { status: 500 });
+  const profiles = (profileRows || []) as ProfileRow[];
+  const adminIds = new Set<string>(user?.id ? [user.id] : []);
+  for (const profile of profiles) if (isAdminEmail(profile.email)) adminIds.add(profile.id);
+  const logs = ((rawLogs || []) as FunnelUsageRow[]).filter(log => !isInternalTraffic(log, adminIds));
+  const profileMap = new Map(profiles.filter(profile => !adminIds.has(profile.id)).map(profile => [profile.id, profile]));
+  const peopleMap = new Map<string, PersonRow>();
+
+  for (const log of logs) {
+    const key = personKey(log);
+    const profile = log.user_id ? profileMap.get(log.user_id) : undefined;
+    const person = peopleMap.get(key) || emptyPerson(log, profile);
+    if (profile) {
+      person.user_id = profile.id;
+      person.email = profile.email;
+      person.is_registered = true;
+    }
+    addLog(person, log);
+    peopleMap.set(key, person);
+  }
+  for (const profile of profileMap.values()) {
+    if (selectedSince && profile.created_at < selectedSince) continue;
+    const key = `user:${profile.id}`;
+    if (!peopleMap.has(key)) peopleMap.set(key, emptyPerson({ user_id: profile.id, created_at: profile.created_at }, profile));
   }
 
-  let people = (peopleRaw || []) as PersonRow[];
-
-  // Attach emails for registered people
-  const userIds = people.map(p => p.user_id).filter((v): v is string => Boolean(v));
-  const emailMap = new Map<string, string>();
-  if (userIds.length > 0) {
-    const { data: profiles } = await db.from('profiles').select('id, email').in('id', userIds);
-    (profiles || []).forEach((pr: { id: string; email: string | null }) => {
-      if (pr.email) emailMap.set(pr.id, pr.email);
-    });
+  let people = [...peopleMap.values()].filter(person => !selectedSince || person.last_seen >= selectedSince);
+  if (type === 'anon') people = people.filter(person => !person.is_registered);
+  if (type === 'registered') people = people.filter(person => person.is_registered);
+  if (search) {
+    people = people.filter(person => [
+      person.email, person.channel, person.country, person.city, person.device, person.os, person.browser,
+      person.last_ip, person.landing_page, person.utm_campaign, person.video_id, person.person_key,
+    ].filter(Boolean).join(' ').toLowerCase().includes(search));
   }
+  people.sort((a, b) => b.last_seen.localeCompare(a.last_seen));
 
-  const enriched = people.map(p => ({
-    ...p,
-    email: p.user_id ? emailMap.get(p.user_id) || null : null,
-    channel: channelOf(p),
-    activated: p.replies > 0,
-  }));
-
-  // Free-text search across the useful identifying fields
-  const filtered = search
-    ? enriched.filter(p => {
-        const hay = [
-          p.email, p.channel, p.country, p.city, p.device, p.os, p.browser,
-          p.last_ip, p.landing_page, p.utm_campaign, p.video_id, p.person_key,
-        ].filter(Boolean).join(' ').toLowerCase();
-        return hay.includes(search.toLowerCase());
-      })
-    : enriched;
-
-  // ── Breakdowns (computed over the whole filtered range, not just this page) ──
-  const sources = tally(filtered, channelOf);
-  const devices = tally(filtered, p => p.device);
-  const countries = tally(filtered, p => p.country);
-  const landingPages = tally(filtered, p => p.landing_page);
-
-  // ── Week-over-week KPIs ──
-  const weeks = (weeksRaw || []).map((w: WeekRow) => ({
-    week_start: w.week_start,
-    new_people: Number(w.new_people) || 0,
-    new_anonymous: Number(w.new_anonymous) || 0,
-    new_registered: Number(w.new_registered) || 0,
-    activated: Number(w.activated) || 0,
-    took_action: Number(w.took_action) || 0,
-    total_replies: Number(w.total_replies) || 0,
-    total_page_views: Number(w.total_page_views) || 0,
-  }));
-
+  const weeklyPeople = [...peopleMap.values()];
+  const weeks = buildWeeks(weeklyPeople);
   const thisWeek = weeks[0] || null;
   const lastWeek = weeks[1] || null;
   const wowPct = lastWeek && lastWeek.new_people > 0 && thisWeek
     ? Math.round(((thisWeek.new_people - lastWeek.new_people) / lastWeek.new_people) * 100)
     : thisWeek && thisWeek.new_people > 0 ? 100 : 0;
 
-  const totalPeople = filtered.length;
-  const totalAnon = filtered.filter(p => !p.is_registered).length;
-  const totalActivated = filtered.filter(p => p.activated).length;
-
-  const paged = filtered.slice((page - 1) * limit, page * limit);
+  const totalPeople = people.length;
+  const totalAnon = people.filter(person => !person.is_registered).length;
+  const totalActivated = people.filter(person => person.activated).length;
 
   return NextResponse.json({
     kpis: {
@@ -187,22 +257,27 @@ export async function GET(request: NextRequest) {
       totalAnon,
       totalRegistered: totalPeople - totalAnon,
       totalActivated,
-      activationRate: totalPeople > 0 ? Math.round((totalActivated / totalPeople) * 1000) / 10 : 0,
+      activationRate: totalPeople ? Math.round((totalActivated / totalPeople) * 1000) / 10 : 0,
       newThisWeek: thisWeek?.new_people || 0,
       newLastWeek: lastWeek?.new_people || 0,
       wowPct,
       activatedThisWeek: thisWeek?.activated || 0,
     },
     weeks,
-    sources,
-    devices,
-    countries,
-    landingPages,
-    people: paged,
+    sources: tally(people, person => person.channel),
+    devices: tally(people, person => person.device),
+    countries: tally(people, person => person.country),
+    landingPages: tally(people, person => person.landing_page),
+    people: people.slice((page - 1) * limit, page * limit),
     total: totalPeople,
     page,
     limit,
     range,
     type,
+    dataQuality: {
+      queriedEvents: rawLogs?.length || 0,
+      externalEvents: logs.length,
+      internalExcluded: Math.max((rawLogs?.length || 0) - logs.length, 0),
+    },
   });
 }

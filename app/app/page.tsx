@@ -362,7 +362,7 @@ export default function AppPage() {
   const [smartPreviewDismissed, setSmartPreviewDismissed] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const isSocialTraffic = useRef(false);
-  const autoRunPrefill = useRef<string | null>(null);
+  const [prefillAutoRun, setPrefillAutoRun] = useState<string | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
@@ -492,7 +492,7 @@ export default function AppPage() {
           if (shouldAutoRun) {
             setAppMode('reply');
             setMessage(msg);
-            autoRunPrefill.current = msg;
+            setPrefillAutoRun(msg);
           } else {
             setStrategyChatInput(msg);
           }
@@ -901,15 +901,15 @@ export default function AppPage() {
   // Social and landing-page prefill links should deliver the promised first
   // result without making a new visitor find and press a second button.
   useEffect(() => {
-    const pending = autoRunPrefill.current;
+    const pending = prefillAutoRun;
     if (!pending) return;
     if (message !== pending) {
-      if (message.trim() !== pending.trim()) autoRunPrefill.current = null;
+      if (message.trim() !== pending.trim()) setPrefillAutoRun(null);
       return;
     }
     if (appMode !== 'reply' || loading) return;
 
-    autoRunPrefill.current = null;
+    setPrefillAutoRun(null);
     const timer = window.setTimeout(() => {
       track('prefill_autorun_started', {
         source: isSocialTraffic.current ? 'social' : 'organic',
@@ -920,7 +920,7 @@ export default function AppPage() {
     return () => window.clearTimeout(timer);
     // The dependency set intentionally tracks the state gate, not the inline handler.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appMode, loading, message]);
+  }, [appMode, loading, message, prefillAutoRun]);
 
   // Regenerate replies (regular flow) — re-calls API with same thread context, no re-add
   const handleRegenerate = async () => {

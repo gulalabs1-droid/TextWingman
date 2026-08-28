@@ -27,10 +27,22 @@ export function logAdminEvent(
   payload?: Record<string, unknown>
 ) {
   const db = getAdminSupabase();
-  return db.from('admin_events').insert({
+  const event = {
     admin_user_id: adminUserId,
-    event_type: eventType,
+    action: eventType,
     target_user_id: targetUserId || null,
-    payload: payload || {},
+    metadata: payload || {},
+  };
+
+  // Older installs used event_type/payload. Prefer the canonical schema, but
+  // keep admin auditing alive while an existing database is being migrated.
+  return db.from('admin_events').insert(event).then(result => {
+    if (!result.error) return result;
+    return db.from('admin_events').insert({
+      admin_user_id: adminUserId,
+      event_type: eventType,
+      target_user_id: targetUserId || null,
+      payload: payload || {},
+    });
   });
 }

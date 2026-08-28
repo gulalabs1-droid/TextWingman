@@ -2,8 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-
-const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'via', 'video_id'] as const;
+import { captureAttribution, getClientIdentity, persistAnalyticsEvent } from '@/lib/analytics';
 
 export default function PageViewTracker() {
   const pathname = usePathname();
@@ -15,39 +14,14 @@ export default function PageViewTracker() {
     if (key === lastTracked.current) return;
     lastTracked.current = key;
 
-    // Small delay so document.title is set
+    captureAttribution();
+    getClientIdentity();
     const timer = setTimeout(() => {
-      try {
-        const utm: Record<string, string> = {};
-        for (const k of UTM_KEYS) {
-          const v = searchParams?.get(k);
-          if (v) utm[k] = v;
-        }
-
-        const payload: Record<string, unknown> = {
-          page: pathname,
-          referrer: document.referrer || null,
-          screen: `${window.screen.width}x${window.screen.height}`,
-          title: document.title || null,
-        };
-
-        if (Object.keys(utm).length > 0) {
-          payload.utm = utm;
-        }
-
-        const body = JSON.stringify(payload);
-        const blob = new Blob([body], { type: 'application/json' });
-        if (!navigator.sendBeacon?.('/api/track', blob)) {
-          fetch('/api/track', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body,
-            keepalive: true,
-          });
-        }
-      } catch {
-        // tracking must never break UX
-      }
+      persistAnalyticsEvent('page_view', {
+        page_path: pathname,
+        screen: `${window.screen.width}x${window.screen.height}`,
+        title: document.title || null,
+      });
     }, 300);
 
     return () => clearTimeout(timer);

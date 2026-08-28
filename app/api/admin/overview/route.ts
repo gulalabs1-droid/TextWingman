@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin, getAdminSupabase } from '@/lib/admin';
+import { getAdminSupabase, requireAdmin } from '@/lib/admin';
+import { getCanonicalFunnel } from '@/lib/admin-funnel';
+import { isAdminEmail } from '@/lib/isAdmin';
 
 const PRICE_MAP: Record<string, { amount: number; interval: 'week' | 'month' | 'year' }> = {
   weekly: { amount: 9.99, interval: 'week' },
@@ -7,181 +9,100 @@ const PRICE_MAP: Record<string, { amount: number; interval: 'week' | 'month' | '
   annual: { amount: 99.99, interval: 'year' },
 };
 
+function growth(current: number, previous: number): number {
+  if (previous > 0) return Math.round(((current - previous) / previous) * 100);
+  return current > 0 ? 100 : 0;
+}
 export async function GET() {
-  const { isAdmin } = await requireAdmin();
+  const { user, isAdmin } = await requireAdmin();
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const db = getAdminSupabase();
-  const now = new Date();
-  const h24 = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-  const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const d14 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString();
-  const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const db = getAdminSupabase();
+    const funnel = await getCanonicalFunnel(db, { rangeDays: 30, currentAdminId: user?.id });
+    const now = Date.now();
+    const d7 = new Date(now - 7 * 86400_000).toISOString();
+    const d30 = new Date(now - 30 * 86400_000).toISOString();
 
-  const [
-    { count: totalUsers },
-    { count: signups24h },
-    { count: signups7d },
-    { count: signups30d },
-    { count: signupsPrevWeek },
-    { count: totalGenerations },
-    { count: gen24h },
-    { count: gen7d },
-    { count: gen30d },
-    { count: genPrevWeek },
-    { data: activeSubs },
-    { data: cancelingSubs },
-    { count: churned7d },
-    { count: churned30d },
-    { data: dailyGen },
-    { data: dailySignups },
-    { data: recentEvents },
-  ] = await Promise.all([
-    db.from('profiles').select('*', { count: 'exact', head: true }),
-    db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', h24),
-    db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', d7),
-    db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', d30),
-    db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', d14).lt('created_at', d7),
-    db.from('usage_logs').select('*', { count: 'exact', head: true }),
-    db.from('usage_logs').select('*', { count: 'exact', head: true }).gte('created_at', h24),
-    db.from('usage_logs').select('*', { count: 'exact', head: true }).gte('created_at', d7),
-    db.from('usage_logs').select('*', { count: 'exact', head: true }).gte('created_at', d30),
-    db.from('usage_logs').select('*', { count: 'exact', head: true }).gte('created_at', d14).lt('created_at', d7),
-    db.from('subscriptions').select('*').in('status', ['active', 'trialing']),
-    db.from('subscriptions').select('*').eq('cancel_at_period_end', true),
-    db.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'canceled').gte('updated_at', d7),
-    db.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'canceled').gte('updated_at', d30),
-    db.from('usage_logs').select('created_at').gte('created_at', d7).order('created_at', { ascending: true }),
-    db.from('profiles').select('created_at').gte('created_at', d30).order('created_at', { ascending: true }),
-    db.from('usage_logs').select('created_at, action, user_id').gte('created_at', h24).order('created_at', { ascending: false }).limit(25),
-  ]);
+    const [{ data: activeSubs }, { data: cancelingSubs }, { count: churned7d }, { count: churned30d }] = await Promise.all([
+      db.from('subscriptions').select('user_id, plan_type, status').in('status', ['active', 'trialing']).limit(50000),
+      db.from('subscriptions').select('user_id').eq('cancel_at_period_end', true).limit(50000),
+      db.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'canceled').gte('updated_at', d7),
+      db.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'canceled').gte('updated_at', d30),
+    ]);
 
-  // Activated = performed a real product action (not just a page view).
-  // Counted for registered users AND anonymous visitors, because most usage on
-  // this product happens with no account at all.
-  const { data: activatedRows } = await db
-    .from('usage_logs')
-    .select('user_id, fingerprint, ip_address')
-    .neq('action', 'page_view');
+    const activeSubscriptionRows = activeSubs || [];
+    const activeSubscriptionIds = activeSubscriptionRows
+      .map(subscription => subscription.user_id)
+      .filter((id): id is string => typeof id === 'string');
+    const { data: subscriptionProfiles } = activeSubscriptionIds.length
+      ? await db.from('profiles').select('id, email').in('id', activeSubscriptionIds)
+      : { data: [] as { id: string; email: string | null }[] };
+    const internalSubscriptionIds = new Set<string>(user?.id ? [user.id] : []);
+    for (const profile of subscriptionProfiles || []) if (isAdminEmail(profile.email)) internalSubscriptionIds.add(profile.id);
+    const externalActiveSubs = activeSubscriptionRows.filter((subscription: { user_id: string | null }) =>
+      typeof subscription.user_id === 'string' && !internalSubscriptionIds.has(subscription.user_id),
+    );
 
-  const activatedRegistered = new Set(
-    (activatedRows || []).filter(r => r.user_id).map(r => r.user_id)
-  ).size;
-
-  const activatedAnonymous = new Set(
-    (activatedRows || [])
-      .filter(r => !r.user_id)
-      .map(r => `${r.fingerprint || 'nofp'}:${r.ip_address || 'noip'}`)
-  ).size;
-
-  const activatedUsers = activatedRegistered;
-
-  // Anonymous reach (people we have no account for)
-  const { data: anonRows } = await db
-    .from('usage_logs')
-    .select('fingerprint, ip_address, created_at')
-    .is('user_id', null);
-
-  const anonKey = (r: { fingerprint: string | null; ip_address: string | null }) =>
-    `${r.fingerprint || 'nofp'}:${r.ip_address || 'noip'}`;
-
-  const anonPeople = new Set((anonRows || []).map(anonKey)).size;
-  const anonPeople7d = new Set(
-    (anonRows || []).filter(r => r.created_at >= d7).map(anonKey)
-  ).size;
-
-  // Fetch profile emails for recent activity feed
-  const activityUserIds = [...new Set((recentEvents || []).map(e => e.user_id).filter(Boolean))];
-  const { data: activityProfiles } = activityUserIds.length > 0
-    ? await db.from('profiles').select('id, email, full_name').in('id', activityUserIds)
-    : { data: [] };
-  const profileMap: Record<string, { email?: string; full_name?: string }> = {};
-  (activityProfiles || []).forEach((p: { id: string; email?: string; full_name?: string }) => { profileMap[p.id] = p; });
-
-  const recentActivity = (recentEvents || []).map(e => ({
-    action: e.action || 'generate',
-    user_id: e.user_id || null,
-    email: e.user_id ? (profileMap[e.user_id]?.email || null) : null,
-    created_at: e.created_at,
-  }));
-
-  // MRR calculation
-  let mrr = 0;
-  const planBreakdown: Record<string, number> = {};
-  if (activeSubs) {
-    for (const sub of activeSubs) {
-      const plan = sub.plan_type || 'monthly';
+    let mrr = 0;
+    const planBreakdown: Record<string, number> = {};
+    for (const subscription of externalActiveSubs) {
+      const plan = subscription.plan_type || 'monthly';
       planBreakdown[plan] = (planBreakdown[plan] || 0) + 1;
-      const p = PRICE_MAP[plan];
-      if (p) {
-        if (p.interval === 'week') mrr += p.amount * 4.33;
-        else if (p.interval === 'year') mrr += p.amount / 12;
-        else mrr += p.amount;
-      }
+      const price = PRICE_MAP[plan];
+      if (!price) continue;
+      if (price.interval === 'week') mrr += price.amount * 4.33;
+      else if (price.interval === 'year') mrr += price.amount / 12;
+      else mrr += price.amount;
     }
+
+    const thisWeekOutputs = funnel.windows.d7.replySuccesses;
+    const previousWeekOutputs = funnel.windows.previous7.replySuccesses;
+    const thisWeekSignups = funnel.windows.d7.signups;
+    const previousWeekSignups = funnel.windows.previous7.signups;
+    const signupGrowthPct = growth(thisWeekSignups, previousWeekSignups);
+    const genGrowthPct = growth(thisWeekOutputs, previousWeekOutputs);
+    const paidUsers = funnel.account.paid;
+
+    return NextResponse.json({
+      totalUsers: funnel.account.registered,
+      signups: {
+        h24: funnel.windows.h24.signups,
+        d7: thisWeekSignups,
+        d30: funnel.windows.d30.signups,
+      },
+      generations: {
+        total: funnel.outputs.allTime,
+        h24: funnel.windows.h24.replySuccesses,
+        d7: thisWeekOutputs,
+        d30: funnel.windows.d30.replySuccesses,
+      },
+      activatedUsers: funnel.account.activated,
+      anonymous: {
+        people: funnel.windows.d30.anonymousVisitors,
+        people7d: funnel.windows.d7.anonymousVisitors,
+        activated: funnel.windows.d30.anonymousActivated,
+      },
+      paidUsers,
+      freeUsers: funnel.account.free,
+      mrr: Math.round(mrr * 100) / 100,
+      arr: Math.round(mrr * 12 * 100) / 100,
+      projectedMrr: Math.round(mrr * (signupGrowthPct > 0 ? 1 + signupGrowthPct / 100 : 1) * 100) / 100,
+      conversionRate: funnel.account.paidRate ?? 0,
+      activationRate: funnel.account.activationRate ?? 0,
+      planBreakdown,
+      churn: { d7: churned7d || 0, d30: churned30d || 0 },
+      cancelingCount: cancelingSubs?.length || 0,
+      genByDay: funnel.outputs.byDay,
+      signupsByDay: funnel.signupsByDay,
+      signupGrowthPct,
+      genGrowthPct,
+      recentActivity: funnel.recentActivity,
+      funnel,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Admin overview error:', error);
+    return NextResponse.json({ error: 'Unable to load overview data' }, { status: 500 });
   }
-
-  // Daily breakdown for sparklines
-  const genByDay: Record<string, number> = {};
-  dailyGen?.forEach(r => {
-    const day = r.created_at.split('T')[0];
-    genByDay[day] = (genByDay[day] || 0) + 1;
-  });
-
-  const signupsByDay: Record<string, number> = {};
-  dailySignups?.forEach(r => {
-    const day = r.created_at.split('T')[0];
-    signupsByDay[day] = (signupsByDay[day] || 0) + 1;
-  });
-
-  const paidUsers = activeSubs?.length || 0;
-  const freeUsers = (totalUsers || 0) - paidUsers;
-  const conversionRate = totalUsers && totalUsers > 0 ? ((paidUsers / totalUsers) * 100) : 0;
-  const activationRate = totalUsers && totalUsers > 0 ? ((activatedUsers / totalUsers) * 100) : 0;
-
-  // Week-over-week growth
-  const prevWeekSignups = signupsPrevWeek || 0;
-  const thisWeekSignups = signups7d || 0;
-  const signupGrowthPct = prevWeekSignups > 0
-    ? Math.round(((thisWeekSignups - prevWeekSignups) / prevWeekSignups) * 100)
-    : thisWeekSignups > 0 ? 100 : 0;
-
-  const prevWeekGens = genPrevWeek || 0;
-  const thisWeekGens = gen7d || 0;
-  const genGrowthPct = prevWeekGens > 0
-    ? Math.round(((thisWeekGens - prevWeekGens) / prevWeekGens) * 100)
-    : thisWeekGens > 0 ? 100 : 0;
-
-  // Projected MRR (simple: current + linear growth based on signups trend)
-  const projectedMrr = paidUsers > 0 && signupGrowthPct > 0
-    ? Math.round(mrr * (1 + signupGrowthPct / 100) * 100) / 100
-    : mrr;
-
-  return NextResponse.json({
-    totalUsers: totalUsers || 0,
-    signups: { h24: signups24h || 0, d7: signups7d || 0, d30: signups30d || 0 },
-    generations: { total: totalGenerations || 0, h24: gen24h || 0, d7: gen7d || 0, d30: gen30d || 0 },
-    activatedUsers,
-    // Anonymous (no-account) reach — most real usage happens here.
-    anonymous: {
-      people: anonPeople,
-      people7d: anonPeople7d,
-      activated: activatedAnonymous,
-    },
-    paidUsers,
-    freeUsers,
-    mrr: Math.round(mrr * 100) / 100,
-    arr: Math.round(mrr * 12 * 100) / 100,
-    projectedMrr,
-    conversionRate: Math.round(conversionRate * 100) / 100,
-    activationRate: Math.round(activationRate * 100) / 100,
-    planBreakdown,
-    churn: { d7: churned7d || 0, d30: churned30d || 0 },
-    cancelingCount: cancelingSubs?.length || 0,
-    genByDay,
-    signupsByDay,
-    signupGrowthPct,
-    genGrowthPct,
-    recentActivity,
-  });
 }

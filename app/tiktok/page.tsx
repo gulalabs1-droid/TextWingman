@@ -150,7 +150,7 @@ export default function TikTokLandingPage() {
         <Logo size="sm" showText={true} className="cursor-pointer opacity-70" />
         <Link
           href="/login?mode=signin"
-          onClick={() => track('signup_started', { source, from: 'tiktok_nav' })}
+          onClick={() => track('sign_in_started', { source, from: 'tiktok_nav' })}
           className="text-white/40 hover:text-white text-xs font-medium transition-colors"
         >
           Sign in

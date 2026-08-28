@@ -3,7 +3,7 @@ import { generateReplies, generateRepliesWithAgent } from '@/lib/openai';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
-import crypto from 'crypto';
+import { getRequestIdentity } from '@/lib/request-identity';
 
 const FREE_USAGE_LIMIT = 5; // 5 free replies per day
 
@@ -26,10 +26,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get IP for anonymous users (must match usage route logic)
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    const realIP = request.headers.get('x-real-ip');
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : (realIP || '127.0.0.1');
+    const requestIdentity = getRequestIdentity(request);
+    const { ip, userAgent, fingerprint } = requestIdentity;
     
     // Check if user is logged in
     const serverSupabase = await createServerClient();
@@ -50,9 +48,6 @@ export async function POST(request: NextRequest) {
         // Save to reply history + log usage for analytics
         const supabaseAdmin = getSupabaseAdmin();
         if (supabaseAdmin) {
-          const userAgent = request.headers.get('user-agent') || 'unknown';
-          const lang = request.headers.get('accept-language') || '';
-          const fp = crypto.createHash('sha256').update(`${userAgent}-${lang}`).digest('hex').substring(0, 32);
           try {
             await Promise.all([
               supabaseAdmin.from('reply_history').insert({
@@ -66,7 +61,8 @@ export async function POST(request: NextRequest) {
                 user_id: userId,
                 user_agent: userAgent,
                 action: 'generate_reply',
-                fingerprint: fp,
+                fingerprint,
+                metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'success' } : { outcome: 'success' },
               }),
             ]);
           } catch (insertErr) {
@@ -90,14 +86,11 @@ export async function POST(request: NextRequest) {
     }
 
     const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const userAgent = request.headers.get('user-agent') || 'unknown';
-    const lang = request.headers.get('accept-language') || '';
-    const fingerprint = crypto.createHash('sha256').update(`${userAgent}-${lang}`).digest('hex').substring(0, 32);
-    
     // Build count query
     let query = supabase
       .from('usage_logs')
       .select('*', { count: 'exact', head: true })
+      .eq('action', 'generate_reply')
       .gte('created_at', cutoffTime);
     
     if (userId) {
@@ -140,6 +133,7 @@ export async function POST(request: NextRequest) {
         user_agent: userAgent,
         action: 'generate_reply',
         fingerprint: fingerprint,
+        metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'pending' } : { outcome: 'pending' },
       });
     
     // FAIL-CLOSED: If we can't log usage, deny

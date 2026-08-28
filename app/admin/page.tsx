@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Users, DollarSign, TrendingUp, Zap, RefreshCw, Crown, Loader2,
-  Activity, UserCheck, AlertTriangle, Download, ArrowRight, Bot, ChevronRight, ChevronDown,
+  Activity, UserCheck, AlertTriangle, Download, ArrowRight, Bot, ChevronRight, ChevronDown, Radar,
 } from 'lucide-react';
 import {
   Sparkline, MiniDonut, AnimatedNumber, GrowthBadge,
@@ -93,14 +93,14 @@ export default function AdminOverviewPage() {
   const kpis = [
     { label: 'Total Users', value: data.totalUsers, sub: `+${data.signups.h24} today`, icon: Users, color: 'text-blue-400', bg: 'bg-blue-500/10', spark: signupSpark, sparkColor: '#60a5fa', growthPct: data.signupGrowthPct },
     { label: 'Signups (7d)', value: data.signups.d7, sub: `${data.signups.h24} today`, icon: UserCheck, color: 'text-violet-400', bg: 'bg-violet-500/10', spark: signupSpark, sparkColor: '#8b5cf6', growthPct: data.signupGrowthPct },
-    { label: 'Generations (7d)', value: data.generations.d7, sub: `${data.generations.h24} today`, icon: Zap, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', spark: genSpark, sparkColor: '#c026d3', growthPct: data.genGrowthPct },
+    { label: 'AI Outputs (7d)', value: data.generations.d7, sub: `${data.generations.h24} today`, icon: Zap, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', spark: genSpark, sparkColor: '#c026d3', growthPct: data.genGrowthPct },
     { label: 'Activated', value: data.activatedUsers, sub: `${data.activationRate}% rate`, icon: Activity, color: 'text-orange-400', bg: 'bg-orange-500/10', spark: signupSpark, sparkColor: '#fb923c', growthPct: null },
-    { label: 'Anonymous People', value: data.anonymous?.people ?? 0, sub: `${data.anonymous?.activated ?? 0} generated a reply`, icon: Bot, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', spark: signupSpark, sparkColor: '#c026d3', growthPct: null },
+    { label: 'Anonymous Visitors', value: data.anonymous?.people ?? 0, sub: `${data.anonymous?.activated ?? 0} used a product action`, icon: Bot, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10', spark: signupSpark, sparkColor: '#c026d3', growthPct: null },
   ];
 
   const funnelStages = [
-    { label: 'Signed Up', count: data.totalUsers, color: 'from-blue-500 to-blue-600', dot: 'bg-blue-500', href: '/admin/users' },
-    { label: 'Generated 1+', count: data.activatedUsers, color: 'from-violet-500 to-fuchsia-600', dot: 'bg-violet-500', href: '/admin/users' },
+    { label: 'Registered Users', count: data.totalUsers, color: 'from-blue-500 to-blue-600', dot: 'bg-blue-500', href: '/admin/users' },
+    { label: 'Activated (1+ action)', count: data.activatedUsers, color: 'from-violet-500 to-fuchsia-600', dot: 'bg-violet-500', href: '/admin/users' },
     { label: 'Paid', count: data.paidUsers, color: 'from-emerald-500 to-green-600', dot: 'bg-emerald-500', href: '/admin/billing' },
   ];
 
@@ -494,6 +494,7 @@ export default function AdminOverviewPage() {
               { icon: Crown, label: 'Paid users', href: '/admin/billing', color: 'text-amber-400' },
               { icon: AlertTriangle, label: 'Churn report', href: '/admin/billing', color: 'text-red-400' },
               { icon: TrendingUp, label: 'Full funnel', href: '/admin/funnel', color: 'text-emerald-400' },
+              { icon: Radar, label: 'Growth command center', href: '/admin/growth', color: 'text-fuchsia-400' },
               { icon: DollarSign, label: 'Billing details', href: '/admin/billing', color: 'text-fuchsia-400' },
             ].map((a) => (
               <Link key={a.label} href={a.href} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] hover:border-white/[0.12] transition-all group">
@@ -514,7 +515,7 @@ export default function AdminOverviewPage() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           {[
-            { label: 'All-Time Gens', value: data.generations.total.toLocaleString() },
+            { label: 'All-Time AI Outputs', value: data.generations.total.toLocaleString() },
             { label: 'Avg / User', value: data.totalUsers > 0 ? (data.generations.total / data.totalUsers).toFixed(1) : '0' },
             { label: 'Today', value: data.generations.h24.toString() },
             { label: 'Last 30d', value: data.generations.d30.toString() },

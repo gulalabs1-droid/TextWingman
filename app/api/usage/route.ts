@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
-import crypto from 'crypto';
+import { getRequestIdentity } from '@/lib/request-identity';
 
 let supabase: SupabaseClient | null = null;
 
@@ -30,29 +30,10 @@ const RESET_HOURS = 24;
 const VPN_ABUSE_THRESHOLD = 5; // Max different IPs per fingerprint in 1 hour
 const VPN_CHECK_WINDOW_HOURS = 1;
 
-function getClientIP(request: NextRequest): string {
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
-  }
-  const realIP = request.headers.get('x-real-ip');
-  if (realIP) {
-    return realIP;
-  }
-  return '127.0.0.1';
-}
-
-// Get browser fingerprint from headers (lightweight)
-function getFingerprint(request: NextRequest): string {
-  const ua = request.headers.get('user-agent') || '';
-  const lang = request.headers.get('accept-language') || '';
-  // Create a simple fingerprint from stable headers (hex to avoid +/= breaking Supabase .or() filter)
-  return crypto.createHash('sha256').update(`${ua}-${lang}`).digest('hex').substring(0, 32);
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const ip = getClientIP(request);
+    const requestIdentity = getRequestIdentity(request);
+    const ip = requestIdentity.ip;
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
 
     // Check if user is logged in
@@ -132,7 +113,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Helper to build user-scoped query
-    const fp = userId ? null : getFingerprint(request);
+    const fp = userId ? null : requestIdentity.fingerprint;
     const buildQuery = (action?: string) => {
       let q = getSupabase()
         .from('usage_logs')
@@ -189,9 +170,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = getClientIP(request);
-    const userAgent = request.headers.get('user-agent') || 'unknown';
-    const fingerprint = getFingerprint(request);
+    const requestIdentity = getRequestIdentity(request);
+    const { ip, userAgent, fingerprint } = requestIdentity;
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
     const vpnCheckTime = new Date(Date.now() - VPN_CHECK_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
 
@@ -237,6 +217,7 @@ export async function POST(request: NextRequest) {
       const { data: recentLogs } = await getSupabase()
         .from('usage_logs')
         .select('ip_address')
+        .eq('action', 'generate_reply')
         .eq('fingerprint', fingerprint)
         .gte('created_at', vpnCheckTime);
 
@@ -262,6 +243,7 @@ export async function POST(request: NextRequest) {
     let countQuery = getSupabase()
       .from('usage_logs')
       .select('*', { count: 'exact', head: true })
+      .eq('action', 'generate_reply')
       .gte('created_at', cutoffTime);
     
     if (userId) {
@@ -299,6 +281,7 @@ export async function POST(request: NextRequest) {
         user_agent: userAgent,
         action: 'generate_reply',
         fingerprint: fingerprint,
+        metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'pending' } : { outcome: 'pending' },
       });
 
     if (insertError) {

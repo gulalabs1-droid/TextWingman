@@ -8,7 +8,7 @@ import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
 import { getContextCategory, COACHING_PHILOSOPHY, DRAFT_LABELS, TONE_OPTIONS } from "@/lib/context-category";
-import crypto from "crypto";
+import { getRequestIdentity } from "@/lib/request-identity";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const FREE_USAGE_LIMIT = 5;
@@ -19,22 +19,6 @@ function getSupabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createSupabaseAdminClient(url, key);
-}
-
-function getClientIP(req: Request): string {
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  if (forwardedFor) return forwardedFor.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || "127.0.0.1";
-}
-
-function getFingerprint(req: Request): string {
-  const userAgent = req.headers.get("user-agent") || "";
-  const language = req.headers.get("accept-language") || "";
-  return crypto
-    .createHash("sha256")
-    .update(`${userAgent}-${language}`)
-    .digest("hex")
-    .substring(0, 32);
 }
 
 async function trackFreeUsage(req: Request, userId: string | null) {
@@ -48,8 +32,8 @@ async function trackFreeUsage(req: Request, userId: string | null) {
   }
 
   const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
-  const ip = getClientIP(req);
-  const fingerprint = getFingerprint(req);
+  const requestIdentity = getRequestIdentity(req);
+  const { ip, fingerprint } = requestIdentity;
 
   let query = supabase
     .from("usage_logs")
@@ -88,6 +72,7 @@ async function trackFreeUsage(req: Request, userId: string | null) {
     user_agent: req.headers.get("user-agent") || "unknown",
     action: "generate_reply",
     fingerprint,
+    metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: "pending" } : { outcome: "pending" },
   });
 
   if (insertError) {
@@ -223,16 +208,14 @@ export async function POST(req: Request) {
     // Log usage for Pro users (analytics only, no limit check)
     const adminDb = getSupabaseAdmin();
     if (adminDb && user?.id) {
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || '127.0.0.1';
-      const ua = req.headers.get('user-agent') || 'unknown';
-      const lang = req.headers.get('accept-language') || '';
-      const fp = crypto.createHash('sha256').update(`${ua}-${lang}`).digest('hex').substring(0, 32);
+      const requestIdentity = getRequestIdentity(req);
       adminDb.from('usage_logs').insert({
-        ip_address: ip,
+        ip_address: requestIdentity.ip,
         user_id: user.id,
-        user_agent: ua,
+        user_agent: requestIdentity.userAgent,
         action: 'strategy_chat',
-        fingerprint: fp,
+        fingerprint: requestIdentity.fingerprint,
+        metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'success' } : { outcome: 'success' },
       }).then(() => {});
     }
   }

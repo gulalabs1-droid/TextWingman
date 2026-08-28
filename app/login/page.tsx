@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
 import { Sparkles, Eye, EyeOff } from 'lucide-react'
+import { track } from '@/lib/analytics'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -28,6 +29,7 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    track('sign_in_started', { from: redirectUrl ? 'checkout' : 'login' })
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -72,6 +74,8 @@ export default function LoginPage() {
       return
     }
 
+    track('signup_start', { from: redirectUrl ? 'checkout' : 'login', plan: selectedPlan || undefined })
+
     // Build the email redirect URL to preserve the invite/checkout redirect
     const siteUrl = window.location.origin;
     const emailRedirectTo = redirectUrl
@@ -82,7 +86,7 @@ export default function LoginPage() {
     const inviteMatch = redirectUrl?.match(/^\/invite\/(.+)$/i);
     const pendingInviteCode = inviteMatch ? inviteMatch[1].toUpperCase() : undefined;
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -96,6 +100,12 @@ export default function LoginPage() {
       setIsLoading(false)
       return
     }
+
+    track('signup_complete', {
+      from: redirectUrl ? 'checkout' : 'login',
+      confirmed: Boolean(signUpData.user),
+      plan: selectedPlan || undefined,
+    })
 
     // Show helpful message based on redirect type
     if (redirectUrl?.startsWith('/invite/')) {

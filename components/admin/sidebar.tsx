@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  BarChart3, Users, CreditCard, Sparkles, Beaker, Wrench, TrendingUp, LayoutDashboard, LogOut, Activity, Link2, Ghost,
+  BarChart3, Users, CreditCard, Sparkles, Beaker, Wrench, TrendingUp, LayoutDashboard, LogOut, Activity, Link2, Ghost, Radar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin2', label: 'Live', icon: Activity },
   { href: '/admin/funnel', label: 'Funnel', icon: TrendingUp },
+  { href: '/admin/growth', label: 'Growth OS', icon: Radar },
   { href: '/admin/people', label: 'People', icon: Ghost },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/billing', label: 'Billing', icon: CreditCard },

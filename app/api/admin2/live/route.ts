@@ -1,23 +1,33 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, getAdminSupabase } from '@/lib/admin';
+import { isProductAction } from '@/lib/analytics-events';
+import { getCanonicalFunnel, isInternalTraffic, personKey } from '@/lib/admin-funnel';
 
 export const dynamic = 'force-dynamic';
+
+type LogMetadata = {
+  [key: string]: unknown;
+  page?: string;
+  referrer?: string;
+  utm?: Record<string, string>;
+};
 
 type UsageLog = {
   user_id: string | null;
   ip_address: string | null;
+  user_agent?: string | null;
   action: string | null;
   created_at: string;
+  metadata: LogMetadata | null;
 };
 
 type PageViewLog = {
   user_id: string | null;
   ip_address: string | null;
+  user_agent?: string | null;
   created_at: string;
-  metadata: {
-    page?: string;
+  metadata: (LogMetadata & {
     title?: string;
-    referrer?: string;
     screen?: string;
     device?: string;
     browser?: string;
@@ -26,8 +36,7 @@ type PageViewLog = {
     city?: string;
     region?: string;
     lang?: string;
-    utm?: Record<string, string>;
-  } | null;
+  }) | null;
 };
 
 type Profile = { id: string; email: string | null; full_name: string | null; created_at: string };
@@ -35,7 +44,7 @@ type CopyLog = { user_id: string | null; tone: string | null; created_at: string
 type SubEvent = { user_id: string; status: string; plan_type: string | null; updated_at: string; created_at: string };
 
 export async function GET() {
-  const { isAdmin } = await requireAdmin();
+  const { user, isAdmin } = await requireAdmin();
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getAdminSupabase();
@@ -54,17 +63,22 @@ export async function GET() {
     { data: subEvents24h },
     { data: pageViews24h },
   ] = await Promise.all([
-    db.from('usage_logs').select('user_id, ip_address, action, created_at').gte('created_at', h24).order('created_at', { ascending: false }).limit(2000),
+    db.from('usage_logs').select('user_id, ip_address, user_agent, action, created_at, metadata').gte('created_at', h24).order('created_at', { ascending: false }).limit(2000),
     db.from('profiles').select('id, email, full_name, created_at').gte('created_at', h24).order('created_at', { ascending: false }).limit(200),
     db.from('copy_logs').select('user_id, tone, created_at').gte('created_at', h24).order('created_at', { ascending: false }).limit(500),
     db.from('subscriptions').select('user_id, status, plan_type, updated_at, created_at').gte('updated_at', h24).order('updated_at', { ascending: false }).limit(100),
-    db.from('usage_logs').select('user_id, ip_address, created_at, metadata').eq('action', 'page_view').gte('created_at', h24).order('created_at', { ascending: false }).limit(500),
+    db.from('usage_logs').select('user_id, ip_address, user_agent, created_at, metadata').eq('action', 'page_view').gte('created_at', h24).order('created_at', { ascending: false }).limit(500),
   ]);
 
-  const logs = (usage24h || []) as UsageLog[];
-  const signups = (signups24h || []) as Profile[];
-  const copies = (copies24h || []) as CopyLog[];
-  const subs = (subEvents24h || []) as SubEvent[];
+  const rawLogs = (usage24h || []) as UsageLog[];
+  const rawPageViews = (pageViews24h || []) as PageViewLog[];
+  const adminUserId = user?.id || null;
+  const adminIds = new Set(adminUserId ? [adminUserId] : []);
+  const logs = rawLogs.filter(log => !isInternalTraffic(log, adminIds));
+  const pageViews = rawPageViews.filter(view => !isInternalTraffic(view, adminIds));
+  const signups = ((signups24h || []) as Profile[]).filter(profile => profile.id !== adminUserId);
+  const copies = ((copies24h || []) as CopyLog[]).filter(copy => !adminUserId || copy.user_id !== adminUserId);
+  const subs = ((subEvents24h || []) as SubEvent[]).filter(sub => !adminUserId || sub.user_id !== adminUserId);
 
   // ── Online buckets ──
   const onlineUserSet = (cutoff: string) => new Set(logs.filter(l => l.created_at >= cutoff && l.user_id).map(l => l.user_id!));
@@ -75,15 +89,16 @@ export async function GET() {
 
   // ── Today counts ──
   const todayLogs = logs.filter(l => l.created_at >= todayIso);
+  const todayProductLogs = todayLogs.filter(l => isProductAction(l.action));
   const todaySignups = signups.filter(s => s.created_at >= todayIso).length;
-  const todayActions = todayLogs.length;
+  const todayActions = todayProductLogs.length;
   const todayCopies  = copies.filter(c => c.created_at >= todayIso).length;
   const todayUpgrades = subs.filter(s => s.status === 'active' && s.updated_at >= todayIso).length;
   const todayCancels  = subs.filter(s => s.status === 'canceled' && s.updated_at >= todayIso).length;
 
   // ── Action breakdown today ──
   const actionBreakdown: Record<string, number> = {};
-  for (const l of todayLogs) {
+  for (const l of todayProductLogs) {
     const a = l.action || 'unknown';
     actionBreakdown[a] = (actionBreakdown[a] || 0) + 1;
   }
@@ -182,7 +197,7 @@ export async function GET() {
 
   // ── Top users today by # actions ──
   const todayUserCounts: Record<string, number> = {};
-  for (const l of todayLogs) {
+  for (const l of todayProductLogs) {
     if (!l.user_id) continue;
     todayUserCounts[l.user_id] = (todayUserCounts[l.user_id] || 0) + 1;
   }
@@ -206,7 +221,6 @@ export async function GET() {
   }
 
   // ── Visitors (page_view logs with full metadata) ──
-  const pageViews = (pageViews24h || []) as PageViewLog[];
   const visitors = pageViews.slice(0, 100).map(pv => ({
     at: pv.created_at,
     userId: pv.user_id,
@@ -227,7 +241,7 @@ export async function GET() {
 
   // Visitor stats
   const visitorCountToday = pageViews.filter(pv => pv.created_at >= todayIso).length;
-  const uniqueVisitorIps = new Set(pageViews.filter(pv => pv.created_at >= todayIso).map(pv => pv.ip_address)).size;
+  const uniqueVisitorIps = new Set(pageViews.filter(pv => pv.created_at >= todayIso).map(personKey)).size;
   const pageBreakdown: Record<string, number> = {};
   const countryBreakdown: Record<string, number> = {};
   const deviceBreakdown: Record<string, number> = {};
@@ -239,10 +253,15 @@ export async function GET() {
     countryBreakdown[ctry] = (countryBreakdown[ctry] || 0) + 1;
     const dev = pv.metadata?.device || 'unknown';
     deviceBreakdown[dev] = (deviceBreakdown[dev] || 0) + 1;
-    let ref = 'direct';
-    try { if (pv.metadata?.referrer) ref = new URL(pv.metadata.referrer).hostname; } catch { /* invalid URL */ }
+    let ref = pv.metadata?.utm?.utm_source || pv.metadata?.utm?.src;
+    if (!ref) {
+      ref = 'direct';
+      try { if (pv.metadata?.referrer) ref = new URL(pv.metadata.referrer).hostname; } catch { /* invalid URL */ }
+    }
     referrerBreakdown[ref] = (referrerBreakdown[ref] || 0) + 1;
   }
+
+  const canonical = await getCanonicalFunnel(db, { rangeDays: 1, currentAdminId: adminUserId });
 
   return NextResponse.json({
     serverTime: new Date().toISOString(),
@@ -255,6 +274,7 @@ export async function GET() {
       cancels: todayCancels,
       pageViews: visitorCountToday,
       uniqueVisitors: uniqueVisitorIps,
+      internalPageViews: Math.max(rawPageViews.filter(pv => pv.created_at >= todayIso).length - visitorCountToday, 0),
     },
     actionBreakdown,
     heatmap,
@@ -268,6 +288,10 @@ export async function GET() {
       countryBreakdown,
       deviceBreakdown,
       referrerBreakdown,
+    },
+    funnel: {
+      period: canonical.period,
+      dataQuality: canonical.dataQuality,
     },
   });
 }

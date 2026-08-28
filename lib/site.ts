@@ -11,3 +11,10 @@ export const SOCIAL_LINKS = {
   youtube: 'https://www.youtube.com/@gulatextwingman',
   instagram: 'https://www.instagram.com/textwingmangula/',
 } as const;
+
+// Use one mobile-first destination while keeping each social profile attributable.
+export const SOCIAL_BIO_LINKS = {
+  tiktok: `${SITE_URL}/tiktok?utm_source=tiktok&utm_medium=organic_social&utm_campaign=seven_day_test`,
+  instagram: `${SITE_URL}/tiktok?utm_source=instagram&utm_medium=organic_social&utm_campaign=seven_day_test`,
+  youtube: `${SITE_URL}/tiktok?utm_source=youtube&utm_medium=organic_social&utm_campaign=seven_day_test`,
+} as const;

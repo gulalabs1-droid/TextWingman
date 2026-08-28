@@ -28,7 +28,7 @@ type Visitor = {
 type LiveData = {
   serverTime: string;
   online: { m5: number; m15: number; h1: number };
-  today: { signups: number; actions: number; copies: number; upgrades: number; cancels: number; pageViews: number; uniqueVisitors: number };
+  today: { signups: number; actions: number; copies: number; upgrades: number; cancels: number; pageViews: number; uniqueVisitors: number; internalPageViews?: number };
   actionBreakdown: Record<string, number>;
   heatmap: { hour: number; total: number; actions: Record<string, number> }[];
   activeUsersNow: { user_id: string; email: string; lastAction: string; lastSeen: string; count: number; ipCount: number }[];
@@ -41,6 +41,10 @@ type LiveData = {
     countryBreakdown: Record<string, number>;
     deviceBreakdown: Record<string, number>;
     referrerBreakdown: Record<string, number>;
+  };
+  funnel?: {
+    period: { visitors: number; landingSessions: number; composerStarts: number; uniqueReplyPeople: number; signups: number; paidSignups: number };
+    dataQuality: { internalExcluded: number; anonymousEventsWithoutVisitorId: number };
   };
 };
 
@@ -160,10 +164,10 @@ export default function Admin2Page() {
         <Kpi label="Online · 5m"  value={data.online.m5}  icon={<Wifi className="h-3 w-3" />} accent="emerald" pulse />
         <Kpi label="Online · 15m" value={data.online.m15} icon={<Eye className="h-3 w-3" />} accent="violet" />
         <Kpi label="Online · 1h"  value={data.online.h1}  icon={<Users className="h-3 w-3" />} accent="blue" />
-        <Kpi label="Page Views" value={data.today.pageViews} icon={<Eye className="h-3 w-3" />} accent="sky" />
-        <Kpi label="Unique Visitors" value={data.today.uniqueVisitors} icon={<Globe className="h-3 w-3" />} accent="cyan" />
+        <Kpi label="External Views" value={data.today.pageViews} icon={<Eye className="h-3 w-3" />} accent="sky" />
+        <Kpi label="External Visitors" value={data.today.uniqueVisitors} icon={<Globe className="h-3 w-3" />} accent="cyan" />
         <Kpi label="Signups today" value={data.today.signups} icon={<UserPlus className="h-3 w-3" />} accent="emerald" />
-        <Kpi label="Actions today" value={data.today.actions} icon={<Activity className="h-3 w-3" />} accent="fuchsia" />
+        <Kpi label="Product actions" value={data.today.actions} icon={<Activity className="h-3 w-3" />} accent="fuchsia" />
         <Kpi label="Copies today"  value={data.today.copies}  icon={<Copy className="h-3 w-3" />} accent="teal" />
         <Kpi
           label="Upgrades / Cancels"
@@ -176,7 +180,7 @@ export default function Admin2Page() {
       {/* ── Heatmap (24h) ── */}
       <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-bold text-white/40 uppercase tracking-widest">24h Activity · {data.today.actions} actions today</h2>
+          <h2 className="text-[10px] font-bold text-white/40 uppercase tracking-widest">24h External Events · {data.today.actions} product actions today</h2>
           <span className="text-[10px] text-white/25">left = 23h ago · right = now</span>
         </div>
         <div className="flex items-end gap-1 h-20">
@@ -184,7 +188,7 @@ export default function Admin2Page() {
             const heightPct = (h.total / maxHeat) * 100;
             const isNow = i === 23;
             return (
-              <div key={i} className="flex-1 group relative flex flex-col justify-end" title={`${h.total} actions`}>
+              <div key={i} className="flex-1 group relative flex flex-col justify-end" title={`${h.total} external events`}>
                 <div
                   className={`w-full rounded-sm transition-all ${isNow ? 'bg-gradient-to-t from-emerald-500 to-emerald-300' : 'bg-gradient-to-t from-violet-600/80 to-fuchsia-400/80'}`}
                   style={{ height: `${Math.max(heightPct, 2)}%` }}
@@ -200,6 +204,19 @@ export default function Admin2Page() {
           <span>-23h</span><span>-18h</span><span>-12h</span><span>-6h</span><span>now</span>
         </div>
       </div>
+
+      {data.funnel && (
+        <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-white/45">
+          <span className="font-bold uppercase tracking-widest text-white/55">1d funnel</span>
+          <span>Visitors <strong className="text-white/80">{data.funnel.period.visitors}</strong></span>
+          <span>Landing <strong className="text-white/80">{data.funnel.period.landingSessions}</strong></span>
+          <span>Composer <strong className="text-white/80">{data.funnel.period.composerStarts}</strong></span>
+          <span>Replies <strong className="text-white/80">{data.funnel.period.uniqueReplyPeople}</strong></span>
+          <span>Signups <strong className="text-white/80">{data.funnel.period.signups}</strong></span>
+          <span>Paid <strong className="text-emerald-400">{data.funnel.period.paidSignups}</strong></span>
+          <span className="ml-auto text-white/25">{data.funnel.dataQuality.internalExcluded} internal/bot events excluded</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* ── LIVE FEED ── */}
@@ -320,7 +337,7 @@ export default function Admin2Page() {
         <div className="lg:col-span-2 rounded-lg bg-black/40 border border-white/[0.06] overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
             <h2 className="text-[10px] font-bold text-white/50 uppercase tracking-widest flex items-center gap-1.5"><Globe className="h-3 w-3 text-sky-400" />Visitors · Live</h2>
-            <span className="text-[10px] text-white/25 font-mono">{data.visitors.length} visits · 24h</span>
+            <span className="text-[10px] text-white/25 font-mono">{data.visitors.length} external visits · 24h</span>
           </div>
           <div className="max-h-[480px] overflow-y-auto font-mono text-[11px] divide-y divide-white/[0.03]">
             {data.visitors.length === 0 && (
@@ -415,6 +432,10 @@ export default function Admin2Page() {
           </div>
         </div>
       </div>
+
+      <p className="text-[10px] text-white/30 font-mono text-center">
+        Admin-authenticated activity and admin-referrer noise excluded from external traffic. Internal events excluded today: {data.today.internalPageViews ?? 0}.
+      </p>
 
       <div className="text-center text-[10px] text-white/20 font-mono pt-2">
         last updated {new Date(data.serverTime).toLocaleTimeString()} · tick #{tick}

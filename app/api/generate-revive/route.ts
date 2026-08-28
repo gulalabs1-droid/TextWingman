@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
-import crypto from 'crypto';
+import { getRequestIdentity } from '@/lib/request-identity';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -19,18 +19,6 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
-function getClientIP(request: NextRequest): string {
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) return forwardedFor.split(',')[0].trim();
-  return request.headers.get('x-real-ip') || '127.0.0.1';
-}
-
-function getFingerprint(request: NextRequest): string {
-  const ua = request.headers.get('user-agent') || '';
-  const lang = request.headers.get('accept-language') || '';
-  return crypto.createHash('sha256').update(`${ua}-${lang}`).digest('hex').substring(0, 32);
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { message, context } = await request.json();
@@ -43,8 +31,8 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Usage gating ---
-    const ip = getClientIP(request);
-    const fingerprint = getFingerprint(request);
+    const requestIdentity = getRequestIdentity(request);
+    const { ip, fingerprint } = requestIdentity;
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
     const serverSupabase = await createServerClient();
     const { data: { user } } = await serverSupabase.auth.getUser();
@@ -178,6 +166,7 @@ Return a JSON object:
         user_agent: request.headers.get('user-agent') || 'unknown',
         action: 'generate_revive',
         fingerprint,
+        metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'success' } : { outcome: 'success' },
       });
     }
 

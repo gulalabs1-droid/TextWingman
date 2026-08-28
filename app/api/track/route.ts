@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import crypto from 'crypto';
+import { isAllowedEventName, normalizeEventName } from '@/lib/analytics-events';
+import { getRequestIdentity } from '@/lib/request-identity';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,14 +12,24 @@ function getSupabaseAdmin() {
   if (!url || !key) return null;
   return createClient(url, key);
 }
-
-// Clamp untrusted client strings so a malicious caller can't bloat the DB.
-const clamp = (v: unknown, max: number): string | null => {
-  if (typeof v !== 'string') return null;
-  const t = v.trim();
-  if (!t) return null;
-  return t.slice(0, max);
+const clamp = (value: unknown, max: number): string | null => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed.slice(0, max) : null;
 };
+
+function safeProps(value: unknown): Record<string, string | number | boolean | null> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const result: Record<string, string | number | boolean | null> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>).slice(0, 50)) {
+    const safeKey = key.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 64);
+    if (!safeKey) continue;
+    if (typeof raw === 'string') result[safeKey] = raw.slice(0, 256);
+    else if (typeof raw === 'number' && Number.isFinite(raw)) result[safeKey] = raw;
+    else if (typeof raw === 'boolean' || raw === null) result[safeKey] = raw;
+  }
+  return result;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,80 +37,60 @@ export async function POST(request: NextRequest) {
     if (!body || typeof body !== 'object') {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
-    const { page, referrer, screen, utm, title } = body as {
-      page?: unknown;
-      referrer?: unknown;
-      screen?: unknown;
-      utm?: unknown;
-      title?: unknown;
-    };
 
-    const safePage = clamp(page, 512);
-    if (!safePage) {
+    const input = body as Record<string, unknown>;
+    const rawEvent = clamp(input.event, 64);
+    if (rawEvent && !isAllowedEventName(rawEvent)) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
-    const safeReferrer = clamp(referrer, 512);
-    const safeScreen = clamp(screen, 32);
-    const safeTitle = clamp(title, 256);
+    const event = rawEvent ? normalizeEventName(rawEvent) : 'page_view';
+    const safePage = clamp(input.page, 512) || '/';
+    const safeReferrer = clamp(input.referrer, 512);
+    const safeScreen = clamp(input.screen, 32);
+    const safeTitle = clamp(input.title, 256);
+    const visitorId = clamp(input.visitorId, 128);
+    const sessionId = clamp(input.sessionId, 128);
+    const creativeId = clamp(input.creativeId, 128);
 
-    // Whitelist + clamp UTM keys/values; ignore anything oversized or unexpected.
     const allowedUtm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'via', 'video_id'];
     let safeUtm: Record<string, string> | undefined;
-    if (utm && typeof utm === 'object') {
+    if (input.utm && typeof input.utm === 'object' && !Array.isArray(input.utm)) {
       const entries: [string, string][] = [];
-      for (const k of allowedUtm) {
-        const val = clamp((utm as Record<string, unknown>)[k], 128);
-        if (val) entries.push([k, val]);
+      for (const key of allowedUtm) {
+        const value = clamp((input.utm as Record<string, unknown>)[key], 128);
+        if (value) entries.push([key, value]);
       }
-      if (entries.length > 0) safeUtm = Object.fromEntries(entries);
+      if (entries.length) safeUtm = Object.fromEntries(entries);
     }
 
     const db = getSupabaseAdmin();
-    if (!db) {
-      return NextResponse.json({ ok: false }, { status: 503 });
-    }
+    if (!db) return NextResponse.json({ ok: false }, { status: 503 });
 
-    // Get user if logged in
     const serverSupabase = await createServerClient();
     const { data: { user } } = await serverSupabase.auth.getUser();
-    const userId = user?.id || null;
+    const identity = getRequestIdentity(request, visitorId);
 
-    // IP
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    const realIP = request.headers.get('x-real-ip');
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : (realIP || '127.0.0.1');
-
-    // Geo from Vercel headers
     const country = request.headers.get('x-vercel-ip-country') || null;
     const city = request.headers.get('x-vercel-ip-city') || null;
     const region = request.headers.get('x-vercel-ip-region') || null;
     const latitude = request.headers.get('x-vercel-ip-latitude') || null;
     const longitude = request.headers.get('x-vercel-ip-longitude') || null;
-
-    // User agent + fingerprint
-    const userAgent = request.headers.get('user-agent') || 'unknown';
-    const lang = request.headers.get('accept-language') || '';
-    const fingerprint = crypto.createHash('sha256').update(`${userAgent}-${lang}`).digest('hex').substring(0, 32);
-
-    // Parse device info from user-agent
-    const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|Opera Mini|IEMobile/i.test(userAgent);
-    const isTablet = /iPad|Android(?!.*Mobile)/i.test(userAgent);
+    const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|Opera Mini|IEMobile/i.test(identity.userAgent);
+    const isTablet = /iPad|Android(?!.*Mobile)/i.test(identity.userAgent);
     const device = isTablet ? 'tablet' : isMobile ? 'mobile' : 'desktop';
 
-    // Browser detection
     let browser = 'other';
-    if (/Chrome\//.test(userAgent) && !/Edg\//.test(userAgent)) browser = 'chrome';
-    else if (/Safari\//.test(userAgent) && !/Chrome\//.test(userAgent)) browser = 'safari';
-    else if (/Firefox\//.test(userAgent)) browser = 'firefox';
-    else if (/Edg\//.test(userAgent)) browser = 'edge';
+    if (/Chrome\//.test(identity.userAgent) && !/Edg\//.test(identity.userAgent)) browser = 'chrome';
+    else if (/Safari\//.test(identity.userAgent) && !/Chrome\//.test(identity.userAgent)) browser = 'safari';
+    else if (/Firefox\//.test(identity.userAgent)) browser = 'firefox';
+    else if (/Edg\//.test(identity.userAgent)) browser = 'edge';
 
-    // OS detection
     let os = 'other';
-    if (/iPhone|iPad|iPod/.test(userAgent)) os = 'ios';
-    else if (/Mac OS/.test(userAgent)) os = 'macos';
-    else if (/Android/.test(userAgent)) os = 'android';
-    else if (/Windows/.test(userAgent)) os = 'windows';
-    else if (/Linux/.test(userAgent)) os = 'linux';
+    if (/iPhone|iPad|iPod/.test(identity.userAgent)) os = 'ios';
+    else if (/Mac OS/.test(identity.userAgent)) os = 'macos';
+    else if (/Android/.test(identity.userAgent)) os = 'android';
+    else if (/Windows/.test(identity.userAgent)) os = 'windows';
+    else if (/Linux/.test(identity.userAgent)) os = 'linux';
 
     const metadata = {
       page: safePage,
@@ -114,22 +105,33 @@ export async function POST(request: NextRequest) {
       region,
       latitude,
       longitude,
-      lang: lang.split(',')[0] || null,
+      lang: identity.language.split(',')[0] || null,
+      event,
+      ...(rawEvent && rawEvent !== event ? { original_event: rawEvent } : {}),
+      ...(visitorId || identity.visitorId ? { visitor_id: visitorId || identity.visitorId } : {}),
+      ...(sessionId ? { session_id: sessionId } : {}),
+      ...(creativeId ? { creative_id: creativeId } : {}),
       ...(safeUtm ? { utm: safeUtm } : {}),
+      props: safeProps(input.props),
     };
 
-    await db.from('usage_logs').insert({
-      ip_address: ip,
-      user_id: userId,
-      user_agent: userAgent,
-      action: 'page_view',
-      fingerprint,
+    const { error: insertError } = await db.from('usage_logs').insert({
+      ip_address: identity.ip,
+      user_id: user?.id || null,
+      user_agent: identity.userAgent,
+      action: event,
+      fingerprint: identity.fingerprint,
       metadata,
     });
 
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error('Track error:', e);
+    if (insertError) {
+      console.error('Track insert error:', insertError.message);
+      return NextResponse.json({ ok: false }, { status: 503 });
+    }
+
+    return NextResponse.json({ ok: true, event });
+  } catch (error) {
+    console.error('Track error:', error);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

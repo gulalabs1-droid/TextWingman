@@ -10,7 +10,14 @@ import { ConfirmModal } from '@/components/admin/confirm-modal';
 
 type ToolsData = {
   checks: Record<string, boolean | string>;
-  recentEvents: { id: string; event_type: string; created_at: string; payload: Record<string, unknown> }[];
+  recentEvents: {
+    id: string;
+    action?: string | null;
+    event_type?: string | null;
+    created_at: string;
+    metadata?: Record<string, unknown> | null;
+    payload?: Record<string, unknown> | null;
+  }[];
 };
 
 export default function ToolsPage() {
@@ -204,11 +211,11 @@ export default function ToolsPage() {
           ) : (
             <div className="space-y-1 max-h-72 overflow-y-auto">
               {data.recentEvents.map((ev) => (
-                <div key={ev.id} className="flex items-center justify-between p-2 bg-white/[0.04] rounded text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded font-medium">{ev.event_type}</span>
-                    {ev.payload && Object.keys(ev.payload).length > 0 && (
-                      <span className="text-white/30 font-mono truncate max-w-xs">{JSON.stringify(ev.payload)}</span>
+              <div key={ev.id} className="flex items-center justify-between p-2 bg-white/[0.04] rounded text-xs">
+                <div className="flex items-center gap-2">
+                    <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded font-medium">{ev.action || ev.event_type || 'admin event'}</span>
+                    {(ev.metadata || ev.payload) && Object.keys(ev.metadata || ev.payload || {}).length > 0 && (
+                      <span className="text-white/30 font-mono truncate max-w-xs">{JSON.stringify(ev.metadata || ev.payload)}</span>
                     )}
                   </div>
                   <span className="text-white/40 shrink-0">{new Date(ev.created_at).toLocaleString()}</span>

@@ -18,7 +18,7 @@ type BillingData = {
   cancelingSubs: { user_id: string; plan_type: string; current_period_end: string; profiles: { email: string } }[];
   upcomingRenewals: { user_id: string; plan_type: string; current_period_end: string; profiles: { email: string } }[];
   mismatches: { id: string; email: string; plan: string }[];
-  recentEvents: { id: string; event_type: string; created_at: string; payload: Record<string, unknown> }[];
+  recentEvents: { id: string; action?: string | null; event_type?: string | null; created_at: string; metadata?: Record<string, unknown> | null; payload?: Record<string, unknown> | null }[];
 };
 
 function downloadCSV(data: Record<string, unknown>[], filename: string) {
@@ -227,10 +227,11 @@ export default function BillingPage() {
                   subscription_updated: 'bg-violet-500/20 text-violet-300',
                   grant_entitlement: 'bg-fuchsia-500/20 text-fuchsia-300',
                 };
-                const cls = colorMap[ev.event_type] || 'bg-purple-500/20 text-purple-300';
+                const eventType = ev.action || ev.event_type || 'admin_event';
+                const cls = colorMap[eventType] || 'bg-purple-500/20 text-purple-300';
                 return (
                 <div key={ev.id} className="flex items-center justify-between p-2 bg-white/[0.04] rounded text-xs">
-                  <span className={`px-1.5 py-0.5 ${cls} rounded font-medium`}>{ev.event_type.replace(/_/g, ' ')}</span>
+                  <span className={`px-1.5 py-0.5 ${cls} rounded font-medium`}>{eventType.replace(/_/g, ' ')}</span>
                   <span className="text-white/40">{new Date(ev.created_at).toLocaleString()}</span>
                 </div>
               );})}

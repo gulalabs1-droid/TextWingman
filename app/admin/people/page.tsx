@@ -393,10 +393,9 @@ export default function PeoplePage() {
       </div>
 
       <p className="text-[11px] text-white/25 leading-relaxed">
-        Anonymous people are grouped by browser fingerprint + IP. That is an approximation:
-        the fingerprint is a hash of user-agent and language, so two different people on the
-        same device model and network can merge, and one person switching networks can split.
-        Treat anonymous counts as close, not exact.
+      Anonymous people use a first-party visitor ID when available, with a fingerprint/IP
+      fallback for older events. Historical anonymous counts can still be approximate until
+      the new identity has been present for a full reporting window.
       </p>
     </div>
   );
