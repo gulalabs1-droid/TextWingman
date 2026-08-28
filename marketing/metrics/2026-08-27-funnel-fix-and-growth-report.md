@@ -143,3 +143,10 @@ Do not call a creative a winner from views alone. A winner creates profile visit
 ### Operating decision
 
 For the next seven days, run two controlled posts per day per platform, one morning and one evening, using the same cohort and unique `video_id`/UTM link on every platform. Do not optimize for three random uploads. First fix the landing-to-composer handoff and import native platform metrics; then rank hooks by profile visits, tracked sessions, reply starts, signups, and paid conversions per 1,000 views.
+
+## Follow-up checkpoint - 2026-08-27
+
+- The social landing conversion patch is committed as `4a6b375` and live at `/tiktok`: the primary CTA now says `Get a free reply in 10 sec`, and a one-tap “No text handy?” demo auto-enters the `maybe` example into the fast reply flow. This reduces the cold-visitor path from “understand, paste, submit” to a single product-value action while keeping the existing screenshot flow and UTM propagation.
+- The public route was verified after deployment. The one-tap path prefilled the example, a reply was generated, and `Copy A` showed the copy confirmation. The probe was excluded from acquisition totals as intended, so it did not inflate customer metrics.
+- The latest live reading remains 13 external visitors in 30d, 12 landing sessions, 0 composer starts, 0 completed replies, 0 signups, 1 active paid user, and `$43.29` MRR. Because the clean test is excluded, this is still a pre-fix baseline rather than evidence that the new CTA failed.
+- The next acquisition move is a tagged, human traffic cohort, not more untracked volume: use one unique link per creative/platform, import native views/profile/bio metrics daily, and judge the new landing path after at least 50 qualified landing sessions or 7 days, whichever comes later.

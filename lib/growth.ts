@@ -190,7 +190,7 @@ function stageAction(stage: string): string {
     profile_visits: 'Make the first frame a recognizable text problem and refresh the profile promise.',
     bio_clicks: 'Put one benefit-led CTA in the bio and pin a “how it works” post.',
     landing_sessions: 'Use one canonical tracked URL and make it the first profile link.',
-    composer_starts: 'Move the paste box and primary action above the fold; remove competing choices.',
+    composer_starts: 'Run the one-tap demo against a tagged cohort; keep paste and the primary action above the fold.',
     reply_successes: 'Check event errors and shorten the path from paste to the first useful reply.',
     signups: 'Let the visitor see the useful reply before asking for an account.',
     paid_users: 'Clarify the paid upgrade moment after the first successful result.',
