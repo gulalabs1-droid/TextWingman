@@ -10,7 +10,7 @@ AI-powered text message reply generator that helps you craft perfect responses. 
   - **Spicier** - Playful & flirty with personality
   - **Softer** - Warm & genuine, shows care
 - 📱 **Mobile-First Design**: Clean, Apple-level UI built with Tailwind & shadcn/ui
-- 💳 **Stripe Integration**: $7/month or $29/year subscriptions
+- 💳 **Stripe Integration**: $12.99/month or $99.99/year subscriptions
 - 📊 **Usage Tracking**: Free tier with 5 daily replies
 - 🔒 **Secure**: Supabase backend with proper rate limiting
 
@@ -76,8 +76,8 @@ FREE_USAGE_LIMIT=5
 
 4. **Set up Stripe**:
    - Create products in Stripe dashboard:
-     - Monthly: $7/month subscription
-     - Annual: $29/year subscription
+     - Monthly: $12.99/month subscription
+     - Annual: $99.99/year subscription
    - Copy the price IDs to your `.env` file
    - Set up webhook endpoint: `https://your-domain.com/api/webhooks/stripe`
    - Copy webhook secret to `.env`
