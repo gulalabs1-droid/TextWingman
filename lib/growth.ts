@@ -175,6 +175,7 @@ function isMissingRelation(error: { code?: string; message?: string } | null | u
 
 function priceToMrr(planType: string | null | undefined): number {
   if (planType === 'weekly') return PLAN_PRICES.weekly.amount * 52 / 12;
+  if (planType === 'monthly') return PLAN_PRICES.monthly.amount;
   if (planType === 'annual') return PLAN_PRICES.annual.amount / 12;
   // Unknown plans must not inflate revenue with a legacy monthly default.
   return 0;

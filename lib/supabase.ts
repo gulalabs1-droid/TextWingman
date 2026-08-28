@@ -26,7 +26,7 @@ export type UsageLog = {
 export type UserProfile = {
   id: string;
   email: string;
-  subscription_status: 'free' | 'weekly' | 'annual' | 'unknown';
+  subscription_status: 'free' | 'monthly' | 'weekly' | 'annual' | 'unknown';
   subscription_id?: string;
   usage_count: number;
   created_at: string;

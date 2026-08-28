@@ -6,7 +6,7 @@ import { Crown, Check, ArrowLeft, CheckCircle2, Sparkles, Target, Shield } from 
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
-import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_WEEKLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from '@/lib/pricing'
+import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_SAVINGS_PERCENT, ANNUAL_MONTHLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from '@/lib/pricing'
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null)
@@ -45,7 +45,7 @@ export default function PricingPage() {
     checkAuth()
   }, [supabase.auth, supabase])
 
-  const handleCheckout = async (plan: 'weekly' | 'annual', trial = false) => {
+  const handleCheckout = async (plan: 'monthly' | 'weekly' | 'annual', trial = false) => {
     if (!user) {
       toast({
         title: 'Account Required',
@@ -190,13 +190,13 @@ export default function PricingPage() {
                 <p className="text-white/50 text-sm mb-1">Full Pro access — Coach, Intel, Strategy, unlimited replies</p>
                 <p className="text-white/25 text-xs mb-6">No credit card needed</p>
                 <button
-                  onClick={() => handleCheckout('weekly', true)}
+                  onClick={() => handleCheckout('monthly', true)}
                   disabled={loading === 'trial'}
                   className="w-full max-w-sm mx-auto py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                 >
                   {loading === 'trial' ? 'Loading...' : 'Start Free Trial →'}
                 </button>
-                <p className="text-xs text-white/20 mt-3">Trial pauses if no payment method is added. Add one to continue at {PLAN_PRICES.weekly.displayAmount}/week. Cancel anytime.</p>
+                <p className="text-xs text-white/20 mt-3">Trial pauses if no payment method is added. Add one to continue at {PLAN_PRICES.monthly.displayAmount}/month. Cancel anytime.</p>
               </div>
             </div>
           )}
@@ -204,18 +204,18 @@ export default function PricingPage() {
           {/* Pricing Cards */}
           {!isPro && (
           <div className="grid md:grid-cols-2 gap-5 max-w-2xl mx-auto">
-            {/* Annual Plan - Best Value */}
-            <div className="relative bg-white/[0.04] backdrop-blur-sm border border-violet-500/25 rounded-3xl p-7">
+            {/* Monthly Plan — lower-commitment first choice */}
+            <div className="relative bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 rounded-3xl p-7">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white px-4 py-1 rounded-full text-[10px] font-black tracking-wider shadow-lg shadow-violet-500/30">
-                BEST VALUE
+                MOST POPULAR
               </div>
               <div className="text-center mb-6 pt-2">
-                <h3 className="text-xl font-black text-white mb-1">Annual</h3>
+                <h3 className="text-xl font-black text-white mb-1">Monthly</h3>
                 <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-black text-white">{PLAN_PRICES.annual.displayAmount}</span>
-                  <span className="text-white/30 text-sm">{PLAN_PRICES.annual.displayInterval}</span>
+                  <span className="text-4xl font-black text-white">{PLAN_PRICES.monthly.displayAmount}</span>
+                  <span className="text-white/30 text-sm">{PLAN_PRICES.monthly.displayInterval}</span>
                 </div>
-                <p className="text-emerald-400 text-xs font-bold mt-1.5">Save {ANNUAL_SAVINGS_DISPLAY} vs weekly — {ANNUAL_WEEKLY_EQUIVALENT_DISPLAY}/week</p>
+                <p className="text-white/40 text-xs mt-1.5">Full access. Cancel anytime.</p>
               </div>
               <ul className="space-y-2.5 mb-7">
                 <li className="flex items-center gap-2.5 text-white/80 text-sm">
@@ -231,48 +231,51 @@ export default function PricingPage() {
                   <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited decodes, openers &amp; revives
                 </li>
                 <li className="flex items-center gap-2.5 text-white/60 text-sm">
-                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Price locked forever
+                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Cancel anytime
+                </li>
+              </ul>
+              <button
+                onClick={() => handleCheckout('monthly')}
+                disabled={loading === 'monthly'}
+                className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-black text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50"
+              >
+                {loading === 'monthly' ? 'Loading...' : 'Get Pro Monthly →'}
+              </button>
+            </div>
+
+            {/* Annual Plan — best value without a misleading weekly anchor */}
+            <div className="relative bg-white/[0.04] backdrop-blur-sm border border-emerald-500/25 rounded-3xl p-7">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-4 py-1 rounded-full text-[10px] font-black tracking-wider shadow-lg shadow-emerald-500/30">
+                SAVE {ANNUAL_SAVINGS_PERCENT}%
+              </div>
+              <div className="text-center mb-6 pt-2">
+                <h3 className="text-xl font-black text-white mb-1">Annual</h3>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-4xl font-black text-white">{PLAN_PRICES.annual.displayAmount}</span>
+                  <span className="text-white/30 text-sm">{PLAN_PRICES.annual.displayInterval}</span>
+                </div>
+                <p className="text-emerald-400 text-xs font-bold mt-1.5">{ANNUAL_MONTHLY_EQUIVALENT_DISPLAY}/month — save {ANNUAL_SAVINGS_DISPLAY}</p>
+              </div>
+              <ul className="space-y-2.5 mb-7">
+                <li className="flex items-center gap-2.5 text-white/80 text-sm">
+                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Everything in Pro Monthly
+                </li>
+                <li className="flex items-center gap-2.5 text-white/80 text-sm">
+                  <Target className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Price locked forever
+                </li>
+                <li className="flex items-center gap-2.5 text-white/60 text-sm">
+                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> First access to new features
+                </li>
+                <li className="flex items-center gap-2.5 text-white/60 text-sm">
+                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Priority support
                 </li>
               </ul>
               <button
                 onClick={() => handleCheckout('annual')}
                 disabled={loading === 'annual'}
-                className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-black text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50"
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
               >
                 {loading === 'annual' ? 'Loading...' : 'Get Annual →'}
-              </button>
-            </div>
-
-            {/* Weekly Plan */}
-            <div className="bg-white/[0.03] border border-white/[0.08] rounded-3xl p-7">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-black text-white mb-1">Weekly</h3>
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-black text-white">{PLAN_PRICES.weekly.displayAmount}</span>
-                  <span className="text-white/30 text-sm">{PLAN_PRICES.weekly.displayInterval}</span>
-                </div>
-                <p className="text-white/30 text-xs mt-1.5">Flexible — cancel anytime</p>
-              </div>
-              <ul className="space-y-2.5 mb-7">
-                <li className="flex items-center gap-2.5 text-white/70 text-sm">
-                  <Check className="h-4 w-4 text-violet-400 flex-shrink-0" /> Unlimited replies + Coach Mode
-                </li>
-                <li className="flex items-center gap-2.5 text-white/70 text-sm">
-                  <Check className="h-4 w-4 text-violet-400 flex-shrink-0" /> Intel sidebar + Strategy
-                </li>
-                <li className="flex items-center gap-2.5 text-white/70 text-sm">
-                  <Check className="h-4 w-4 text-violet-400 flex-shrink-0" /> V2 Verified pipeline
-                </li>
-                <li className="flex items-center gap-2.5 text-white/50 text-sm">
-                  <Check className="h-4 w-4 text-violet-400 flex-shrink-0" /> Cancel anytime
-                </li>
-              </ul>
-              <button
-                onClick={() => handleCheckout('weekly')}
-                disabled={loading === 'weekly'}
-                className="w-full py-3.5 bg-white/[0.06] border border-white/[0.12] text-white font-bold text-sm rounded-xl hover:bg-white/[0.10] transition-all disabled:opacity-50"
-              >
-                {loading === 'weekly' ? 'Loading...' : 'Get Weekly →'}
               </button>
             </div>
           </div>

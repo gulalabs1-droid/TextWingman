@@ -76,7 +76,8 @@ export default async function DashboardPage() {
     : isTrialEntitlement
       ? 'Trial'
       : isPro
-        ? subscription?.plan_type === 'weekly' ? 'Pro Weekly'
+        ? subscription?.plan_type === 'monthly' ? 'Pro Monthly'
+          : subscription?.plan_type === 'weekly' ? 'Pro Weekly'
           : subscription?.plan_type === 'annual' ? 'Pro Annual'
           : 'Pro'
         : 'Free'
@@ -249,7 +250,7 @@ export default async function DashboardPage() {
                   <p className="text-white/25 text-xs">Unlimited replies + Strategy + Verified pipeline</p>
                 </div>
               </div>
-              <span className="text-violet-400/50 text-xs font-bold hidden sm:block">{PLAN_PRICES.weekly.displayAmount}/wk →</span>
+              <span className="text-violet-400/50 text-xs font-bold hidden sm:block">{PLAN_PRICES.monthly.displayAmount}/mo →</span>
             </div>
           </Link>
         )}

@@ -31,6 +31,7 @@ type BillingData = {
     unknownActivePrices: number;
     hasMore: boolean;
     priceConfig: {
+      monthly: { configured: boolean; active: boolean; amountCents: number | null; currency: string | null; interval: string | null; intervalCount: number | null; matchesApp: boolean };
       weekly: { configured: boolean; active: boolean; amountCents: number | null; currency: string | null; interval: string | null; intervalCount: number | null; matchesApp: boolean };
       annual: { configured: boolean; active: boolean; amountCents: number | null; currency: string | null; interval: string | null; intervalCount: number | null; matchesApp: boolean };
     };
@@ -105,6 +106,7 @@ export default function BillingPage() {
     data.stripeHealth.orphanedStripeSubs === 0 &&
     data.stripeHealth.priceMismatches === 0 &&
     data.stripeHealth.unknownActivePrices === 0 &&
+    data.stripeHealth.priceConfig.monthly.matchesApp &&
     data.stripeHealth.priceConfig.weekly.matchesApp &&
     data.stripeHealth.priceConfig.annual.matchesApp,
   );
@@ -162,6 +164,7 @@ export default function BillingPage() {
                   <div><p className="text-white/40">Stripe-only rows</p><p className={`font-bold text-lg ${data.stripeHealth.orphanedStripeSubs ? 'text-amber-300' : 'text-white'}`}>{data.stripeHealth.orphanedStripeSubs}</p></div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                  <span className={data.stripeHealth.priceConfig.monthly.matchesApp ? 'text-emerald-300' : 'text-amber-200'}>Monthly price: {data.stripeHealth.priceConfig.monthly.matchesApp ? 'matches Stripe' : 'needs attention'}</span>
                   <span className={data.stripeHealth.priceConfig.weekly.matchesApp ? 'text-emerald-300' : 'text-amber-200'}>Weekly price: {data.stripeHealth.priceConfig.weekly.matchesApp ? 'matches Stripe' : 'needs attention'}</span>
                   <span className={data.stripeHealth.priceConfig.annual.matchesApp ? 'text-emerald-300' : 'text-amber-200'}>Annual price: {data.stripeHealth.priceConfig.annual.matchesApp ? 'matches Stripe' : 'needs attention'}</span>
                 </div>

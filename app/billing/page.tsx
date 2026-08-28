@@ -13,7 +13,7 @@ import { PLAN_PRICES } from '@/lib/pricing';
 const supabase = createClient();
 
 type Subscription = {
-  plan_type: 'weekly' | 'annual' | 'unknown';
+  plan_type: 'monthly' | 'weekly' | 'annual' | 'unknown';
   status: 'active' | 'trialing' | 'canceled' | 'past_due';
   current_period_end: string;
   created_at: string;
@@ -70,6 +70,7 @@ export default function BillingPage() {
 
   const getPlanPrice = (planType: string) => {
     switch (planType) {
+      case 'monthly': return `${PLAN_PRICES.monthly.displayAmount}${PLAN_PRICES.monthly.displayInterval}`;
       case 'weekly': return `${PLAN_PRICES.weekly.displayAmount}${PLAN_PRICES.weekly.displayInterval}`;
       case 'annual': return `${PLAN_PRICES.annual.displayAmount}${PLAN_PRICES.annual.displayInterval}`;
       default: return 'Plan unavailable';
@@ -78,6 +79,7 @@ export default function BillingPage() {
 
   const getPlanLabel = (planType: string) => {
     switch (planType) {
+      case 'monthly': return 'Pro Monthly';
       case 'weekly': return 'Pro Weekly';
       case 'annual': return 'Pro Annual';
       default: return 'Pro';

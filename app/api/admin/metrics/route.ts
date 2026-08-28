@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 // Stripe price mapping for MRR calculation
 const PRICE_MAP: Record<string, { amount: number; interval: 'week' | 'month' | 'year' }> = {
   'weekly': { amount: PLAN_PRICES.weekly.amount, interval: 'week' },
+  'monthly': { amount: PLAN_PRICES.monthly.amount, interval: 'month' },
   'annual': { amount: PLAN_PRICES.annual.amount, interval: 'year' },
 };
 

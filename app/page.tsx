@@ -7,7 +7,7 @@ import { Sparkles, Check, ArrowRight, Shield, Camera, Target, TrendingUp, Chevro
 import { Logo } from "@/components/Logo";
 import { captureAttribution, track } from "@/lib/analytics";
 import { SITE_URL, SOCIAL_LINKS } from "@/lib/site";
-import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_SAVINGS_PERCENT, ANNUAL_WEEKLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from "@/lib/pricing";
+import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_SAVINGS_PERCENT, ANNUAL_MONTHLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from "@/lib/pricing";
 import { useToast } from "@/components/ui/use-toast";
 
 const jsonLd = {
@@ -20,7 +20,7 @@ const jsonLd = {
   url: SITE_URL,
   offers: [
     { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Free — 5 replies/day' },
-    { '@type': 'Offer', price: String(PLAN_PRICES.weekly.amount), priceCurrency: 'USD', description: 'Pro Weekly — Unlimited' },
+    { '@type': 'Offer', price: String(PLAN_PRICES.monthly.amount), priceCurrency: 'USD', description: 'Pro Monthly — Unlimited' },
     { '@type': 'Offer', price: String(PLAN_PRICES.annual.amount), priceCurrency: 'USD', description: 'Pro Annual — Best Value' },
   ],
   featureList: [
@@ -547,9 +547,9 @@ export default function HomePage() {
           <div className="relative bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 rounded-3xl p-6 hover:border-violet-500/40 transition-all duration-300">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white px-5 py-1.5 rounded-full text-xs font-black shadow-lg shadow-violet-600/30 whitespace-nowrap">MOST POPULAR</div>
             <div className="mb-6 pt-2">
-              <h3 className="text-xl font-bold text-white">Pro Weekly</h3>
+              <h3 className="text-xl font-bold text-white">Pro Monthly</h3>
               <p className="text-white/40 text-sm">Full access. Cancel anytime.</p>
-              <div className="mt-4 flex items-end gap-2"><span className="text-4xl font-black text-white">{PLAN_PRICES.weekly.displayAmount}</span><span className="text-white/40 mb-1">{PLAN_PRICES.weekly.displayInterval}</span></div>
+              <div className="mt-4 flex items-end gap-2"><span className="text-4xl font-black text-white">{PLAN_PRICES.monthly.displayAmount}</span><span className="text-white/40 mb-1">{PLAN_PRICES.monthly.displayInterval}</span></div>
             </div>
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3 text-white text-sm font-medium"><Check className="h-4 w-4 text-emerald-400 shrink-0" /> Unlimited replies + Coach</li>
@@ -565,9 +565,9 @@ export default function HomePage() {
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-5 py-1.5 rounded-full text-xs font-black shadow-lg shadow-emerald-500/30 whitespace-nowrap">SAVE {ANNUAL_SAVINGS_PERCENT}%</div>
             <div className="mb-6 pt-2">
               <h3 className="text-xl font-bold text-white">Pro Annual</h3>
-              <p className="text-white/40 text-sm">Best value — {ANNUAL_WEEKLY_EQUIVALENT_DISPLAY}/week</p>
+              <p className="text-white/40 text-sm">Best value — {ANNUAL_MONTHLY_EQUIVALENT_DISPLAY}/month</p>
               <div className="mt-4 flex items-end gap-2"><span className="text-4xl font-black text-white">{PLAN_PRICES.annual.displayAmount}</span><span className="text-white/40 mb-1">{PLAN_PRICES.annual.displayInterval}</span></div>
-              <p className="text-emerald-400 text-xs font-bold mt-1">Save {ANNUAL_SAVINGS_DISPLAY} vs weekly</p>
+              <p className="text-emerald-400 text-xs font-bold mt-1">Save {ANNUAL_SAVINGS_DISPLAY} vs monthly</p>
             </div>
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3 text-white text-sm font-medium"><Sparkles className="h-4 w-4 text-emerald-400 shrink-0" /> Everything in Pro</li>

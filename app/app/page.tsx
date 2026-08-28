@@ -13,7 +13,7 @@ import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
 import { captureAttribution, track } from '@/lib/analytics';
-import { PLAN_PRICES } from '@/lib/pricing';
+import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -2346,7 +2346,7 @@ export default function AppPage() {
   };
 
   // Handle Stripe checkout
-  const handleCheckout = async (plan: 'weekly' | 'annual') => {
+  const handleCheckout = async (plan: 'monthly' | 'weekly' | 'annual') => {
     track('upgrade_clicked', { plan, source: isSocialTraffic.current ? 'social' : 'organic' });
     // Require login before checkout
     if (!userId) {
@@ -2417,10 +2417,10 @@ export default function AppPage() {
             </div>
             <div className="space-y-3">
               <Button 
-                onClick={() => handleCheckout('weekly')}
+                onClick={() => handleCheckout('monthly')}
                 className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl"
               >
-                Unlock Pro - No Limits
+                Unlock Pro - {PLAN_PRICES.monthly.displayAmount}/month
               </Button>
               <p className="text-xs text-gray-500">Pro users get unlimited access from anywhere</p>
             </div>
@@ -2449,18 +2449,18 @@ export default function AppPage() {
             </div>
             <div className="space-y-3">
               <Button 
-                onClick={() => handleCheckout('annual')}
+                onClick={() => handleCheckout('monthly')}
                 className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl relative"
               >
-                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">Best Value</span>
-                Unlock Pro - {PLAN_PRICES.annual.displayAmount}/year
+                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">Most flexible</span>
+                Unlock Pro - {PLAN_PRICES.monthly.displayAmount}/month
               </Button>
               <Button 
-                onClick={() => handleCheckout('weekly')}
+                onClick={() => handleCheckout('annual')}
                 variant="outline"
                 className="w-full h-12 border-2 border-purple-300 text-purple-700 font-semibold rounded-2xl hover:bg-purple-50"
               >
-                {PLAN_PRICES.weekly.displayAmount}/week
+                Save {ANNUAL_SAVINGS_PERCENT}% with Annual - {PLAN_PRICES.annual.displayAmount}/year
               </Button>
               <p className="text-xs text-gray-500">Cancel anytime</p>
             </div>

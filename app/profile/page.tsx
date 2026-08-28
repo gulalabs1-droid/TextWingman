@@ -13,7 +13,7 @@ const supabase = createClient();
 type User = { id: string; email: string };
 type HistoryItem = { id: string; their_message: string; generated_replies: { tone: string; text: string }[]; created_at: string };
 type SavedThread = { id: string; name: string; type: string; updated_at: string; message_count: number; last_message: any };
-type Subscription = { plan_type: 'weekly' | 'annual' | 'unknown'; status: 'active' | 'trialing' | 'canceled' | 'past_due'; current_period_end: string } | null;
+type Subscription = { plan_type: 'monthly' | 'weekly' | 'annual' | 'unknown'; status: 'active' | 'trialing' | 'canceled' | 'past_due'; current_period_end: string } | null;
 type Entitlement = { tier: 'free' | 'pro' | 'elite'; source: string } | null;
 
 export default function ProfilePage() {
@@ -245,7 +245,7 @@ export default function ProfilePage() {
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(52,211,153,0.3)]"><Shield className="h-5 w-5 text-white" /></div>
                   <div><p className="text-emerald-300 font-black text-sm">Pro Member</p><p className="text-white/35 text-xs">Unlimited replies unlocked</p></div>
                 </div>
-                {subscription && <span className="text-emerald-300/60 text-xs font-bold">{subscription.plan_type === 'weekly' ? `${PLAN_PRICES.weekly.displayAmount}/wk` : subscription.plan_type === 'annual' ? `${PLAN_PRICES.annual.displayAmount}/yr` : 'Plan unavailable'}</span>}
+                {subscription && <span className="text-emerald-300/60 text-xs font-bold">{subscription.plan_type === 'monthly' ? `${PLAN_PRICES.monthly.displayAmount}/mo` : subscription.plan_type === 'weekly' ? `${PLAN_PRICES.weekly.displayAmount}/wk` : subscription.plan_type === 'annual' ? `${PLAN_PRICES.annual.displayAmount}/yr` : 'Plan unavailable'}</span>}
               </div>
             ) : (
               <Link href="/#pricing" className="rounded-2xl p-4 border border-violet-500/20 bg-violet-500/10 flex items-center justify-between group hover:border-violet-500/40 transition-all">
@@ -253,7 +253,7 @@ export default function ProfilePage() {
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(139,92,246,0.3)]"><Zap className="h-5 w-5 text-white" /></div>
                   <div><p className="text-violet-300 font-black text-sm">Upgrade to Pro</p><p className="text-white/35 text-xs">Unlimited replies + strategy</p></div>
                 </div>
-                <span className="text-violet-300 font-black text-sm">{PLAN_PRICES.weekly.displayAmount}/wk →</span>
+                <span className="text-violet-300 font-black text-sm">{PLAN_PRICES.monthly.displayAmount}/mo →</span>
               </Link>
             )}
 

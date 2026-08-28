@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   customer_id VARCHAR(255) UNIQUE NOT NULL,
   subscription_id VARCHAR(255) UNIQUE NOT NULL,
   status VARCHAR(50) NOT NULL DEFAULT 'active',
-  plan_type VARCHAR(50), -- 'weekly', 'annual', or 'unknown'
+  plan_type VARCHAR(50), -- 'monthly', 'weekly', 'annual', or 'unknown'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

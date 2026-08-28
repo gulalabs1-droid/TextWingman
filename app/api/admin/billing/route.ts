@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, getAdminSupabase } from '@/lib/admin';
-import { planForStripePriceId, stripe } from '@/lib/stripe';
+import { planForStripePriceId, PRICING, stripe } from '@/lib/stripe';
 import { PLAN_PRICES } from '@/lib/pricing';
 import type Stripe from 'stripe';
 
@@ -14,12 +14,12 @@ type PriceHealth = {
   matchesApp: boolean;
 };
 
-function inspectPrice(price: Stripe.Price | null, configured: boolean, expectedAmount: number, expectedInterval: string): PriceHealth {
+function inspectPrice(price: Stripe.Price | null, expectedAmount: number, expectedInterval: string): PriceHealth {
   const amountCents = price?.unit_amount ?? null;
   const interval = price?.recurring?.interval ?? null;
   const intervalCount = price?.recurring?.interval_count ?? null;
   return {
-    configured,
+    configured: Boolean(price),
     active: Boolean(price?.active),
     amountCents,
     currency: price?.currency ?? null,
@@ -88,6 +88,7 @@ export async function GET() {
     unknownActivePrices: number;
     hasMore: boolean;
     priceConfig: {
+      monthly: PriceHealth;
       weekly: PriceHealth;
       annual: PriceHealth;
     };
@@ -103,16 +104,18 @@ export async function GET() {
     unknownActivePrices: 0,
     hasMore: false,
     priceConfig: {
-      weekly: inspectPrice(null, Boolean(process.env.STRIPE_PRICE_ID_WEEKLY), PLAN_PRICES.weekly.amount, 'week'),
-      annual: inspectPrice(null, Boolean(process.env.STRIPE_PRICE_ID_ANNUAL), PLAN_PRICES.annual.amount, 'year'),
+      monthly: inspectPrice(null, PLAN_PRICES.monthly.amount, 'month'),
+      weekly: inspectPrice(null, PLAN_PRICES.weekly.amount, 'week'),
+      annual: inspectPrice(null, PLAN_PRICES.annual.amount, 'year'),
     },
   };
 
   try {
-    const [stripeResult, weeklyPrice, annualPrice] = await Promise.all([
+    const [stripeResult, monthlyPrice, weeklyPrice, annualPrice] = await Promise.all([
       stripe.subscriptions.list({ status: 'all', limit: 100 }),
-      process.env.STRIPE_PRICE_ID_WEEKLY ? stripe.prices.retrieve(process.env.STRIPE_PRICE_ID_WEEKLY).catch(() => null) : Promise.resolve(null),
-      process.env.STRIPE_PRICE_ID_ANNUAL ? stripe.prices.retrieve(process.env.STRIPE_PRICE_ID_ANNUAL).catch(() => null) : Promise.resolve(null),
+      stripe.prices.retrieve(PRICING.monthly.priceId).catch(() => null),
+      stripe.prices.retrieve(PRICING.weekly.priceId).catch(() => null),
+      stripe.prices.retrieve(PRICING.annual.priceId).catch(() => null),
     ]);
     const stripeRows = stripeResult.data;
     const stripeActiveRows = stripeRows.filter(s => ['active', 'trialing'].includes(s.status));
@@ -136,8 +139,9 @@ export async function GET() {
       unknownActivePrices: stripeActiveRows.filter(s => !planForStripePriceId(s.items.data[0]?.price?.id)).length,
       hasMore: stripeResult.has_more,
       priceConfig: {
-        weekly: inspectPrice(weeklyPrice, Boolean(process.env.STRIPE_PRICE_ID_WEEKLY), PLAN_PRICES.weekly.amount, 'week'),
-        annual: inspectPrice(annualPrice, Boolean(process.env.STRIPE_PRICE_ID_ANNUAL), PLAN_PRICES.annual.amount, 'year'),
+        monthly: inspectPrice(monthlyPrice, PLAN_PRICES.monthly.amount, 'month'),
+        weekly: inspectPrice(weeklyPrice, PLAN_PRICES.weekly.amount, 'week'),
+        annual: inspectPrice(annualPrice, PLAN_PRICES.annual.amount, 'year'),
       },
     };
   } catch (error) {
