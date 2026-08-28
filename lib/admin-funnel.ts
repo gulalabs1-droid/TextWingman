@@ -56,6 +56,12 @@ export function isInternalTraffic(log: FunnelUsageRow, adminUserIds: Set<string>
   if (log.user_id && adminUserIds.has(log.user_id)) return true;
   const metadata = metadataOf(log);
   if (metadata.internal === true) return true;
+  const utm = metadata.utm || {};
+  const props = metadata.props || {};
+  const campaign = text(utm.utm_campaign) || text(utm.campaign) || text(props.utm_campaign);
+  const videoId = text(utm.video_id) || text(props.video_id);
+  // Keep verification probes out of customer and creative-performance reporting.
+  if (campaign === 'next_move_test' || videoId?.startsWith('probe-')) return true;
   const page = pageOf(log);
   const referrer = text(metadata.referrer) || '';
   if (page.startsWith('/admin') || /\/admin(?:\/|$)/i.test(referrer)) return true;

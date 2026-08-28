@@ -4969,6 +4969,27 @@ export default function AppPage() {
               })}
             </div>
 
+            {!userId && replies.length > 0 && (
+              <div className="mt-4 mb-4 rounded-2xl bg-violet-500/[0.08] border border-violet-400/20 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-violet-400/15 flex items-center justify-center shrink-0">
+                    <BookmarkPlus className="h-4 w-4 text-violet-300" />
+                  </div>
+                  <div>
+                    <p className="text-white/80 text-sm font-bold">Keep this reply</p>
+                    <p className="text-white/45 text-xs leading-relaxed">Create a free account to save your reply and come back to the thread.</p>
+                  </div>
+                </div>
+                <Link
+                  href="/login?mode=signup&redirect=%2Fapp"
+                  onClick={() => track('signup_cta_click', { from: 'reply_result' })}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500/25 border border-violet-400/30 text-violet-200 text-xs font-bold hover:bg-violet-500/35 transition-all active:scale-95 whitespace-nowrap"
+                >
+                  Save reply <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            )}
+
             {/* Regenerate + custom input */}
             <div className="pt-3 space-y-2">
               <button
