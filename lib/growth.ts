@@ -161,6 +161,10 @@ function keyFor(videoId: string, platform: string): string {
   return `${videoId}::${platform}`;
 }
 
+function isInternalCreative(videoId: string, notes?: string | null): boolean {
+  return videoId.trim().toLowerCase().startsWith('probe-') || Boolean(notes?.includes('next_move_test'));
+}
+
 function inWindow(value: string | null | undefined, since: string, until?: string): boolean {
   return Boolean(value && value >= since && (!until || value < until));
 }
@@ -459,7 +463,9 @@ export async function getGrowthCommandCenter(
 
   const externalPeriodLogs = logs.filter(log => inWindow(log.created_at, since, until));
   const socialMetricRows = (metricsResult.data || []) as GrowthMetricRow[];
-  const importedMetrics = socialMetricRows.filter(row => row.metric_date >= since.slice(0, 10));
+  const importedMetrics = socialMetricRows.filter(row =>
+    row.metric_date >= since.slice(0, 10) && !isInternalCreative(row.video_id, row.notes),
+  );
   // Native platform exports are normally cumulative snapshots. Use the newest
   // snapshot per post/platform so a 24h + 72h import is never double-counted.
   const latestMetricByKey = new Map<string, GrowthMetricRow>();
@@ -481,7 +487,10 @@ export async function getGrowthCommandCenter(
   };
 
   const registry = new Map<string, CreativeRegistryRow>();
-  for (const row of ((creativesResult.data || []) as CreativeRegistryRow[])) registry.set(row.video_id, row);
+  for (const row of ((creativesResult.data || []) as CreativeRegistryRow[])) {
+    if (isInternalCreative(row.video_id, row.notes)) continue;
+    registry.set(row.video_id, row);
+  }
   const creativeMap = new Map<string, {
     videoId: string;
     platform: string;
