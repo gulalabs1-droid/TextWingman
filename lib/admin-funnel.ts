@@ -409,9 +409,9 @@ export async function getCanonicalFunnel(
     definitions: {
       visitor: 'Unique first-party visitor ID, then fingerprint/IP fallback',
       landing: 'Unique session that viewed / or /tiktok, or emitted landing_view',
-      composer: 'Unique session that started the composer, selected an example, or began screenshot input',
+      composer: 'Unique session that started the composer, pasted text, submitted the composer, selected an example, or began screenshot input',
       replyRequest: 'generate_reply or reply_request event',
-      replySuccess: 'reply_success, decode, generate_opener, generate_revive, or strategy_chat event',
+      replySuccess: 'reply_success, completed generate_reply, decode, generate_opener, generate_revive, or strategy_chat event',
       signup: 'Non-admin profile created in the selected period',
       paid: 'Non-admin active or trialing subscription',
     },

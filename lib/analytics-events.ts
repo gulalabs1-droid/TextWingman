@@ -60,7 +60,14 @@ export function isProductAction(action: unknown): boolean {
 }
 
 export function isComposerAction(action: unknown): boolean {
-  return new Set(['composer_start', 'example_click', 'screenshot_start', 'screenshot_success']).has(
+  return new Set([
+    'composer_start',
+    'text_pasted',
+    'example_click',
+    'screenshot_start',
+    'screenshot_success',
+    'composer_submit',
+  ]).has(
     normalizeEventName(action),
   );
 }

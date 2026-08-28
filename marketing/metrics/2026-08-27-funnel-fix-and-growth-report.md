@@ -46,9 +46,9 @@ The social-platform DM itself remains manual because there is no safe, authorize
 
 - **External visitor:** unique registered user, first-party visitor ID, or legacy fingerprint/IP fallback, after internal/bot filtering.
 - **Landing session:** a unique session that views `/` or `/tiktok`, or emits `landing_view`.
-- **Composer start:** a unique session that starts the composer, selects an example, or begins screenshot input.
+- **Composer start:** a unique session that starts the composer, pastes text, submits the composer, selects an example, or begins screenshot input.
 - **Reply request:** a `generate_reply` server request or an explicitly named `reply_request` event.
-- **Reply success:** a rendered `reply_success`, `decode`, `generate_opener`, `generate_revive`, or `strategy_chat` result.
+- **Reply success:** a rendered `reply_success`, a `generate_reply` row marked `outcome: success`, `decode`, `generate_opener`, `generate_revive`, or `strategy_chat` result. A pending request is not a success.
 - **Reply copy/sent:** the user copied a result or marked it as sent in the app.
 - **Signup:** a non-admin profile created in the selected period.
 - **Paid:** a non-admin active or trialing subscription.
@@ -114,3 +114,32 @@ Do not call a creative a winner from views alone. A winner creates profile visit
 4. Start a fresh 7-day reporting window; label all new videos with `video_id`, hook, avatar, CTA, and platform.
 5. After 24 and 72 hours, keep the top two downstream performers, rewrite the bottom two hooks, and only then expand the batch.
 
+## Execution checkpoint - 2026-08-27
+
+### Production and measurement
+
+- Growth OS is live at `/admin/growth` with no setup or missing-table warning. The migration-backed controls, funnel, measurement health, campaign links, creative registry, and lead queue all load in production.
+- The canonical funnel repair is deployed from commits `6694f73`, `f018292b`, `7fc30e3`, and `e51da2b`. The changes exclude verification probes, standardize weekly-plan MRR as `amount * 52 / 12`, record completed free replies after generation, and separate live reply requests from reply successes.
+- Three UTM validation journeys were run for TikTok, YouTube, and Instagram: landing view, example/paste, generate, and copy. Their events are recorded, but tagged `next_move_test`/`probe-*` traffic is intentionally excluded from customer and creative totals.
+
+### Current first-party numbers
+
+- Growth OS: 13 external visitors in 30d, 0 signups, 1 active paid user, `$43.29` current MRR, 24.3% visitor-ID coverage, 19.4% UTM coverage, 31 events missing session IDs, and 0 imported platform-metric rows.
+- At the checkpoint, landing session -> composer start was the largest observed drop. The classifier now includes the site's `text_pasted` and `composer_submit` events, so recheck this stage after the next clean traffic window before changing the page again.
+- `/admin2` currently shows 3 external page views/visitors today, 3 reply requests, 0 completed reply successes, 3 copies, and 0 signups. Its labels now distinguish these states instead of calling every request a reply.
+
+### Public social checkpoint
+
+- YouTube `@gulatextwingman`: 3 subscribers and 81 public videos. Studio last-28-day analytics showed 8,342 views, 2,765 engaged views, 77 likes, +1 subscriber, 92.0% Shorts-feed traffic, and 33.1% stayed-to-watch. Best visible videos remain concrete situations: intense honesty (1.6K), desperate-reply prevention (1.1K), “we need to talk” (1.1K), and late-night “you up?” (968).
+- TikTok `@gulatextwingman`: 0 followers, 57 likes, about 1.2K views in the last 7d, 3 profile views, and 20 likes. Traffic is 95.1% For You and 4.9% Search. The bio now uses the single promise: `Paste the text they sent. Get the read + reply in 10 seconds. Free`.
+- Instagram `@textwingmangula`: 56 posts, 0 followers, 1 following. The bio already uses the exact promise plus the tracked landing URL. No new Reel was added during this audit because a fresh duplicate-safe cohort was not selected.
+
+### Comment and queue actions
+
+- The requested CTA comment was posted on one active TikTok video, one YouTube Short, and one Instagram Reel. YouTube has one genuine viewer reply answered; no other genuine comments were visible in the current inboxes.
+- Pinning is not complete from the available web surfaces: TikTok and Instagram only exposed Delete/Cancel for the creator comment, while YouTube explicitly requested phone verification before enabling Pin. Do not create a second duplicate CTA comment; pin the existing one from the mobile app after verification.
+- YouTube already has scheduled Shorts for Aug 28-31 plus one draft. TikTok currently has one scheduled post for Aug 28. No additional posts were blindly queued because the same 7-day comparison cohort is not yet tagged with imported platform metrics.
+
+### Operating decision
+
+For the next seven days, run two controlled posts per day per platform, one morning and one evening, using the same cohort and unique `video_id`/UTM link on every platform. Do not optimize for three random uploads. First fix the landing-to-composer handoff and import native platform metrics; then rank hooks by profile visits, tracked sessions, reply starts, signups, and paid conversions per 1,000 views.
