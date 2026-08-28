@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, getAdminSupabase } from '@/lib/admin';
-import { isProductAction } from '@/lib/analytics-events';
-import { getCanonicalFunnel, isInternalTraffic, personKey } from '@/lib/admin-funnel';
+import { isProductAction, isProductRequestAction } from '@/lib/analytics-events';
+import { getCanonicalFunnel, isInternalTraffic, isRecordedSuccess, personKey } from '@/lib/admin-funnel';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,6 +92,8 @@ export async function GET() {
   const todayProductLogs = todayLogs.filter(l => isProductAction(l.action));
   const todaySignups = signups.filter(s => s.created_at >= todayIso).length;
   const todayActions = todayProductLogs.length;
+  const todayReplyRequests = todayProductLogs.filter(l => isProductRequestAction(l.action)).length;
+  const todayReplySuccesses = todayProductLogs.filter(isRecordedSuccess).length;
   const todayCopies  = copies.filter(c => c.created_at >= todayIso).length;
   const todayUpgrades = subs.filter(s => s.status === 'active' && s.updated_at >= todayIso).length;
   const todayCancels  = subs.filter(s => s.status === 'canceled' && s.updated_at >= todayIso).length;
@@ -164,8 +166,13 @@ export async function GET() {
   type FeedItem = { kind: string; at: string; userId: string | null; email: string | null; meta?: string };
   const feed: FeedItem[] = [];
   for (const l of logs.slice(0, 80)) {
+    const kind = isRecordedSuccess(l)
+      ? 'reply_success'
+      : isProductRequestAction(l.action)
+        ? 'reply_request'
+        : l.action || 'action';
     feed.push({
-      kind: l.action || 'action',
+      kind,
       at: l.created_at,
       userId: l.user_id,
       email: l.user_id ? (profileMap[l.user_id]?.email || null) : null,
@@ -269,6 +276,8 @@ export async function GET() {
     today: {
       signups: todaySignups,
       actions: todayActions,
+      replyRequests: todayReplyRequests,
+      replySuccesses: todayReplySuccesses,
       copies: todayCopies,
       upgrades: todayUpgrades,
       cancels: todayCancels,

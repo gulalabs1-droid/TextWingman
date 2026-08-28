@@ -28,7 +28,7 @@ type Visitor = {
 type LiveData = {
   serverTime: string;
   online: { m5: number; m15: number; h1: number };
-  today: { signups: number; actions: number; copies: number; upgrades: number; cancels: number; pageViews: number; uniqueVisitors: number; internalPageViews?: number };
+  today: { signups: number; actions: number; replyRequests: number; replySuccesses: number; copies: number; upgrades: number; cancels: number; pageViews: number; uniqueVisitors: number; internalPageViews?: number };
   actionBreakdown: Record<string, number>;
   heatmap: { hour: number; total: number; actions: Record<string, number> }[];
   activeUsersNow: { user_id: string; email: string; lastAction: string; lastSeen: string; count: number; ipCount: number }[];
@@ -43,7 +43,7 @@ type LiveData = {
     referrerBreakdown: Record<string, number>;
   };
   funnel?: {
-    period: { visitors: number; landingSessions: number; composerStarts: number; uniqueReplyPeople: number; signups: number; paidSignups: number };
+    period: { visitors: number; landingSessions: number; composerStarts: number; replySuccesses: number; uniqueReplyPeople: number; signups: number; paidSignups: number };
     dataQuality: { internalExcluded: number; anonymousEventsWithoutVisitorId: number };
   };
 };
@@ -52,6 +52,8 @@ const ACTION_COLORS: Record<string, string> = {
   page_view:        'text-sky-300 bg-sky-500/10 border-sky-500/30',
   signup:           'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
   generate_reply:   'text-violet-300 bg-violet-500/10 border-violet-500/30',
+  reply_request:    'text-violet-300 bg-violet-500/10 border-violet-500/30',
+  reply_success:    'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
   decode:           'text-blue-300 bg-blue-500/10 border-blue-500/30',
   generate_opener:  'text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/30',
   generate_revive:  'text-pink-300 bg-pink-500/10 border-pink-500/30',
@@ -80,7 +82,9 @@ function shortEmail(email: string | null): string {
 
 function actionLabel(kind: string): string {
   return kind
-    .replace('generate_reply', 'reply')
+    .replace('generate_reply', 'reply request')
+    .replace('reply_request', 'reply request')
+    .replace('reply_success', 'reply success')
     .replace('generate_opener', 'opener')
     .replace('generate_revive', 'revive')
     .replace('strategy_chat', 'coach')
@@ -167,7 +171,9 @@ export default function Admin2Page() {
         <Kpi label="External Views" value={data.today.pageViews} icon={<Eye className="h-3 w-3" />} accent="sky" />
         <Kpi label="External Visitors" value={data.today.uniqueVisitors} icon={<Globe className="h-3 w-3" />} accent="cyan" />
         <Kpi label="Signups today" value={data.today.signups} icon={<UserPlus className="h-3 w-3" />} accent="emerald" />
-        <Kpi label="Product actions" value={data.today.actions} icon={<Activity className="h-3 w-3" />} accent="fuchsia" />
+        <Kpi label="Product events" value={data.today.actions} icon={<Activity className="h-3 w-3" />} accent="fuchsia" />
+        <Kpi label="Reply requests" value={data.today.replyRequests} icon={<Zap className="h-3 w-3" />} accent="violet" />
+        <Kpi label="Reply successes" value={data.today.replySuccesses} icon={<TrendingUp className="h-3 w-3" />} accent="emerald" />
         <Kpi label="Copies today"  value={data.today.copies}  icon={<Copy className="h-3 w-3" />} accent="teal" />
         <Kpi
           label="Upgrades / Cancels"
@@ -180,7 +186,7 @@ export default function Admin2Page() {
       {/* ── Heatmap (24h) ── */}
       <div className="rounded-lg bg-white/[0.02] border border-white/[0.06] p-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-bold text-white/40 uppercase tracking-widest">24h External Events · {data.today.actions} product actions today</h2>
+          <h2 className="text-[10px] font-bold text-white/40 uppercase tracking-widest">24h External Events · {data.today.actions} product events today</h2>
           <span className="text-[10px] text-white/25">left = 23h ago · right = now</span>
         </div>
         <div className="flex items-end gap-1 h-20">
@@ -211,7 +217,8 @@ export default function Admin2Page() {
           <span>Visitors <strong className="text-white/80">{data.funnel.period.visitors}</strong></span>
           <span>Landing <strong className="text-white/80">{data.funnel.period.landingSessions}</strong></span>
           <span>Composer <strong className="text-white/80">{data.funnel.period.composerStarts}</strong></span>
-          <span>Replies <strong className="text-white/80">{data.funnel.period.uniqueReplyPeople}</strong></span>
+          <span>Reply successes <strong className="text-white/80">{data.funnel.period.replySuccesses}</strong></span>
+          <span>People <strong className="text-white/80">{data.funnel.period.uniqueReplyPeople}</strong></span>
           <span>Signups <strong className="text-white/80">{data.funnel.period.signups}</strong></span>
           <span>Paid <strong className="text-emerald-400">{data.funnel.period.paidSignups}</strong></span>
           <span className="ml-auto text-white/25">{data.funnel.dataQuality.internalExcluded} internal/bot events excluded</span>
