@@ -1,11 +1,11 @@
 import {
   isPageViewAction,
-  isProductSuccessAction,
   normalizeEventName,
 } from '@/lib/analytics-events';
 import {
   getCanonicalFunnel,
   isInternalTraffic,
+  isRecordedSuccess,
   personKey,
   sourceOf,
   type FunnelUsageRow,
@@ -13,13 +13,6 @@ import {
 import { isAdminEmail } from '@/lib/isAdmin';
 
 const DAY = 86_400_000;
-const SUCCESS_EVENTS = new Set([
-  'reply_success',
-  'decode',
-  'generate_opener',
-  'generate_revive',
-  'strategy_chat',
-]);
 const TRACKING_ERROR_EVENTS = new Set([
   'reply_error',
   'screenshot_error',
@@ -313,7 +306,7 @@ function buildCohorts(
     const createdMs = new Date(profile.created_at).getTime();
     const activated = profileLogs.some(log => {
       const age = new Date(log.created_at).getTime() - createdMs;
-      return age >= 0 && age <= DAY && SUCCESS_EVENTS.has(eventOf(log));
+      return age >= 0 && age <= DAY && isRecordedSuccess(log);
     });
     if (activated) row.activated24h += 1;
 
@@ -392,7 +385,7 @@ function windowRevenue(
   const windowProfiles = profiles.filter(profile => inWindow(profile.created_at, since, until));
   const windowSubs = subscriptions.filter(sub => inWindow(sub.created_at, since, until));
   const visitors = new Set(windowLogs.filter(log => isPageViewAction(eventOf(log))).map(personKey)).size;
-  const replies = windowLogs.filter(log => isProductSuccessAction(eventOf(log))).length;
+  const replies = windowLogs.filter(isRecordedSuccess).length;
   const paid = windowSubs.filter(sub => ['active', 'trialing', 'canceled', 'past_due', 'unpaid'].includes(sub.status || '')).length;
   return { visitors, replies, signups: windowProfiles.length, paidUsers: paid };
 }
@@ -564,7 +557,7 @@ export async function getGrowthCommandCenter(
     const creative = getCreative(videoId, platformOf(log));
     const event = eventOf(log);
     if (isPageViewAction(event)) creative.siteVisitors.add(personKey(log));
-    if (isProductSuccessAction(event)) creative.replies += 1;
+    if (isRecordedSuccess(log)) creative.replies += 1;
     if (log.user_id) creative.attributedUsers.add(log.user_id);
   }
 

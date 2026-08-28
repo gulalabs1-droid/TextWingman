@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         if (priceInfo) {
           // Convert all to monthly equivalent
           if (priceInfo.interval === 'week') {
-            mrr += priceInfo.amount * 4.33; // ~4.33 weeks per month
+            mrr += priceInfo.amount * 52 / 12;
           } else if (priceInfo.interval === 'year') {
             mrr += priceInfo.amount / 12;
           } else {

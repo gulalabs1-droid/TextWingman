@@ -51,7 +51,7 @@ export async function GET() {
       planBreakdown[plan] = (planBreakdown[plan] || 0) + 1;
       const price = PRICE_MAP[plan];
       if (!price) continue;
-      if (price.interval === 'week') mrr += price.amount * 4.33;
+      if (price.interval === 'week') mrr += price.amount * 52 / 12;
       else if (price.interval === 'year') mrr += price.amount / 12;
       else mrr += price.amount;
     }

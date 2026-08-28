@@ -32,7 +32,16 @@ type Metadata = {
   props?: Record<string, unknown>;
 };
 
-const SUCCESS_ACTIONS = ['reply_success', 'reply_generated', 'decode', 'generate_opener', 'generate_revive', 'strategy_chat'];
+const SUCCESS_ACTIONS = [
+  'reply_success',
+  'reply_generated',
+  'reply_succeeded',
+  'generate_reply',
+  'decode',
+  'generate_opener',
+  'generate_revive',
+  'strategy_chat',
+];
 
 function metadataOf(log: FunnelUsageRow): Metadata {
   return log.metadata && typeof log.metadata === 'object' ? (log.metadata as Metadata) : {};
@@ -110,6 +119,15 @@ function eventOf(log: FunnelUsageRow): string {
   return normalizeEventName(log.action || metadataOf(log).event);
 }
 
+/** Count only completed product outcomes; free-tier requests remain requests. */
+export function isRecordedSuccess(log: FunnelUsageRow): boolean {
+  const event = eventOf(log);
+  if (event === 'generate_reply') {
+    return (metadataOf(log) as Record<string, unknown>).outcome === 'success';
+  }
+  return isProductSuccessAction(event);
+}
+
 function isLandingLog(log: FunnelUsageRow): boolean {
   const event = eventOf(log);
   return isLandingAction(event) || (isPageViewAction(event) && ['/', '/tiktok'].includes(pageOf(log)));
@@ -147,7 +165,7 @@ function cohortIds(
   for (const profile of profiles) {
     if (!dateIsWithin(profile.created_at, since, until)) continue;
     const activated = successLogs.some(log =>
-      log.user_id === profile.id && log.created_at >= profile.created_at && isProductSuccessAction(eventOf(log)),
+      log.user_id === profile.id && log.created_at >= profile.created_at && isRecordedSuccess(log),
     );
     if (activated) result.add(profile.id);
   }
@@ -236,7 +254,7 @@ function sourceBreakdown(
     if (isPageViewAction(event)) bucket.visitors.add(personKey(log));
     if (isLandingLog(log)) bucket.landingSessions.add(sessionKey(log));
     if (isComposerAction(event)) bucket.composerStarts.add(sessionKey(log));
-    if (isProductSuccessAction(event)) bucket.replySuccesses += 1;
+    if (isRecordedSuccess(log)) bucket.replySuccesses += 1;
     if (log.user_id && !sourceByUser.has(log.user_id)) sourceByUser.set(log.user_id, source);
   }
   for (const log of successLogs.filter(item => dateIsWithin(item.created_at, since, until))) {
@@ -300,7 +318,7 @@ export async function getCanonicalFunnel(
   for (const profile of profiles) if (isAdminEmail(profile.email)) adminIds.add(profile.id);
 
   const rawLogs = (periodLogsResult.data || []) as FunnelUsageRow[];
-  const rawSuccessLogs = (successLogsResult.data || []) as FunnelUsageRow[];
+  const rawSuccessLogs = ((successLogsResult.data || []) as FunnelUsageRow[]).filter(isRecordedSuccess);
   const logs = rawLogs.filter(log => !isInternalTraffic(log, adminIds));
   const successLogs = rawSuccessLogs.filter(log => !isInternalTraffic(log, adminIds));
   const externalProfiles = profiles.filter(profile => !adminIds.has(profile.id));
@@ -357,7 +375,7 @@ export async function getCanonicalFunnel(
   };
 
   const recentActivity = externalPeriodLogs
-    .filter(log => isProductRequestAction(eventOf(log)) || isProductSuccessAction(eventOf(log)))
+    .filter(log => isProductRequestAction(eventOf(log)) || isRecordedSuccess(log))
     .slice(0, 50)
     .map(log => ({
       action: eventOf(log),
