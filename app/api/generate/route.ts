@@ -125,7 +125,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Log usage BEFORE generating (so we never generate without logging)
-    const { error: insertError } = await supabase
+    const pendingMetadata = requestIdentity.visitorId
+      ? { visitor_id: requestIdentity.visitorId, outcome: 'pending' }
+      : { outcome: 'pending' };
+    const { data: usageLog, error: insertError } = await supabase
       .from('usage_logs')
       .insert({
         ip_address: ip,
@@ -133,8 +136,10 @@ export async function POST(request: NextRequest) {
         user_agent: userAgent,
         action: 'generate_reply',
         fingerprint: fingerprint,
-        metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'pending' } : { outcome: 'pending' },
-      });
+        metadata: pendingMetadata,
+      })
+      .select('id')
+      .single();
     
     // FAIL-CLOSED: If we can't log usage, deny
     if (insertError) {
@@ -149,6 +154,15 @@ export async function POST(request: NextRequest) {
     const replies = process.env.TEXT_WINGMAN_AGENT_ID
       ? await generateRepliesWithAgent(message, context)
       : await generateReplies(message, context, customContext, userIntent);
+
+    // Mark the pre-authorized usage row complete only after a real result exists.
+    if (usageLog?.id) {
+      const { error: outcomeError } = await supabase
+        .from('usage_logs')
+        .update({ metadata: { ...pendingMetadata, outcome: 'success' } })
+        .eq('id', usageLog.id);
+      if (outcomeError) console.error('Failed to mark reply usage successful:', outcomeError.message);
+    }
 
     // Save to reply history for logged-in users
     if (userId && supabase) {
