@@ -354,6 +354,8 @@ export default function AppPage() {
   const coachTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [coachScreenshotExtracting, setCoachScreenshotExtracting] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const threadScrollRef = useRef<HTMLDivElement>(null);
+  const replyResultsRef = useRef<HTMLDivElement>(null);
   const coachEndRef = useRef<HTMLDivElement>(null);
   const inputAreaRef = useRef<HTMLDivElement>(null);
   const coachCardRef = useRef<HTMLDivElement>(null);
@@ -577,13 +579,18 @@ export default function AppPage() {
 
   // Show one-time feature spotlight for screenshot upload
   useEffect(() => {
+    // Direct social/prefill traffic should see the reply flow, not a product
+    // tour layered over the first action.
+    if (appMode !== 'coach' || isSocialTraffic.current) return;
     const dismissed = localStorage.getItem('tw_spotlight_screenshot_v1');
     if (!dismissed) {
       // Small delay so the page renders first
-      const timer = setTimeout(() => setShowFeatureSpotlight(true), 1200);
+      const timer = setTimeout(() => {
+        if (appMode === 'coach' && !isSocialTraffic.current) setShowFeatureSpotlight(true);
+      }, 1200);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [appMode]);
 
   const dismissSpotlight = () => {
     setShowFeatureSpotlight(false);
@@ -696,10 +703,24 @@ export default function AppPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-scroll thread view
+  // Keep conversation history scrolling inside its own panel. Calling
+  // scrollIntoView here also scrolls the document, which can pull the user
+  // away from the Generate button on a phone.
   useEffect(() => {
-    threadEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = threadScrollRef.current;
+    if (!container || thread.length === 0) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   }, [thread]);
+
+  // Reveal fresh replies without forcing a full-page jump. `nearest` keeps
+  // the current context when the result is already visible.
+  useEffect(() => {
+    if (replies.length === 0) return;
+    const timer = window.setTimeout(() => {
+      replyResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [replies.length]);
 
   // Auto-scroll coach chat. Scroll the inner container directly instead of
   // scrollIntoView — the latter bubbles up to the document (which has global
@@ -904,14 +925,16 @@ export default function AppPage() {
   useEffect(() => {
     const pending = prefillAutoRun;
     if (!pending) return;
-    if (message !== pending) {
-      if (message.trim() !== pending.trim()) setPrefillAutoRun(null);
+    if (message.trim() !== pending.trim()) {
+      setPrefillAutoRun(null);
       return;
     }
     if (appMode !== 'reply' || loading) return;
 
-    setPrefillAutoRun(null);
     const timer = window.setTimeout(() => {
+      // Clear only when the timer fires. Clearing before returning the
+      // cleanup function would cancel this timer on the next render.
+      setPrefillAutoRun(null);
       track('prefill_autorun_started', {
         source: isSocialTraffic.current ? 'social' : 'organic',
         mode: 'reply',
@@ -2615,10 +2638,15 @@ export default function AppPage() {
         {/* Feature Tour — shows once on first visit */}
         <FeatureTour />
 
+        {/* Shared upload inputs stay mounted for Coach and the direct reply modes. */}
+        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
+        <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
+
         {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ──
             On large screens this becomes a split view: a saved-conversations sidebar on the
             left and the Coach card on the right. The wrapper's height is measured at runtime
             (see coachCardRef effect); the calc() is the pre-hydration fallback. */}
+        {appMode === 'coach' && (
         <div ref={coachCardRef} className="flex gap-4" style={{ height: 'calc(100dvh - 14.5rem - var(--kb-inset, 0px))' }}>
           {/* ── Saved conversations sidebar — desktop only (mobile keeps the in-card flow) ── */}
           <aside className="hidden lg:flex lg:flex-col w-72 shrink-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
@@ -2682,10 +2710,6 @@ export default function AppPage() {
 
           {/* ── Coach card ── */}
           <div className="flex-1 min-w-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col">
-          {/* Hidden file inputs */}
-          <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
-          <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
-
           {/* ─ Header — always visible, compact, personalized ─ */}
           <div className="shrink-0 pt-5 pb-3 px-6 border-b border-white/[0.06]">
             <div className="flex items-center justify-between mb-1">
@@ -3382,6 +3406,7 @@ export default function AppPage() {
           </div>
           </div>
         </div>
+        )}
         {/* End of Coach split view */}
 
         <div className="space-y-4">
@@ -3456,7 +3481,7 @@ export default function AppPage() {
                 </button>
 
                 {showThread && (
-                  <div className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto" onClick={() => setSelectedThreadMsg(null)}>
+                  <div ref={threadScrollRef} className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto" onClick={() => setSelectedThreadMsg(null)}>
                     <div className="space-y-1">
                       {thread.map((msg, i) => {
                         const prevRole = i > 0 ? thread[i - 1].role : null;
@@ -4608,7 +4633,7 @@ export default function AppPage() {
 
         {/* Replies Section */}
         {replies.length > 0 && (
-          <div className="animate-in fade-in duration-400">
+          <div ref={replyResultsRef} className="animate-in fade-in duration-400">
             {/* ══════════ STRATEGY COACH CARD ══════════ */}
             {isPro && strategyData ? (
               <div className="mb-4 rounded-2xl bg-gradient-to-r from-emerald-500/[0.08] to-cyan-500/[0.08] border border-emerald-500/20 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
