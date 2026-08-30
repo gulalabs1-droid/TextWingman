@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
-import { getRequestIdentity } from '@/lib/request-identity';
+import { buildRequestAnalytics } from '@/lib/analytics-server';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -21,7 +21,7 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context } = await request.json();
+    const { message, context, analytics } = await request.json();
 
     if (!message || typeof message !== 'string' || message.trim().length < 2) {
       return NextResponse.json(
@@ -31,7 +31,11 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Usage gating ---
-    const requestIdentity = getRequestIdentity(request);
+    const requestAnalytics = buildRequestAnalytics(request, analytics, 'success', {
+      mode: 'revive',
+      engine: 'fast',
+    });
+    const requestIdentity = requestAnalytics.identity;
     const { ip, fingerprint } = requestIdentity;
     const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
     const serverSupabase = await createServerClient();
@@ -166,7 +170,7 @@ Return a JSON object:
         user_agent: request.headers.get('user-agent') || 'unknown',
         action: 'generate_revive',
         fingerprint,
-        metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'success' } : { outcome: 'success' },
+        metadata: { ...requestAnalytics.metadata, outcome: 'success' },
       });
     }
 

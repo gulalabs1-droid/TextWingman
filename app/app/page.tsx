@@ -12,7 +12,7 @@ import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
-import { captureAttribution, track } from '@/lib/analytics';
+import { captureAttribution, getAnalyticsContext, track } from '@/lib/analytics';
 import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
 
 type Reply = {
@@ -539,12 +539,12 @@ export default function AppPage() {
     try { track('deep_upsell_dismissed'); } catch {}
   };
 
-  // Track reply_generated when coach produces a new assistant message
+  // Track when the coach reply is displayed; the server owns success counting.
   const prevCoachLen = useRef(0);
   useEffect(() => {
     const assistantMsgs = strategyChatHistory.filter(m => m.role === 'assistant');
     if (assistantMsgs.length > prevCoachLen.current && prevCoachLen.current >= 0) {
-      track('reply_generated', { source: isSocialTraffic.current ? 'social' : 'organic', count: assistantMsgs.length });
+      track('reply_displayed', { source: isSocialTraffic.current ? 'social' : 'organic', count: assistantMsgs.length });
     }
     prevCoachLen.current = assistantMsgs.length;
   }, [strategyChatHistory]);
@@ -822,6 +822,7 @@ export default function AppPage() {
           context: selectedContext || 'crush',
           customContext: customContext.trim() || undefined,
           userIntent: userIntent.trim() || undefined,
+          analytics: getAnalyticsContext(),
         }),
       });
 
@@ -875,7 +876,7 @@ export default function AppPage() {
         : Array.isArray(data.replies)
           ? data.replies.filter((r: any) => r && r.tone && r.text).length
           : 0;
-      track('reply_generated', {
+      track('reply_displayed', {
         source: isSocialTraffic.current ? 'social' : 'organic',
         mode: 'reply',
         engine: isPro && useV2 ? 'verified' : 'fast',
@@ -974,6 +975,7 @@ export default function AppPage() {
           message: fullContext,
           context: selectedContext || 'crush',
           customContext: customContext.trim() || undefined,
+          analytics: getAnalyticsContext(),
         }),
       });
 
@@ -1017,6 +1019,7 @@ export default function AppPage() {
           message: scanResult.fullConversation,
           context: selectedContext || 'crush',
           customContext: customContext.trim() || undefined,
+          analytics: getAnalyticsContext(),
         }),
       });
 
@@ -1500,6 +1503,7 @@ export default function AppPage() {
             message: data.extracted_text,
             context: selectedContext || 'crush',
             customContext: customContext.trim() || undefined,
+            analytics: getAnalyticsContext(),
           }),
         });
 
@@ -1629,7 +1633,7 @@ export default function AppPage() {
       const res = await fetch('/api/decode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message.trim(), context: selectedContext || 'crush', customContext: customContext.trim() || undefined }),
+        body: JSON.stringify({ message: message.trim(), context: selectedContext || 'crush', customContext: customContext.trim() || undefined, analytics: getAnalyticsContext() }),
       });
       const data = await res.json();
       if (res.status === 429) {
@@ -1667,6 +1671,7 @@ export default function AppPage() {
         body: JSON.stringify({
           context: openerContext,
           description: openerDescription.trim() || undefined,
+          analytics: getAnalyticsContext(),
         }),
       });
       const data = await res.json();
@@ -1712,6 +1717,7 @@ export default function AppPage() {
           message: message.trim(),
           context: selectedContext || 'crush',
           customContext: customContext.trim() || undefined,
+          analytics: getAnalyticsContext(),
         }),
       });
       const data = await res.json();
@@ -2159,6 +2165,7 @@ export default function AppPage() {
                 context: selectedContext || 'crush',
                 chatHistory: richHistory,
                 userMessage: contextMsg,
+                analytics: getAnalyticsContext(),
               }),
             });
             const data = await res.json();
@@ -2267,6 +2274,7 @@ export default function AppPage() {
             goal: 'general',
             relationshipContext: selectedContext || 'not specified',
             mode: 'chat',
+            analytics: getAnalyticsContext(),
           }),
           signal: controller.signal,
         });
@@ -2297,6 +2305,7 @@ export default function AppPage() {
             context: selectedContext || 'crush',
             chatHistory: richHistory,
             userMessage: userMsg,
+            analytics: getAnalyticsContext(),
           }),
           signal: controller.signal,
         });
@@ -4854,6 +4863,28 @@ export default function AppPage() {
                 {isPro ? 'Your verified replies' : 'Pick your reply'}
               </p>
             </div>
+
+            {!userId && replies.length > 0 && (
+              <div className="mb-4 rounded-2xl bg-violet-500/[0.10] border border-violet-400/25 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-violet-400/15 flex items-center justify-center shrink-0">
+                    <BookmarkPlus className="h-4 w-4 text-violet-300" />
+                  </div>
+                  <div>
+                    <p className="text-white/90 text-sm font-bold">Save this reply and keep the thread free</p>
+                    <p className="text-white/50 text-xs leading-relaxed">Create a free account to save this thread and come back when they answer.</p>
+                  </div>
+                </div>
+                <Link
+                  href="/login?mode=signup&redirect=%2Fapp"
+                  onClick={() => track('signup_cta_click', { from: 'reply_result_top' })}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500/35 border border-violet-300/35 text-white text-xs font-black hover:bg-violet-500/50 transition-all active:scale-95 whitespace-nowrap"
+                >
+                  Save it free <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            )}
+
             <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
               {replies.map((reply, idx) => {
                 const config = TONE_CONFIG[reply.tone];
@@ -4994,27 +5025,6 @@ export default function AppPage() {
                 );
               })}
             </div>
-
-            {!userId && replies.length > 0 && (
-              <div className="mt-4 mb-4 rounded-2xl bg-violet-500/[0.08] border border-violet-400/20 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-violet-400/15 flex items-center justify-center shrink-0">
-                    <BookmarkPlus className="h-4 w-4 text-violet-300" />
-                  </div>
-                  <div>
-                    <p className="text-white/80 text-sm font-bold">Keep this reply</p>
-                    <p className="text-white/45 text-xs leading-relaxed">Create a free account to save your reply and come back to the thread.</p>
-                  </div>
-                </div>
-                <Link
-                  href="/login?mode=signup&redirect=%2Fapp"
-                  onClick={() => track('signup_cta_click', { from: 'reply_result' })}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500/25 border border-violet-400/30 text-violet-200 text-xs font-bold hover:bg-violet-500/35 transition-all active:scale-95 whitespace-nowrap"
-                >
-                  Save reply <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            )}
 
             {/* Regenerate + custom input */}
             <div className="pt-3 space-y-2">

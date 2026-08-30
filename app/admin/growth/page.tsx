@@ -89,7 +89,7 @@ type GrowthData = {
   setupMessage: string | null;
   range: { days: number; since: string; generatedAt: string };
   revenue: {
-    current: { externalVisitors: number; replySuccesses: number; signups: number; paidUsers: number; mrr: number };
+    current: { externalVisitors: number; replySuccesses: number; signups: number; paidUsers: NullableNumber; mrr: NullableNumber };
     windows: { h24: RevenueWindow; d7: RevenueWindow; previous7: RevenueWindow; d30: RevenueWindow };
     rates: { visitorToReply: NullableNumber; visitorToSignup: NullableNumber; signupToPaid: NullableNumber };
   };
@@ -114,7 +114,18 @@ type GrowthData = {
     sourceCoverage: NullableNumber;
   };
   definitions: Record<string, string>;
-  dataQuality: { rawEvents: number; externalEvents: number; internalExcluded: number; currentMrr: number; activePaidUsers: number; querySince: string };
+  billing: {
+    connected: boolean;
+    pricesVerified: boolean;
+    checkedAt: string;
+    stripeActiveSubs: number;
+    appActiveSubs: number;
+    staleAppRows: number | null;
+    stripeCanceledSubs: number;
+    error: string | null;
+    priceConfig: Record<string, { matchesApp: boolean }>;
+  };
+  dataQuality: { rawEvents: number; externalEvents: number; internalExcluded: number; currentMrr: NullableNumber; activePaidUsers: NullableNumber; querySince: string };
 };
 
 const LEAD_STATUSES = ['new', 'replied', 'clicked', 'tried', 'signed_up', 'paid', 'closed'];
@@ -128,8 +139,8 @@ function displayRate(value: NullableNumber | undefined) {
   return value == null ? '--' : `${value}%`;
 }
 
-function displayMoney(value: number) {
-  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function displayMoney(value: NullableNumber) {
+  return value == null ? '--' : `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function displayDate(value: string | null) {
@@ -284,6 +295,21 @@ export default function GrowthCommandCenterPage() {
         </div>
       )}
       {actionError && <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{actionError}</div>}
+      {(!data.billing.connected || !data.billing.pricesVerified || (data.billing.staleAppRows ?? 0) > 0) && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.08] p-4 text-sm text-amber-100">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+          <div>
+            <p className="font-bold">Revenue is not fully verified.</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-100/70">
+              {!data.billing.connected
+                ? 'Stripe could not be checked. Revenue and paid-user cards are intentionally shown as unverified until the connection is restored.'
+                : !data.billing.pricesVerified
+                  ? 'At least one configured Stripe price is missing, inactive, or does not match the app price. Check Billing before interpreting MRR.'
+                  : `${data.billing.staleAppRows} app subscription row(s) do not match an active Stripe subscription. The revenue cards use Stripe-verified subscriptions only.`}
+            </p>
+          </div>
+        </div>
+      )}
 
       <section className={`${panelClass()} ${severity.border} ${severity.bg} overflow-hidden`}>
         <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between">
@@ -305,7 +331,7 @@ export default function GrowthCommandCenterPage() {
           <MetricCard label="Reply successes" value={displayNumber(current.replySuccesses)} sub={`${displayRate(data.revenue.rates.visitorToReply)} visitor -> reply`} color="text-fuchsia-300" />
           <MetricCard label="Signups" value={displayNumber(current.signups)} sub={`${displayRate(data.revenue.rates.visitorToSignup)} visitor -> signup`} color="text-amber-300" />
           <MetricCard label="Paid users" value={displayNumber(current.paidUsers)} sub={`${displayRate(data.revenue.rates.signupToPaid)} selected-period signup -> paid`} color="text-emerald-300" />
-          <MetricCard label="MRR" value={displayMoney(current.mrr)} sub={`${displayMoney(current.mrr * 12)} ARR run-rate`} color="text-white" />
+          <MetricCard label="MRR" value={displayMoney(current.mrr)} sub={`${displayMoney(current.mrr == null ? null : current.mrr * 12)} ARR run-rate`} color="text-white" />
         </div>
         <div className="overflow-x-auto border-t border-white/[0.07]"><table className="w-full min-w-[680px] text-xs"><thead><tr className="text-[10px] uppercase tracking-wider text-white/30"><th className="px-5 py-3 text-left">Window</th><th className="px-3 py-3 text-right">Visitors</th><th className="px-3 py-3 text-right">Replies</th><th className="px-3 py-3 text-right">Signups</th><th className="px-3 py-3 text-right">New paid</th><th className="px-5 py-3 text-right">vs prior 7d</th></tr></thead><tbody>
           {([['24h', windows.h24, null], ['7d', windows.d7, previous], ['30d', windows.d30, null]] as Array<[string, RevenueWindow, RevenueWindow | null]>).map(([label, window, compare]) => <tr key={label} className="border-t border-white/[0.05] text-white/65"><td className="px-5 py-3 font-semibold text-white/80">{label}</td><td className="px-3 py-3 text-right">{window.visitors.toLocaleString()}</td><td className="px-3 py-3 text-right">{window.replies.toLocaleString()}</td><td className="px-3 py-3 text-right">{window.signups.toLocaleString()}</td><td className="px-3 py-3 text-right text-emerald-300">{window.paidUsers.toLocaleString()}</td><td className="px-5 py-3 text-right">{compare ? <span className={growthPct(window.signups, compare.signups) >= 0 ? 'text-emerald-300' : 'text-red-300'}>{growthPct(window.signups, compare.signups) >= 0 ? '+' : ''}{growthPct(window.signups, compare.signups)}% signups</span> : <span className="text-white/25">--</span>}</td></tr>)}
@@ -334,7 +360,7 @@ export default function GrowthCommandCenterPage() {
 
       <section className={panelClass()}><div className="flex flex-col gap-2 border-b border-white/[0.07] p-5 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-amber-400" /><h2 className="text-sm font-bold text-white/85">DM / Comment Lead Queue</h2></div><p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/35">Record real social conversations, then move each lead through replied, clicked, tried, signed up, and paid. Platform DMs are intentionally manual; this prevents pretending the site has access it does not have.</p></div><div className="flex flex-wrap gap-1.5">{leadCounts.map(item => <span key={item.status} className="rounded-full border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[10px] text-white/45">{item.status.replace('_', ' ')} {item.count}</span>)}</div></div><div className="grid grid-cols-1 gap-5 p-5 xl:grid-cols-[340px_1fr]"><form onSubmit={addLead} className="space-y-3"><p className="text-[10px] font-bold uppercase tracking-wider text-white/35">Add conversation</p><div className="grid grid-cols-2 gap-2"><select className={inputClass()} value={leadForm.platform} onChange={event => setLeadForm(form => ({ ...form, platform: event.target.value }))}><option value="tiktok">TikTok</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select><select className={inputClass()} value={leadForm.status} onChange={event => setLeadForm(form => ({ ...form, status: event.target.value }))}>{LEAD_STATUSES.map(status => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}</select></div><input className={inputClass()} placeholder="Handle (optional)" value={leadForm.handle} onChange={event => setLeadForm(form => ({ ...form, handle: event.target.value }))} /><input className={inputClass()} placeholder="Source video_id (optional)" value={leadForm.source_video_id} onChange={event => setLeadForm(form => ({ ...form, source_video_id: event.target.value }))} /><textarea className={`${inputClass()} min-h-[80px] resize-y`} placeholder="Comment or DM summary" value={leadForm.comment_text} onChange={event => setLeadForm(form => ({ ...form, comment_text: event.target.value }))} /><textarea className={`${inputClass()} min-h-[60px] resize-y`} placeholder="Follow-up notes" value={leadForm.notes} onChange={event => setLeadForm(form => ({ ...form, notes: event.target.value }))} /><button disabled={saving} type="submit" className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2.5 text-xs font-black text-black disabled:opacity-50"><Plus className="h-3.5 w-3.5" />Add lead</button></form><div className="overflow-x-auto"><table className="w-full min-w-[640px] text-xs"><thead><tr className="border-b border-white/[0.07] text-[10px] uppercase tracking-wider text-white/30"><th className="py-2 text-left">Lead</th><th className="py-2 text-left">Source</th><th className="py-2 text-left">Conversation</th><th className="py-2 text-left">Stage</th><th className="py-2 text-right">Updated</th></tr></thead><tbody>{data.leads.length ? data.leads.map(lead => <tr key={lead.id} className="border-b border-white/[0.05] align-top text-white/60"><td className="py-3 pr-3"><p className="font-semibold text-white/80">{lead.handle || 'unnamed lead'}</p><p className="mt-0.5 capitalize text-[10px] text-white/30">{lead.platform}</p></td><td className="py-3 pr-3 font-mono text-[10px] text-violet-300/70">{lead.source_video_id || '--'}</td><td className="max-w-[280px] py-3 pr-3"><p className="line-clamp-2 text-white/55">{lead.comment_text || 'No comment captured'}</p>{lead.notes && <p className="mt-1 line-clamp-1 text-[10px] text-white/25">{lead.notes}</p>}</td><td className="py-3 pr-3"><select className="rounded-lg border border-white/10 bg-[#15131f] px-2 py-1 text-[11px] capitalize text-white/70" value={lead.status} disabled={saving} onChange={event => postAction({ action: 'update_lead', id: lead.id, platform: lead.platform, status: event.target.value, notes: lead.notes || '' })}>{LEAD_STATUSES.map(status => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}</select></td><td className="py-3 text-right text-[10px] text-white/30">{displayDate(lead.updated_at)}</td></tr>) : <tr><td colSpan={5} className="py-12 text-center text-white/25">No leads logged yet. Add every genuine comment that deserves a human reply.</td></tr>}</tbody></table></div></div></section>
 
-      <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5"><div className="flex items-start gap-3"><Target className="mt-0.5 h-4 w-4 shrink-0 text-fuchsia-400" /><div><h2 className="text-sm font-bold text-white/80">Operating rule</h2><p className="mt-1 text-xs leading-relaxed text-white/40">Do not scale the top-viewed creative until it also wins on profile intent, first-party site starts, successful replies, or paid customers. Import native platform numbers daily, tag every post with a unique <code className="text-fuchsia-300/70">video_id</code>, and review the bottleneck at 24h and 72h.</p><div className="mt-3 flex flex-wrap gap-3 text-[10px] text-white/30"><span>Events: {data.dataQuality.externalEvents.toLocaleString()} external</span><span>Excluded: {data.dataQuality.internalExcluded.toLocaleString()} internal/bot</span><span>Active paid: {data.dataQuality.activePaidUsers}</span><Link href="/admin/funnel" className="inline-flex items-center gap-1 text-violet-300 hover:text-violet-200">Open canonical funnel <ArrowRight className="h-3 w-3" /></Link><Link href="/admin/people" className="inline-flex items-center gap-1 text-violet-300 hover:text-violet-200">Open people <Users className="h-3 w-3" /></Link></div></div></div></section>
+      <section className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5"><div className="flex items-start gap-3"><Target className="mt-0.5 h-4 w-4 shrink-0 text-fuchsia-400" /><div><h2 className="text-sm font-bold text-white/80">Operating rule</h2><p className="mt-1 text-xs leading-relaxed text-white/40">Do not scale the top-viewed creative until it also wins on profile intent, first-party site starts, successful replies, or paid customers. Import native platform numbers daily, tag every post with a unique <code className="text-fuchsia-300/70">video_id</code>, and review the bottleneck at 24h and 72h.</p><div className="mt-3 flex flex-wrap gap-3 text-[10px] text-white/30"><span>Events: {data.dataQuality.externalEvents.toLocaleString()} external</span><span>Excluded: {data.dataQuality.internalExcluded.toLocaleString()} internal/bot</span><span>Active paid: {displayNumber(data.dataQuality.activePaidUsers)}</span><Link href="/admin/funnel" className="inline-flex items-center gap-1 text-violet-300 hover:text-violet-200">Open canonical funnel <ArrowRight className="h-3 w-3" /></Link><Link href="/admin/people" className="inline-flex items-center gap-1 text-violet-300 hover:text-violet-200">Open people <Users className="h-3 w-3" /></Link></div></div></div></section>
     </div>
   );
 }

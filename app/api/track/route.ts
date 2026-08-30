@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
 
     const serverSupabase = await createServerClient();
     const { data: { user } } = await serverSupabase.auth.getUser();
-    const identity = getRequestIdentity(request, visitorId);
+    // Client visitor IDs are attribution hints, not trusted identity inputs.
+    const identity = getRequestIdentity(request);
 
     const country = request.headers.get('x-vercel-ip-country') || null;
     const city = request.headers.get('x-vercel-ip-city') || null;

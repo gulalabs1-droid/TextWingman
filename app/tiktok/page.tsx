@@ -25,7 +25,7 @@ export default function TikTokLandingPage() {
   const [msg, setMsg] = useState('');
   const [source, setSource] = useState('shorts');
   const [uploading, setUploading] = useState(false);
-  const [exampleClicked, setExampleClicked] = useState(false);
+  const textPastedTracked = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputCardRef = useRef<HTMLDivElement>(null);
@@ -86,7 +86,7 @@ export default function TikTokLandingPage() {
 
   const handleSample = (text: string, label: string) => {
     setMsg(text);
-    setExampleClicked(true);
+    textPastedTracked.current = true;
     track('example_clicked', { source, label });
     requestAnimationFrame(() => {
       inputCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -186,7 +186,8 @@ export default function TikTokLandingPage() {
             value={msg}
             onChange={(e) => {
               setMsg(e.target.value);
-              if (e.target.value.trim().length > 0 && !exampleClicked) {
+              if (e.target.value.trim().length > 0 && !textPastedTracked.current) {
+                textPastedTracked.current = true;
                 track('text_pasted', { source, length: e.target.value.length });
               }
             }}

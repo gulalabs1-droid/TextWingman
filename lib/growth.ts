@@ -4,6 +4,7 @@ import {
 } from '@/lib/analytics-events';
 import {
   getCanonicalFunnel,
+  dedupeSuccessLogs,
   isInternalTraffic,
   isRecordedSuccess,
   personKey,
@@ -11,7 +12,7 @@ import {
   type FunnelUsageRow,
 } from '@/lib/admin-funnel';
 import { isAdminEmail } from '@/lib/isAdmin';
-import { PLAN_PRICES } from '@/lib/pricing';
+import { getStripeBillingSnapshot, monthlyEquivalent } from '@/lib/billing-health';
 
 const DAY = 86_400_000;
 const TRACKING_ERROR_EVENTS = new Set([
@@ -91,6 +92,7 @@ type SubscriptionRow = {
   user_id: string | null;
   plan_type?: string | null;
   status?: string | null;
+  stripe_subscription_id?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   canceled_at?: string | null;
@@ -171,14 +173,6 @@ function percent(numerator: number, denominator: number): number | null {
 function isMissingRelation(error: { code?: string; message?: string } | null | undefined): boolean {
   if (!error) return false;
   return error.code === '42P01' || /relation .* does not exist|schema cache/i.test(error.message || '');
-}
-
-function priceToMrr(planType: string | null | undefined): number {
-  if (planType === 'weekly') return PLAN_PRICES.weekly.amount * 52 / 12;
-  if (planType === 'monthly') return PLAN_PRICES.monthly.amount;
-  if (planType === 'annual') return PLAN_PRICES.annual.amount / 12;
-  // Unknown plans must not inflate revenue with a legacy monthly default.
-  return 0;
 }
 
 function weekStart(iso: string): string {
@@ -383,13 +377,17 @@ function windowRevenue(
   subscriptions: SubscriptionRow[],
   since: string,
   until?: string,
+  verifiedPaidIds: Set<string> = new Set(),
 ) {
   const windowLogs = logs.filter(log => inWindow(log.created_at, since, until));
   const windowProfiles = profiles.filter(profile => inWindow(profile.created_at, since, until));
   const windowSubs = subscriptions.filter(sub => inWindow(sub.created_at, since, until));
   const visitors = new Set(windowLogs.filter(log => isPageViewAction(eventOf(log))).map(personKey)).size;
-  const replies = windowLogs.filter(isRecordedSuccess).length;
-  const paid = windowSubs.filter(sub => ['active', 'trialing', 'canceled', 'past_due', 'unpaid'].includes(sub.status || '')).length;
+  const replies = dedupeSuccessLogs(windowLogs.filter(isRecordedSuccess)).length;
+  const paid = new Set(windowSubs.filter(sub =>
+    ['active', 'trialing', 'canceled', 'past_due', 'unpaid'].includes(sub.status || '') &&
+    Boolean(sub.user_id && verifiedPaidIds.has(sub.user_id)),
+  ).map(sub => sub.user_id as string)).size;
   return { visitors, replies, signups: windowProfiles.length, paidUsers: paid };
 }
 
@@ -406,10 +404,24 @@ export async function getGrowthCommandCenter(
   const d14 = new Date(now - 14 * DAY).toISOString();
   const h24 = new Date(now - DAY).toISOString();
 
+  const stripeSnapshot = await getStripeBillingSnapshot();
+  const verifiedPaidIds = new Set(
+    stripeSnapshot.connected
+      ? stripeSnapshot.activeSubscriptions
+          .filter(subscription => Boolean(subscription.userId && subscription.planType))
+          .map(subscription => subscription.userId as string)
+      : [],
+  );
+  const verifiedPaidSubscriptionIds = new Set(
+    stripeSnapshot.connected ? stripeSnapshot.activeSubscriptions.map(subscription => subscription.id) : [],
+  );
+
   const [funnel, profilesResult, logsResult, subscriptionsResult, creativesResult, metricsResult, leadsResult] = await Promise.all([
     getCanonicalFunnel(db, {
       rangeDays: days,
       currentAdminId: options.currentAdminId,
+      verifiedPaidIds,
+      verifiedPaidSubscriptionIds,
     }),
     db.from('profiles').select('id, email, created_at').limit(50000),
     db.from('usage_logs')
@@ -418,7 +430,7 @@ export async function getGrowthCommandCenter(
       .order('created_at', { ascending: false })
       .limit(100000),
     db.from('subscriptions')
-      .select('user_id, plan_type, status, created_at, updated_at, canceled_at')
+      .select('user_id, plan_type, status, stripe_subscription_id, created_at, updated_at, canceled_at')
       .limit(50000),
     db.from('marketing_creatives')
       .select('video_id, title, hook, avatar, cta, format, status, notes')
@@ -451,11 +463,52 @@ export async function getGrowthCommandCenter(
   const externalProfileIds = new Set(externalProfiles.map(profile => profile.id));
   const subscriptions = (subscriptionsResult.data || []) as SubscriptionRow[];
   const externalSubscriptions = subscriptions.filter(sub => Boolean(sub.user_id && externalProfileIds.has(sub.user_id)));
-  const activeSubscriptions = externalSubscriptions.filter(sub => ['active', 'trialing'].includes(sub.status || ''));
-  const convertedSubscriptions = externalSubscriptions.filter(sub => ['active', 'trialing', 'canceled', 'past_due', 'unpaid'].includes(sub.status || ''));
-  const activePaidIds = new Set(activeSubscriptions.map(sub => sub.user_id).filter((id): id is string => Boolean(id)));
-  const convertedPaidIds = new Set(convertedSubscriptions.map(sub => sub.user_id).filter((id): id is string => Boolean(id)));
-  const currentMrr = activeSubscriptions.reduce((total, subscription) => total + priceToMrr(subscription.plan_type), 0);
+  const appActiveSubscriptions = externalSubscriptions.filter(sub => ['active', 'trialing'].includes(sub.status || ''));
+  const stripeActiveIds = new Set(stripeSnapshot.activeSubscriptions.map(subscription => subscription.id));
+  const stripeKnownIds = new Set(stripeSnapshot.allSubscriptions.map(subscription => subscription.id));
+  const verifiedExternalSubscriptions = stripeSnapshot.connected
+    ? externalSubscriptions.filter(subscription =>
+        Boolean(subscription.stripe_subscription_id && stripeKnownIds.has(subscription.stripe_subscription_id)),
+      )
+    : [];
+  const staleAppRows = stripeSnapshot.connected
+    ? appActiveSubscriptions.filter(subscription => !subscription.stripe_subscription_id || !stripeActiveIds.has(subscription.stripe_subscription_id)).length
+    : null;
+  const appUserByStripeId = new Map(
+    externalSubscriptions
+      .filter(subscription => subscription.stripe_subscription_id && subscription.user_id)
+      .map(subscription => [subscription.stripe_subscription_id as string, subscription.user_id as string]),
+  );
+  const verifiedActiveSubscriptions = stripeSnapshot.connected
+    ? stripeSnapshot.activeSubscriptions
+      .map(subscription => ({
+        ...subscription,
+        userId: subscription.userId || appUserByStripeId.get(subscription.id) || null,
+      }))
+      .filter(subscription =>
+        Boolean(subscription.userId && externalProfileIds.has(subscription.userId) && subscription.planType),
+      )
+    : [];
+  const verifiedConvertedSubscriptions = stripeSnapshot.connected
+    ? stripeSnapshot.allSubscriptions
+      .map(subscription => ({
+        ...subscription,
+        userId: subscription.userId || appUserByStripeId.get(subscription.id) || null,
+      }))
+      .filter(subscription =>
+        Boolean(
+          subscription.userId &&
+          externalProfileIds.has(subscription.userId) &&
+          subscription.planType &&
+          ['active', 'trialing', 'canceled', 'past_due', 'unpaid'].includes(subscription.status),
+        ),
+      )
+    : [];
+  const activePaidIds = new Set(verifiedActiveSubscriptions.map(sub => sub.userId).filter((id): id is string => Boolean(id)));
+  const convertedPaidIds = new Set(verifiedConvertedSubscriptions.map(sub => sub.userId).filter((id): id is string => Boolean(id)));
+  const currentMrr = stripeSnapshot.connected
+    ? verifiedActiveSubscriptions.reduce((total, subscription) => total + monthlyEquivalent(subscription.planType), 0)
+    : null;
 
   const externalPeriodLogs = logs.filter(log => inWindow(log.created_at, since, until));
   const socialMetricRows = (metricsResult.data || []) as GrowthMetricRow[];
@@ -603,14 +656,14 @@ export async function getGrowthCommandCenter(
       externalVisitors: funnel.period.visitors,
       replySuccesses: funnel.period.replySuccesses,
       signups: funnel.period.signups,
-      paidUsers: activePaidIds.size,
-      mrr: Math.round(currentMrr * 100) / 100,
+      paidUsers: stripeSnapshot.connected ? activePaidIds.size : null,
+      mrr: currentMrr == null ? null : Math.round(currentMrr * 100) / 100,
     },
     windows: {
-      h24: windowRevenue(logs, externalProfiles, externalSubscriptions, h24, until),
-      d7: windowRevenue(logs, externalProfiles, externalSubscriptions, d7, until),
-      previous7: windowRevenue(logs, externalProfiles, externalSubscriptions, d14, d7),
-      d30: windowRevenue(logs, externalProfiles, externalSubscriptions, new Date(now - 30 * DAY).toISOString(), until),
+      h24: windowRevenue(logs, externalProfiles, verifiedExternalSubscriptions, h24, until, convertedPaidIds),
+      d7: windowRevenue(logs, externalProfiles, verifiedExternalSubscriptions, d7, until, convertedPaidIds),
+      previous7: windowRevenue(logs, externalProfiles, verifiedExternalSubscriptions, d14, d7, convertedPaidIds),
+      d30: windowRevenue(logs, externalProfiles, verifiedExternalSubscriptions, new Date(now - 30 * DAY).toISOString(), until, convertedPaidIds),
     },
     rates: {
       visitorToReply: percent(funnel.period.replySuccesses, funnel.period.visitors),
@@ -629,6 +682,17 @@ export async function getGrowthCommandCenter(
     setupRequired: missingTables > 0,
     setupMessage: missingTables > 0 ? 'Run supabase/migrations/005_growth_command_center.sql to enable creative snapshots and lead tracking.' : null,
     range: { days, since, generatedAt: new Date().toISOString() },
+    billing: {
+      connected: stripeSnapshot.connected,
+      pricesVerified: stripeSnapshot.pricesVerified,
+      checkedAt: stripeSnapshot.checkedAt,
+      stripeActiveSubs: stripeSnapshot.activeSubs,
+      appActiveSubs: appActiveSubscriptions.length,
+      staleAppRows,
+      stripeCanceledSubs: stripeSnapshot.canceledSubs,
+      error: stripeSnapshot.error,
+      priceConfig: stripeSnapshot.priceConfig,
+    },
     revenue,
     funnel: {
       stages,
@@ -640,7 +704,7 @@ export async function getGrowthCommandCenter(
       ...lead,
       status: LEAD_STATUSES.includes(lead.status) ? lead.status : 'new',
     })),
-    cohorts: buildCohorts(externalProfiles, logs, externalSubscriptions, since, until),
+    cohorts: buildCohorts(externalProfiles, logs, verifiedExternalSubscriptions, since, until),
     measurement: {
       ...measurement,
       importedMetricRows: importedMetrics.length,
@@ -659,8 +723,8 @@ export async function getGrowthCommandCenter(
       rawEvents: rawLogs.length,
       externalEvents: logs.length,
       internalExcluded: rawLogs.length - logs.length,
-      currentMrr: Math.round(currentMrr * 100) / 100,
-      activePaidUsers: activePaidIds.size,
+      currentMrr: currentMrr == null ? null : Math.round(currentMrr * 100) / 100,
+      activePaidUsers: stripeSnapshot.connected ? activePaidIds.size : null,
       convertedPaidUsers: convertedPaidIds.size,
       querySince,
     },

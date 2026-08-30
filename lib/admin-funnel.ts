@@ -128,6 +128,42 @@ export function isRecordedSuccess(log: FunnelUsageRow): boolean {
   return isProductSuccessAction(event);
 }
 
+/**
+ * Older clients recorded the same generation in the browser and on the
+ * server. Collapse only near-simultaneous success rows for the same session
+ * or person so two genuinely separate generations remain separate.
+ */
+export function dedupeSuccessLogs(logs: FunnelUsageRow[]): FunnelUsageRow[] {
+  const ordered = [...logs].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const kept: FunnelUsageRow[] = [];
+  const serverEvents = new Set(['generate_reply', 'decode', 'generate_opener', 'generate_revive', 'strategy_chat']);
+
+  for (const log of ordered) {
+    const event = eventOf(log);
+    const time = new Date(log.created_at).getTime();
+    const duplicateIndex = kept.findIndex(existing => {
+      const existingEvent = eventOf(existing);
+      const existingTime = new Date(existing.created_at).getTime();
+      const samePerson = sessionKey(existing) === sessionKey(log);
+      const nearInTime = Number.isFinite(time) && Number.isFinite(existingTime) && Math.abs(time - existingTime) <= 3_000;
+      const browserServerPair =
+        (event === 'reply_success' && serverEvents.has(existingEvent)) ||
+        (existingEvent === 'reply_success' && serverEvents.has(event));
+      const duplicateClientSuccess = event === 'reply_success' && existingEvent === 'reply_success';
+      return samePerson && nearInTime && (browserServerPair || duplicateClientSuccess);
+    });
+
+    if (duplicateIndex < 0) {
+      kept.push(log);
+    } else if (event !== 'reply_success' && event !== eventOf(kept[duplicateIndex])) {
+      // Prefer the server event because it is the durable source of truth.
+      kept[duplicateIndex] = log;
+    }
+  }
+
+  return kept;
+}
+
 function isLandingLog(log: FunnelUsageRow): boolean {
   const event = eventOf(log);
   return isLandingAction(event) || (isPageViewAction(event) && ['/', '/tiktok'].includes(pageOf(log)));
@@ -281,7 +317,12 @@ function sourceBreakdown(
 
 export async function getCanonicalFunnel(
   db: any,
-  options: { rangeDays?: number; currentAdminId?: string | null } = {},
+  options: {
+    rangeDays?: number;
+    currentAdminId?: string | null;
+    verifiedPaidIds?: Set<string>;
+    verifiedPaidSubscriptionIds?: Set<string>;
+  } = {},
 ) {
   const days = Math.max(1, Math.min(Math.round(options.rangeDays || 30), 90));
   const now = Date.now();
@@ -305,7 +346,7 @@ export async function getCanonicalFunnel(
       .in('action', SUCCESS_ACTIONS)
       .order('created_at', { ascending: false })
       .limit(50000),
-    db.from('subscriptions').select('user_id, status').in('status', ['active', 'trialing']).limit(50000),
+    db.from('subscriptions').select('user_id, status, stripe_subscription_id').in('status', ['active', 'trialing']).limit(50000),
   ]);
 
   if (profilesResult.error) throw new Error(`profiles: ${profilesResult.error.message}`);
@@ -320,14 +361,28 @@ export async function getCanonicalFunnel(
   const rawLogs = (periodLogsResult.data || []) as FunnelUsageRow[];
   const rawSuccessLogs = ((successLogsResult.data || []) as FunnelUsageRow[]).filter(isRecordedSuccess);
   const logs = rawLogs.filter(log => !isInternalTraffic(log, adminIds));
-  const successLogs = rawSuccessLogs.filter(log => !isInternalTraffic(log, adminIds));
+  const successLogs = dedupeSuccessLogs(rawSuccessLogs.filter(log => !isInternalTraffic(log, adminIds)));
   const externalProfiles = profiles.filter(profile => !adminIds.has(profile.id));
   const externalProfileIds = new Set(externalProfiles.map(profile => profile.id));
-  const paidIds = new Set(
-    ((subscriptionsResult.data || []) as SubscriptionRow[])
-      .map(subscription => subscription.user_id)
-      .filter((id): id is string => typeof id === 'string' && !adminIds.has(id) && externalProfileIds.has(id)),
-  );
+  const hasVerifiedBilling = Boolean(options.verifiedPaidIds || options.verifiedPaidSubscriptionIds);
+  const paidIds = hasVerifiedBilling
+    ? new Set(
+        [
+          ...(options.verifiedPaidIds || []),
+          ...((subscriptionsResult.data || []) as (SubscriptionRow & { stripe_subscription_id?: string | null })[])
+            .filter(subscription => Boolean(
+              subscription.user_id &&
+              subscription.stripe_subscription_id &&
+              options.verifiedPaidSubscriptionIds?.has(subscription.stripe_subscription_id),
+            ))
+            .map(subscription => subscription.user_id as string),
+        ].filter(id => !adminIds.has(id) && externalProfileIds.has(id)),
+      )
+    : new Set(
+        ((subscriptionsResult.data || []) as SubscriptionRow[])
+          .map(subscription => subscription.user_id)
+          .filter((id): id is string => typeof id === 'string' && !adminIds.has(id) && externalProfileIds.has(id)),
+      );
 
   const period = windowSummary(externalProfiles, logs, successLogs, paidIds, rangeSince);
   const accountActivatedIds = new Set(
@@ -413,7 +468,7 @@ export async function getCanonicalFunnel(
       replyRequest: 'generate_reply or reply_request event',
       replySuccess: 'reply_success, completed generate_reply, decode, generate_opener, generate_revive, or strategy_chat event',
       signup: 'Non-admin profile created in the selected period',
-      paid: 'Non-admin active or trialing subscription',
+      paid: hasVerifiedBilling ? 'Non-admin active or trialing Stripe subscription' : 'Non-admin active or trialing app subscription',
     },
   };
 }

@@ -3,7 +3,7 @@ import { generateReplies, generateRepliesWithAgent } from '@/lib/openai';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
-import { getRequestIdentity } from '@/lib/request-identity';
+import { buildRequestAnalytics } from '@/lib/analytics-server';
 
 const FREE_USAGE_LIMIT = 5; // 5 free replies per day
 
@@ -17,7 +17,7 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context, customContext, userIntent } = await request.json();
+    const { message, context, customContext, userIntent, analytics } = await request.json();
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -26,7 +26,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const requestIdentity = getRequestIdentity(request);
+    const requestAnalytics = buildRequestAnalytics(request, analytics, 'pending', {
+      mode: 'reply',
+      engine: 'fast',
+    });
+    const requestIdentity = requestAnalytics.identity;
     const { ip, userAgent, fingerprint } = requestIdentity;
     
     // Check if user is logged in
@@ -62,7 +66,7 @@ export async function POST(request: NextRequest) {
                 user_agent: userAgent,
                 action: 'generate_reply',
                 fingerprint,
-                metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'success' } : { outcome: 'success' },
+                metadata: { ...requestAnalytics.metadata, outcome: 'success' },
               }),
             ]);
           } catch (insertErr) {
@@ -125,9 +129,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log usage BEFORE generating (so we never generate without logging)
-    const pendingMetadata = requestIdentity.visitorId
-      ? { visitor_id: requestIdentity.visitorId, outcome: 'pending' }
-      : { outcome: 'pending' };
+    const pendingMetadata = requestAnalytics.metadata;
     const { data: usageLog, error: insertError } = await supabase
       .from('usage_logs')
       .insert({

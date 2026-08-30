@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 import { analyzeStrategy, formatStrategyForDraft, SAFE_DEFAULT, type StrategyResult } from '@/lib/strategy';
+import { buildRequestAnalytics } from '@/lib/analytics-server';
 
 const MAX_REVISE_ATTEMPTS = 2;
 
@@ -162,10 +163,14 @@ Return JSON:
 
 export async function POST(req: Request) {
   const startTime = Date.now();
-  const { message, context, customContext, userIntent } = await req.json();
+  const { message, context, customContext, userIntent, analytics } = await req.json();
+  const requestAnalytics = buildRequestAnalytics(req, analytics, 'success', {
+    mode: 'reply',
+    engine: 'verified',
+  });
   
   // Get user info from headers for logging
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+  const { ip, userAgent, fingerprint } = requestAnalytics.identity;
 
   // Server-side auth + Pro check — V2 is Pro-only
   const supabase = await createServerClient();
@@ -346,6 +351,20 @@ export async function POST(req: Request) {
       .then(({ error }) => {
         if (error) console.error('V2 reply history save error:', error.message);
       });
+  }
+
+  // Keep a server-side success record so a client navigation cannot erase the
+  // activation signal used by the admin funnel.
+  if (supabaseAdmin) {
+    const { error: usageError } = await supabaseAdmin.from('usage_logs').insert({
+      ip_address: ip,
+      user_id: user.id,
+      user_agent: userAgent,
+      fingerprint,
+      action: 'generate_reply',
+      metadata: requestAnalytics.metadata,
+    });
+    if (usageError) console.error('V2 usage analytics insert error:', usageError.message);
   }
 
   return NextResponse.json(payload);

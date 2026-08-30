@@ -21,6 +21,7 @@ import {
   COACHING_PHILOSOPHY,
   TONE_OPTIONS,
 } from "@/lib/context-category";
+import { buildRequestAnalytics, type RequestAnalytics } from "@/lib/analytics-server";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -29,6 +30,20 @@ function getSupabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key);
+}
+
+async function recordReplySuccess(userId: string, requestAnalytics: RequestAnalytics) {
+  const admin = getSupabaseAdmin();
+  if (!admin) return;
+  const { error } = await admin.from('usage_logs').insert({
+    ip_address: requestAnalytics.identity.ip,
+    user_id: userId,
+    user_agent: requestAnalytics.identity.userAgent,
+    action: 'generate_reply',
+    fingerprint: requestAnalytics.identity.fingerprint,
+    metadata: { ...requestAnalytics.metadata, outcome: 'success' },
+  });
+  if (error) console.error('X2 usage analytics insert error:', error.message);
 }
 
 // ── Types ────────────────────────────────────────────────
@@ -426,6 +441,7 @@ export async function POST(req: Request) {
     goal = "general" as Goal,
     relationshipContext = "crush",
     mode = "chat", // "chat" (coaching) or "orchestrate" (full pipeline on a thread)
+    analytics,
   } = await req.json();
 
   if (!userMessage?.trim() && !threadText?.trim()) {
@@ -433,6 +449,10 @@ export async function POST(req: Request) {
   }
 
   const effectiveText = threadText?.trim() || userMessage?.trim() || "";
+  const requestAnalytics = buildRequestAnalytics(req, analytics, 'success', {
+    mode: 'x2_orchestrate',
+    engine: 'verified',
+  });
 
   // ── Step 0: Moderation ──────────────────────────────────
   const modResult = await moderateInput(effectiveText);
@@ -460,6 +480,7 @@ export async function POST(req: Request) {
       relationshipContext,
       threadText?.trim() || undefined
     );
+    await recordReplySuccess(user.id, requestAnalytics);
     return NextResponse.json({
       mode: "coach",
       reply,
@@ -516,6 +537,7 @@ export async function POST(req: Request) {
         relationshipContext,
         effectiveText
       );
+      await recordReplySuccess(user.id, requestAnalytics);
       return NextResponse.json({
         mode: "coach",
         reply,
@@ -612,6 +634,7 @@ export async function POST(req: Request) {
         });
     }
 
+    await recordReplySuccess(user.id, requestAnalytics);
     return NextResponse.json(payload);
   } catch (error) {
     console.error("X2 orchestrate error:", error);

@@ -20,6 +20,14 @@ const STORAGE_KEY = 'tw_attribution';
 const VISITOR_STORAGE_KEY = 'tw_visitor_id';
 const SESSION_STORAGE_KEY = 'tw_session_id';
 const VISITOR_COOKIE = 'tw_vid';
+const BEACON_EVENTS = new Set([
+  'reply_success',
+  'reply_copy',
+  'reply_sent',
+  'signup_start',
+  'signup_complete',
+  'checkout_start',
+]);
 
 let memoryVisitorId: string | null = null;
 let memorySessionId: string | null = null;
@@ -104,6 +112,29 @@ export function readAttribution(): Props {
   }
 }
 
+export type AnalyticsContext = {
+  visitorId: string | null;
+  sessionId: string | null;
+  page: string;
+  referrer: string | null;
+  attribution: Props;
+};
+
+/** Include first-party identity and attribution in server-side product calls. */
+export function getAnalyticsContext(): AnalyticsContext {
+  if (typeof window === 'undefined') {
+    return { visitorId: null, sessionId: null, page: '/', referrer: null, attribution: {} };
+  }
+  const identity = getClientIdentity();
+  return {
+    visitorId: identity.visitorId,
+    sessionId: identity.sessionId,
+    page: window.location.pathname,
+    referrer: document.referrer || null,
+    attribution: captureAttribution(),
+  };
+}
+
 function cleanProps(payload: Props): Record<string, Primitive> {
   const clean: Record<string, Primitive> = {};
   for (const [key, value] of Object.entries(payload)) {
@@ -134,6 +165,16 @@ export function persistAnalyticsEvent(event: string, props: Props = {}) {
       visitorId: identity.visitorId,
       sessionId: identity.sessionId,
     });
+
+    const canonicalEvent = normalizeEventName(event);
+    const beaconBody = new Blob([body], { type: 'application/json' });
+    if (BEACON_EVENTS.has(canonicalEvent) && typeof navigator.sendBeacon === 'function') {
+      try {
+        if (navigator.sendBeacon('/api/track', beaconBody)) return;
+      } catch {
+        // Fall through to fetch when the browser refuses the beacon payload.
+      }
+    }
 
     void fetch('/api/track', {
       method: 'POST',

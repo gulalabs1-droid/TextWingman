@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin, getAdminSupabase } from '@/lib/admin';
 import { isProductAction, isProductRequestAction } from '@/lib/analytics-events';
-import { getCanonicalFunnel, isInternalTraffic, isRecordedSuccess, personKey } from '@/lib/admin-funnel';
+import { dedupeSuccessLogs, getCanonicalFunnel, isInternalTraffic, isRecordedSuccess, personKey } from '@/lib/admin-funnel';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +93,7 @@ export async function GET() {
   const todaySignups = signups.filter(s => s.created_at >= todayIso).length;
   const todayActions = todayProductLogs.length;
   const todayReplyRequests = todayProductLogs.filter(l => isProductRequestAction(l.action)).length;
-  const todayReplySuccesses = todayProductLogs.filter(isRecordedSuccess).length;
+  const todayReplySuccesses = dedupeSuccessLogs(todayProductLogs.filter(isRecordedSuccess)).length;
   const todayCopies  = copies.filter(c => c.created_at >= todayIso).length;
   const todayUpgrades = subs.filter(s => s.status === 'active' && s.updated_at >= todayIso).length;
   const todayCancels  = subs.filter(s => s.status === 'canceled' && s.updated_at >= todayIso).length;

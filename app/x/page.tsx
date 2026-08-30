@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getAnalyticsContext } from '@/lib/analytics';
 import {
   ArrowLeft, Copy, Sparkles, Loader2, MessageCircle,
   Shield, Camera, X, Brain, Send, ChevronUp,
@@ -179,7 +180,7 @@ export default function ExperimentalThreadPage() {
     addToThread('them', input.trim());
     setLoading(true); setReplies([]); setStrategyData(null); setDecodeResult(null); setPendingSent(null);
     try {
-      const res = await fetch(isPro ? '/api/generate-v2' : '/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: buildThreadContext(input.trim()), context: selectedContext, goal: selectedGoal }) });
+      const res = await fetch(isPro ? '/api/generate-v2' : '/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: buildThreadContext(input.trim()), context: selectedContext, goal: selectedGoal, analytics: getAnalyticsContext() }) });
       const data = await res.json();
       if (!res.ok) { if (res.status === 429) toast({ title: '\uD83D\uDD12 Limit reached', description: 'Upgrade to Pro', variant: 'destructive' }); else throw new Error(data.error || 'Failed'); return; }
       if (isPro && data.shorter && data.spicier && data.softer) setReplies([{ tone: 'shorter', text: data.shorter }, { tone: 'spicier', text: data.spicier }, { tone: 'softer', text: data.softer }]);
@@ -198,7 +199,7 @@ export default function ExperimentalThreadPage() {
     setDecoding(true); setDecodeResult(null);
     try {
       const ctx = thread.length > 0 ? buildThreadContext(input.trim() || undefined) : text;
-      const res = await fetch('/api/decode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: ctx, context: selectedContext }) });
+      const res = await fetch('/api/decode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: ctx, context: selectedContext, analytics: getAnalyticsContext() }) });
       const data = await res.json();
       if (res.status === 429) { toast({ title: '\uD83D\uDD12 Limit', variant: 'destructive' }); return; }
       if (data.error && !data.intent) { toast({ title: 'Decode failed', variant: 'destructive' }); return; }
@@ -213,7 +214,7 @@ export default function ExperimentalThreadPage() {
     setDecodingIdx(idx);
     try {
       const ctx = thread.slice(0, idx + 1).map(m => `${m.role === 'them' ? 'Them' : 'You'}: ${m.text}`).join('\n');
-      const res = await fetch('/api/decode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: ctx, context: selectedContext }) });
+      const res = await fetch('/api/decode', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: ctx, context: selectedContext, analytics: getAnalyticsContext() }) });
       const data = await res.json();
       if (data.intent) setInlineDecodes(prev => ({ ...prev, [idx]: data }));
     } catch {} finally { setDecodingIdx(null); }

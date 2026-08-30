@@ -37,6 +37,15 @@ type OverviewData = {
   signupGrowthPct: number;
   genGrowthPct: number;
   recentActivity: ActivityItem[];
+  billing?: {
+    verified: boolean;
+    pricesVerified: boolean;
+    checkedAt: string;
+    stripeActiveSubs: number;
+    appActiveSubs: number;
+    staleAppRows: number | null;
+    error: string | null;
+  };
 };
 
 export default function AdminOverviewPage() {
@@ -89,6 +98,7 @@ export default function AdminOverviewPage() {
 
   const genSpark = daySeriesFromMap(data.genByDay, 7);
   const signupSpark = daySeriesFromMap(data.signupsByDay, 7);
+  const billingVerified = data.billing?.verified !== false && data.billing?.pricesVerified !== false;
 
   const kpis = [
     { label: 'Total Users', value: data.totalUsers, sub: `+${data.signups.h24} today`, icon: Users, color: 'text-blue-400', bg: 'bg-blue-500/10', spark: signupSpark, sparkColor: '#60a5fa', growthPct: data.signupGrowthPct },
@@ -130,8 +140,8 @@ export default function AdminOverviewPage() {
             <span className="text-white/20 text-xs">+{data.signups.d7} signups this week</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />All systems healthy
+            <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full ${billingVerified ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-amber-300 bg-amber-500/10 border border-amber-500/20'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${billingVerified ? 'bg-emerald-400' : 'bg-amber-300'}`} />{billingVerified ? 'Telemetry connected' : 'Billing needs attention'}
             </span>
             <span className="text-white/20 text-xs">· Updated {secondsAgo}s ago</span>
           </div>
@@ -172,32 +182,49 @@ export default function AdminOverviewPage() {
       </div>
 
       {/* ── 3. Revenue + Plan Health ── */}
+      {data.billing && (!data.billing.verified || !data.billing.pricesVerified || (data.billing.staleAppRows ?? 0) > 0) && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/[0.08] p-4 text-sm text-amber-100">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
+          <div>
+            <p className="font-bold">Revenue needs reconciliation</p>
+            <p className="mt-1 text-xs leading-relaxed text-amber-100/70">
+              {!data.billing.verified
+                ? 'Stripe could not be checked, so revenue is intentionally not treated as verified.'
+                : !data.billing.pricesVerified
+                  ? 'At least one configured Stripe price is missing, inactive, or does not match the app price. Check Billing before interpreting MRR.'
+                  : `${data.billing.staleAppRows} app subscription row(s) are not active in Stripe. The overview uses Stripe-verified paid users and MRR.`}
+            </p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:bg-white/[0.05] hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/20 transition-all duration-200 p-5">
           <div className="flex items-start justify-between mb-1">
             <div>
               <p className="text-[11px] font-semibold text-white/35 uppercase tracking-wider">Monthly Recurring Revenue</p>
               <div className="flex items-end gap-2 mt-1">
-                <AnimatedNumber value={data.mrr} prefix="$" decimals={2} className="text-3xl font-bold text-white" />
+                {billingVerified
+                  ? <AnimatedNumber value={data.mrr} prefix="$" decimals={2} className="text-3xl font-bold text-white" />
+                  : <span className="text-3xl font-bold text-white">--</span>}
                 <span className="text-white/25 text-sm mb-0.5">/ mo</span>
               </div>
             </div>
             <div className="p-1.5 rounded-lg bg-emerald-500/10 shrink-0"><DollarSign className="h-3.5 w-3.5 text-emerald-400" /></div>
           </div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[11px] text-white/25">${data.arr} ARR</span>
+            <span className="text-[11px] text-white/25">{billingVerified ? `$${data.arr} ARR` : 'Stripe unverified'}</span>
             <span className="text-white/10">·</span>
-            {data.projectedMrr > data.mrr
+            {billingVerified && data.projectedMrr > data.mrr
               ? <span className="text-[11px] text-emerald-400/60 font-medium">Projected next month: ${data.projectedMrr}</span>
-              : <span className="text-[11px] text-white/20">Flat growth projected</span>
+              : <span className="text-[11px] text-white/20">{billingVerified ? 'Flat growth projected' : 'Awaiting Stripe check'}</span>
             }
           </div>
-          {data.paidUsers === 0
-            ? <div className="h-8 rounded-lg border border-dashed border-white/[0.06] flex items-center justify-center"><span className="text-[11px] text-white/15">First paid user coming soon</span></div>
+          {!billingVerified || data.paidUsers === 0
+            ? <div className="h-8 rounded-lg border border-dashed border-white/[0.06] flex items-center justify-center"><span className="text-[11px] text-white/15">{billingVerified ? 'First paid user coming soon' : 'Revenue verification pending'}</span></div>
             : <Sparkline values={isDemoMode ? daySeriesFromMap(mockRevenueByDay, 7) : Array(7).fill(data.mrr)} color="#10b981" h={34} />
           }
           <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-white/[0.05] text-center">
-            {[['Paid', data.paidUsers, ''], ['Conv.', `${data.conversionRate}%`, ''], ['Churn 7d', data.churn.d7, data.churn.d7 > 0 ? 'text-red-400' : ''], ['Canceling', data.cancelingCount, data.cancelingCount > 0 ? 'text-amber-400' : '']].map(([l, v, cls]) => (
+            {[['Paid', billingVerified ? data.paidUsers : '--', ''], ['Conv.', billingVerified ? `${data.conversionRate}%` : '--', ''], ['Churn 7d', data.churn.d7, data.churn.d7 > 0 ? 'text-red-400' : ''], ['Canceling', data.cancelingCount, data.cancelingCount > 0 ? 'text-amber-400' : '']].map(([l, v, cls]) => (
               <div key={String(l)}>
                 <p className="text-[10px] text-white/20 uppercase">{l}</p>
                 <p className={`text-sm font-bold text-white ${cls}`}>{v}</p>

@@ -8,7 +8,7 @@ import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
 import { getContextCategory, COACHING_PHILOSOPHY, DRAFT_LABELS, TONE_OPTIONS } from "@/lib/context-category";
-import { getRequestIdentity } from "@/lib/request-identity";
+import { buildRequestAnalytics, type RequestAnalytics } from "@/lib/analytics-server";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const FREE_USAGE_LIMIT = 5;
@@ -21,7 +21,7 @@ function getSupabaseAdmin() {
   return createSupabaseAdminClient(url, key);
 }
 
-async function trackFreeUsage(req: Request, userId: string | null) {
+async function trackFreeUsage(req: Request, userId: string | null, requestAnalytics: RequestAnalytics) {
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     console.error("Strategy chat usage tracking unavailable");
@@ -32,8 +32,7 @@ async function trackFreeUsage(req: Request, userId: string | null) {
   }
 
   const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
-  const requestIdentity = getRequestIdentity(req);
-  const { ip, fingerprint } = requestIdentity;
+  const { ip, fingerprint, userAgent } = requestAnalytics.identity;
 
   let query = supabase
     .from("usage_logs")
@@ -66,14 +65,14 @@ async function trackFreeUsage(req: Request, userId: string | null) {
     );
   }
 
-  const { error: insertError } = await supabase.from("usage_logs").insert({
+  const { data: usageLog, error: insertError } = await supabase.from("usage_logs").insert({
     ip_address: ip,
     user_id: userId,
-    user_agent: req.headers.get("user-agent") || "unknown",
+    user_agent: userAgent,
     action: "generate_reply",
     fingerprint,
-    metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: "pending" } : { outcome: "pending" },
-  });
+    metadata: requestAnalytics.metadata,
+  }).select('id').single();
 
   if (insertError) {
     console.error("Strategy chat usage insert failed:", insertError);
@@ -83,7 +82,7 @@ async function trackFreeUsage(req: Request, userId: string | null) {
     );
   }
 
-  return null;
+  return usageLog?.id || null;
 }
 
 // ── Option 2: Context Extraction Agent ──────────────────
@@ -195,28 +194,37 @@ export async function POST(req: Request) {
     isPro = hasPro(entitlement.tier);
   }
 
-  const { threadContext, strategy, context, chatHistory, userMessage } = await req.json();
+  const { threadContext, strategy, context, chatHistory, userMessage, analytics } = await req.json();
 
   if (!userMessage?.trim()) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
 
+  const requestAnalytics = buildRequestAnalytics(req, analytics, 'pending', {
+    mode: 'strategy_chat',
+    engine: isPro ? 'verified' : 'fast',
+  });
+  let usageLogId: string | null = null;
+
   if (!isPro) {
-    const usageError = await trackFreeUsage(req, user?.id || null);
-    if (usageError) return usageError;
+    const usageResult = await trackFreeUsage(req, user?.id || null, requestAnalytics);
+    if (usageResult instanceof NextResponse) return usageResult;
+    usageLogId = usageResult;
   } else {
-    // Log usage for Pro users (analytics only, no limit check)
+    // Reserve a server-side event for Pro users too; mark it successful only
+    // after the model returns a usable response.
     const adminDb = getSupabaseAdmin();
     if (adminDb && user?.id) {
-      const requestIdentity = getRequestIdentity(req);
-      adminDb.from('usage_logs').insert({
-        ip_address: requestIdentity.ip,
+      const { data: usageLog, error: usageError } = await adminDb.from('usage_logs').insert({
+        ip_address: requestAnalytics.identity.ip,
         user_id: user.id,
-        user_agent: requestIdentity.userAgent,
-        action: 'strategy_chat',
-        fingerprint: requestIdentity.fingerprint,
-        metadata: requestIdentity.visitorId ? { visitor_id: requestIdentity.visitorId, outcome: 'success' } : { outcome: 'success' },
-      }).then(() => {});
+        user_agent: requestAnalytics.identity.userAgent,
+        action: 'generate_reply',
+        fingerprint: requestAnalytics.identity.fingerprint,
+        metadata: requestAnalytics.metadata,
+      }).select('id').single();
+      if (usageError) console.error('Strategy chat usage insert failed:', usageError.message);
+      usageLogId = usageLog?.id || null;
     }
   }
 
@@ -368,6 +376,17 @@ FLOW:
       }
     } catch {
       // ignore parse error, return full text
+    }
+  }
+
+  if (usageLogId) {
+    const adminDb = getSupabaseAdmin();
+    if (adminDb) {
+      const { error: outcomeError } = await adminDb
+        .from('usage_logs')
+        .update({ metadata: { ...requestAnalytics.metadata, outcome: 'success' } })
+        .eq('id', usageLogId);
+      if (outcomeError) console.error('Failed to mark strategy chat successful:', outcomeError.message);
     }
   }
 
