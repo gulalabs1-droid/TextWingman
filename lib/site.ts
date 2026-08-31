@@ -13,8 +13,10 @@ export const SOCIAL_LINKS = {
 } as const;
 
 // Use one mobile-first destination while keeping each social profile attributable.
+const PROFILE_CAMPAIGN = 'profile_bio';
+
 export const SOCIAL_BIO_LINKS = {
-  tiktok: `${SITE_URL}/tiktok?utm_source=tiktok&utm_medium=organic_social&utm_campaign=seven_day_test`,
-  instagram: `${SITE_URL}/tiktok?utm_source=instagram&utm_medium=organic_social&utm_campaign=seven_day_test`,
-  youtube: `${SITE_URL}/tiktok?utm_source=youtube&utm_medium=organic_social&utm_campaign=seven_day_test`,
+  tiktok: `${SITE_URL}/tiktok?utm_source=tiktok&utm_medium=organic_social&utm_campaign=${PROFILE_CAMPAIGN}&utm_content=profile`,
+  instagram: `${SITE_URL}/tiktok?utm_source=instagram&utm_medium=organic_social&utm_campaign=${PROFILE_CAMPAIGN}&utm_content=profile`,
+  youtube: `${SITE_URL}/tiktok?utm_source=youtube&utm_medium=organic_social&utm_campaign=${PROFILE_CAMPAIGN}&utm_content=profile`,
 } as const;

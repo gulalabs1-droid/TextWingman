@@ -5,6 +5,20 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { MessageCircle, User, Sparkles, ArrowRight, Loader2 } from 'lucide-react'
 
+const getPostOnboardingPath = () => {
+  try {
+    const raw = localStorage.getItem('tw_pending_thread');
+    if (raw) {
+      const pending = JSON.parse(raw);
+      if (pending.savedAt && Date.now() - pending.savedAt <= 30 * 60 * 1000) {
+        return '/app?restore=1';
+      }
+      localStorage.removeItem('tw_pending_thread');
+    }
+  } catch {}
+  return '/dashboard';
+};
+
 export default function OnboardingPage() {
   const [fullName, setFullName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -46,7 +60,7 @@ export default function OnboardingPage() {
       if (pendingCode) {
         router.push(`/invite/${pendingCode.toUpperCase()}`)
       } else {
-        router.push('/dashboard')
+        router.push(getPostOnboardingPath())
       }
       router.refresh()
     } catch (err) {
@@ -87,7 +101,7 @@ export default function OnboardingPage() {
       if (pendingCode) {
         router.push(`/invite/${pendingCode.toUpperCase()}`)
       } else {
-        router.push('/dashboard')
+        router.push(getPostOnboardingPath())
       }
       router.refresh()
     } catch (err) {

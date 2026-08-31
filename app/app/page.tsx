@@ -246,6 +246,31 @@ const ENERGY_CONFIG: Record<string, { emoji: string; color: string; bg: string }
 
 type ContextType = 'crush' | 'friend' | 'colleague' | 'family' | 'ex' | 'new_match' | null;
 
+const REPLY_TIMEOUT_MS = 20000;
+const VERIFIED_REPLY_TIMEOUT_MS = 45000;
+const PENDING_THREAD_STORAGE_KEY = 'tw_pending_thread';
+const PENDING_THREAD_MAX_AGE_MS = 30 * 60 * 1000;
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs: number,
+) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Reply timed out. Your message is still here - try again.');
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
 const CONTEXT_OPTIONS = [
   { value: 'crush', label: 'Crush', emoji: '💘', description: 'Someone you\'re into' },
   { value: 'friend', label: 'Friend', emoji: '🤝', description: 'Close friend' },
@@ -260,6 +285,7 @@ export default function AppPage() {
   const lightMode = searchParams.get('lm') === '1';
   const [message, setMessage] = useState('');
   const [replies, setReplies] = useState<Reply[]>([]);
+  const [lastGeneratedMessage, setLastGeneratedMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [showExamples, setShowExamples] = useState(true);
@@ -481,7 +507,7 @@ export default function AppPage() {
         track('app_view', { src: src || undefined, mode: mode || undefined, via: via || undefined });
       }
       const socialSources = ['tiktok', 'youtube', 'instagram', 'ig', 'shorts', 'reels'];
-      const isFastEntry = mode === 'fast' || Boolean(src && socialSources.includes(src.toLowerCase()));
+      const isFastEntry = mode === 'fast' || via === 'share' || Boolean(src && socialSources.includes(src.toLowerCase()));
       if (isFastEntry) {
         setUseV2(false);
         isSocialTraffic.current = true;
@@ -514,6 +540,47 @@ export default function AppPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Restore a high-intent visitor's reply after signup/onboarding instead of
+  // making them paste the same message a second time.
+  useEffect(() => {
+    if (typeof window === 'undefined' || searchParams.get('restore') !== '1') return;
+
+    const removePending = () => {
+      try {
+        sessionStorage.removeItem(PENDING_THREAD_STORAGE_KEY);
+        localStorage.removeItem(PENDING_THREAD_STORAGE_KEY);
+      } catch {}
+    };
+
+    try {
+      const raw = sessionStorage.getItem(PENDING_THREAD_STORAGE_KEY)
+        || localStorage.getItem(PENDING_THREAD_STORAGE_KEY);
+      if (!raw) return;
+
+      const pending = JSON.parse(raw);
+      if (!pending.savedAt || Date.now() - pending.savedAt > PENDING_THREAD_MAX_AGE_MS) {
+        removePending();
+        return;
+      }
+
+      if (Array.isArray(pending.thread)) setThread(pending.thread as ThreadMessage[]);
+      if (Array.isArray(pending.replies)) setReplies(pending.replies as Reply[]);
+      if (pending.selectedContext) setSelectedContext(pending.selectedContext as ContextType);
+      if (typeof pending.lastGeneratedMessage === 'string') {
+        setLastGeneratedMessage(pending.lastGeneratedMessage);
+      }
+      setAppMode('reply');
+      setShowThread(true);
+      setShowExamples(false);
+      removePending();
+      track('saved_thread_restored', { source: isSocialTraffic.current ? 'social' : 'organic' });
+    } catch {
+      removePending();
+    } finally {
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+    }
+  }, [searchParams]);
 
   // One-time "Unlock Deep Analysis" upsell — fires after first Fast-mode response for non-Pro users
   // Social traffic: delay until 2nd reply so they get value first
@@ -814,7 +881,8 @@ export default function AppPage() {
       // Show V2 progress indicator (no fake delays — step updates happen instantly)
       if (isPro && useV2) setV2Step('drafting');
       
-      const response = await fetch(endpoint, {
+      const requestTimeout = isPro && useV2 ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
+      const response = await fetchWithTimeout(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -824,7 +892,7 @@ export default function AppPage() {
           userIntent: userIntent.trim() || undefined,
           analytics: getAnalyticsContext(),
         }),
-      });
+      }, requestTimeout);
 
       const data = await response.json();
 
@@ -891,6 +959,8 @@ export default function AppPage() {
         setRemainingReplies(usageData.remaining);
       }
 
+      // Keep the source message available for sharing after the input clears.
+      setLastGeneratedMessage(effectiveMessage);
       // Clear input (it's now in the thread)
       setMessage('');
       setShowExamples(false);
@@ -968,7 +1038,8 @@ export default function AppPage() {
 
       if (isPro && useV2) setV2Step('drafting');
 
-      const response = await fetch(endpoint, {
+      const requestTimeout = isPro && useV2 ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
+      const response = await fetchWithTimeout(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -977,7 +1048,7 @@ export default function AppPage() {
           customContext: customContext.trim() || undefined,
           analytics: getAnalyticsContext(),
         }),
-      });
+      }, requestTimeout);
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to regenerate');
@@ -995,6 +1066,7 @@ export default function AppPage() {
         if (validReplies.length > 0) setReplies(validReplies);
       }
 
+      setLastGeneratedMessage(lastThem.text);
       toast({ title: '🔄 Fresh replies generated', description: 'New options for the same message' });
     } catch (error) {
       toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
@@ -1236,12 +1308,13 @@ export default function AppPage() {
   // Share: Copy link
   const handleShareLink = async (reply: Reply) => {
     setSharing(reply.tone);
+    const sourceMessage = (lastGeneratedMessage || message).substring(0, 100);
     try {
       const response = await fetch('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          theirMessage: message.substring(0, 100),
+          theirMessage: sourceMessage,
           myReply: reply.text,
           tone: reply.tone,
         }),
@@ -1253,7 +1326,7 @@ export default function AppPage() {
         toast({ title: "🔗 Share link copied!", description: "Paste on TikTok, Instagram, or Twitter" });
       }
     } catch (err) {
-      const encoded = btoa(JSON.stringify({ theirMessage: message.substring(0, 100), myReply: reply.text, tone: reply.tone }));
+      const encoded = btoa(JSON.stringify({ theirMessage: sourceMessage, myReply: reply.text, tone: reply.tone }));
       await navigator.clipboard.writeText(`${window.location.origin}/share/${encoded}`);
       toast({ title: "🔗 Share link copied!" });
     }
@@ -1263,8 +1336,9 @@ export default function AppPage() {
   // Share: Download image
   const handleDownloadImage = async (reply: Reply) => {
     setSharing(reply.tone);
+    const sourceMessage = (lastGeneratedMessage || message).substring(0, 100);
     try {
-      const imageUrl = `/api/share/image?their=${encodeURIComponent(message.substring(0, 100))}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
+      const imageUrl = `/api/share/image?their=${encodeURIComponent(sourceMessage)}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
       const res = await fetch(imageUrl);
       if (!res.ok) throw new Error('Failed to generate image');
       const blob = await res.blob();
@@ -1289,8 +1363,9 @@ export default function AppPage() {
   // Share: Copy image to clipboard
   const handleCopyImage = async (reply: Reply) => {
     setSharing(reply.tone);
+    const sourceMessage = (lastGeneratedMessage || message).substring(0, 100);
     try {
-      const imageUrl = `/api/share/image?their=${encodeURIComponent(message.substring(0, 100))}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
+      const imageUrl = `/api/share/image?their=${encodeURIComponent(sourceMessage)}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
       const res = await fetch(imageUrl);
       if (!res.ok) throw new Error('Failed to generate image');
       const blob = await res.blob();
@@ -1496,7 +1571,8 @@ export default function AppPage() {
 
         // Step 2: Auto-generate replies using the extracted conversation
         const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
-        const genRes = await fetch(endpoint, {
+        const requestTimeout = isPro && useV2 ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
+        const genRes = await fetchWithTimeout(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1505,7 +1581,7 @@ export default function AppPage() {
             customContext: customContext.trim() || undefined,
             analytics: getAnalyticsContext(),
           }),
-        });
+        }, requestTimeout);
 
         const genData = await genRes.json();
 
@@ -1542,6 +1618,7 @@ export default function AppPage() {
 
           setThread(threadMsgs);
           setReplies(scanReplies);
+          setLastGeneratedMessage(data.extracted_text);
           setStrategyData(scanStrategy);
           setExtractedPlatform(data.platform || null);
           setShowThread(true);
@@ -2003,6 +2080,7 @@ export default function AppPage() {
   const handleNewThread = () => {
     setThread([]);
     setReplies([]);
+    setLastGeneratedMessage('');
     setStrategyData(null);
     setScanResult(null);
     setMessage('');
@@ -4876,8 +4954,21 @@ export default function AppPage() {
                   </div>
                 </div>
                 <Link
-                  href="/login?mode=signup&redirect=%2Fapp"
-                  onClick={() => track('signup_cta_click', { from: 'reply_result_top' })}
+                  href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`}
+                  onClick={() => {
+                    const pending = JSON.stringify({
+                      savedAt: Date.now(),
+                      thread,
+                      replies,
+                      selectedContext,
+                      lastGeneratedMessage: lastGeneratedMessage || message,
+                    });
+                    try {
+                      sessionStorage.setItem(PENDING_THREAD_STORAGE_KEY, pending);
+                      localStorage.setItem(PENDING_THREAD_STORAGE_KEY, pending);
+                    } catch {}
+                    track('signup_cta_click', { from: 'reply_result_top', handoff: 'restore_thread' });
+                  }}
                   className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500/35 border border-violet-300/35 text-white text-xs font-black hover:bg-violet-500/50 transition-all active:scale-95 whitespace-nowrap"
                 >
                   Save it free <ArrowRight className="h-3.5 w-3.5" />

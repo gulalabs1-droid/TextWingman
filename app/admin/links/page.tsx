@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link2, Copy, Check, Plus, Trash2, Download, RotateCcw } from 'lucide-react';
+import { SOCIAL_BIO_LINKS } from '@/lib/site';
 
 // Platform presets — each sets utm_source + a sensible utm_medium.
 const PLATFORMS = [
@@ -23,6 +24,12 @@ const DESTINATIONS = [
 ];
 
 type BatchLink = { id: string; url: string; label: string };
+
+const PROFILE_BIO_LINKS = [
+  { id: 'tiktok', label: 'TikTok', url: SOCIAL_BIO_LINKS.tiktok },
+  { id: 'youtube', label: 'YouTube', url: SOCIAL_BIO_LINKS.youtube },
+  { id: 'instagram', label: 'Instagram', url: SOCIAL_BIO_LINKS.instagram },
+] as const;
 
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
@@ -104,6 +111,26 @@ export default function LinkGeneratorPage() {
           Tag every video so your Funnel &amp; Live dashboards show exactly which clip drove the visit.
         </p>
       </div>
+
+      <Card className="border border-emerald-400/15 bg-emerald-400/[0.04]">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-white/80">Profile bio links</CardTitle>
+          <p className="text-xs text-white/45">
+            Paste the matching link into each profile. These use the stable <span className="font-mono text-emerald-200/75">profile_bio</span> campaign.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {PROFILE_BIO_LINKS.map((link) => (
+            <div key={link.id} className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-black/10 p-2">
+              <span className="w-20 shrink-0 text-xs font-bold text-white/65">{link.label}</span>
+              <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-white/45">{link.url}</span>
+              <Button size="sm" variant="outline" onClick={() => copy(link.url, true)} className="shrink-0">
+                {copied ? <><Check className="mr-1.5 h-3.5 w-3.5" />Copied</> : <><Copy className="mr-1.5 h-3.5 w-3.5" />Copy</>}
+              </Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2">

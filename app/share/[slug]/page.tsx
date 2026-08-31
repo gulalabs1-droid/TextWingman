@@ -1,12 +1,13 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { Sparkles, MessageCircle } from 'lucide-react';
+import { track } from '@/lib/analytics';
 
 type ShareData = {
   theirMessage: string;
@@ -55,6 +56,7 @@ const TONE_CONFIG = {
 
 export default function SharePage() {
   const params = useParams();
+  const router = useRouter();
   const [shareData, setShareData] = useState<ShareData | null>(null);
   const [error, setError] = useState(false);
 
@@ -72,6 +74,10 @@ export default function SharePage() {
         const decoded = atob(base64);
         const data = JSON.parse(decoded);
         setShareData(data);
+        track('share_card_view', {
+          source: 'shared_reply',
+          tone: data.type || data.tone || 'best',
+        });
       }
     } catch (err) {
       console.error('Share decode error:', err);
@@ -106,6 +112,24 @@ export default function SharePage() {
 
   const styleKey = shareData.type || shareData.tone || 'best';
   const config = TONE_CONFIG[styleKey as keyof typeof TONE_CONFIG];
+
+  const handleTryThis = () => {
+    try {
+      sessionStorage.setItem('tw_prefill_message', shareData.theirMessage);
+    } catch {}
+    track('share_card_cta_click', { source: 'shared_reply', tone: styleKey });
+    const nextParams = new URLSearchParams({
+      src: 'share',
+      mode: 'fast',
+      prefill: '1',
+      via: 'share',
+      utm_source: 'share',
+      utm_medium: 'referral',
+      utm_campaign: 'share_card',
+      utm_content: styleKey,
+    });
+    router.push(`/app?${nextParams.toString()}`);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 py-12 px-4">
@@ -177,15 +201,13 @@ export default function SharePage() {
           <p className="text-purple-200 text-lg font-medium">
             Want perfect replies like this?
           </p>
-          <Button 
-            asChild 
+          <Button
+            onClick={handleTryThis}
             size="lg"
             className="bg-white text-purple-700 hover:bg-gray-100 rounded-2xl font-bold text-lg px-8 h-14 shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
           >
-            <Link href="/app">
-              <Sparkles className="h-5 w-5 mr-2" />
-              Try Text Wingman Free
-            </Link>
+            <Sparkles className="h-5 w-5 mr-2" />
+            Try this exact scenario free
           </Button>
           <p className="text-purple-300 text-sm">
             Get 5 free replies every day, plus screenshot help ⚡

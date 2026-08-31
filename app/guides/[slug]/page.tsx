@@ -156,7 +156,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
             Paste what they sent (or upload a screenshot) and get 3 AI-crafted replies in seconds — tailored to your exact conversation.
           </p>
           <Button asChild className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-lg shadow-violet-600/20 px-8 h-12 text-base">
-            <Link href="/app">
+            <Link href={`/tiktok?utm_source=seo&utm_medium=organic_search&utm_campaign=guides&utm_content=${guide.slug}`}>
               Try Text Wingman Free <ArrowRight className="h-4 w-4 ml-2" />
             </Link>
           </Button>
@@ -184,7 +184,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
       {/* Sticky mobile CTA */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/90 to-transparent md:hidden z-50">
         <Button asChild className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-2xl shadow-violet-600/20">
-          <Link href="/app">Get AI Replies Free →</Link>
+          <Link href={`/tiktok?utm_source=seo&utm_medium=organic_search&utm_campaign=guides&utm_content=${guide.slug}`}>Get AI Replies Free →</Link>
         </Button>
       </div>
     </div>
