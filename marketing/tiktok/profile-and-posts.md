@@ -10,22 +10,22 @@ Display name:
 Text Wingman
 ```
 
-Bio option A, if TikTok allows a website link:
+Bio option A, if TikTok allows a native website link:
 
 ```text
-AI replies for dating texts. Stop overthinking.
+Paste text. Get 3 replies in 10 sec. Free.
 ```
 
-Bio option B, if TikTok does not allow a clickable website link yet:
+Native website field (use the full tracked URL when the field is available):
 
 ```text
-AI replies for dating texts. Try it free: gula-agents2.vercel.app
+https://gula-agents2.vercel.app/tiktok?utm_source=tiktok&utm_medium=organic_social&utm_campaign=profile_bio&utm_content=profile
 ```
 
-Website:
+Bio option B, current fallback until TikTok unlocks the native website field (80-character limit):
 
 ```text
-https://gula-agents2.vercel.app/
+Paste text -> 3 replies: gula-agents2.vercel.app?utm_source=tiktok
 ```
 
 ## First 3 Posts

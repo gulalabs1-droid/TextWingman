@@ -26,4 +26,4 @@ Paste the exact text she sent and I’ll decode a few. Or use the free tool in b
 Paste the text she sent. Get the reply in 10 sec. Free.
 
 Website/landing link:
-https://gula-agents2.vercel.app/tiktok?utm_source=tiktok&utm_medium=bio&utm_campaign=profile
+https://gula-agents2.vercel.app/tiktok?utm_source=tiktok&utm_medium=organic_social&utm_campaign=profile_bio&utm_content=profile
