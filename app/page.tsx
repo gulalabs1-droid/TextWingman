@@ -464,6 +464,36 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ═══ STYLE DNA — learns from what you actually send ═══ */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">The best reply is the one that sounds like you.</h2>
+          <p className="text-white/50 max-w-xl mx-auto">Text Wingman learns from the replies you actually choose, edit, and send — not from a generic perfect-texter script.</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
+          {[
+            { n: '1', icon: <Sparkles className="h-5 w-5 text-violet-400" />, title: 'Generate', desc: 'See three sendable reply options for the exact message in front of you.' },
+            { n: '2', icon: <Check className="h-5 w-5 text-fuchsia-400" />, title: 'Choose', desc: 'Pick or edit the one that feels like you — that choice is the signal.' },
+            { n: '3', icon: <Brain className="h-5 w-5 text-cyan-400" />, title: 'Learn', desc: 'After you send, you can report whether it got a reply — one tap helps Style DNA learn what works for you.' },
+          ].map(step => (
+            <div key={step.n} className="bg-white/[0.03] border border-white/[0.08] rounded-2xl p-6 hover:bg-white/[0.05] transition-all duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center">{step.icon}</div>
+                <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/30">Step {step.n}</span>
+              </div>
+              <h3 className="font-bold text-white mb-2">{step.title}</h3>
+              <p className="text-white/40 text-sm leading-relaxed">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-[11px] text-white/30 mt-8">Style DNA stores behavioral signals, never your raw conversation or reply text.</p>
+        <div className="text-center mt-6">
+          <Link href="/app" className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:from-violet-500 hover:to-fuchsia-500 rounded-xl font-bold shadow-lg shadow-violet-600/20 px-8 py-3.5 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            Try it with a real text <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
+
       {/* ═══ SCENARIOS — dating-first intent matching ═══ */}
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-12">

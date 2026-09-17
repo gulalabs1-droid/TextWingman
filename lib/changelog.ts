@@ -10,6 +10,20 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.8.0',
+    date: '2026-09-17',
+    title: 'Style DNA — Coach Learns What Actually Works',
+    description: 'Coach now learns from the replies you actually pick, edit, and send — then asks one tap whether it worked. Your Style DNA gets sharper with every send.',
+    type: 'feature',
+    highlights: [
+      'Style DNA — a living profile of how you text: average length, question rate, emoji use, favorite tone, and a confidence score that grows with every reply you send',
+      'Did-they-reply check — after you send a Coach reply, a one-tap prompt asks if it worked. Wins and misses both feed the learning loop',
+      'Learns from what you send, not what Coach drafts — only your picks, edits, and confirmed sends shape your Style DNA',
+      'See it on your Profile — samples, average words, question rate, and favorite tone all visible on the new Style DNA card',
+      'Privacy-first — only behavioral signals are stored, never your raw conversation or reply text',
+    ],
+  },
+  {
     version: '4.7.0',
     date: '2026-05-31',
     title: 'Desktop Split View + Faster Image Loading',
