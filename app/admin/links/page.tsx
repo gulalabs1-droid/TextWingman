@@ -34,6 +34,14 @@ const PROFILE_BIO_LINKS = [
 const slugify = (s: string) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 
+const formatCreativeId = (n: number) => `tw-${String(n).padStart(3, '0')}`;
+
+const nextCreativeId = (id: string, fallbackNumber: number) => {
+  const match = id.match(/^(.*?)(\d+)$/);
+  if (!match) return formatCreativeId(fallbackNumber);
+  return `${match[1]}${String(Number(match[2]) + 1).padStart(match[2].length, '0')}`;
+};
+
 export default function LinkGeneratorPage() {
   const [baseUrl, setBaseUrl] = useState('');
   const [platform, setPlatform] = useState<string>('tiktok');
@@ -41,6 +49,7 @@ export default function LinkGeneratorPage() {
   const [campaign, setCampaign] = useState('');
   const [hook, setHook] = useState('');
   const [videoNum, setVideoNum] = useState(1);
+  const [creativeId, setCreativeId] = useState('tw-001');
   const [copied, setCopied] = useState(false);
   const [batch, setBatch] = useState<BatchLink[]>([]);
 
@@ -50,7 +59,10 @@ export default function LinkGeneratorPage() {
     setBaseUrl((fromEnv && !fromEnv.includes('localhost') ? fromEnv : window.location.origin).replace(/\/$/, ''));
     try {
       const savedNum = localStorage.getItem('tw_link_video_num');
-      if (savedNum) setVideoNum(parseInt(savedNum, 10) || 1);
+      const parsedNum = parseInt(savedNum || '', 10) || 1;
+      if (savedNum) setVideoNum(parsedNum);
+      const savedCreativeId = localStorage.getItem('tw_link_creative_id');
+      setCreativeId(savedCreativeId || formatCreativeId(parsedNum));
       const savedBatch = localStorage.getItem('tw_link_batch');
       if (savedBatch) setBatch(JSON.parse(savedBatch));
     } catch { /* ignore */ }
@@ -60,11 +72,15 @@ export default function LinkGeneratorPage() {
     try { localStorage.setItem('tw_link_video_num', String(videoNum)); } catch { /* ignore */ }
   }, [videoNum]);
   useEffect(() => {
+    try { localStorage.setItem('tw_link_creative_id', creativeId); } catch { /* ignore */ }
+  }, [creativeId]);
+  useEffect(() => {
     try { localStorage.setItem('tw_link_batch', JSON.stringify(batch)); } catch { /* ignore */ }
   }, [batch]);
 
   const plat = PLATFORMS.find(p => p.id === platform)!;
-  const videoId = `${plat.id}-${String(videoNum).padStart(3, '0')}`;
+  // Keep one creative ID when the same clip is distributed across platforms.
+  const videoId = slugify(creativeId) || formatCreativeId(videoNum);
 
   const generatedUrl = useMemo(() => {
     if (!baseUrl) return '';
@@ -85,7 +101,8 @@ export default function LinkGeneratorPage() {
   const addToBatch = () => {
     if (!generatedUrl) return;
     setBatch(prev => [{ id: crypto.randomUUID(), url: generatedUrl, label: videoId }, ...prev]);
-    setVideoNum(n => n + 1); // auto-increment for the next clip
+    setVideoNum(n => n + 1);
+    setCreativeId(id => nextCreativeId(id, videoNum + 1));
   };
 
   const exportCsv = () => {
@@ -197,11 +214,23 @@ export default function LinkGeneratorPage() {
             </div>
           </div>
 
-          {/* Video number */}
+          {/* Stable creative identity */}
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-white/40 mb-2 block">
-              Video number <span className="text-white/25 normal-case font-normal">→ video_id: <span className="font-mono text-purple-300/70">{videoId}</span></span>
+              Creative ID <span className="text-white/25 normal-case font-normal">(same across platforms) → video_id: <span className="font-mono text-purple-300/70">{videoId}</span></span>
             </label>
+            <input
+              value={creativeId}
+              onChange={e => setCreativeId(e.target.value)}
+              placeholder="e.g. maybe-reply-v1"
+              className="w-full px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white text-sm font-mono placeholder-white/25 focus:outline-none focus:border-purple-500/40"
+            />
+            <p className="mt-2 text-xs text-white/35">Use the same ID for the same video on YouTube, TikTok, and Instagram so the funnel can compare one creative across platforms.</p>
+          </div>
+
+          {/* Video number */}
+          <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-white/40 mb-2 block">Sequence number <span className="text-white/25 normal-case font-normal">(optional auto-increment)</span></label>
             <div className="flex items-center gap-2">
               <button onClick={() => setVideoNum(n => Math.max(1, n - 1))} className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.10] text-white/60 hover:bg-white/[0.10]">−</button>
               <input

@@ -13,6 +13,11 @@ type ContentData = {
   copyRate: number;
   totalReplies: number;
   totalCopies: number;
+  selectedCount: number;
+  sentCount: number;
+  outcomeReportedCount: number;
+  gotReplyCount: number;
+  styleSampleCount: number;
   v2Stats: {
     total: number;
     passRate: number;
@@ -88,6 +93,32 @@ export default function ContentPage() {
           </Card>
         ))}
       </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Replies chosen', value: data.selectedCount, color: 'text-cyan-300' },
+          { label: 'Confirmed sent', value: data.sentCount, color: 'text-emerald-300' },
+          { label: 'Outcomes reported', value: data.outcomeReportedCount, color: 'text-amber-300' },
+          { label: 'Got a reply', value: data.gotReplyCount, color: 'text-fuchsia-300' },
+        ].map(c => (
+          <Card key={c.label} className="border border-white/[0.08] bg-white/[0.03]">
+            <CardContent className="p-4">
+              <span className="text-xs font-medium text-white/50 uppercase tracking-wide">{c.label}</span>
+              <p className={`text-2xl font-bold mt-2 ${c.color}`}>{c.value.toLocaleString()}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card className="border border-cyan-400/15 bg-cyan-400/[0.04]">
+        <CardContent className="p-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-cyan-200">Outcome learning</p>
+            <p className="text-xs text-white/40">Style signals come only from chosen, edited, or sent replies. Raw conversation text is excluded.</p>
+          </div>
+          <span className="text-xs font-bold text-cyan-300/75">{data.styleSampleCount} style samples</span>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Context Distribution */}

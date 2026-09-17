@@ -308,6 +308,31 @@ CREATE INDEX IF NOT EXISTS idx_marketing_leads_status ON public.marketing_leads(
 CREATE INDEX IF NOT EXISTS idx_marketing_leads_video ON public.marketing_leads(source_video_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_marketing_leads_person ON public.marketing_leads(person_key);
 
+-- ─────────────────────────────────────────────────────────────────────────
+-- reply_outcomes (behavioral learning without raw conversation text)
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.reply_outcomes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  visitor_id TEXT,
+  session_id TEXT,
+  generation_id TEXT NOT NULL,
+  reply_id TEXT NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN (
+    'generated', 'selected', 'copied', 'edited', 'sent_confirmed',
+    'outcome_reported', 'style_signal_recorded'
+  )),
+  tone TEXT,
+  context TEXT,
+  outcome TEXT CHECK (outcome IS NULL OR outcome IN ('got_reply', 'no_reply', 'not_reported')),
+  style_signals JSONB NOT NULL DEFAULT '{}'::jsonb,
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_reply_outcomes_user_created ON public.reply_outcomes(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reply_outcomes_generation ON public.reply_outcomes(generation_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reply_outcomes_event ON public.reply_outcomes(event_type, created_at DESC);
+
 -- Runtime compatibility for databases created before the current app schema.
 -- These are additive and safe to re-run.
 ALTER TABLE public.entitlements ADD COLUMN IF NOT EXISTS tier TEXT;
@@ -363,6 +388,7 @@ ALTER TABLE public.admin_events     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.marketing_creatives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.social_creative_metrics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.marketing_leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reply_outcomes ENABLE ROW LEVEL SECURITY;
 
 -- Users can read/update their own profile
 DROP POLICY IF EXISTS "own profile read"   ON public.profiles;
@@ -395,6 +421,9 @@ CREATE POLICY "auth usage insert" ON public.usage_logs FOR INSERT TO authenticat
 -- Public waitlist signup
 DROP POLICY IF EXISTS "anyone can join waitlist" ON public.v2_waitlist;
 CREATE POLICY "anyone can join waitlist" ON public.v2_waitlist FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+-- Behavioral learning is written by the service-role API only.
+REVOKE ALL ON public.reply_outcomes FROM anon, authenticated;
 
 -- service_role bypasses RLS automatically; no policies needed for it.
 

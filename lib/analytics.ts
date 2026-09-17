@@ -22,8 +22,12 @@ const SESSION_STORAGE_KEY = 'tw_session_id';
 const VISITOR_COOKIE = 'tw_vid';
 const BEACON_EVENTS = new Set([
   'reply_success',
+  'reply_selected',
   'reply_copy',
   'reply_sent',
+  'reply_edited',
+  'reply_outcome_recorded',
+  'style_signal_recorded',
   'signup_start',
   'signup_complete',
   'checkout_start',
@@ -51,6 +55,15 @@ function setVisitorCookie(visitorId: string) {
   }
 }
 
+function setSessionCookie(sessionId: string) {
+  try {
+    // Short-lived fallback for API events that arrive without the client context.
+    document.cookie = `tw_sid=${encodeURIComponent(sessionId)}; Max-Age=1800; Path=/; SameSite=Lax`;
+  } catch {
+    // Cookies can be unavailable in some privacy modes; sessionStorage remains useful.
+  }
+}
+
 export function getClientIdentity() {
   if (typeof window === 'undefined') return { visitorId: null, sessionId: null };
 
@@ -72,6 +85,7 @@ export function getClientIdentity() {
       memorySessionId = makeId('s');
     }
   }
+  setSessionCookie(memorySessionId);
 
   return { visitorId: memoryVisitorId, sessionId: memorySessionId };
 }

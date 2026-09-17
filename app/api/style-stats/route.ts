@@ -4,6 +4,20 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
+type StyleSignals = {
+  word_count?: number;
+  question_count?: number;
+  exclamation_count?: number;
+  emoji_count?: number;
+  lowercase_ratio?: number;
+};
+
+type OutcomeRow = {
+  event_type: string;
+  tone: string | null;
+  style_signals: StyleSignals | null;
+};
+
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -26,25 +40,30 @@ export async function GET() {
     }
 
     // Get tone preferences from copy_logs
-    const { data: copyLogs } = await supabase
-      .from('copy_logs')
-      .select('tone')
-      .eq('user_id', user.id);
+    const [{ data: copyLogs }, { data: outcomes }] = await Promise.all([
+      supabase
+        .from('copy_logs')
+        .select('tone')
+        .eq('user_id', user.id),
+      supabase
+        .from('reply_outcomes')
+        .select('event_type, tone, style_signals')
+        .eq('user_id', user.id)
+        .in('event_type', ['copied', 'edited', 'sent_confirmed'])
+        .order('created_at', { ascending: false })
+        .limit(200),
+    ]);
 
-    // Get reply history for word count calculation
-    const { data: replyHistory } = await supabase
-      .from('reply_history')
-      .select('generated_replies')
-      .eq('user_id', user.id)
-      .limit(50);
+    const learningRows = (outcomes || []) as OutcomeRow[];
 
     // Calculate favorite tone
     let favoriteTone = null;
     let totalCopies = 0;
-    if (copyLogs && copyLogs.length > 0) {
-      totalCopies = copyLogs.length;
+    if (learningRows.length > 0 || (copyLogs && copyLogs.length > 0)) {
+      totalCopies = learningRows.length || copyLogs?.length || 0;
       const toneCounts: Record<string, number> = {};
-      copyLogs.forEach(log => {
+      const toneRows = learningRows.length ? learningRows : (copyLogs || []).map(log => ({ tone: log.tone }));
+      toneRows.forEach(log => {
         if (log.tone) {
           toneCounts[log.tone] = (toneCounts[log.tone] || 0) + 1;
         }
@@ -60,35 +79,18 @@ export async function GET() {
       }
     }
 
-    // Calculate average word count from copied replies
-    let avgWordCount = 0;
-    if (replyHistory && replyHistory.length > 0) {
-      let totalWords = 0;
-      let replyCount = 0;
-      
-      replyHistory.forEach(entry => {
-        try {
-          const replies = typeof entry.generated_replies === 'string' 
-            ? JSON.parse(entry.generated_replies) 
-            : entry.generated_replies;
-          
-          if (Array.isArray(replies)) {
-            replies.forEach((reply: { text?: string }) => {
-              if (reply.text) {
-                totalWords += reply.text.split(/\s+/).filter(Boolean).length;
-                replyCount++;
-              }
-            });
-          }
-        } catch {
-          // Skip malformed entries
-        }
-      });
-      
-      if (replyCount > 0) {
-        avgWordCount = Math.round(totalWords / replyCount);
-      }
-    }
+    // Only learn style from replies the user copied, edited, or confirmed sent.
+    // Generated candidates are not evidence of the user's voice.
+    const signals = learningRows
+      .map(row => row.style_signals || {})
+      .filter(row => typeof row.word_count === 'number');
+    const signalCount = signals.length;
+    const average = (key: keyof StyleSignals) => signalCount
+      ? Math.round((signals.reduce((sum, row) => sum + Number(row[key] || 0), 0) / signalCount) * 10) / 10
+      : 0;
+    const rate = (predicate: (row: StyleSignals) => boolean) => signalCount
+      ? Math.round((signals.filter(predicate).length / signalCount) * 100)
+      : 0;
 
     // Format the tone name nicely
     const toneLabels: Record<string, string> = {
@@ -99,9 +101,18 @@ export async function GET() {
 
     return NextResponse.json({
       favoriteTone: favoriteTone ? toneLabels[favoriteTone] || favoriteTone : null,
-      avgWordCount,
+      avgWordCount: average('word_count'),
       totalCopies,
-      hasData: totalCopies >= 3, // Only show if user has enough data
+      hasData: totalCopies >= 3,
+      styleDna: {
+        sampleCount: signalCount,
+        confidence: Math.min(100, signalCount * 20),
+        averageWordCount: average('word_count'),
+        questionRate: rate(row => Number(row.question_count || 0) > 0),
+        exclamationRate: rate(row => Number(row.exclamation_count || 0) > 0),
+        emojiRate: rate(row => Number(row.emoji_count || 0) > 0),
+        lowercaseRate: Math.round(average('lowercase_ratio') * 100),
+      },
     });
   } catch (error) {
     console.error('Style stats error:', error);

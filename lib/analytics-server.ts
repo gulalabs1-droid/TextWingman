@@ -71,6 +71,7 @@ export function buildRequestAnalytics(request: Request, input: unknown, outcome:
   // by rate limits; it is only a measurement key.
   const identity = getRequestIdentity(request);
   const measurementVisitorId = visitorId || identity.visitorId;
+  const measurementSessionId = sessionId || identity.sessionId;
 
   return {
     identity,
@@ -79,7 +80,7 @@ export function buildRequestAnalytics(request: Request, input: unknown, outcome:
       page: safeString(client.page, 512) || '/app',
       referrer: safeString(client.referrer, 512),
       ...(measurementVisitorId ? { visitor_id: measurementVisitorId } : {}),
-      ...(sessionId ? { session_id: sessionId } : {}),
+      ...(measurementSessionId ? { session_id: measurementSessionId } : {}),
       ...(Object.keys(attribution).length ? { utm: attribution } : {}),
       ...(attribution.video_id ? { video_id: attribution.video_id } : {}),
       props: safeProps({ ...props, ...(attribution.video_id ? { video_id: attribution.video_id } : {}) }),

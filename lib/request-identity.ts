@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 
 export const VISITOR_COOKIE_NAME = 'tw_vid';
+export const SESSION_COOKIE_NAME = 'tw_sid';
 
 function readCookie(cookieHeader: string | null, name: string): string | null {
   if (!cookieHeader) return null;
@@ -28,6 +29,7 @@ export function getRequestIdentity(request: Request, visitorIdOverride?: string 
   const language = request.headers.get('accept-language') || '';
   const ip = getClientIp(request);
   const cookieVisitorId = readCookie(request.headers.get('cookie'), VISITOR_COOKIE_NAME);
+  const sessionId = readCookie(request.headers.get('cookie'), SESSION_COOKIE_NAME);
   const visitorId = visitorIdOverride || cookieVisitorId;
   const fingerprint = crypto
     .createHash('sha256')
@@ -35,6 +37,5 @@ export function getRequestIdentity(request: Request, visitorIdOverride?: string 
     .digest('hex')
     .slice(0, 32);
 
-  return { ip, userAgent, language, visitorId, fingerprint };
+  return { ip, userAgent, language, visitorId, sessionId, fingerprint };
 }
-

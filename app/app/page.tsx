@@ -12,12 +12,22 @@ import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
-import { captureAttribution, getAnalyticsContext, track } from '@/lib/analytics';
+import { captureAttribution, getAnalyticsContext, track, type Props } from '@/lib/analytics';
 import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
+import {
+  createReplyGenerationId,
+  deriveStyleSignals,
+  recordLocalStyleSignal,
+  replyIdFor,
+  sendReplyLearningEvent,
+  type ReplyLearningEvent,
+} from '@/lib/reply-learning';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
   text: string;
+  generationId?: string;
+  replyId?: string;
 };
 
 type V2Meta = {
@@ -351,6 +361,8 @@ export default function AppPage() {
   const [showThread, setShowThread] = useState(true);
   const [selectedThreadMsg, setSelectedThreadMsg] = useState<number | null>(null);
   const [pendingSent, setPendingSent] = useState<Reply | null>(null);
+  const [generationId, setGenerationId] = useState<string | null>(null);
+  const [outcomePrompt, setOutcomePrompt] = useState<{ reply: Reply; generationId: string } | null>(null);
   const [customSent, setCustomSent] = useState('');
   const [showCustomSent, setShowCustomSent] = useState(false);
   const [strategyData, setStrategyData] = useState<StrategyData>(null);
@@ -395,6 +407,48 @@ export default function AppPage() {
   const { toast } = useToast();
   
   const charCount = message.length;
+
+  const tagReplies = (items: Reply[], runId: string): Reply[] => items.map(reply => ({
+    ...reply,
+    generationId: runId,
+    replyId: reply.replyId || replyIdFor(runId, reply.tone),
+  }));
+
+  const trackedReply = (reply: Reply): Reply => {
+    const runId = reply.generationId || generationId || 'legacy';
+    return {
+      ...reply,
+      generationId: runId,
+      replyId: reply.replyId || replyIdFor(runId, reply.tone),
+    };
+  };
+
+  const recordReplyEvent = (
+    event: ReplyLearningEvent,
+    reply: Reply,
+    options: { outcome?: 'got_reply' | 'no_reply' | 'not_reported'; text?: string; props?: Props } = {},
+  ) => {
+    const item = trackedReply(reply);
+    const text = options.text || item.text;
+    const styleSignals = deriveStyleSignals(text);
+    if (event === 'copied' || event === 'edited' || event === 'sent_confirmed') {
+      recordLocalStyleSignal(styleSignals, item.tone, event);
+    }
+    sendReplyLearningEvent({
+      event,
+      generationId: item.generationId || 'legacy',
+      replyId: item.replyId,
+      tone: item.tone,
+      context: selectedContext,
+      outcome: options.outcome,
+      styleSignals,
+      props: {
+        source: isSocialTraffic.current ? 'social' : 'organic',
+        engine: isPro && useV2 ? 'verified' : 'fast',
+        ...options.props,
+      },
+    });
+  };
 
   // ── Smart Preview helpers ──────────────────────────────
   const getTimeGreeting = () => {
@@ -909,14 +963,17 @@ export default function AppPage() {
         }
         return;
       }
+
+      const nextGenerationId = createReplyGenerationId();
+      setGenerationId(nextGenerationId);
       
       // Handle V2 response format
       if (isPro && useV2 && data.shorter && data.spicier && data.softer) {
-        const v2Replies: Reply[] = [
+        const v2Replies = tagReplies([
           { tone: 'shorter', text: data.shorter },
           { tone: 'spicier', text: data.spicier },
           { tone: 'softer', text: data.softer },
-        ];
+        ], nextGenerationId);
         setReplies(v2Replies);
         if (data.meta) {
           setV2Meta(data.meta);
@@ -931,7 +988,7 @@ export default function AppPage() {
         const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
         
         if (validReplies.length > 0) {
-          setReplies(validReplies);
+          setReplies(tagReplies(validReplies, nextGenerationId));
         } else {
           throw new Error('Invalid reply format received');
         }
@@ -944,11 +1001,17 @@ export default function AppPage() {
         : Array.isArray(data.replies)
           ? data.replies.filter((r: any) => r && r.tone && r.text).length
           : 0;
-      track('reply_displayed', {
-        source: isSocialTraffic.current ? 'social' : 'organic',
-        mode: 'reply',
-        engine: isPro && useV2 ? 'verified' : 'fast',
-        count: generatedCount,
+      sendReplyLearningEvent({
+        event: 'generated',
+        generationId: nextGenerationId,
+        replyId: nextGenerationId,
+        context: selectedContext,
+        props: {
+          source: isSocialTraffic.current ? 'social' : 'organic',
+          mode: 'reply',
+          engine: isPro && useV2 ? 'verified' : 'fast',
+          reply_count: generatedCount,
+        },
       });
       
       // Refresh usage count from server
@@ -1053,17 +1116,41 @@ export default function AppPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to regenerate');
 
+      const nextGenerationId = createReplyGenerationId();
+      setGenerationId(nextGenerationId);
+      let regeneratedReplies: Reply[] = [];
+
       if (isPro && useV2 && data.shorter && data.spicier && data.softer) {
-        setReplies([
+        regeneratedReplies = tagReplies([
           { tone: 'shorter', text: data.shorter },
           { tone: 'spicier', text: data.spicier },
           { tone: 'softer', text: data.softer },
-        ]);
+        ], nextGenerationId);
+        setReplies(regeneratedReplies);
         if (data.meta) setV2Meta(data.meta);
         if (data.strategy) setStrategyData(data.strategy);
       } else if (Array.isArray(data.replies) && data.replies.length > 0) {
         const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
-        if (validReplies.length > 0) setReplies(validReplies);
+        if (validReplies.length > 0) {
+          regeneratedReplies = tagReplies(validReplies, nextGenerationId);
+          setReplies(regeneratedReplies);
+        }
+      }
+
+      if (regeneratedReplies.length > 0) {
+        sendReplyLearningEvent({
+          event: 'generated',
+          generationId: nextGenerationId,
+          replyId: nextGenerationId,
+          context: selectedContext,
+          props: {
+            source: isSocialTraffic.current ? 'social' : 'organic',
+            mode: 'reply',
+            engine: isPro && useV2 ? 'verified' : 'fast',
+            reply_count: regeneratedReplies.length,
+            regenerated: true,
+          },
+        });
       }
 
       setLastGeneratedMessage(lastThem.text);
@@ -1100,16 +1187,21 @@ export default function AppPage() {
 
       let newReplies: Reply[] = [];
       let newStrategy: StrategyData = null;
+      const nextGenerationId = createReplyGenerationId();
+      setGenerationId(nextGenerationId);
 
       if (isPro && useV2 && genData.shorter && genData.spicier && genData.softer) {
-        newReplies = [
+        newReplies = tagReplies([
           { tone: 'shorter', text: genData.shorter },
           { tone: 'spicier', text: genData.spicier },
           { tone: 'softer', text: genData.softer },
-        ];
+        ], nextGenerationId);
         if (genData.strategy) newStrategy = genData.strategy;
       } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
-        newReplies = genData.replies.filter((r: any) => r && r.tone && r.text);
+        newReplies = tagReplies(
+          genData.replies.filter((r: any) => r && r.tone && r.text),
+          nextGenerationId,
+        );
       }
 
       if (newReplies.length > 0) {
@@ -1117,6 +1209,19 @@ export default function AppPage() {
           ...scanResult,
           replies: newReplies,
           strategy: newStrategy,
+        });
+        sendReplyLearningEvent({
+          event: 'generated',
+          generationId: nextGenerationId,
+          replyId: nextGenerationId,
+          context: selectedContext,
+          props: {
+            source: isSocialTraffic.current ? 'social' : 'organic',
+            mode: 'screenshot_scan',
+            engine: isPro && useV2 ? 'verified' : 'fast',
+            reply_count: newReplies.length,
+            regenerated: true,
+          },
         });
         toast({ title: '🔄 Fresh replies generated', description: 'New options for the same conversation' });
       }
@@ -1159,6 +1264,14 @@ export default function AppPage() {
       if (!res.ok) throw new Error(data.error || 'Refine failed');
 
       if (data.refined) {
+        const baseTone = tone.replace(/^scan-/, '') as Reply['tone'];
+        const existingReply = (isScan ? scanResult?.replies : replies)?.find(reply => reply.tone === baseTone);
+        recordReplyEvent('edited', {
+          tone: baseTone,
+          text: data.refined,
+          generationId: existingReply?.generationId,
+          replyId: existingReply?.replyId,
+        }, { text: data.refined });
         if (isScan && scanResult) {
           // Update the scanResult replies
           setScanResult({
@@ -1187,6 +1300,14 @@ export default function AppPage() {
   // Use raw edit without AI polish
   const handleUseRawEdit = (tone: string, isScan = false) => {
     if (!editText.trim()) return;
+    const baseTone = tone.replace(/^scan-/, '') as Reply['tone'];
+    const existingReply = (isScan ? scanResult?.replies : replies)?.find(reply => reply.tone === baseTone);
+    recordReplyEvent('edited', {
+      tone: baseTone,
+      text: editText.trim(),
+      generationId: existingReply?.generationId,
+      replyId: existingReply?.replyId,
+    }, { text: editText.trim() });
     if (isScan && scanResult) {
       setScanResult({
         ...scanResult,
@@ -1276,13 +1397,13 @@ export default function AppPage() {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(tone);
-      setPendingSent({ tone: tone as Reply['tone'], text });
-      track('reply_copied', {
-        source: isSocialTraffic.current ? 'social' : 'organic',
-        mode: 'reply',
-        tone,
-        engine: isPro && useV2 ? 'verified' : 'fast',
-      });
+      const sourceReply = replies.find(reply => reply.tone === tone)
+        || scanResult?.replies.find(reply => reply.tone === tone)
+        || { tone: tone as Reply['tone'], text };
+      const copiedReply = { ...sourceReply, text };
+      setPendingSent(copiedReply);
+      recordReplyEvent('selected', copiedReply, { props: { selection: 'copy' } });
+      recordReplyEvent('copied', copiedReply);
       toast({
         title: (isPro && useV2) ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
         description: "Tap 'I sent this' to continue the thread",
@@ -1831,12 +1952,11 @@ export default function AppPage() {
   };
 
   const handleMarkSent = (reply: Reply) => {
+    const sentReply = trackedReply(reply);
     addToThread('you', reply.text);
-    track('reply_marked_sent', {
-      source: isSocialTraffic.current ? 'social' : 'organic',
-      mode: 'reply',
-      tone: reply.tone,
-    });
+    recordReplyEvent('selected', sentReply, { props: { selection: 'sent' } });
+    recordReplyEvent('sent_confirmed', sentReply);
+    setOutcomePrompt({ reply: sentReply, generationId: sentReply.generationId || 'legacy' });
     setPendingSent(null);
     setCustomSent('');
     setShowCustomSent(false);
@@ -1854,12 +1974,25 @@ export default function AppPage() {
 
   const handleCustomSentSubmit = () => {
     if (!customSent.trim()) return;
+    const customRunId = generationId || createReplyGenerationId();
+    const customReply: Reply = {
+      tone: 'shorter',
+      text: customSent.trim(),
+      generationId: customRunId,
+      replyId: replyIdFor(customRunId, 'custom'),
+    };
     addToThread('you', customSent.trim());
-    track('reply_marked_sent', {
-      source: isSocialTraffic.current ? 'social' : 'organic',
-      mode: 'reply',
+    recordLocalStyleSignal(deriveStyleSignals(customReply.text), 'custom', 'sent_confirmed');
+    sendReplyLearningEvent({
+      event: 'sent_confirmed',
+      generationId: customRunId,
+      replyId: customReply.replyId,
       tone: 'custom',
+      context: selectedContext,
+      styleSignals: deriveStyleSignals(customReply.text),
+      props: { source: isSocialTraffic.current ? 'social' : 'organic', custom: true },
     });
+    setOutcomePrompt({ reply: customReply, generationId: customRunId });
     setPendingSent(null);
     setCustomSent('');
     setShowCustomSent(false);
@@ -1873,6 +2006,19 @@ export default function AppPage() {
     setTimeout(() => {
       inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 150);
+  };
+
+  const handleReportOutcome = (outcome: 'got_reply' | 'no_reply' | 'not_reported') => {
+    if (!outcomePrompt) return;
+    recordReplyEvent('outcome_reported', outcomePrompt.reply, {
+      outcome,
+      props: { source: isSocialTraffic.current ? 'social' : 'organic' },
+    });
+    setOutcomePrompt(null);
+    toast({
+      title: outcome === 'got_reply' ? 'Nice — logged as a win' : outcome === 'no_reply' ? 'Logged — we can learn from it' : 'Skipped for now',
+      description: 'Your reply choices help Text Wingman match your voice better.',
+    });
   };
 
   // Add "them" message to thread WITHOUT generating (for double texts)
@@ -2724,6 +2870,38 @@ export default function AppPage() {
 
         {/* Feature Tour — shows once on first visit */}
         <FeatureTour />
+
+        {outcomePrompt && (
+          <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-400/15 text-sm">↗</div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-white/85">Did they reply?</p>
+                <p className="mt-1 text-xs leading-relaxed text-white/45">One tap helps your Style DNA learn what actually works.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleReportOutcome('got_reply')}
+                    className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-bold text-emerald-200 transition-all hover:bg-emerald-400/25 active:scale-95"
+                  >
+                    Yes, they replied
+                  </button>
+                  <button
+                    onClick={() => handleReportOutcome('no_reply')}
+                    className="rounded-xl border border-white/[0.10] bg-white/[0.05] px-3 py-2 text-xs font-bold text-white/55 transition-all hover:bg-white/[0.10] active:scale-95"
+                  >
+                    Not yet
+                  </button>
+                  <button
+                    onClick={() => handleReportOutcome('not_reported')}
+                    className="px-2 py-2 text-xs font-semibold text-white/30 transition-colors hover:text-white/55"
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Shared upload inputs stay mounted for Coach and the direct reply modes. */}
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />

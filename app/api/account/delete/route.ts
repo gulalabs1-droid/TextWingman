@@ -27,6 +27,7 @@ export async function DELETE() {
     // Delete user data from all tables (order matters for FK constraints)
     const tables = [
       'reply_history',
+      'reply_outcomes',
       'copy_logs',
       'usage_logs',
       'v2_runs',

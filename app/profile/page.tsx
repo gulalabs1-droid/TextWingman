@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Mail, Lock, Loader2, LogOut, Crown, Sparkles, Clock, MessageCircle, Trash2, AlertTriangle, ChevronRight, Shield, Zap, Star } from 'lucide-react';
+import { ArrowLeft, Mail, Lock, Loader2, LogOut, Crown, Sparkles, Clock, MessageCircle, Trash2, AlertTriangle, ChevronRight, Shield, Zap, Star, Activity } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
 import { PLAN_PRICES } from '@/lib/pricing';
@@ -15,11 +15,27 @@ type HistoryItem = { id: string; their_message: string; generated_replies: { ton
 type SavedThread = { id: string; name: string; type: string; updated_at: string; message_count: number; last_message: any };
 type Subscription = { plan_type: 'monthly' | 'weekly' | 'annual' | 'unknown'; status: 'active' | 'trialing' | 'canceled' | 'past_due'; current_period_end: string } | null;
 type Entitlement = { tier: 'free' | 'pro' | 'elite'; source: string } | null;
+type StyleStats = {
+  favoriteTone: string | null;
+  avgWordCount: number;
+  totalCopies: number;
+  hasData: boolean;
+  styleDna?: {
+    sampleCount: number;
+    confidence: number;
+    averageWordCount: number;
+    questionRate: number;
+    exclamationRate: number;
+    emojiRate: number;
+    lowercaseRate: number;
+  };
+} | null;
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<Subscription>(null);
   const [entitlement, setEntitlement] = useState<Entitlement>(null);
+  const [styleStats, setStyleStats] = useState<StyleStats>(null);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -79,9 +95,17 @@ export default function ProfilePage() {
         fetchSavedThreads();
         fetchSubscription(user.id);
         fetchEntitlement(user.id);
+        fetchStyleStats();
       }
     } catch { console.error('Error checking user'); }
     finally { setLoading(false); }
+  };
+
+  const fetchStyleStats = async () => {
+    try {
+      const res = await fetch('/api/style-stats', { cache: 'no-store' });
+      if (res.ok) setStyleStats(await res.json());
+    } catch { /* Style learning is additive and should not block profile loading. */ }
   };
 
   const fetchSubscription = async (userId: string) => {
@@ -130,6 +154,7 @@ export default function ProfilePage() {
         if (data.user) {
           setUser({ id: data.user.id, email: data.user.email || '' });
           fetchHistory(data.user.id);
+          fetchStyleStats();
           toast({ title: 'Welcome back!', description: 'You are now signed in' });
         }
       }
@@ -256,6 +281,27 @@ export default function ProfilePage() {
                 <span className="text-violet-300 font-black text-sm">{PLAN_PRICES.monthly.displayAmount}/mo →</span>
               </Link>
             )}
+
+            {/* Style DNA — derived from choices, edits, and confirmed sends, never generated candidates. */}
+            <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.05] p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15"><Activity className="h-4 w-4 text-cyan-300" /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-black text-cyan-200">Style DNA</p>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300/55">{styleStats?.styleDna?.confidence || 0}% confidence</span>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-white/40">Learns from the replies you actually choose, edit, and send.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[10px] uppercase tracking-wider text-white/25">Samples</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna?.sampleCount || 0}</p></div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[10px] uppercase tracking-wider text-white/25">Words</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna?.averageWordCount || '--'}</p></div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[10px] uppercase tracking-wider text-white/25">Questions</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna ? `${styleStats.styleDna.questionRate}%` : '--'}</p></div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[10px] uppercase tracking-wider text-white/25">Favorite</p><p className="mt-1 truncate text-sm font-black text-white/80">{styleStats?.favoriteTone || '--'}</p></div>
+              </div>
+              <p className="text-[10px] text-white/25">No raw conversations are stored in Style DNA.</p>
+            </div>
 
             {/* Quick links */}
             <div className="rounded-2xl border border-white/[0.08] overflow-hidden divide-y divide-white/[0.06]" style={{ background: 'rgba(255,255,255,0.03)' }}>

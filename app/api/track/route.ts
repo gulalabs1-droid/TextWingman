@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       event,
       ...(rawEvent && rawEvent !== event ? { original_event: rawEvent } : {}),
       ...(visitorId || identity.visitorId ? { visitor_id: visitorId || identity.visitorId } : {}),
-      ...(sessionId ? { session_id: sessionId } : {}),
+      ...(sessionId || identity.sessionId ? { session_id: sessionId || identity.sessionId } : {}),
       ...(creativeId ? { creative_id: creativeId } : {}),
       ...(safeUtm ? { utm: safeUtm } : {}),
       props: safeProps(input.props),

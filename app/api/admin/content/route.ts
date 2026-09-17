@@ -10,11 +10,13 @@ export async function GET() {
   const [
     { data: replyHistory },
     { data: copyLogs },
+    { data: replyOutcomes },
     { data: v2Runs },
     { data: usageLogs30d },
   ] = await Promise.all([
     db.from('reply_history').select('context, created_at').order('created_at', { ascending: false }).limit(2000),
     db.from('copy_logs').select('tone, is_v2, created_at'),
+    db.from('reply_outcomes').select('event_type, outcome, tone, style_signals, created_at').order('created_at', { ascending: false }).limit(5000),
     db.from('v2_runs').select('rule_pass_rate, tone_pass_rate, avg_confidence, latency_ms, revise_attempts, all_passed, created_at').order('created_at', { ascending: false }).limit(500),
     db.from('usage_logs').select('user_id, created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
   ]);
@@ -63,12 +65,24 @@ export async function GET() {
   });
   const hitLimitCount = Object.values(userDayCounts).filter(s => s.size >= 3).length;
 
+  const outcomes = replyOutcomes || [];
+  const selectedCount = outcomes.filter(row => row.event_type === 'selected').length;
+  const sentCount = outcomes.filter(row => row.event_type === 'sent_confirmed').length;
+  const outcomeReportedCount = outcomes.filter(row => row.event_type === 'outcome_reported').length;
+  const gotReplyCount = outcomes.filter(row => row.outcome === 'got_reply').length;
+  const styleSampleCount = outcomes.filter(row => ['copied', 'edited', 'sent_confirmed'].includes(row.event_type) && row.style_signals && typeof row.style_signals.word_count === 'number').length;
+
   return NextResponse.json({
     contextCounts,
     toneCounts,
     copyRate,
     totalReplies,
     totalCopies,
+    selectedCount,
+    sentCount,
+    outcomeReportedCount,
+    gotReplyCount,
+    styleSampleCount,
     v2Stats: {
       total: v2Total,
       passRate: v2PassRate,
