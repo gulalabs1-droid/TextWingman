@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
 import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_SAVINGS_PERCENT, ANNUAL_MONTHLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from '@/lib/pricing'
+import { captureAttribution, track } from '@/lib/analytics'
 
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null)
@@ -18,6 +19,12 @@ export default function PricingPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    const attribution = captureAttribution()
+    track('pricing_viewed', {
+      source: typeof attribution.utm_source === 'string' ? attribution.utm_source : 'direct',
+      from: typeof attribution.src === 'string' ? attribution.src : undefined,
+    })
+
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user ? { email: user.email || '', id: user.id } : null)
@@ -46,30 +53,44 @@ export default function PricingPage() {
   }, [supabase.auth, supabase])
 
   const handleCheckout = async (plan: 'monthly' | 'weekly' | 'annual', trial = false) => {
+    const attribution = captureAttribution()
+    const source = typeof attribution.utm_source === 'string' ? attribution.utm_source : 'direct'
     if (!user) {
       toast({
         title: 'Account Required',
         description: 'Please sign up or log in first to subscribe',
       })
-      window.location.href = `/login?redirect=/pricing&plan=${plan}`
+      track('signup_cta_clicked', { from: 'pricing', plan, source })
+      const pricingParams = new URLSearchParams()
+      ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id', 'src'].forEach((key) => {
+        const value = attribution[key as keyof typeof attribution]
+        if (typeof value === 'string' && value) pricingParams.set(key, value)
+      })
+      const destination = pricingParams.toString() ? `/pricing?${pricingParams.toString()}` : '/pricing'
+      const loginParams = new URLSearchParams({ mode: 'signup', redirect: destination, plan })
+      window.location.href = `/login?${loginParams.toString()}`
       return
     }
 
     setLoading(trial ? 'trial' : plan)
+    track('checkout_started', { plan, trial, from: 'pricing', source })
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, trial }),
+        body: JSON.stringify({ plan, trial, analytics: { attribution } }),
       })
 
       const data = await res.json()
       if (data.url) {
+        track('checkout_viewed', { plan, trial, source })
         window.location.href = data.url
       } else {
+        track('checkout_failed', { plan, trial, source, reason: data.error || 'missing_url' })
         toast({ title: 'Error', description: 'Failed to start checkout', variant: 'destructive' })
       }
     } catch {
+      track('checkout_failed', { plan, trial, source, reason: 'network_error' })
       toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' })
     } finally {
       setLoading(null)

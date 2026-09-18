@@ -29,8 +29,13 @@ const CLIENT_EVENT_ALIASES: Record<string, string> = {
   style_signal_recorded: 'style_signal_recorded',
   signup_started: 'signup_start',
   signup_completed: 'signup_complete',
+  signup_cta_clicked: 'signup_cta_click',
+  pricing_viewed: 'pricing_view',
+  checkout_viewed: 'checkout_view',
   checkout_started: 'checkout_start',
   upgrade_clicked: 'checkout_start',
+  checkout_completed: 'checkout_complete',
+  checkout_failed: 'checkout_error',
 };
 
 const PRODUCT_REQUEST_ACTIONS = new Set(['generate_reply', 'reply_request']);

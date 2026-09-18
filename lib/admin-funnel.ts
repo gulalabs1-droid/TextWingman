@@ -251,7 +251,7 @@ type SourceBucket = {
   visitors: Set<string>;
   landingSessions: Set<string>;
   composerStarts: Set<string>;
-  replySuccesses: number;
+  replyPeople: Set<string>;
   signups: Set<string>;
   paid: Set<string>;
 };
@@ -273,7 +273,7 @@ function sourceBreakdown(
       visitors: new Set(),
       landingSessions: new Set(),
       composerStarts: new Set(),
-      replySuccesses: 0,
+      replyPeople: new Set(),
       signups: new Set(),
       paid: new Set(),
     };
@@ -290,7 +290,7 @@ function sourceBreakdown(
     if (isPageViewAction(event)) bucket.visitors.add(personKey(log));
     if (isLandingLog(log)) bucket.landingSessions.add(sessionKey(log));
     if (isComposerAction(event)) bucket.composerStarts.add(sessionKey(log));
-    if (isRecordedSuccess(log)) bucket.replySuccesses += 1;
+    if (isRecordedSuccess(log)) bucket.replyPeople.add(personKey(log));
     if (log.user_id && !sourceByUser.has(log.user_id)) sourceByUser.set(log.user_id, source);
   }
   for (const log of successLogs.filter(item => dateIsWithin(item.created_at, since, until))) {
@@ -308,7 +308,7 @@ function sourceBreakdown(
       visitors: bucket.visitors.size,
       landingSessions: bucket.landingSessions.size,
       composerStarts: bucket.composerStarts.size,
-      replySuccesses: bucket.replySuccesses,
+      replySuccesses: bucket.replyPeople.size,
       signups: bucket.signups.size,
       paid: bucket.paid.size,
     }))

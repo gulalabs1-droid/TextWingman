@@ -114,7 +114,7 @@ export default function FunnelPage() {
     { label: 'External visitors', count: data.period.visitors, color: 'bg-blue-500' },
     { label: 'Landing sessions', count: data.period.landingSessions, color: 'bg-cyan-500' },
     { label: 'Composer starts', count: data.period.composerStarts, color: 'bg-violet-500' },
-    { label: 'Reply successes', count: data.period.uniqueReplyPeople, color: 'bg-fuchsia-500' },
+    { label: 'People with a reply', count: data.period.uniqueReplyPeople, color: 'bg-fuchsia-500' },
     { label: 'Signups', count: data.period.signups, color: 'bg-amber-500' },
     { label: 'Paid signups', count: data.period.paidSignups, color: 'bg-emerald-500' },
   ];
@@ -136,7 +136,7 @@ export default function FunnelPage() {
 
       <Card className="border border-white/[0.08] bg-white/[0.03]">
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-white/70 flex items-center gap-2"><TrendingUp className="h-4 w-4 text-purple-400" />Acquisition Funnel</CardTitle></CardHeader>
-        <CardContent><FunnelBars steps={acquisitionSteps} /><p className="mt-4 text-xs text-white/35">Requests: {data.period.replyRequests.toLocaleString()} · Successful replies: {data.period.replySuccesses.toLocaleString()} · Copies: {data.period.copies.toLocaleString()} · Marked sent: {data.period.replySends.toLocaleString()}</p></CardContent>
+        <CardContent><FunnelBars steps={acquisitionSteps} /><p className="mt-4 text-xs text-white/35">Requests: {data.period.replyRequests.toLocaleString()} · Reply events: {data.period.replySuccesses.toLocaleString()} · Copies: {data.period.copies.toLocaleString()} · Marked sent: {data.period.replySends.toLocaleString()}</p></CardContent>
       </Card>
 
       <Card className="border border-white/[0.08] bg-white/[0.03]">
@@ -155,7 +155,7 @@ export default function FunnelPage() {
         <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-white/70">Source Performance</CardTitle></CardHeader>
         <CardContent>
           {data.bySource.length === 0 ? <p className="text-sm text-white/35">No attributed external activity in this period.</p> : (
-            <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-wider text-white/30"><th className="text-left py-2">Source</th><th className="text-right py-2">Visitors</th><th className="text-right py-2">Replies</th><th className="text-right py-2">Signups</th><th className="text-right py-2">Paid</th></tr></thead><tbody>{data.bySource.map(source => <tr key={source.source} className="border-b border-white/[0.05] text-white/60"><td className="py-2.5 capitalize">{source.source.replace(/_/g, ' ')}</td><td className="text-right">{source.visitors}</td><td className="text-right">{source.replySuccesses}</td><td className="text-right">{source.signups}</td><td className="text-right text-emerald-400">{source.paid}</td></tr>)}</tbody></table></div>
+            <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b border-white/[0.08] text-[10px] uppercase tracking-wider text-white/30"><th className="text-left py-2">Source</th><th className="text-right py-2">Visitors</th><th className="text-right py-2">People with reply</th><th className="text-right py-2">Signups</th><th className="text-right py-2">Paid</th></tr></thead><tbody>{data.bySource.map(source => <tr key={source.source} className="border-b border-white/[0.05] text-white/60"><td className="py-2.5 capitalize">{source.source.replace(/_/g, ' ')}</td><td className="text-right">{source.visitors}</td><td className="text-right">{source.replySuccesses}</td><td className="text-right">{source.signups}</td><td className="text-right text-emerald-400">{source.paid}</td></tr>)}</tbody></table></div>
           )}
         </CardContent>
       </Card>

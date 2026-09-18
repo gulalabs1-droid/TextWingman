@@ -205,7 +205,7 @@ function buildBottleneckStages(
     { key: 'bio_clicks', label: 'Bio/link clicks', count: socialTotals.bioClicks, source: 'imported platform metrics' },
     { key: 'landing_sessions', label: 'Landing sessions', count: funnel.period.landingSessions, source: 'first-party site events' },
     { key: 'composer_starts', label: 'Composer starts', count: funnel.period.composerStarts, source: 'first-party site events' },
-    { key: 'reply_successes', label: 'Reply successes', count: funnel.period.replySuccesses, source: 'first-party site events' },
+    { key: 'reply_successes', label: 'People with a reply', count: funnel.period.uniqueReplyPeople, source: 'unique first-party people' },
     { key: 'signups', label: 'Signups', count: funnel.period.signups, source: 'first-party account data' },
     { key: 'paid_users', label: 'New paid users', count: funnel.period.paidSignups, source: 'first-party billing data' },
   ];
@@ -383,7 +383,7 @@ function windowRevenue(
   const windowProfiles = profiles.filter(profile => inWindow(profile.created_at, since, until));
   const windowSubs = subscriptions.filter(sub => inWindow(sub.created_at, since, until));
   const visitors = new Set(windowLogs.filter(log => isPageViewAction(eventOf(log))).map(personKey)).size;
-  const replies = dedupeSuccessLogs(windowLogs.filter(isRecordedSuccess)).length;
+  const replies = new Set(dedupeSuccessLogs(windowLogs.filter(isRecordedSuccess)).map(personKey)).size;
   const paid = new Set(windowSubs.filter(sub =>
     ['active', 'trialing', 'canceled', 'past_due', 'unpaid'].includes(sub.status || '') &&
     Boolean(sub.user_id && verifiedPaidIds.has(sub.user_id)),
@@ -654,7 +654,7 @@ export async function getGrowthCommandCenter(
   const revenue = {
     current: {
       externalVisitors: funnel.period.visitors,
-      replySuccesses: funnel.period.replySuccesses,
+      replySuccesses: funnel.period.uniqueReplyPeople,
       signups: funnel.period.signups,
       paidUsers: stripeSnapshot.connected ? activePaidIds.size : null,
       mrr: currentMrr == null ? null : Math.round(currentMrr * 100) / 100,
@@ -666,7 +666,7 @@ export async function getGrowthCommandCenter(
       d30: windowRevenue(logs, externalProfiles, verifiedExternalSubscriptions, new Date(now - 30 * DAY).toISOString(), until, convertedPaidIds),
     },
     rates: {
-      visitorToReply: percent(funnel.period.replySuccesses, funnel.period.visitors),
+      visitorToReply: percent(funnel.period.uniqueReplyPeople, funnel.period.visitors),
       visitorToSignup: percent(funnel.period.signups, funnel.period.visitors),
       signupToPaid: percent(funnel.period.paidSignups, funnel.period.signups),
     },

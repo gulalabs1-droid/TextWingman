@@ -24,6 +24,7 @@ export default function LoginPage() {
   // Get redirect URL from query params (for checkout flow)
   const redirectUrl = searchParams.get('redirect')
   const selectedPlan = searchParams.get('plan')
+  const isReplySaveFlow = redirectUrl?.includes('/app?restore=1') ?? false
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -110,6 +111,8 @@ export default function LoginPage() {
     // Show helpful message based on redirect type
     if (redirectUrl?.startsWith('/invite/')) {
       setMessage(`Account created! Check your email to confirm, then you'll be redirected to activate your free Pro access.`)
+    } else if (isReplySaveFlow) {
+      setMessage(`Account created! Check your email to confirm, then your saved thread will be ready when you return.`)
     } else if (redirectUrl) {
       setMessage(`Account created! Check your email to confirm, then you'll be redirected to complete your ${selectedPlan || ''} subscription.`)
     } else {
@@ -134,14 +137,25 @@ export default function LoginPage() {
             </p>
           </div>
         )}
+        {isReplySaveFlow && !selectedPlan && (
+          <div className="p-3 bg-violet-50 border-2 border-violet-200 rounded-xl mb-4">
+            <p className="text-sm text-violet-700 font-medium text-center">
+              Save this thread and let Text Wingman learn the way you actually text.
+            </p>
+          </div>
+        )}
 
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">
-            {mode === 'signup' ? 'Create Account' : 'Welcome Back'}
+            {mode === 'signup'
+              ? (isReplySaveFlow ? 'Save your thread' : 'Create Account')
+              : 'Welcome Back'}
           </h1>
           <p className="mt-2 text-gray-600">
             {mode === 'signup' 
-              ? (redirectUrl ? 'Sign up to continue with your subscription' : 'Start getting perfect replies today')
+              ? (isReplySaveFlow
+                ? 'Free account. Keep this reply, return when they answer, and build your Style DNA.'
+                : redirectUrl ? 'Sign up to continue with your subscription' : 'Start getting perfect replies today')
               : 'Sign in to continue'}
           </p>
         </div>
@@ -247,7 +261,7 @@ export default function LoginPage() {
             ) : mode === 'signup' ? (
               <>
                 <Sparkles className="h-5 w-5" />
-                Create Free Account
+                {isReplySaveFlow ? 'Save My Thread Free' : 'Create Free Account'}
               </>
             ) : (
               'Sign In'

@@ -5,7 +5,7 @@ import { SITE_URL } from '@/lib/site';
 
 export async function POST(request: NextRequest) {
   try {
-    const { plan, trial } = await request.json();
+    const { plan, trial, analytics } = await request.json();
 
     if (!plan || !['monthly', 'weekly', 'annual'].includes(plan)) {
       return NextResponse.json(
@@ -30,6 +30,16 @@ export async function POST(request: NextRequest) {
 
     const planConfig = PRICING[plan as keyof typeof PRICING];
     const origin = request.headers.get('origin') || SITE_URL;
+    const trackingMetadata: Record<string, string> = {};
+    const attribution = analytics?.attribution;
+    if (attribution && typeof attribution === 'object' && !Array.isArray(attribution)) {
+      for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id', 'src']) {
+        const value = attribution[key];
+        if (typeof value === 'string' && value.trim()) trackingMetadata[key] = value.trim().slice(0, 128);
+      }
+    }
+    const successParams = new URLSearchParams({ success: 'true', plan });
+    const cancelParams = new URLSearchParams({ canceled: 'true', plan });
 
     // Create Stripe Checkout session
     const sessionParams: Record<string, unknown> = {
@@ -40,8 +50,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      success_url: `${origin}/app?success=true`,
-      cancel_url: `${origin}/app?canceled=true`,
+      success_url: `${origin}/app?${successParams.toString()}`,
+      cancel_url: `${origin}/app?${cancelParams.toString()}`,
       allow_promotion_codes: true,
       customer_email: userEmail || undefined,
       // CRITICAL: These fields link the checkout to the Supabase user
@@ -49,12 +59,14 @@ export async function POST(request: NextRequest) {
       metadata: {
         user_id: userId,
         email: userEmail,
+        ...trackingMetadata,
       },
       // Pass user_id to subscription metadata for webhook access
       subscription_data: {
         metadata: {
           user_id: userId,
           email: userEmail,
+          ...trackingMetadata,
         },
         ...(trial ? { trial_period_days: 7 } : {}),
         ...(trial ? {

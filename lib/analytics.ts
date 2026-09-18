@@ -29,8 +29,13 @@ const BEACON_EVENTS = new Set([
   'reply_outcome_recorded',
   'style_signal_recorded',
   'signup_start',
+  'signup_cta_click',
   'signup_complete',
+  'pricing_view',
+  'checkout_view',
   'checkout_start',
+  'checkout_complete',
+  'checkout_error',
 ]);
 
 let memoryVisitorId: string | null = null;

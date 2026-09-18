@@ -755,8 +755,12 @@ export default function AppPage() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('success') === 'true') {
       toast({
-        title: "🎉 Welcome to Pro!",
-        description: "You now have unlimited verified replies. Let's go!",
+        title: "Payment received",
+        description: "Your Pro access is syncing now. Your coach is ready in a few seconds.",
+      });
+      track('checkout_completed', {
+        plan: urlParams.get('plan') || undefined,
+        source: isSocialTraffic.current ? 'social' : 'organic',
       });
       // Clean up URL
       window.history.replaceState({}, '', '/app');
@@ -2580,33 +2584,43 @@ export default function AppPage() {
 
   // Handle Stripe checkout
   const handleCheckout = async (plan: 'monthly' | 'weekly' | 'annual') => {
-    track('upgrade_clicked', { plan, source: isSocialTraffic.current ? 'social' : 'organic' });
+    const source = isSocialTraffic.current ? 'social' : 'organic';
+    track('upgrade_clicked', { plan, source, from: 'app_paywall' });
     // Require login before checkout
     if (!userId) {
       toast({
         title: 'Account Required',
         description: 'Please sign up or log in first to subscribe',
       });
-      track('signup_started', { from: 'paywall', plan });
-      const loginParams = new URLSearchParams({ redirect: '/pricing', plan });
+      track('signup_started', { from: 'paywall', plan, source });
+      const loginParams = new URLSearchParams({
+        mode: 'signup',
+        redirect: '/pricing',
+        plan,
+      });
       try {
-        const attr = JSON.parse(localStorage.getItem('tw_attribution') || '{}');
-        if (attr.utm_source) loginParams.set('utm_source', attr.utm_source);
-        if (attr.src) loginParams.set('src', attr.src);
+        const attr = captureAttribution();
+        ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id', 'src']
+          .forEach((key) => {
+            const value = attr[key];
+            if (typeof value === 'string' && value) loginParams.set(key, value);
+          });
       } catch {}
       window.location.href = `/login?${loginParams.toString()}`;
       return;
     }
+    track('checkout_started', { plan, source, from: 'app_paywall' });
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, userId, userEmail }),
+        body: JSON.stringify({ plan, analytics: { attribution: captureAttribution() } }),
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
       } else {
+        track('checkout_failed', { plan, source, from: 'app_paywall', reason: data.error || 'missing_url' });
         toast({
           title: 'Error',
           description: 'Failed to start checkout',
@@ -2614,6 +2628,7 @@ export default function AppPage() {
         });
       }
     } catch (error) {
+      track('checkout_failed', { plan, source, from: 'app_paywall', reason: 'network_error' });
       toast({
         title: 'Error',
         description: 'Something went wrong',
@@ -5127,8 +5142,9 @@ export default function AppPage() {
                     <BookmarkPlus className="h-4 w-4 text-violet-300" />
                   </div>
                   <div>
-                    <p className="text-white/90 text-sm font-bold">Save this reply and keep the thread free</p>
-                    <p className="text-white/50 text-xs leading-relaxed">Create a free account to save this thread and come back when they answer.</p>
+                    <p className="text-white/90 text-sm font-bold">Save this thread + build your Style DNA</p>
+                    <p className="text-white/50 text-xs leading-relaxed">Create a free account to keep this reply, return when they answer, and make future drafts sound more like you.</p>
+                    <p className="text-white/30 text-[10px] mt-1">Free account · no card · no inbox access</p>
                   </div>
                 </div>
                 <Link
@@ -5145,11 +5161,16 @@ export default function AppPage() {
                       sessionStorage.setItem(PENDING_THREAD_STORAGE_KEY, pending);
                       localStorage.setItem(PENDING_THREAD_STORAGE_KEY, pending);
                     } catch {}
-                    track('signup_cta_click', { from: 'reply_result_top', handoff: 'restore_thread' });
+                    track('signup_cta_click', {
+                      from: 'reply_result_top',
+                      handoff: 'restore_thread',
+                      value: 'style_dna_save',
+                      source: isSocialTraffic.current ? 'social' : 'organic',
+                    });
                   }}
                   className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500/35 border border-violet-300/35 text-white text-xs font-black hover:bg-violet-500/50 transition-all active:scale-95 whitespace-nowrap"
                 >
-                  Save it free <ArrowRight className="h-3.5 w-3.5" />
+                  Save + learn my style <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             )}
