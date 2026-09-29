@@ -5,7 +5,7 @@ const landingUrl = `${SITE_URL}/tiktok`;
 
 export const metadata: Metadata = {
   title: 'Text Wingman | Turn Their Text Into Your Best Reply',
-  description: 'Paste the text they sent or upload the thread. Get the read and a confident reply in seconds. Try Text Wingman free with no card.',
+  description: 'Paste their message and get three short, natural replies right here. Copy your favorite, then save the conversation free. No account or card needed to try.',
   metadataBase: new URL(SITE_URL),
   alternates: { canonical: landingUrl },
   openGraph: {

@@ -42,6 +42,16 @@ const SUCCESS_ACTIONS = [
   'generate_revive',
   'strategy_chat',
 ];
+const INTERNAL_ATTRIBUTION_SOURCES = new Set([
+  'audit',
+  'manual_audit',
+  'ceo_test',
+  'codex',
+  'codex_qa',
+  'internal',
+  'qa',
+  'test',
+]);
 
 function metadataOf(log: FunnelUsageRow): Metadata {
   return log.metadata && typeof log.metadata === 'object' ? (log.metadata as Metadata) : {};
@@ -67,9 +77,13 @@ export function isInternalTraffic(log: FunnelUsageRow, adminUserIds: Set<string>
   if (metadata.internal === true) return true;
   const utm = metadata.utm || {};
   const props = metadata.props || {};
+  const source = (text(utm.utm_source) || text(utm.src) || text(props.source) || text(props.platform) || '')
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
   const campaign = text(utm.utm_campaign) || text(utm.campaign) || text(props.utm_campaign);
   const videoId = text(utm.video_id) || text(props.video_id);
-  // Keep verification probes out of customer and creative-performance reporting.
+  // Keep internal QA sessions and verification probes out of acquisition reporting.
+  if (INTERNAL_ATTRIBUTION_SOURCES.has(source)) return true;
   if (campaign === 'next_move_test' || videoId?.startsWith('probe-')) return true;
   const page = pageOf(log);
   const referrer = text(metadata.referrer) || '';
@@ -93,7 +107,11 @@ export function sourceOf(log: FunnelUsageRow): string {
   const utm = metadata.utm || {};
   const props = metadata.props || {};
   const explicit = text(utm.utm_source) || text(utm.src) || text(props.source) || text(props.platform);
-  if (explicit) return explicit.toLowerCase().replace(/\s+/g, '_');
+  if (explicit) {
+    const source = explicit.toLowerCase().replace(/[\s-]+/g, '_');
+    if (['web', 'shorts', 'social', 'organic', 'gula_agents2.vercel.app'].includes(source)) return 'direct';
+    return source === 'ig' ? 'instagram' : source;
+  }
 
   const referrer = text(metadata.referrer);
   if (referrer) {
@@ -105,13 +123,13 @@ export function sourceOf(log: FunnelUsageRow): string {
       if (host.includes('facebook')) return 'facebook';
       if (host.includes('google')) return 'google';
       if (host.includes('reddit')) return 'reddit';
+      if (host === 'gula-agents2.vercel.app' || host === 'localhost') return 'direct';
       if (host) return host;
     } catch {
       // Keep the fallback below for malformed referrers.
     }
   }
 
-  if (pageOf(log) === '/tiktok') return 'tiktok';
   return 'direct';
 }
 
@@ -282,19 +300,32 @@ function sourceBreakdown(
   };
 
   const windowLogs = logs.filter(log => dateIsWithin(log.created_at, since, until));
+  const acquisitionByPerson = new Map<string, string>();
+  const orderedLogs = [...windowLogs].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  // Assign each person to one acquisition source so source totals reconcile
+  // with the unique-person header, even when their later events change UTMs.
+  for (const log of orderedLogs.filter(log => isPageViewAction(eventOf(log)) || isLandingLog(log))) {
+    const key = personKey(log);
+    if (!acquisitionByPerson.has(key)) acquisitionByPerson.set(key, sourceOf(log));
+  }
+  for (const log of orderedLogs) {
+    const key = personKey(log);
+    if (!acquisitionByPerson.has(key)) acquisitionByPerson.set(key, sourceOf(log));
+  }
   const sourceByUser = new Map<string, string>();
   for (const log of windowLogs) {
-    const source = sourceOf(log);
+    const source = acquisitionByPerson.get(personKey(log)) || sourceOf(log);
     const bucket = getBucket(source);
     const event = eventOf(log);
     if (isPageViewAction(event)) bucket.visitors.add(personKey(log));
     if (isLandingLog(log)) bucket.landingSessions.add(sessionKey(log));
     if (isComposerAction(event)) bucket.composerStarts.add(sessionKey(log));
-    if (isRecordedSuccess(log)) bucket.replyPeople.add(personKey(log));
     if (log.user_id && !sourceByUser.has(log.user_id)) sourceByUser.set(log.user_id, source);
   }
   for (const log of successLogs.filter(item => dateIsWithin(item.created_at, since, until))) {
-    if (log.user_id && !sourceByUser.has(log.user_id)) sourceByUser.set(log.user_id, sourceOf(log));
+    const source = acquisitionByPerson.get(personKey(log)) || sourceOf(log);
+    getBucket(source).replyPeople.add(personKey(log));
+    if (log.user_id && !sourceByUser.has(log.user_id)) sourceByUser.set(log.user_id, source);
   }
   for (const profile of profiles.filter(item => dateIsWithin(item.created_at, since, until))) {
     const bucket = getBucket(sourceByUser.get(profile.id) || 'unknown');
@@ -463,6 +494,7 @@ export async function getCanonicalFunnel(
     dataQuality,
     definitions: {
       visitor: 'Unique first-party visitor ID, then fingerprint/IP fallback',
+      source: 'Each person is assigned to their first acquisition source in the selected window; totals are not multi-touch',
       landing: 'Unique session that viewed / or /tiktok, or emitted landing_view',
       composer: 'Unique session that started the composer, pasted text, submitted the composer, selected an example, or began screenshot input',
       replyRequest: 'generate_reply or reply_request event',

@@ -44,8 +44,8 @@ const faqJsonLd = {
     { '@type': 'Question', name: 'Is Text Wingman free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 5 replies plus 1 decode, 1 opener, and 1 revive every day — no account, no card. Pro unlocks unlimited replies and more reply options to choose from.' } },
     { '@type': 'Question', name: 'Are my messages private?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. We never send messages for you and we never sell your data or use your conversations to train public AI models. You choose what to paste or upload, and you can delete your history anytime.' } },
     { '@type': 'Question', name: 'What apps does it work with?', acceptedAnswer: { '@type': 'Answer', text: 'Hinge, Tinder, Bumble, Instagram, iMessage, WhatsApp, Snapchat, Facebook Dating, and more — anything with text.' } },
-    { '@type': 'Question', name: 'How is this different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'ChatGPT gives you a generic reply. Wingman reads the conversation context and tone, then gives you short dating-text replies with the reason each one works.' } },
-    { '@type': 'Question', name: 'Will people know I\'m using AI?', acceptedAnswer: { '@type': 'Answer', text: 'No. Every reply sounds like a real person — lowercase, casual, no emojis, no formal sentences. The 18-word limit keeps it natural.' } },
+    { '@type': 'Question', name: 'How is this different from ChatGPT?', acceptedAnswer: { '@type': 'Answer', text: 'Wingman is a focused texting workspace: conversation context, three short reply options, saved threads, and feedback from the replies you choose.' } },
+    { '@type': 'Question', name: 'Can I edit the replies?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Every reply is a draft. Choose one, make it sound like you, and send it yourself. No tool can guarantee how another person will respond.' } },
   ],
 };
 
@@ -212,18 +212,18 @@ export default function HomePage() {
       </nav>
 
       {/* ═══ HERO ═══ */}
-      <section className="container mx-auto px-4 pt-12 pb-14 md:pt-20 md:pb-24">
-        <div className="max-w-2xl mx-auto text-center space-y-5 mb-8 md:mb-10">
+      <section className="container mx-auto px-4 pt-6 pb-10 md:pt-20 md:pb-24">
+        <div className="max-w-2xl mx-auto text-center space-y-3 mb-5 md:mb-10">
           <div className="inline-flex items-center gap-2 bg-violet-500/10 text-violet-300 px-4 py-1.5 rounded-full text-xs font-bold border border-violet-500/20">
             <Sparkles className="h-3.5 w-3.5" />
             Built for Hinge, Tinder, Bumble, Instagram &amp; iMessage
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-[1.08]">
-            Turn a confusing text into
-            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-1">a confident next move.</span>
+          <h1 className="text-3xl md:text-6xl font-bold tracking-tight text-white leading-[1.08]">
+            What should I say next?
+            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent mt-1">Three replies. Your voice.</span>
           </h1>
           <p className="text-base md:text-xl text-white/55 max-w-xl mx-auto leading-relaxed">
-            Paste their message or upload the conversation. Get the read, three natural replies, and why the move works.
+            Paste their message or upload the conversation. Pick a short, playful or warm reply. Try it free, without an account.
           </p>
         </div>
 
@@ -285,7 +285,7 @@ export default function HomePage() {
           {/* Compact reply-result preview — visible immediately below the action (mobile-first proof) */}
           <div className="mt-4 rounded-3xl bg-white/[0.03] border border-white/[0.08] p-4 sm:p-5">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/30">Live example</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.16em] text-white/30">Example reply</span>
               <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 flex items-center gap-1"><TrendingUp className="h-2.5 w-2.5" />Rising</span>
             </div>
             {/* Their message */}
@@ -306,7 +306,7 @@ export default function HomePage() {
                   <button
                     onClick={() => {
                       try { navigator.clipboard?.writeText('someone with good taste and a friday plan'); } catch {}
-                      track('copy_clicked', { source, platform: source, location: 'hero_preview' });
+                      track('example_reply_copy', { source, platform: source, location: 'hero_preview' });
                     }}
                     className="shrink-0 text-white/40 hover:text-white transition-colors"
                     aria-label="Copy reply"

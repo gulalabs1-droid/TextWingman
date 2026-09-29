@@ -40,6 +40,13 @@ const BEACON_EVENTS = new Set([
 
 let memoryVisitorId: string | null = null;
 let memorySessionId: string | null = null;
+let memoryAttribution: Props = {};
+
+export function mergeAttribution(existing: Props, captured: Props): Props {
+  // A new campaign must not inherit a previous video's ID or CTA attribution.
+  const base = captured.utm_source || captured.src ? {} : existing;
+  return { ...base, ...captured, first_seen: existing.first_seen || new Date().toISOString() };
+}
 
 function makeId(prefix: string): string {
   try {
@@ -111,8 +118,9 @@ export function captureAttribution(): Props {
     }
     const existing = readAttribution();
     if (changed) {
-      const merged = { ...existing, ...captured, first_seen: existing.first_seen || new Date().toISOString() };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      const merged = mergeAttribution(existing, captured);
+      memoryAttribution = merged;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch {}
       return merged;
     }
     return existing;
@@ -125,9 +133,9 @@ export function readAttribution(): Props {
   if (typeof window === 'undefined') return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    return raw ? JSON.parse(raw) : memoryAttribution;
   } catch {
-    return {};
+    return memoryAttribution;
   }
 }
 

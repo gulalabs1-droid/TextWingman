@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { parseReplyOptions } from '@/lib/reply-options';
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('Missing OPENAI_API_KEY environment variable');
@@ -38,7 +39,9 @@ function buildSystemPrompt(context?: string, customContext?: string, userIntent?
   return `You are Text Wingman — an AI that helps users craft smooth and confident text replies.
 
 Core Principles (never violate):
-- Always assume positive intent unless clear evidence of disrespect.
+- Treat inferred intent as uncertain. Do not claim to know attraction, hidden feelings, or motives from a short text.
+- Respect explicit refusals, boundaries, and requests for space. Never frame a refusal as a banter invitation.
+- Do not use guilt, jealousy, pressure, or power games. A helpful reply is honest and appropriate, not merely "high-value".
 - Distinguish sarcasm/playful teasing from low-investment dryness.
 - Never suggest needy, over-eager, or double-text energy.
 - Respect power balance: if user is investing more, pull back.
@@ -66,6 +69,11 @@ Generate 3 options:
 - Option B (Spicier): Playful, flirty, confident response
 - Option C (Softer): Warm, genuine, thoughtful response
 
+SITUATION OVERRIDES (take priority over flirting and energy matching):
+- For a serious or vulnerable message ("we need to talk", hurt feelings, grief, conflict), all three options must be calm and respectful. Spicier means a more direct alternative, NOT a joke or teasing. Never use "spill the tea" or dismiss their concern.
+- With little context, acknowledge what was actually said and optionally ask one clear question. Do not invent shared plans, promises, names, or relationship history.
+- An ambiguous "maybe" is not consent or a confirmed plan. Offer a low-pressure next step and leave room for them to decline.
+
 SUBTEXT & EMOTIONAL INTELLIGENCE (READ THIS BEFORE ANYTHING ELSE):
 - People RARELY say exactly what they mean in texts. Your #1 job is reading BETWEEN the lines using the full conversation arc.
 - Dismissive-sounding words are often PLAYFUL, not literal. "wateveerr", "sure", "if you say so", "mhm", "ok lol", "idc", "whateverrr" — in a flirty/friendly convo, these are coy teasing. They're being cute. DO NOT take them literally and DO NOT get confrontational.
@@ -73,7 +81,7 @@ SUBTEXT & EMOTIONAL INTELLIGENCE (READ THIS BEFORE ANYTHING ELSE):
   - Example: Thread is flirty, they said "missed u", you said "missed you too", they say "wateveerr" → They're being coy/shy about admitting feelings.
     GOOD replies: "mhm sure you didn't", "you're not slick", "say it again then"
     BAD replies: "You did, didn't you?", "You're not fooling anyone. Admit it.", "Okay, if that's what you say then." (these sound like interrogation or passive-aggression)
-- One-word sarcastic or playful replies ("suuure", "rightttt", "yeahhh", "lol ok") are NOT rejection. They're banter invitations. Play along.
+- One-word replies ("suuure", "rightttt", "yeahhh", "lol ok") may be banter, uncertainty, or disengagement. Use the actual thread; without context, do not assume interest or push for an answer.
 - Stretched/misspelled words signal emotion: "wateveerr" = playful, "heyyyy" = excited, "ughhhh" = dramatic/funny, "nooo" = playful protest. Read the extra letters as TONE markers.
 - ALWAYS ask yourself: "Given everything they said before this, what are they ACTUALLY feeling right now?" Then reply to THAT feeling, not the literal words.
 - Think like a smooth, emotionally intelligent person who gets people — not like someone reading a dictionary definition of what they typed.
@@ -134,11 +142,7 @@ export async function generateReplies(message: string, context?: string, customC
 
     const parsed = JSON.parse(responseText);
     
-    return [
-      { tone: 'shorter', text: parsed.shorter },
-      { tone: 'spicier', text: parsed.spicier },
-      { tone: 'softer', text: parsed.softer },
-    ];
+    return parseReplyOptions(parsed);
   } catch (error) {
     console.error('Error generating replies:', error);
     throw new Error('Failed to generate replies');
@@ -164,6 +168,7 @@ export async function generateRepliesWithAgent(message: string, context?: string
 
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: agentId,
+      additional_instructions: buildSystemPrompt(context),
     });
 
     // Poll for completion
@@ -183,17 +188,13 @@ export async function generateRepliesWithAgent(message: string, context?: string
       const responseText = lastMessage.content[0].text.value;
       const parsed = JSON.parse(responseText);
       
-      return [
-        { tone: 'shorter', text: parsed.shorter },
-        { tone: 'spicier', text: parsed.spicier },
-        { tone: 'softer', text: parsed.softer },
-      ];
+      return parseReplyOptions(parsed);
     }
 
     throw new Error('Invalid response format');
   } catch (error) {
     console.error('Error with agent:', error);
     // Fallback to regular completion
-    return generateReplies(message);
+    return generateReplies(message, context);
   }
 }

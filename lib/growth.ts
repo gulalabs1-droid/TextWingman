@@ -187,13 +187,15 @@ function stageAction(stage: string): string {
     profile_visits: 'Make the first frame a recognizable text problem and refresh the profile promise.',
     bio_clicks: 'Put one benefit-led CTA in the bio and pin a “how it works” post.',
     landing_sessions: 'Use one canonical tracked URL and make it the first profile link.',
-    composer_starts: 'Run the one-tap demo against a tagged cohort; keep paste and the primary action above the fold.',
+    composer_starts: 'Test a prefilled example against a blank paste box; measure paste-to-reply starts before adding features.',
     reply_successes: 'Check event errors and shorten the path from paste to the first useful reply.',
     signups: 'Let the visitor see the useful reply before asking for an account.',
     paid_users: 'Clarify the paid upgrade moment after the first successful result.',
   };
   return actions[stage] || 'Collect one clean measurement window before changing the funnel.';
 }
+
+const MIN_BOTTLENECK_DENOMINATOR = 10;
 
 function buildBottleneckStages(
   socialTotals: { views: number | null; profileVisits: number | null; bioClicks: number | null },
@@ -222,7 +224,7 @@ function detectBottleneck(stages: Array<{ key: string; label: string; count: num
       if (!firstMissing) firstMissing = from.count == null ? from : to;
       continue;
     }
-    if (from.count <= 0) continue;
+    if (from.count < MIN_BOTTLENECK_DENOMINATOR) continue;
     const conversion = Math.round((to.count / from.count) * 1000) / 10;
     const drop = Math.round((100 - conversion) * 10) / 10;
     if (!largest || drop > largest.drop) largest = { from, to, conversion, drop };
@@ -233,7 +235,7 @@ function detectBottleneck(stages: Array<{ key: string; label: string; count: num
       type: 'observed_drop',
       severity: largest.drop >= 80 ? 'critical' : largest.drop >= 50 ? 'high' : 'watch',
       title: `${largest.from.label} → ${largest.to.label} is the largest observed drop`,
-      detail: `${largest.conversion}% continued (${largest.drop}% drop).`,
+      detail: `${largest.conversion}% continued (${largest.drop}% drop; n=${largest.from.count}). Transitions with fewer than ${MIN_BOTTLENECK_DENOMINATOR} people are treated as directional only.`,
       nextAction: stageAction(largest.to.key),
       from: largest.from.key,
       to: largest.to.key,
