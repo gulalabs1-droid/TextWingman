@@ -28,7 +28,7 @@ type QuickReply = {
   replyId: string;
 };
 
-const replyLabels = { shorter: 'Keep it short', spicier: 'Make it playful', softer: 'Keep it warm' };
+const replyLabels = { shorter: 'Keep it short', spicier: 'Another angle', softer: 'Keep it warm' };
 
 export default function TikTokLandingPage() {
   const router = useRouter();

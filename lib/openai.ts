@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { parseReplyOptions } from '@/lib/reply-options';
+import { replySafetyInstructions } from '@/lib/reply-safety';
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('Missing OPENAI_API_KEY environment variable');
@@ -125,13 +126,14 @@ Return ONLY a JSON object with this exact structure:
 
 export async function generateReplies(message: string, context?: string, customContext?: string, userIntent?: string): Promise<GeneratedReply[]> {
   try {
+    const safetyInstructions = replySafetyInstructions(message);
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: buildSystemPrompt(context, customContext, userIntent) },
+        { role: 'system', content: `${buildSystemPrompt(context, customContext, userIntent)}\n\n${safetyInstructions}` },
         { role: 'user', content: `Generate 3 reply options for this message: "${message}"` }
       ],
-      temperature: 0.8,
+      temperature: safetyInstructions ? 0.35 : 0.8,
       response_format: { type: 'json_object' },
     });
 
@@ -168,7 +170,7 @@ export async function generateRepliesWithAgent(message: string, context?: string
 
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: agentId,
-      additional_instructions: buildSystemPrompt(context),
+      additional_instructions: `${buildSystemPrompt(context)}\n\n${replySafetyInstructions(message)}`,
     });
 
     // Poll for completion
