@@ -62,6 +62,8 @@ export default function PricingPage() {
       })
       track('signup_cta_clicked', { from: 'pricing', plan, source })
       const pricingParams = new URLSearchParams()
+      pricingParams.set('plan', plan)
+      if (trial) pricingParams.set('trial', '1')
       ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id', 'src'].forEach((key) => {
         const value = attribution[key as keyof typeof attribution]
         if (typeof value === 'string' && value) pricingParams.set(key, value)
@@ -282,7 +284,7 @@ export default function PricingPage() {
                   <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Everything in Pro Monthly
                 </li>
                 <li className="flex items-center gap-2.5 text-white/80 text-sm">
-                  <Target className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Price locked forever
+                  <Target className="h-4 w-4 text-emerald-400 flex-shrink-0" /> One annual payment
                 </li>
                 <li className="flex items-center gap-2.5 text-white/60 text-sm">
                   <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> First access to new features

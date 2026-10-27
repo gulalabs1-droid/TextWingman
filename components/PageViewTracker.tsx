@@ -16,15 +16,12 @@ export default function PageViewTracker() {
 
     captureAttribution();
     getClientIdentity();
-    const timer = setTimeout(() => {
-      persistAnalyticsEvent('page_view', {
-        page_path: pathname,
-        screen: `${window.screen.width}x${window.screen.height}`,
-        title: document.title || null,
-      });
-    }, 300);
-
-    return () => clearTimeout(timer);
+    // Do not lose a visit when someone navigates or backgrounds the tab quickly.
+    persistAnalyticsEvent('page_view', {
+      page_path: pathname,
+      screen: `${window.screen.width}x${window.screen.height}`,
+      title: document.title || null,
+    });
   }, [pathname, searchParams]);
 
   return null;

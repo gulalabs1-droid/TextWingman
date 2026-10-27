@@ -58,6 +58,28 @@ test('the social landing path alone is not evidence of TikTok acquisition', () =
 test('QA attribution is excluded without excluding genuine Reddit tests', () => {
   assert.equal(isInternalTraffic(row('qa', 'page_view', 'Manual Audit', 1), new Set()), true);
   assert.equal(isInternalTraffic(row('real', 'page_view', 'reddit', 1), new Set()), false);
+  assert.equal(isInternalTraffic(row('qa-internal', 'page_view', 'internal_test', 1), new Set()), true);
+});
+
+test('common platform aliases reconcile into one acquisition source', () => {
+  for (const source of ['youtube', 'yt', 'YT Shorts', 'youtube-shorts', 'youtu.be']) {
+    assert.equal(sourceOf(row(source, 'page_view', source, 1)), 'youtube');
+  }
+  for (const source of ['ig', 'IG Reels', 'instagram-reels', 'instagram.com']) {
+    assert.equal(sourceOf(row(source, 'page_view', source, 1)), 'instagram');
+  }
+  assert.equal(sourceOf(row('tiktok', 'page_view', 'tik tok', 1)), 'tiktok');
+});
+
+test('internal test generations never become external activation', async () => {
+  const success = row('test-success', 'generate_reply', 'internal_test', 1);
+  success.metadata = { ...success.metadata, outcome: 'success' };
+  const logs = [row('test-view', 'page_view', 'internal_test', 3), row('test-start', 'composer_submit', 'internal_test', 2), success];
+  const funnel = await getCanonicalFunnel(fakeDb(logs), { rangeDays: 30, verifiedPaidIds: new Set() });
+  assert.equal(funnel.period.visitors, 0);
+  assert.equal(funnel.period.composerStarts, 0);
+  assert.equal(funnel.period.uniqueReplyPeople, 0);
+  assert.equal(funnel.dataQuality.internalExcluded, 3);
 });
 
 test('source totals reconcile when a visitor changes campaigns and duplicate success events exist', async () => {

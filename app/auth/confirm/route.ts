@@ -2,6 +2,7 @@ import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { redeemInviteCode, INVITE_CODES } from '@/lib/invite'
+import { isSavedThreadReturn, safeReturnPath } from '@/lib/navigation'
 
 /**
  * After email confirmation, check if the user signed up with a pending invite code
@@ -20,7 +21,10 @@ async function handlePostConfirmation(user: { id: string; user_metadata?: Record
     }
   }
 
-  // Check onboarding status — new users always go to onboarding first
+  // Keep the reply that motivated signup ahead of optional profile setup.
+  if (isSavedThreadReturn(next)) return next;
+
+  // Check onboarding status for the remaining flows.
   const { data: profile } = await supabase
     .from('profiles')
     .select('onboarding_completed')
@@ -45,7 +49,7 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/onboarding'
+  const next = safeReturnPath(searchParams.get('next'), '/onboarding')
 
   // Handle PKCE flow (code exchange)
   if (code) {

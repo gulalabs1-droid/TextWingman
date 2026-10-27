@@ -21,6 +21,10 @@ const VISITOR_STORAGE_KEY = 'tw_visitor_id';
 const SESSION_STORAGE_KEY = 'tw_session_id';
 const VISITOR_COOKIE = 'tw_vid';
 const BEACON_EVENTS = new Set([
+  'page_view',
+  'landing_view',
+  'composer_start',
+  'composer_submit',
   'reply_success',
   'reply_selected',
   'reply_copy',

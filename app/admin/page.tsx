@@ -488,7 +488,7 @@ export default function AdminOverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 rounded-2xl bg-white/[0.03] border border-white/[0.07] p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-[11px] font-semibold text-white/35 uppercase tracking-wider">Latest Activity (24h)</p>
+            <p className="text-[11px] font-semibold text-white/35 uppercase tracking-wider">Latest Product Activity (30 days)</p>
             <span className="text-[10px] text-white/20 bg-white/[0.03] px-2 py-0.5 rounded-full border border-white/[0.06]">{data.recentActivity.length} events</span>
           </div>
           {data.recentActivity.length === 0
@@ -557,9 +557,9 @@ export default function AdminOverviewPage() {
           <span className="text-base shrink-0">💡</span>
           <p className="text-xs text-white/40 leading-relaxed">
             {data.activationRate < 40
-              ? `Activation is ${data.activationRate}% — consider highlighting Screenshot Upload in onboarding. Users who upload are 3× more likely to activate.`
+              ? `Activation is ${data.activationRate}%. Observe real visitors trying paste, generate and copy. Test one change at a time; there is not enough evidence here to claim screenshot uploads improve conversion.`
               : data.conversionRate < 10
-              ? `Conversion is ${data.conversionRate}%. Your activated users are your warmest leads — a paywall nudge after their 3rd generation could lift this significantly.`
+              ? `Conversion is ${data.conversionRate}%. Check whether activated users return and reach checkout before changing prices or adding a paywall.`
               : `Strong ${data.conversionRate}% conversion. Your next lever is reducing churn — ${data.churn.d30} cancelations in the last 30 days.`
             }
           </p>

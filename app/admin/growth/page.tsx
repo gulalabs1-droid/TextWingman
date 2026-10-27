@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { hasFreshExternalEvents } from '@/lib/measurement-health';
 import {
   Activity,
   AlertTriangle,
@@ -269,6 +270,7 @@ export default function GrowthCommandCenterPage() {
   const previous = windows.previous7;
   const growthPct = (currentValue: number, previousValue: number) => previousValue ? Math.round(((currentValue - previousValue) / previousValue) * 100) : currentValue ? 100 : 0;
   const leadCounts = LEAD_STATUSES.map(status => ({ status, count: data.leads.filter(lead => lead.status === status).length }));
+  const externalEventsFresh = hasFreshExternalEvents(data.measurement.lastEventReceived);
 
   return (
     <div className="space-y-6 pb-12">
@@ -295,6 +297,7 @@ export default function GrowthCommandCenterPage() {
         </div>
       )}
       {actionError && <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{actionError}</div>}
+      {!externalEventsFresh && <div role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/[0.08] p-4 text-sm text-amber-100"><p className="font-bold">No fresh external activity recorded.</p><p className="mt-1 text-xs leading-relaxed text-amber-100/75">No external event has arrived in the last 48 hours. This can mean low traffic or a tracking problem, not proof that nobody visited. Verify the anonymous paste, generate and copy flow before increasing spend. Owner/admin QA is excluded from customer traffic.</p></div>}
       {(!data.billing.connected || !data.billing.pricesVerified || (data.billing.staleAppRows ?? 0) > 0) && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.08] p-4 text-sm text-amber-100">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
@@ -345,7 +348,7 @@ export default function GrowthCommandCenterPage() {
           <HealthRow label="Unknown sources" value={displayNumber(data.measurement.unknownSourcePageViews)} detail="Direct/unknown traffic cannot be used to rank social creative." good={data.measurement.unknownSourcePageViews === 0} />
           <HealthRow label="Session IDs missing" value={displayNumber(data.measurement.missingSessionEvents)} detail="Session IDs are required for trustworthy landing-to-composer conversion." good={data.measurement.missingSessionEvents === 0} />
           <HealthRow label="Recorded flow errors" value={displayNumber(data.measurement.trackingErrors)} detail="Reply, screenshot, or checkout errors that reached first-party analytics. Delivery failures are kept separate because they never reach the event table." good={data.measurement.trackingErrors === 0} />
-          <HealthRow label="Last event received" value={displayDate(data.measurement.lastEventReceived)} detail={`${data.measurement.importedMetricRows} platform metric rows across ${data.measurement.importedMetricDays} dates.`} good={Boolean(data.measurement.lastEventReceived)} />
+          <HealthRow label="Last external event received" value={displayDate(data.measurement.lastEventReceived)} detail={`${externalEventsFresh ? 'An external event arrived within 48 hours.' : 'No external event within 48 hours; check traffic and tracking separately.'} ${data.measurement.importedMetricRows} platform metric rows across ${data.measurement.importedMetricDays} dates.`} good={externalEventsFresh} />
         </div></section>
 
         <section className={`${panelClass()} p-5`}><div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-violet-400" /><h2 className="text-sm font-bold text-white/85">Acquisition Sources</h2></div><p className="mt-1 text-xs text-white/35">Each person belongs to their first source in this window, so visitor totals reconcile. Replies are unique people, not duplicate event rows.</p><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[500px] text-xs"><thead><tr className="border-b border-white/[0.07] text-[10px] uppercase tracking-wider text-white/30"><th className="py-2 text-left">Source</th><th className="py-2 text-right">Visitors</th><th className="py-2 text-right">Starts</th><th className="py-2 text-right">People with reply</th><th className="py-2 text-right">Paid</th></tr></thead><tbody>{data.funnel.bySource.length ? data.funnel.bySource.map(source => <tr key={source.source} className="border-b border-white/[0.05] text-white/60"><td className="py-2.5 font-semibold capitalize text-white/75">{source.source.replace(/_/g, ' ')}</td><td className="py-2.5 text-right">{source.visitors}</td><td className="py-2.5 text-right">{source.composerStarts}</td><td className="py-2.5 text-right">{source.replySuccesses}</td><td className="py-2.5 text-right">{source.paid}</td></tr>) : <tr><td colSpan={5} className="py-8 text-center text-white/25">No attributed sources yet.</td></tr>}</tbody></table></div></section>

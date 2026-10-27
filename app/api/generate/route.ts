@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 import { buildRequestAnalytics } from '@/lib/analytics-server';
+import { validateMessage } from '@/lib/quick-reply';
 
 const FREE_USAGE_LIMIT = 5; // 5 free replies per day
 
@@ -17,11 +18,15 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context, customContext, userIntent, analytics } = await request.json();
-
-    if (!message || typeof message !== 'string') {
+    const input = await request.json().catch(() => null);
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+      return NextResponse.json({ error: 'Enter a message to get started.' }, { status: 400 });
+    }
+    const { context, customContext, userIntent, analytics } = input;
+    const { message, error: validationError } = validateMessage(input.message);
+    if (validationError) {
       return NextResponse.json(
-        { error: 'Message is required' },
+        { error: validationError },
         { status: 400 }
       );
     }

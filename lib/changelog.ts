@@ -10,6 +10,20 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.9.0',
+    date: '2026-10-27',
+    title: 'Your Next Reply. Right Here.',
+    description: 'Go from their message to three reply drafts on the homepage. No detour, no account, no card. Make the words yours before you copy.',
+    type: 'improvement',
+    highlights: [
+      'Real replies on the homepage and social quick-start page, using the same simple flow',
+      'Edit any draft before copying, then optionally mark it as sent yourself',
+      'Save your reply and conversation with a free account after trying the tool',
+      'Clear screenshot-size guidance, readable mobile inputs and more direct result focus',
+      'Clearer pricing and examples without invented customer outcomes or mind-reading claims',
+    ],
+  },
+  {
     version: '4.8.1',
     date: '2026-09-28',
     title: 'From Their Text to Your Reply, in One Place',

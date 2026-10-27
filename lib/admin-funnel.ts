@@ -49,6 +49,7 @@ const INTERNAL_ATTRIBUTION_SOURCES = new Set([
   'codex',
   'codex_qa',
   'internal',
+  'internal_test',
   'qa',
   'test',
 ]);
@@ -110,7 +111,10 @@ export function sourceOf(log: FunnelUsageRow): string {
   if (explicit) {
     const source = explicit.toLowerCase().replace(/[\s-]+/g, '_');
     if (['web', 'shorts', 'social', 'organic', 'gula_agents2.vercel.app'].includes(source)) return 'direct';
-    return source === 'ig' ? 'instagram' : source;
+    if (['yt', 'yt_shorts', 'youtube_shorts', 'youtube.com', 'youtu.be'].includes(source)) return 'youtube';
+    if (['ig', 'ig_reels', 'instagram_reels', 'instagram.com'].includes(source)) return 'instagram';
+    if (['tik_tok', 'tiktok.com'].includes(source)) return 'tiktok';
+    return source;
   }
 
   const referrer = text(metadata.referrer);

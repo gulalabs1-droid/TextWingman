@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
 import { Sparkles, Eye, EyeOff } from 'lucide-react'
 import { track } from '@/lib/analytics'
+import { isSavedThreadReturn, safeReturnPath } from '@/lib/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -22,15 +23,15 @@ export default function LoginPage() {
   const supabase = createClient()
   
   // Get redirect URL from query params (for checkout flow)
-  const redirectUrl = searchParams.get('redirect')
+  const redirectUrl = searchParams.get('redirect') ? safeReturnPath(searchParams.get('redirect')) : null
   const selectedPlan = searchParams.get('plan')
-  const isReplySaveFlow = redirectUrl?.includes('/app?restore=1') ?? false
+  const isReplySaveFlow = redirectUrl ? isSavedThreadReturn(redirectUrl) : false
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
-    track('sign_in_started', { from: redirectUrl ? 'checkout' : 'login' })
+    track('sign_in_started', { from: isReplySaveFlow ? 'save_thread' : redirectUrl ? 'checkout' : 'login' })
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -75,7 +76,7 @@ export default function LoginPage() {
       return
     }
 
-    track('signup_start', { from: redirectUrl ? 'checkout' : 'login', plan: selectedPlan || undefined })
+    track('signup_start', { from: isReplySaveFlow ? 'save_thread' : redirectUrl ? 'checkout' : 'login', plan: selectedPlan || undefined })
 
     // Build the email redirect URL to preserve the invite/checkout redirect
     const siteUrl = window.location.origin;
@@ -103,10 +104,16 @@ export default function LoginPage() {
     }
 
     track('signup_complete', {
-      from: redirectUrl ? 'checkout' : 'login',
-      confirmed: Boolean(signUpData.user),
+      from: isReplySaveFlow ? 'save_thread' : redirectUrl ? 'checkout' : 'login',
+      confirmed: Boolean(signUpData.session),
       plan: selectedPlan || undefined,
     })
+
+    if (signUpData.session) {
+      router.push(redirectUrl || '/onboarding')
+      router.refresh()
+      return
+    }
 
     // Show helpful message based on redirect type
     if (redirectUrl?.startsWith('/invite/')) {
@@ -155,7 +162,7 @@ export default function LoginPage() {
             {mode === 'signup' 
               ? (isReplySaveFlow
                 ? 'Free account. Keep this reply, return when they answer, and build your Style DNA.'
-                : redirectUrl ? 'Sign up to continue with your subscription' : 'Start getting perfect replies today')
+                : redirectUrl ? 'Sign up to review your selected plan' : 'Save your conversations and return when they answer.')
               : 'Sign in to continue'}
           </p>
         </div>

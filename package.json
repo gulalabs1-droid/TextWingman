@@ -12,6 +12,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
     "videos:validate": "tsx marketing/videos/render/validate.ts",
     "videos:render": "tsx marketing/videos/render/render-all.ts",
     "videos:still": "tsx marketing/videos/render/render-still.ts",
