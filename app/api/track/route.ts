@@ -74,8 +74,6 @@ export async function POST(request: NextRequest) {
     const country = request.headers.get('x-vercel-ip-country') || null;
     const city = request.headers.get('x-vercel-ip-city') || null;
     const region = request.headers.get('x-vercel-ip-region') || null;
-    const latitude = request.headers.get('x-vercel-ip-latitude') || null;
-    const longitude = request.headers.get('x-vercel-ip-longitude') || null;
     const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|Opera Mini|IEMobile/i.test(identity.userAgent);
     const isTablet = /iPad|Android(?!.*Mobile)/i.test(identity.userAgent);
     const device = isTablet ? 'tablet' : isMobile ? 'mobile' : 'desktop';
@@ -104,8 +102,6 @@ export async function POST(request: NextRequest) {
       country,
       city,
       region,
-      latitude,
-      longitude,
       lang: identity.language.split(',')[0] || null,
       event,
       ...(rawEvent && rawEvent !== event ? { original_event: rawEvent } : {}),

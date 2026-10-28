@@ -37,8 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get return URL
-    const origin = request.headers.get('origin') || SITE_URL;
-    const returnUrl = `${origin}/dashboard`;
+    const returnUrl = `${SITE_URL}/dashboard`;
 
     // Create Stripe Billing Portal session
     const portalSession = await stripe.billingPortal.sessions.create({

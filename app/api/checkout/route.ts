@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
     const userEmail = user.email || '';
 
     const planConfig = PRICING[plan as keyof typeof PRICING];
-    const origin = request.headers.get('origin') || SITE_URL;
     const trackingMetadata: Record<string, string> = {};
     const attribution = analytics?.attribution;
     if (attribution && typeof attribution === 'object' && !Array.isArray(attribution)) {
@@ -50,8 +49,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      success_url: `${origin}/app?${successParams.toString()}`,
-      cancel_url: `${origin}/app?${cancelParams.toString()}`,
+      success_url: `${SITE_URL}/app?${successParams.toString()}`,
+      cancel_url: `${SITE_URL}/app?${cancelParams.toString()}`,
       allow_promotion_codes: true,
       customer_email: userEmail || undefined,
       // CRITICAL: These fields link the checkout to the Supabase user
