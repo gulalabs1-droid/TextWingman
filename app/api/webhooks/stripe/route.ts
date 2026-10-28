@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
 
             if (error) {
               console.error('Error storing subscription:', error);
+              throw error;
             } else {
               console.log('Subscription stored for user:', userId, 'plan:', planType);
             }
@@ -130,6 +131,7 @@ export async function POST(request: NextRequest) {
           
           if (error) {
             console.error('Error storing subscription:', error);
+            throw error;
           } else {
             console.log('Subscription created for user:', userId);
           }
@@ -163,6 +165,7 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Failed to update subscription:', error);
+          throw error;
         }
         break;
       }
@@ -183,6 +186,7 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error('Failed to cancel subscription:', error);
+          throw error;
         }
         // NOTE: Do NOT update profiles.plan here - app reads subscriptions.status directly
         break;

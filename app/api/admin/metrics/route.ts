@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validateAdminSecret } from '@/lib/isAdmin';
 import { PLAN_PRICES } from '@/lib/pricing';
+import { getStripeBillingSnapshot } from '@/lib/billing-health';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,11 +56,15 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .gte('created_at', last7d);
 
-    // 4. Get all active subscriptions for Pro usage & MRR
-    const { data: activeSubscriptions } = await adminSupabase
-      .from('subscriptions')
-      .select('*')
-      .in('status', ['active', 'trialing']);
+    // A trial or stale app row is not evidence that a customer paid.
+    const billing = await getStripeBillingSnapshot();
+    if (!billing.connected) {
+      return NextResponse.json({ error: 'Stripe revenue could not be verified' }, { status: 503 });
+    }
+    const paidIds = billing.activePaidSubscriptions.map(subscription => subscription.id);
+    const { data: activeSubscriptions } = paidIds.length
+      ? await adminSupabase.from('subscriptions').select('*').in('stripe_subscription_id', paidIds)
+      : { data: [] };
 
     const activePaidUsers = activeSubscriptions?.length || 0;
 

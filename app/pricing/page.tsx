@@ -194,10 +194,10 @@ export default function PricingPage() {
                 <span className="text-violet-300 font-bold text-sm">Upgrade to Pro</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-                Unlock unlimited everything.
+                More help when the conversation matters.
               </h1>
               <p className="text-lg text-white/50">
-                Coach Mode. Intel sidebar. Strategy. Verified pipeline. No limits.
+                Get reply ideas, follow-up suggestions, and a coach to help you think through your next move.
               </p>
             </div>
           )}
@@ -210,8 +210,8 @@ export default function PricingPage() {
                   NO PAYMENT REQUIRED
                 </div>
                 <h3 className="text-xl font-black text-white mb-2 mt-1">7-Day Free Trial</h3>
-                <p className="text-white/50 text-sm mb-1">Full Pro access — Coach, Intel, Strategy, unlimited replies</p>
-                <p className="text-white/25 text-xs mb-6">No credit card needed</p>
+                <p className="text-white/60 text-sm mb-1">Try Pro replies, follow-ups, and the conversation coach.</p>
+                <p className="text-white/50 text-xs mb-6">Free account required. No credit card needed to start.</p>
                 <button
                   onClick={() => handleCheckout('monthly', true)}
                   disabled={loading === 'trial'}
@@ -219,7 +219,7 @@ export default function PricingPage() {
                 >
                   {loading === 'trial' ? 'Loading...' : 'Start Free Trial →'}
                 </button>
-                <p className="text-xs text-white/20 mt-3">Trial pauses if no payment method is added. Add one to continue at {PLAN_PRICES.monthly.displayAmount}/month. Cancel anytime.</p>
+                <p className="text-xs text-white/50 mt-3">After seven days, access pauses unless you add a payment method. Continue at {PLAN_PRICES.monthly.displayAmount}/month. Cancel anytime.</p>
               </div>
             </div>
           )}
@@ -229,9 +229,6 @@ export default function PricingPage() {
           <div className="grid md:grid-cols-2 gap-5 max-w-2xl mx-auto">
             {/* Monthly Plan — lower-commitment first choice */}
             <div className="relative bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 rounded-3xl p-7">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white px-4 py-1 rounded-full text-[10px] font-black tracking-wider shadow-lg shadow-violet-500/30">
-                MOST POPULAR
-              </div>
               <div className="text-center mb-6 pt-2">
                 <h3 className="text-xl font-black text-white mb-1">Monthly</h3>
                 <div className="flex items-baseline justify-center gap-1">
@@ -245,13 +242,13 @@ export default function PricingPage() {
                   <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited replies + Coach Mode
                 </li>
                 <li className="flex items-center gap-2.5 text-white/80 text-sm">
-                  <Target className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Intel sidebar + Strategy
+                  <Target className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Get context and suggestions for your next move
                 </li>
                 <li className="flex items-center gap-2.5 text-white/80 text-sm">
-                  <Shield className="h-4 w-4 text-emerald-400 flex-shrink-0" /> V2 Verified pipeline
+                  <Shield className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Review and edit every reply before sending
                 </li>
                 <li className="flex items-center gap-2.5 text-white/60 text-sm">
-                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited decodes, openers &amp; revives
+                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Openers, message reads and follow-up ideas
                 </li>
                 <li className="flex items-center gap-2.5 text-white/60 text-sm">
                   <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Cancel anytime

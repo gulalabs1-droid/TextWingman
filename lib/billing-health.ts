@@ -1,6 +1,7 @@
 import type Stripe from 'stripe';
 import { PLAN_PRICES } from '@/lib/pricing';
 import { planForStripePriceId, PRICING, stripe, type BillingPlan } from '@/lib/stripe';
+import { firstPaidDates, paidSubscriptionIds } from '@/lib/billing-classification';
 
 export type PriceHealth = {
   configured: boolean;
@@ -19,6 +20,7 @@ export type StripeSubscriptionSummary = {
   planType: BillingPlan | null;
   status: string;
   createdAt: string | null;
+  firstPaidAt: string | null;
 };
 
 export type StripeBillingSnapshot = {
@@ -30,6 +32,8 @@ export type StripeBillingSnapshot = {
   hasMore: boolean;
   allSubscriptions: StripeSubscriptionSummary[];
   activeSubscriptions: StripeSubscriptionSummary[];
+  paidSubscriptions: StripeSubscriptionSummary[];
+  activePaidSubscriptions: StripeSubscriptionSummary[];
   priceConfig: {
     monthly: PriceHealth;
     weekly: PriceHealth;
@@ -70,6 +74,8 @@ function unavailableSnapshot(error: unknown): StripeBillingSnapshot {
     hasMore: false,
     allSubscriptions: [],
     activeSubscriptions: [],
+    paidSubscriptions: [],
+    activePaidSubscriptions: [],
     priceConfig: {
       monthly: inspectPrice(null, PLAN_PRICES.monthly.amount, 'month'),
       weekly: inspectPrice(null, PLAN_PRICES.weekly.amount, 'week'),
@@ -82,8 +88,9 @@ function unavailableSnapshot(error: unknown): StripeBillingSnapshot {
 /** Read Stripe directly. This is intentionally read-only and never mutates app rows. */
 export async function getStripeBillingSnapshot(): Promise<StripeBillingSnapshot> {
   try {
-    const [firstSubscriptionPage, monthlyPrice, weeklyPrice, annualPrice] = await Promise.all([
+    const [firstSubscriptionPage, firstInvoicePage, monthlyPrice, weeklyPrice, annualPrice] = await Promise.all([
       stripe.subscriptions.list({ status: 'all', limit: 100 }),
+      stripe.invoices.list({ status: 'paid', limit: 100 }),
       stripe.prices.retrieve(PRICING.monthly.priceId).catch(() => null),
       stripe.prices.retrieve(PRICING.weekly.priceId).catch(() => null),
       stripe.prices.retrieve(PRICING.annual.priceId).catch(() => null),
@@ -108,6 +115,21 @@ export async function getStripeBillingSnapshot(): Promise<StripeBillingSnapshot>
       hasMore = nextPage.has_more;
       pageCount += 1;
     }
+    if (hasMore) throw new Error('Stripe subscription history is incomplete; revenue cannot be verified.');
+
+    const invoices: Stripe.Invoice[] = [...firstInvoicePage.data];
+    let invoicesHaveMore = firstInvoicePage.has_more;
+    while (invoicesHaveMore && invoices.length < 5000) {
+      const last = invoices[invoices.length - 1];
+      if (!last) break;
+      const next = await stripe.invoices.list({ status: 'paid', limit: 100, starting_after: last.id });
+      if (!next.data.length) break;
+      invoices.push(...next.data);
+      invoicesHaveMore = next.has_more;
+    }
+    if (invoicesHaveMore) throw new Error('Stripe invoice history is incomplete; revenue cannot be verified.');
+    const paidIds = paidSubscriptionIds(invoices);
+    const paymentDates = firstPaidDates(invoices);
 
     const priceConfig = {
       monthly: inspectPrice(monthlyPrice, PLAN_PRICES.monthly.amount, 'month'),
@@ -123,10 +145,12 @@ export async function getStripeBillingSnapshot(): Promise<StripeBillingSnapshot>
         planType: planForStripePriceId(priceId),
         status: row.status,
         createdAt: row.created ? new Date(row.created * 1000).toISOString() : null,
+        firstPaidAt: paymentDates.get(row.id) || null,
       };
     };
     const allSubscriptions = subscriptions.map(summarize);
     const activeRows = subscriptions.filter(row => ['active', 'trialing'].includes(row.status));
+    const paidRows = subscriptions.filter(row => paidIds.has(row.id));
     return {
       connected: true,
       pricesVerified: Object.values(priceConfig).every(price => price.matchesApp),
@@ -136,6 +160,8 @@ export async function getStripeBillingSnapshot(): Promise<StripeBillingSnapshot>
       hasMore,
       allSubscriptions,
       activeSubscriptions: activeRows.map(summarize),
+      paidSubscriptions: paidRows.map(summarize),
+      activePaidSubscriptions: paidRows.filter(row => row.status === 'active').map(summarize),
       priceConfig,
       error: null,
     };

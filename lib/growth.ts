@@ -209,7 +209,7 @@ function buildBottleneckStages(
     { key: 'composer_starts', label: 'Composer starts', count: funnel.period.composerStarts, source: 'first-party site events' },
     { key: 'reply_successes', label: 'People with a reply', count: funnel.period.uniqueReplyPeople, source: 'unique first-party people' },
     { key: 'signups', label: 'Signups', count: funnel.period.signups, source: 'first-party account data' },
-    { key: 'paid_users', label: 'New paid users', count: funnel.period.paidSignups, source: 'first-party billing data' },
+    { key: 'paid_users', label: 'Signups currently paid', count: funnel.period.paidSignups, source: 'Stripe payment evidence' },
   ];
 }
 
@@ -321,7 +321,7 @@ function buildCohorts(
 
     const userSubscriptions = subscriptions.filter(sub => sub.user_id === profile.id);
     const upgraded = userSubscriptions.some(sub => {
-      const createdAt = sub.created_at || sub.updated_at;
+      const createdAt = sub.created_at;
       const age = createdAt ? new Date(createdAt).getTime() - createdMs : -1;
       return age >= 0 && age <= 14 * DAY && ['active', 'trialing', 'canceled', 'past_due'].includes(sub.status || '');
     });
@@ -409,13 +409,13 @@ export async function getGrowthCommandCenter(
   const stripeSnapshot = await getStripeBillingSnapshot();
   const verifiedPaidIds = new Set(
     stripeSnapshot.connected
-      ? stripeSnapshot.activeSubscriptions
+      ? stripeSnapshot.activePaidSubscriptions
           .filter(subscription => Boolean(subscription.userId && subscription.planType))
           .map(subscription => subscription.userId as string)
       : [],
   );
   const verifiedPaidSubscriptionIds = new Set(
-    stripeSnapshot.connected ? stripeSnapshot.activeSubscriptions.map(subscription => subscription.id) : [],
+    stripeSnapshot.connected ? stripeSnapshot.activePaidSubscriptions.map(subscription => subscription.id) : [],
   );
 
   const [funnel, profilesResult, logsResult, subscriptionsResult, creativesResult, metricsResult, leadsResult] = await Promise.all([
@@ -467,11 +467,14 @@ export async function getGrowthCommandCenter(
   const externalSubscriptions = subscriptions.filter(sub => Boolean(sub.user_id && externalProfileIds.has(sub.user_id)));
   const appActiveSubscriptions = externalSubscriptions.filter(sub => ['active', 'trialing'].includes(sub.status || ''));
   const stripeActiveIds = new Set(stripeSnapshot.activeSubscriptions.map(subscription => subscription.id));
-  const stripeKnownIds = new Set(stripeSnapshot.allSubscriptions.map(subscription => subscription.id));
+  const paidStripeById = new Map(stripeSnapshot.paidSubscriptions.map(subscription => [subscription.id, subscription]));
   const verifiedExternalSubscriptions = stripeSnapshot.connected
     ? externalSubscriptions.filter(subscription =>
-        Boolean(subscription.stripe_subscription_id && stripeKnownIds.has(subscription.stripe_subscription_id)),
-      )
+        Boolean(subscription.stripe_subscription_id && paidStripeById.has(subscription.stripe_subscription_id)),
+      ).map(subscription => {
+        const paid = paidStripeById.get(subscription.stripe_subscription_id!)!;
+        return { ...subscription, created_at: paid.firstPaidAt, status: paid.status };
+      })
     : [];
   const staleAppRows = stripeSnapshot.connected
     ? appActiveSubscriptions.filter(subscription => !subscription.stripe_subscription_id || !stripeActiveIds.has(subscription.stripe_subscription_id)).length
@@ -482,7 +485,7 @@ export async function getGrowthCommandCenter(
       .map(subscription => [subscription.stripe_subscription_id as string, subscription.user_id as string]),
   );
   const verifiedActiveSubscriptions = stripeSnapshot.connected
-    ? stripeSnapshot.activeSubscriptions
+    ? stripeSnapshot.activePaidSubscriptions
       .map(subscription => ({
         ...subscription,
         userId: subscription.userId || appUserByStripeId.get(subscription.id) || null,
@@ -492,7 +495,7 @@ export async function getGrowthCommandCenter(
       )
     : [];
   const verifiedConvertedSubscriptions = stripeSnapshot.connected
-    ? stripeSnapshot.allSubscriptions
+    ? stripeSnapshot.paidSubscriptions
       .map(subscription => ({
         ...subscription,
         userId: subscription.userId || appUserByStripeId.get(subscription.id) || null,
@@ -715,7 +718,7 @@ export async function getGrowthCommandCenter(
       sourceCoverage: externalPeriodLogs.length ? percent(externalPeriodLogs.filter(log => sourceOf(log) !== 'direct').length, externalPeriodLogs.length) : null,
     },
     definitions: {
-      paidPerThousandViews: 'Active or trialing users attributed to a video_id divided by imported platform views, multiplied by 1,000.',
+      paidPerThousandViews: 'Users with a positive paid Stripe invoice attributed to a video_id divided by imported platform views, multiplied by 1,000.',
       siteVisits: 'Unique first-party visitors with a page event carrying the video_id.',
       attribution: 'A user is attributed when a first-party event carries the video_id before signup; platform identity is not inferred.',
       cohort: 'Signup cohorts grouped by UTC week; activation is a successful product output within 24 hours.',

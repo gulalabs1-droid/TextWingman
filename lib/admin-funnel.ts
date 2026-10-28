@@ -504,7 +504,7 @@ export async function getCanonicalFunnel(
       replyRequest: 'generate_reply or reply_request event',
       replySuccess: 'reply_success, completed generate_reply, decode, generate_opener, generate_revive, or strategy_chat event',
       signup: 'Non-admin profile created in the selected period',
-      paid: hasVerifiedBilling ? 'Non-admin active or trialing Stripe subscription' : 'Non-admin active or trialing app subscription',
+      paid: hasVerifiedBilling ? 'Non-admin active Stripe subscription with a positive paid invoice' : 'Non-admin app subscription (not payment-verified)',
     },
   };
 }

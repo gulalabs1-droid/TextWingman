@@ -17,13 +17,13 @@ export async function GET() {
     const stripeSnapshot = await getStripeBillingSnapshot();
     const verifiedPaidIds = new Set(
       stripeSnapshot.connected
-        ? stripeSnapshot.activeSubscriptions
+        ? stripeSnapshot.activePaidSubscriptions
             .filter(subscription => Boolean(subscription.userId && subscription.planType))
             .map(subscription => subscription.userId as string)
         : [],
     );
     const verifiedPaidSubscriptionIds = new Set(
-      stripeSnapshot.connected ? stripeSnapshot.activeSubscriptions.map(subscription => subscription.id) : [],
+      stripeSnapshot.connected ? stripeSnapshot.activePaidSubscriptions.map(subscription => subscription.id) : [],
     );
     const funnel = await getCanonicalFunnel(db, {
       rangeDays: 30,
@@ -63,7 +63,7 @@ export async function GET() {
         ).length
       : null;
     const verifiedActiveSubs = stripeSnapshot.connected
-      ? stripeSnapshot.activeSubscriptions
+      ? stripeSnapshot.activePaidSubscriptions
         .map(subscription => ({
           ...subscription,
           userId: subscription.userId || appUserByStripeId.get(subscription.id) || null,
