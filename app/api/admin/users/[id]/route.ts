@@ -3,12 +3,12 @@ import { requireAdmin, getAdminSupabase, logAdminEvent } from '@/lib/admin';
 import { grantEntitlement, revokeEntitlement, Tier } from '@/lib/entitlements';
 import { validateAdminSecret } from '@/lib/isAdmin';
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { isAdmin } = await requireAdmin();
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getAdminSupabase();
-  const userId = params.id;
+  const userId = (await params).id;
 
   const [
     { data: profile },
@@ -69,12 +69,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   });
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { isAdmin, user: adminUser } = await requireAdmin();
   if (!isAdmin || !adminUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const db = getAdminSupabase();
-  const userId = params.id;
+  const userId = (await params).id;
   const body = await req.json();
   const { action, secret, tier, beta_group } = body;
 
