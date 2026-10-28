@@ -56,10 +56,6 @@ export default function PricingPage() {
     const attribution = captureAttribution()
     const source = typeof attribution.utm_source === 'string' ? attribution.utm_source : 'direct'
     if (!user) {
-      toast({
-        title: 'Account Required',
-        description: 'Please sign up or log in first to subscribe',
-      })
       track('signup_cta_clicked', { from: 'pricing', plan, source })
       const pricingParams = new URLSearchParams()
       pricingParams.set('plan', plan)
