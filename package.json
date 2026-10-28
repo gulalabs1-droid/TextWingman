@@ -9,9 +9,9 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run lint && next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint app components lib",
     "test": "tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
     "videos:validate": "tsx marketing/videos/render/validate.ts",

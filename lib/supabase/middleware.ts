@@ -1,10 +1,15 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { sessionRedirect } from '@/lib/session-redirect'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
+
+  function redirectWithSession(path: string) {
+    return sessionRedirect(request.url, path, supabaseResponse)
+  }
 
   const { pathname: earlyPath } = request.nextUrl
 
@@ -48,9 +53,7 @@ export async function updateSession(request: NextRequest) {
 
   // If not logged in and trying to access protected routes, redirect to /login
   if (!user && (pathname.startsWith('/dashboard') || pathname === '/onboarding')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    return redirectWithSession('/login')
   }
 
   // If logged in, check onboarding status — but ONLY on routes that branch on it.
@@ -85,28 +88,19 @@ export async function updateSession(request: NextRequest) {
       const redirectParam = request.nextUrl.searchParams.get('redirect')
       if (redirectParam) {
         // User came from pricing/checkout — send them where they wanted to go
-        const url = request.nextUrl.clone()
-        url.pathname = redirectParam
-        url.search = '' // clear query params after consuming
-        return NextResponse.redirect(url)
+        return redirectWithSession(redirectParam)
       }
-      const url = request.nextUrl.clone()
-      url.pathname = profile?.onboarding_completed ? '/dashboard' : '/onboarding'
-      return NextResponse.redirect(url)
+      return redirectWithSession(profile?.onboarding_completed ? '/dashboard' : '/onboarding')
     }
 
     // If trying to access dashboard but onboarding not complete, redirect to onboarding
     if (pathname.startsWith('/dashboard') && !profile?.onboarding_completed) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/onboarding'
-      return NextResponse.redirect(url)
+      return redirectWithSession('/onboarding')
     }
 
     // If on onboarding but already completed, redirect to dashboard
     if (pathname === '/onboarding' && profile?.onboarding_completed) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+      return redirectWithSession('/dashboard')
     }
   }
 
