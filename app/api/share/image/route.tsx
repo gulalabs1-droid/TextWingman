@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
               fontWeight: 600,
             }}
           >
-            Get better replies → gula-agents2.vercel.app
+            Get better replies → textwingman.app
           </div>
         </div>
       ),

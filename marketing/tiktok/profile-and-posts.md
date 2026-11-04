@@ -19,13 +19,13 @@ Paste text. Get 3 replies in 10 sec. Free.
 Native website field (use the full tracked URL when the field is available):
 
 ```text
-https://gula-agents2.vercel.app/tiktok?utm_source=tiktok&utm_medium=organic_social&utm_campaign=profile_bio&utm_content=profile
+https://textwingman.app/tiktok?utm_source=tiktok&utm_medium=organic_social&utm_campaign=profile_bio&utm_content=profile
 ```
 
 Bio option B, current fallback until TikTok unlocks the native website field (80-character limit):
 
 ```text
-Paste text -> 3 replies: gula-agents2.vercel.app?utm_source=tiktok
+Paste text -> 3 replies: textwingman.app?utm_source=tiktok
 ```
 
 ## First 3 Posts

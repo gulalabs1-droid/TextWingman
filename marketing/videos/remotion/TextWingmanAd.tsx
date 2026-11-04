@@ -398,7 +398,7 @@ const CTA: React.FC<{ text: string }> = ({ text }) => {
           fontWeight: 700,
         }}
       >
-        gula-agents2.vercel.app
+        textwingman.app
       </div>
     </div>
   );

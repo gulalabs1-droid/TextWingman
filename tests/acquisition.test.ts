@@ -52,6 +52,8 @@ test('internal navigation without a new source retains campaign context', () => 
 test('the social landing path alone is not evidence of TikTok acquisition', () => {
   assert.equal(sourceOf({ id: 'direct', action: 'page_view', created_at: at(1), metadata: { page: '/tiktok' } }), 'direct');
   assert.equal(sourceOf({ id: 'own', action: 'page_view', created_at: at(1), metadata: { referrer: 'https://gula-agents2.vercel.app/app' } }), 'direct');
+  assert.equal(sourceOf({ id: 'new-domain', action: 'page_view', created_at: at(1), metadata: { referrer: 'https://textwingman.app/app' } }), 'direct');
+  assert.equal(sourceOf({ id: 'new-domain-www', action: 'page_view', created_at: at(1), metadata: { referrer: 'https://www.textwingman.app/app' } }), 'direct');
   assert.equal(sourceOf(row('ig', 'page_view', 'ig', 1)), 'instagram');
 });
 

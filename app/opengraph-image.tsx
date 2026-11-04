@@ -128,7 +128,7 @@ export default async function OGImage() {
             fontWeight: 600,
           }}
         >
-          Free · No card required · gula-agents2.vercel.app
+          Free · No card required · textwingman.app
         </div>
       </div>
     ),

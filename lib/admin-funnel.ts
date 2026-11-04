@@ -127,7 +127,7 @@ export function sourceOf(log: FunnelUsageRow): string {
       if (host.includes('facebook')) return 'facebook';
       if (host.includes('google')) return 'google';
       if (host.includes('reddit')) return 'reddit';
-      if (host === 'gula-agents2.vercel.app' || host === 'localhost') return 'direct';
+      if (host === 'gula-agents2.vercel.app' || host === 'textwingman.app' || host === 'localhost') return 'direct';
       if (host) return host;
     } catch {
       // Keep the fallback below for malformed referrers.
