@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Text Wingman — Your sharp friend for every conversation';
+export const alt = 'Text Wingman — What should I say next? Three replies. Your call.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -52,7 +52,7 @@ export default async function OGImage() {
         {/* Headline */}
         <div
           style={{
-            fontSize: '64px',
+            fontSize: '60px',
             fontWeight: 800,
             color: 'white',
             textAlign: 'center',
@@ -60,12 +60,12 @@ export default async function OGImage() {
             marginBottom: '20px',
             maxWidth: '900px',
             display: 'flex',
-            flexDirection: 'row',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          Your sharp friend for{' '}
+          What should I say next?
           <span
             style={{
               background: 'linear-gradient(90deg, #6ee7b7, #67e8f9)',
@@ -73,7 +73,7 @@ export default async function OGImage() {
               color: 'transparent',
             }}
           >
-            every conversation.
+            Three replies. Your call.
           </span>
         </div>
 
