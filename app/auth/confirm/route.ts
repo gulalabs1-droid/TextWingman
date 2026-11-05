@@ -2,14 +2,14 @@ import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { redeemInviteCode, INVITE_CODES } from '@/lib/invite'
-import { isSavedThreadReturn, safeReturnPath } from '@/lib/navigation'
+import { confirmationDestination } from '@/lib/navigation'
 
 /**
  * After email confirmation, check if the user signed up with a pending invite code
  * in their metadata. If so, auto-redeem it server-side so they land on the dashboard
  * already activated — no extra clicks needed.
  */
-async function handlePostConfirmation(user: { id: string; user_metadata?: Record<string, any> }, next: string, supabase: any): Promise<string> {
+async function handlePostConfirmation(user: { id: string; user_metadata?: Record<string, any> }, next: string | null, supabase: any): Promise<string> {
   const pendingCode = user.user_metadata?.pending_invite_code;
 
   if (pendingCode && INVITE_CODES[pendingCode.toUpperCase()]) {
@@ -21,27 +21,13 @@ async function handlePostConfirmation(user: { id: string; user_metadata?: Record
     }
   }
 
-  // Keep the reply that motivated signup ahead of optional profile setup.
-  if (isSavedThreadReturn(next)) return next;
-
-  // Check onboarding status for the remaining flows.
   const { data: profile } = await supabase
     .from('profiles')
     .select('onboarding_completed')
     .eq('id', user.id)
     .single();
 
-  if (!profile?.onboarding_completed) {
-    // New user → onboarding first (invite success shown after)
-    return '/onboarding';
-  }
-
-  // Existing user: if there's an invite or specific redirect, go there
-  if (next.startsWith('/invite/') || next.startsWith('/pricing')) {
-    return next;
-  }
-
-  return '/dashboard';
+  return confirmationDestination(next, user.user_metadata?.signup_return_to, Boolean(profile?.onboarding_completed));
 }
 
 export async function GET(request: NextRequest) {
@@ -49,7 +35,7 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
   const code = searchParams.get('code')
-  const next = safeReturnPath(searchParams.get('next'), '/onboarding')
+  const next = searchParams.get('next')
 
   // Handle PKCE flow (code exchange)
   if (code) {

@@ -93,7 +93,10 @@ export default function LoginPage() {
       password,
       options: {
         emailRedirectTo,
-        data: pendingInviteCode ? { pending_invite_code: pendingInviteCode } : undefined,
+        data: {
+          ...(pendingInviteCode ? { pending_invite_code: pendingInviteCode } : {}),
+          ...(redirectUrl ? { signup_return_to: redirectUrl } : {}),
+        },
       },
     })
 
