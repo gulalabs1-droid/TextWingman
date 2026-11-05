@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { chatParams } from '@/lib/models';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -37,8 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+    const completion = await openai.chat.completions.create(chatParams('vision', {
       messages: [
         {
           role: 'system',
@@ -121,7 +121,7 @@ If you cannot extract messages:
       temperature: 0.1,
       max_tokens: 1500,
       response_format: { type: 'json_object' },
-    });
+    }));
 
     const responseText = completion.choices[0]?.message?.content;
     if (!responseText) {

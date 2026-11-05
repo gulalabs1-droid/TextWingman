@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { parseReplyOptions } from '@/lib/reply-options';
 import { replySafetyInstructions } from '@/lib/reply-safety';
+import { chatParams } from '@/lib/models';
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('Missing OPENAI_API_KEY environment variable');
@@ -127,15 +128,14 @@ Return ONLY a JSON object with this exact structure:
 export async function generateReplies(message: string, context?: string, customContext?: string, userIntent?: string): Promise<GeneratedReply[]> {
   try {
     const safetyInstructions = replySafetyInstructions(message);
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const completion = await openai.chat.completions.create(chatParams('reply', {
       messages: [
         { role: 'system', content: `${buildSystemPrompt(context, customContext, userIntent)}\n\n${safetyInstructions}` },
         { role: 'user', content: `Generate 3 reply options for this message: "${message}"` }
       ],
       temperature: safetyInstructions ? 0.35 : 0.8,
       response_format: { type: 'json_object' },
-    });
+    }));
 
     const responseText = completion.choices[0].message.content;
     if (!responseText) {

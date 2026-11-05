@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getUserTier, ensureAdminAccess } from "@/lib/entitlements";
+import { chatParams } from '@/lib/models';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -81,12 +82,11 @@ export async function POST(req: Request) {
     { role: "user", content: userMessage.trim() },
   ];
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+  const completion = await openai.chat.completions.create(chatParams('fast', {
     messages,
     temperature: 0.75,
     max_tokens: 600,
-  });
+  }));
 
   const raw = completion.choices[0].message.content || "";
 

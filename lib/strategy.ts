@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { chatParams } from '@/lib/models';
 
 // ── Schema ───────────────────────────────────────────────
 export const StrategySchema = z.object({
@@ -252,8 +253,7 @@ export async function analyzeStrategy(
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const completion = await openai.chat.completions.create(chatParams('fast', {
       messages: [
         { role: 'system', content: STRATEGY_PROMPT },
         {
@@ -264,7 +264,7 @@ export async function analyzeStrategy(
       temperature: 0.3,
       max_tokens: 450,
       response_format: { type: 'json_object' },
-    });
+    }));
 
     const raw = completion.choices[0].message.content;
     if (!raw) throw new Error('Empty response');

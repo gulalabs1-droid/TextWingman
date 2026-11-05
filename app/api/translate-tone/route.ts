@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
+import { chatParams } from '@/lib/models';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -31,8 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid tone' }, { status: 400 });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const completion = await openai.chat.completions.create(chatParams('fast', {
       messages: [
         {
           role: 'system',
@@ -61,7 +61,7 @@ Return ONLY the rewritten message. No quotes, no explanation.`,
       ],
       temperature: 0.8,
       max_tokens: 80,
-    });
+    }));
 
     const translated = completion.choices[0]?.message?.content?.trim();
     if (!translated) {

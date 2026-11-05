@@ -9,6 +9,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
 import { getContextCategory, COACHING_PHILOSOPHY, DRAFT_LABELS, TONE_OPTIONS } from "@/lib/context-category";
 import { buildRequestAnalytics, type RequestAnalytics } from "@/lib/analytics-server";
+import { chatParams } from '@/lib/models';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const FREE_USAGE_LIMIT = 5;
@@ -98,8 +99,7 @@ async function extractContext(
   relationshipContext: string
 ): Promise<ContextExtraction | null> {
   try {
-    const res = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const res = await openai.chat.completions.create(chatParams('reply', {
       messages: [
         {
           role: "system",
@@ -123,7 +123,7 @@ Rules:
       temperature: 0.2,
       max_tokens: 300,
       response_format: { type: "json_object" },
-    });
+    }));
     return JSON.parse(res.choices[0].message.content || "null");
   } catch {
     return null;
@@ -136,8 +136,7 @@ async function verifyDrafts(
   strategyContext: string
 ): Promise<{ shorter?: string; spicier?: string; softer?: string }> {
   try {
-    const res = await openai.chat.completions.create({
-      model: "gpt-4o",
+    const res = await openai.chat.completions.create(chatParams('reply', {
       messages: [
         {
           role: "system",
@@ -167,7 +166,7 @@ If a draft already passes all rules, return it unchanged.`,
       temperature: 0.2,
       max_tokens: 300,
       response_format: { type: "json_object" },
-    });
+    }));
     const parsed = JSON.parse(res.choices[0].message.content || "{}");
     // Only use verified versions if they have content
     return {
@@ -339,12 +338,11 @@ FLOW:
   ];
 
   // The free path should feel immediate; Pro keeps the higher-quality model.
-  const completion = await openai.chat.completions.create({
-    model: isPro ? "gpt-4o" : "gpt-4o-mini",
+  const completion = await openai.chat.completions.create(chatParams(isPro ? 'deep' : 'fast', {
     messages,
     temperature: 0.75,
     max_tokens: isPro ? 1000 : 700,
-  });
+  }));
 
   const raw = completion.choices[0].message.content || "";
 

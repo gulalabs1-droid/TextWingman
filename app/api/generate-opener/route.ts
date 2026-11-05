@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 import { buildRequestAnalytics } from '@/lib/analytics-server';
+import { chatParams } from '@/lib/models';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -80,8 +81,7 @@ export async function POST(request: NextRequest) {
     const vibeNote = vibe ? `\nDesired vibe: ${vibe}` : '';
     const descNote = description ? `\nAbout the person: ${description}` : '';
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const completion = await openai.chat.completions.create(chatParams('fast', {
       messages: [
         {
           role: 'system',
@@ -115,7 +115,7 @@ Return a JSON object:
       temperature: 0.8,
       max_tokens: 600,
       response_format: { type: 'json_object' },
-    });
+    }));
 
     const responseText = completion.choices[0]?.message?.content;
     if (!responseText) {

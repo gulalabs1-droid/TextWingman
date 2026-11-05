@@ -8,6 +8,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 import { analyzeStrategy, formatStrategyForDraft, SAFE_DEFAULT, type StrategyResult } from '@/lib/strategy';
 import { buildRequestAnalytics } from '@/lib/analytics-server';
+import { agentModel } from '@/lib/models';
 
 const MAX_REVISE_ATTEMPTS = 2;
 
@@ -34,6 +35,7 @@ function containsHarmfulContent(message: string): boolean {
 // 1) Draft Agent - with safety guardrails
 const DraftAgent = new Agent({
   name: "DraftAgent",
+  ...agentModel('reply'),
   instructions: `
 You are the DraftAgent for Text Wingman. Generate 3 text replies: shorter, spicier, softer.
 
@@ -110,6 +112,7 @@ Return JSON with keys: shorter, spicier, softer.
 // 2) Rule Check + Revise Agent
 const RuleAgent = new Agent({
   name: "RuleCheckAgent",
+  ...agentModel('reply'),
   instructions: `
 You are the strict VerifyAgent. Check each draft against ALL rules. Revise only if violation. Keep original tone and voice.
 
@@ -137,6 +140,7 @@ Return JSON:
 // 3) Tone Verify Agent
 const ToneAgent = new Agent({
   name: "ToneVerifyAgent",
+  ...agentModel('fast'),
   instructions: `
 Check if each reply matches its intended tone AND the strategy:
 - shorter = minimal, confident, direct (few words, no fluff)

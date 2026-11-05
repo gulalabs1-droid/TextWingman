@@ -22,6 +22,7 @@ import {
   TONE_OPTIONS,
 } from "@/lib/context-category";
 import { buildRequestAnalytics, type RequestAnalytics } from "@/lib/analytics-server";
+import { chatParams } from '@/lib/models';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -101,8 +102,7 @@ async function extractContext(
   goal: Goal,
   relationshipContext: string
 ): Promise<ContextExtraction> {
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
+  const res = await openai.chat.completions.create(chatParams('reply', {
     messages: [
       {
         role: "system",
@@ -131,7 +131,7 @@ Rules:
     temperature: 0.2,
     max_tokens: 400,
     response_format: { type: "json_object" },
-  });
+  }));
 
   try {
     return JSON.parse(res.choices[0].message.content || "{}");
@@ -165,8 +165,7 @@ async function generateCandidates(
           .join("\n")}\n`
       : "";
 
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
+  const res = await openai.chat.completions.create(chatParams('reply', {
     messages: [
       {
         role: "system",
@@ -216,7 +215,7 @@ Return ONLY valid JSON object with a "candidates" key:
     temperature: 0.85,
     max_tokens: 1200,
     response_format: { type: "json_object" },
-  });
+  }));
 
   try {
     const raw = res.choices[0].message.content || "{}";
@@ -241,8 +240,7 @@ async function criticAndSelect(
   strategy: StrategyResult,
   goal: Goal
 ): Promise<CriticResult> {
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
+  const res = await openai.chat.completions.create(chatParams('deep', {
     messages: [
       {
         role: "system",
@@ -305,7 +303,7 @@ Return ONLY valid JSON:
     temperature: 0.3,
     max_tokens: 1500,
     response_format: { type: "json_object" },
-  });
+  }));
 
   try {
     const parsed = JSON.parse(res.choices[0].message.content || "{}");
@@ -343,8 +341,7 @@ async function coachResponse(
     ? `\nTHEIR CONVERSATION THREAD (from screenshot — this is the conversation the user is asking about):\n${threadText}\n`
     : "";
 
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
+  const res = await openai.chat.completions.create(chatParams('reply', {
     messages: [
       {
         role: "system",
@@ -397,7 +394,7 @@ Keep responses punchy (2-5 sentences) unless they need a deeper breakdown.`,
     ],
     temperature: 0.75,
     max_tokens: 1000,
-  });
+  }));
 
   const raw = res.choices[0].message.content || "";
   const draftMatch = raw.match(/DRAFT:\s*(\{[\s\S]*?\})\s*$/);

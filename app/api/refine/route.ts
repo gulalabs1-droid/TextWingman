@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/entitlements';
+import { chatParams } from '@/lib/models';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -27,8 +28,7 @@ export async function POST(request: NextRequest) {
 
     const toneHint = TONE_GUIDANCE[tone] || TONE_GUIDANCE.shorter;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const completion = await openai.chat.completions.create(chatParams('fast', {
       messages: [
         {
           role: 'system',
@@ -55,7 +55,7 @@ Return ONLY the polished text. No quotes, no explanation, no JSON — just the f
       ],
       temperature: 0.7,
       max_tokens: 100,
-    });
+    }));
 
     const refined = completion.choices[0]?.message?.content?.trim();
     if (!refined) {
