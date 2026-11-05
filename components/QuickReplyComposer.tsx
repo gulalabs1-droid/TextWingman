@@ -6,17 +6,37 @@ import { useRouter } from 'next/navigation';
 import { Camera, ArrowRight, Loader2, Zap, Copy, Check, BookmarkPlus } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { captureAttribution, getAnalyticsContext, track } from '@/lib/analytics';
-import { createReplyGenerationId, deriveStyleSignals, recordLocalStyleSignal, replyIdFor, sendReplyLearningEvent } from '@/lib/reply-learning';
+import {
+  clearPendingOutcome,
+  createReplyGenerationId,
+  deriveStyleSignals,
+  isOutcomeDue,
+  readPendingOutcome,
+  recordLocalStyleSignal,
+  replyIdFor,
+  savePendingOutcome,
+  sendReplyLearningEvent,
+  type PendingOutcome,
+  type ReplyOutcome,
+} from '@/lib/reply-learning';
 import { SOCIAL_LINKS } from '@/lib/site';
 import { useToast } from '@/components/ui/use-toast';
 import { validateMessage, validateScreenshot, validateQuickReplies } from '@/lib/quick-reply';
 
+// Pre-written so examples are instant and never use a visitor's free generations.
 const exampleChips = [
-  { label: 'She said "maybe"', text: "haha maybe, depends who's asking" },
-  { label: '"We need to talk"', text: 'we need to talk' },
-  { label: 'Dry "lol"', text: 'lol' },
-  { label: '"I\'m busy"', text: "i'm kinda busy this week tbh" },
+  { label: 'She said "maybe"', text: "haha maybe, depends who's asking", replies: { shorter: 'someone worth asking', spicier: 'someone with good taste and a friday plan', softer: 'just me, asking nicely' } },
+  { label: '"We need to talk"', text: 'we need to talk', replies: { shorter: "okay, what's on your mind?", spicier: 'sure, when works for you?', softer: "of course. i'm here, what's up?" } },
+  { label: 'Dry "lol"', text: 'lol', replies: { shorter: 'fair enough', spicier: 'glad i got a laugh', softer: "haha i'll take it" } },
+  { label: '"I\'m busy"', text: "i'm kinda busy this week tbh", replies: { shorter: 'all good, no rush', spicier: 'fair, go conquer your week', softer: 'no worries, hope your week goes smoothly' } },
 ];
+
+const contextOptions = [
+  { id: 'crush', label: 'Dating' },
+  { id: 'friend', label: 'Friend' },
+  { id: 'work', label: 'Work' },
+] as const;
+type ReplyContext = typeof contextOptions[number]['id'];
 
 type QuickReply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -26,6 +46,15 @@ type QuickReply = {
 };
 
 const replyLabels = { shorter: 'Keep it short', spicier: 'Another angle', softer: 'Keep it warm' };
+
+function timeAgo(timestamp: number): string {
+  const minutes = Math.max(1, Math.round((Date.now() - timestamp) / 60_000));
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
 
 export default function QuickReplyComposer({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
@@ -41,6 +70,11 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
   const [editingReply, setEditingReply] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [sentReply, setSentReply] = useState<string | null>(null);
+  const [context, setContext] = useState<ReplyContext>('crush');
+  const [isExample, setIsExample] = useState(false);
+  const [returningOutcome, setReturningOutcome] = useState<PendingOutcome | null>(null);
+  const [outcomeReply, setOutcomeReply] = useState<QuickReply | null>(null);
+  const [outcomeAnswered, setOutcomeAnswered] = useState(false);
   const copiedTexts = useRef<Record<string, string>>({});
   const generationInFlight = useRef(false);
   const resultsRef = useRef<HTMLElement>(null);
@@ -65,6 +99,8 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     const channel = explicitSource || referredPlatform || (embedded ? 'web' : 'shorts');
     setSource(channel);
     track(embedded ? 'landing_view' : 'social_landing_view', { source: channel, referrerPlatform: referredPlatform || 'direct' });
+    const pending = readPendingOutcome();
+    if (isOutcomeDue(pending, Date.now())) setReturningOutcome(pending);
   }, [embedded]);
 
   useEffect(() => {
@@ -91,7 +127,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
       savedAt: Date.now(),
       thread: [{ role: 'them', text: lastMessage, timestamp: Date.now() }],
       replies: replies.map(reply => ({ ...reply, text: drafts[reply.replyId] ?? reply.text })),
-      selectedContext: 'crush',
+      selectedContext: context,
       lastGeneratedMessage: lastMessage,
     });
     try {
@@ -118,15 +154,18 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     setEditingReply(null);
     setDrafts({});
     setSentReply(null);
+    setOutcomeReply(null);
+    setOutcomeAnswered(false);
+    setIsExample(false);
     copiedTexts.current = {};
-    track('composer_submit', { source, via, length: text.length, from: 'social_inline' });
+    track('composer_submit', { source, via, length: text.length, from: 'social_inline', context });
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 25_000);
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, context: 'crush', analytics: getAnalyticsContext() }),
+        body: JSON.stringify({ message: text, context, analytics: getAnalyticsContext() }),
         signal: controller.signal,
       });
       const data = await response.json();
@@ -140,6 +179,13 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
       setLastMessage(text);
       setReplies(validReplies);
       track('reply_displayed', { source, count: validReplies.length, from: 'social_inline' });
+      sendReplyLearningEvent({
+        event: 'generated',
+        generationId,
+        replyId: generationId,
+        context,
+        props: { source, from: embedded ? 'home_inline' : 'social_inline', via, engine: 'fast', reply_count: validReplies.length },
+      });
       requestAnimationFrame(() => {
         resultsRef.current?.focus({ preventScroll: true });
         textareaRef.current?.blur();
@@ -165,15 +211,22 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
       await navigator.clipboard.writeText(text);
       setCopiedReply(reply.replyId);
       setEditingReply(null);
+      // Example replies are pre-written, so they must not count as real choices or outcomes.
+      if (isExample) {
+        track('example_reply_copied', { source, tone: reply.tone });
+        return;
+      }
       if (copiedTexts.current[reply.replyId] !== text) {
         const styleSignals = deriveStyleSignals(text);
         const edited = text !== reply.text.trim();
         recordLocalStyleSignal(styleSignals, reply.tone, edited ? 'edited' : 'copied');
         for (const event of ['selected', ...(edited ? ['edited' as const] : []), 'copied'] as const) {
-          sendReplyLearningEvent({ event, generationId: reply.generationId, replyId: reply.replyId, tone: reply.tone, context: 'crush', styleSignals, props: { source, from: embedded ? 'home_inline' : 'social_inline' } });
+          sendReplyLearningEvent({ event, generationId: reply.generationId, replyId: reply.replyId, tone: reply.tone, context, styleSignals, props: { source, from: embedded ? 'home_inline' : 'social_inline' } });
         }
         copiedTexts.current[reply.replyId] = text;
       }
+      savePendingOutcome({ generationId: reply.generationId, replyId: reply.replyId, tone: reply.tone, context, theirMessagePreview: lastMessage });
+      setOutcomeReply(reply);
     } catch {
       toast({ title: 'Select and copy the reply', description: 'Your browser did not allow clipboard access.' });
     }
@@ -182,7 +235,37 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
   const handleSent = (reply: QuickReply) => {
     if (sentReply === reply.replyId || !copiedTexts.current[reply.replyId]) return;
     setSentReply(reply.replyId);
-    sendReplyLearningEvent({ event: 'sent_confirmed', generationId: reply.generationId, replyId: reply.replyId, tone: reply.tone, context: 'crush', styleSignals: deriveStyleSignals(copiedTexts.current[reply.replyId]), props: { source, from: embedded ? 'home_inline' : 'social_inline', self_reported: true } });
+    sendReplyLearningEvent({ event: 'sent_confirmed', generationId: reply.generationId, replyId: reply.replyId, tone: reply.tone, context, styleSignals: deriveStyleSignals(copiedTexts.current[reply.replyId]), props: { source, from: embedded ? 'home_inline' : 'social_inline', self_reported: true } });
+  };
+
+  const reportOutcome = (
+    target: Pick<PendingOutcome, 'generationId' | 'replyId' | 'tone'> & { copiedAt?: number; context?: string },
+    outcome: ReplyOutcome,
+    asked: 'after_copy' | 'return_visit',
+  ) => {
+    sendReplyLearningEvent({
+      event: 'outcome_reported',
+      generationId: target.generationId,
+      replyId: target.replyId,
+      tone: target.tone,
+      context: target.context || context,
+      outcome,
+      props: {
+        source,
+        from: embedded ? 'home_inline' : 'social_inline',
+        asked,
+        ...(target.copiedAt ? { hours_since_copy: Math.round((Date.now() - target.copiedAt) / 360_000) / 10 } : {}),
+      },
+    });
+    clearPendingOutcome();
+    if (asked === 'return_visit') setReturningOutcome(null);
+    else setOutcomeAnswered(true);
+    if (outcome !== 'not_reported') {
+      toast({
+        title: outcome === 'got_reply' ? 'Nice. Logged as a win.' : 'Logged. Thanks for telling us.',
+        description: 'This helps us learn which replies actually work.',
+      });
+    }
   };
 
   const handlePasteSubmit = () => {
@@ -195,18 +278,36 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     void generateReply(text, 'paste');
   };
 
-  const handleSample = (text: string, label: string) => {
-    setMsg(text);
-    textPastedTracked.current = true;
-    track('example_clicked', { source, label });
-    void generateReply(text, 'example');
+  const showExample = (example: typeof exampleChips[number], mode: 'chip' | 'instant_demo') => {
+    if (generationInFlight.current) return;
+    track('example_clicked', { source, label: example.label, mode, static: true });
+    const generationId = `example_${exampleChips.indexOf(example)}`;
+    setMsg('');
+    setReplyError('');
+    setLimitReached(false);
+    setCopiedReply(null);
+    setEditingReply(null);
+    setDrafts({});
+    setSentReply(null);
+    setOutcomeReply(null);
+    setOutcomeAnswered(false);
+    setContext('crush');
+    setIsExample(true);
+    setLastMessage(example.text);
+    setReplies((['shorter', 'spicier', 'softer'] as const).map(tone => ({ tone, text: example.replies[tone], generationId, replyId: replyIdFor(generationId, tone) })));
+    requestAnimationFrame(() => {
+      resultsRef.current?.focus({ preventScroll: true });
+      resultsRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    });
   };
 
-  const handleInstantDemo = () => {
-    const example = exampleChips[0];
-    track('example_clicked', { source, label: example.label, mode: 'instant_demo' });
-    setMsg(example.text);
-    void generateReply(example.text, 'example');
+  const tryOwnText = () => {
+    setReplies([]);
+    setIsExample(false);
+    requestAnimationFrame(() => {
+      inputCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      textareaRef.current?.focus();
+    });
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,8 +396,33 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
           </p>
         </div>}
 
+        {returningOutcome && (
+          <section aria-labelledby="returning-outcome-title" className="mb-4 rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.07] p-4">
+            <h2 id="returning-outcome-title" className="text-sm font-bold text-white">Did they reply?</h2>
+            <p className="mt-1 text-xs leading-relaxed text-white/60">
+              {timeAgo(returningOutcome.copiedAt)} you copied a reply{returningOutcome.theirMessagePreview ? <> to &ldquo;{returningOutcome.theirMessagePreview}&rdquo;</> : null}. One tap helps us learn what works.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={() => reportOutcome(returningOutcome, 'got_reply', 'return_visit')} className="min-h-11 rounded-xl border border-emerald-300/30 bg-emerald-400/15 px-4 text-xs font-bold text-emerald-100 hover:bg-emerald-400/25">Yes, they replied</button>
+              <button onClick={() => reportOutcome(returningOutcome, 'no_reply', 'return_visit')} className="min-h-11 rounded-xl border border-white/10 bg-white/[0.05] px-4 text-xs font-bold text-white/70 hover:bg-white/10">No reply</button>
+              <button onClick={() => reportOutcome(returningOutcome, 'not_reported', 'return_visit')} className="min-h-11 px-3 text-xs font-semibold text-white/45 hover:text-white/70">Skip</button>
+            </div>
+          </section>
+        )}
+
         {/* Input card — ABOVE FOLD on mobile */}
         <div ref={inputCardRef} className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 sm:p-5 backdrop-blur-sm mb-5">
+          <fieldset className="mb-3">
+            <legend className="mb-2 text-sm font-semibold text-white/80">Who sent it?</legend>
+            <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/[0.08] bg-black/30 p-1">
+              {contextOptions.map(option => (
+                <label key={option.id} className={`flex min-h-10 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-300/60 ${context === option.id ? 'bg-violet-500/25 text-white' : 'text-white/55 hover:text-white/80'}`}>
+                  <input type="radio" name={embedded ? 'home-context' : 'social-context'} value={option.id} checked={context === option.id} onChange={() => { setContext(option.id); track('context_selected', { source, context: option.id }); }} disabled={generating || uploading} className="sr-only" />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <label htmlFor={embedded ? 'home-message' : 'social-message'} className="mb-2 block text-sm font-semibold text-white/80">What did they say?</label>
           <textarea
             id={embedded ? 'home-message' : 'social-message'}
@@ -370,8 +496,8 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
 
           {replies.length === 0 && !generating && (
           <button
-            onClick={handleInstantDemo}
-            aria-label="Try the example reply for free"
+            onClick={() => showExample(exampleChips[0], 'instant_demo')}
+            aria-label="See three example replies"
             className="mt-3 w-full rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/[0.06] p-3 text-left text-[12px] text-fuchsia-100/80 transition-colors hover:border-fuchsia-300/35 hover:bg-fuchsia-300/[0.10]"
           >
             <div className="flex items-start justify-between gap-3">
@@ -383,7 +509,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
               </div>
               <ArrowRight className="mt-6 h-4 w-4 shrink-0 text-fuchsia-200" />
             </div>
-            <p className="mt-2 text-[11px] font-black text-fuchsia-100">Try this exact text free</p>
+            <p className="mt-2 text-[11px] font-black text-fuchsia-100">See all 3 example replies (doesn&apos;t use your free replies)</p>
           </button>
           )}
         </div>
@@ -391,9 +517,19 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
         {generating && <p role="status" className="mb-4 text-center text-sm text-white/65">Reading the context and writing three options. Your message stays here.</p>}
 
         {replies.length > 0 && (
-          <section ref={resultsRef} tabIndex={-1} aria-label="Your reply options" className="mb-6 scroll-mt-4 outline-none">
-            <p className="mb-1 text-xs font-bold uppercase tracking-widest text-emerald-300">Your replies are ready</p>
-            <h2 className="mb-3 text-xl font-bold">Which one sounds like you?</h2>
+          <section ref={resultsRef} tabIndex={-1} aria-label={isExample ? 'Example reply options' : 'Your reply options'} className="mb-6 scroll-mt-4 outline-none">
+            {isExample ? (
+              <>
+                <p className="mb-1 text-xs font-bold uppercase tracking-widest text-fuchsia-200">Example</p>
+                <h2 className="text-xl font-bold">They said &ldquo;{lastMessage}&rdquo;</h2>
+                <p className="mb-3 mt-1 text-xs text-white/50">Pre-written examples. Yours are written for your exact conversation.</p>
+              </>
+            ) : (
+              <>
+                <p className="mb-1 text-xs font-bold uppercase tracking-widest text-emerald-300">Your replies are ready</p>
+                <h2 className="mb-3 text-xl font-bold">Which one sounds like you?</h2>
+              </>
+            )}
             <div className="space-y-2">
               {replies.map(reply => (
                 <div key={reply.replyId} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -408,13 +544,34 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                   ) : <p className="select-text break-words text-base leading-relaxed text-white">{drafts[reply.replyId] ?? reply.text}</p>}
                   <div className="mt-2 flex flex-wrap items-center gap-3">
                     <button onClick={() => setEditingReply(editingReply === reply.replyId ? null : reply.replyId)} className="min-h-11 text-xs font-semibold text-violet-200 hover:text-white">{editingReply === reply.replyId ? 'Done editing' : 'Make it sound like you'}</button>
-                    {copiedReply === reply.replyId && <button onClick={() => handleSent(reply)} disabled={sentReply === reply.replyId} className="min-h-10 text-xs font-semibold text-emerald-200 disabled:opacity-60">{sentReply === reply.replyId ? 'Marked as sent by you' : 'I sent this (optional)'}</button>}
+                    {!isExample && copiedReply === reply.replyId && <button onClick={() => handleSent(reply)} disabled={sentReply === reply.replyId} className="min-h-10 text-xs font-semibold text-emerald-200 disabled:opacity-60">{sentReply === reply.replyId ? 'Marked as sent by you' : 'I sent this (optional)'}</button>}
                   </div>
                 </div>
               ))}
             </div>
             <p role="status" className="mt-2 text-xs text-white/45">{copiedReply ? 'Copied. Edit it if you want, then send it in your chat.' : 'You are in control. Copy a reply, edit it, and send it yourself.'}</p>
-            <div className="mt-4 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4">
+            {isExample && (
+              <button onClick={tryOwnText} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 font-bold text-white hover:from-violet-500 hover:to-fuchsia-500">
+                Now try it with your text <ArrowRight className="h-4 w-4" />
+              </button>
+            )}
+            {!isExample && outcomeReply && (
+              <div className="mt-3 rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.07] p-4" aria-live="polite">
+                {outcomeAnswered ? (
+                  <p className="text-xs font-semibold text-emerald-100">Thanks. That helps us learn which replies work.</p>
+                ) : (
+                  <>
+                    <h3 className="text-sm font-bold text-white">Did they reply?</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-white/60">Already sent it and heard back? Tell us now. Not yet? We&apos;ll ask next time you&apos;re here.</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button onClick={() => reportOutcome(outcomeReply, 'got_reply', 'after_copy')} className="min-h-11 rounded-xl border border-emerald-300/30 bg-emerald-400/15 px-4 text-xs font-bold text-emerald-100 hover:bg-emerald-400/25">Yes, they replied</button>
+                      <button onClick={() => reportOutcome(outcomeReply, 'no_reply', 'after_copy')} className="min-h-11 rounded-xl border border-white/10 bg-white/[0.05] px-4 text-xs font-bold text-white/70 hover:bg-white/10">No reply</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            {!isExample && <div className="mt-4 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4">
               <h3 className="font-bold">Save this reply and keep the thread free.</h3>
               <p className="mb-3 mt-1 text-xs leading-relaxed text-white/55">Create a free account to save the thread and return when they answer.</p>
               <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`} onClick={() => { savePendingThread(); track('signup_cta_click', { source, from: 'social_inline_result', handoff: 'restore_thread' }); }} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-500 font-bold text-white hover:bg-violet-400">
@@ -422,7 +579,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
               </Link>
               <button onClick={() => { savePendingThread(); const params = new URLSearchParams({ ...buildUtmParams(), restore: '1' }); router.push(`/app?${params.toString()}`); }} className="mt-3 w-full text-xs font-semibold text-white/50 hover:text-white">Continue in the full coach</button>
               <p className="mt-2 text-center text-[11px] text-white/35">Free account. No card.</p>
-            </div>
+            </div>}
           </section>
         )}
 
@@ -433,7 +590,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             {exampleChips.map((ex) => (
               <button
                 key={ex.label}
-                onClick={() => handleSample(ex.text, ex.label)}
+                onClick={() => showExample(ex, 'chip')}
                 disabled={generating || uploading}
                 className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5 text-left transition-all hover:border-fuchsia-300/30 hover:bg-white/[0.06] active:scale-[0.97] disabled:opacity-50"
               >

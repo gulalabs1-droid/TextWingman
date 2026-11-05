@@ -32,7 +32,62 @@ export type LocalStyleDNA = {
   updated_at: string;
 };
 
+export type ReplyOutcome = 'got_reply' | 'no_reply' | 'not_reported';
+
+export type PendingOutcome = {
+  generationId: string;
+  replyId: string;
+  tone: string;
+  context: string;
+  // Kept on this device only so the person can recognize the conversation; never sent to the server.
+  theirMessagePreview: string;
+  copiedAt: number;
+};
+
 const STYLE_DNA_STORAGE_KEY = 'tw_style_dna_v1';
+const PENDING_OUTCOME_STORAGE_KEY = 'tw_pending_outcome_v1';
+export const OUTCOME_ASK_AFTER_MS = 10 * 60 * 1000;
+export const OUTCOME_EXPIRES_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+
+export function isOutcomeDue(pending: PendingOutcome | null, now: number): boolean {
+  if (!pending || !Number.isFinite(pending.copiedAt)) return false;
+  const age = now - pending.copiedAt;
+  return age >= OUTCOME_ASK_AFTER_MS && age <= OUTCOME_EXPIRES_AFTER_MS;
+}
+
+export function readPendingOutcome(): PendingOutcome | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(PENDING_OUTCOME_STORAGE_KEY);
+    if (!raw) return null;
+    const pending = JSON.parse(raw) as PendingOutcome;
+    if (!pending.generationId || !pending.replyId || Date.now() - pending.copiedAt > OUTCOME_EXPIRES_AFTER_MS) {
+      window.localStorage.removeItem(PENDING_OUTCOME_STORAGE_KEY);
+      return null;
+    }
+    return pending;
+  } catch {
+    return null;
+  }
+}
+
+export function savePendingOutcome(pending: Omit<PendingOutcome, 'copiedAt'>) {
+  try {
+    window.localStorage.setItem(PENDING_OUTCOME_STORAGE_KEY, JSON.stringify({
+      ...pending,
+      theirMessagePreview: pending.theirMessagePreview.trim().slice(0, 60),
+      copiedAt: Date.now(),
+    }));
+  } catch {
+    // Outcome reporting is optional; storage can be unavailable in private browsing.
+  }
+}
+
+export function clearPendingOutcome() {
+  try {
+    window.localStorage.removeItem(PENDING_OUTCOME_STORAGE_KEY);
+  } catch {}
+}
 
 const EVENT_TO_TRACK_NAME: Record<ReplyLearningEvent, string> = {
   generated: 'reply_generated',
@@ -152,7 +207,7 @@ export function sendReplyLearningEvent(input: {
   replyId?: string;
   tone?: string;
   context?: string | null;
-  outcome?: 'got_reply' | 'no_reply' | 'not_reported';
+  outcome?: ReplyOutcome;
   styleSignals?: StyleSignals;
   props?: Props;
 }) {

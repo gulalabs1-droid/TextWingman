@@ -7,9 +7,9 @@ import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/l
 
 const faqs = [
   { question: 'Can I try it without signing up?', answer: 'Yes. Paste a message above and get three reply options without an account or card. The free allowance is five generations per day. Choose an example if you want to see how it works before sharing your own text.' },
-  { question: 'Does it send messages or connect to my inbox?', answer: 'No. Gula only sees the text or screenshot you choose to share. You copy a reply, edit it and send it yourself in your messaging app. Remove names, phone numbers and anything private before sharing.' },
+  { question: 'Does it send messages or connect to my inbox?', answer: 'No. Text Wingman only sees the text or screenshot you choose to share. You copy a reply, edit it and send it yourself in your messaging app. Remove names, phone numbers and anything private before sharing.' },
   { question: 'Will it know what the other person means?', answer: 'It can suggest possibilities from the context you provide, not read minds. A short message can have several meanings. The replies are drafts, not guarantees of a response or a date.' },
-  { question: 'How is this different from a general chatbot?', answer: 'Gula puts the conversation, three reply options, editing and saved threads in one focused texting workspace. You do not have to write a long prompt. Choose what fits your situation and make it sound like you.' },
+  { question: 'How is this different from a general chatbot?', answer: 'Text Wingman puts the conversation, three reply options, editing and saved threads in one focused texting workspace. You do not have to write a long prompt. Choose what fits your situation and make it sound like you.' },
   { question: 'What happens when I create an account?', answer: 'A free account lets you keep the conversation and return when they answer. Check your email to confirm your account. Pro is optional and is not required to try your first replies.' },
   { question: 'What does Pro cost?', answer: `Pro Monthly is ${PLAN_PRICES.monthly.displayAmount} per month. Pro Annual is ${PLAN_PRICES.annual.displayAmount} billed yearly. You can cancel renewal from billing. Review the selected plan and any trial details before confirming in checkout.` },
 ];
@@ -17,7 +17,7 @@ const faqs = [
 const softwareSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'Gula Text Wingman',
+  name: 'Text Wingman',
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Web',
   url: SITE_URL,
@@ -37,7 +37,7 @@ export default function HomePage() {
 
       <a href="#reply-composer" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-violet-600 focus:px-4 focus:py-3">Skip to the reply tool</a>
       <header className="container mx-auto flex items-center justify-between gap-3 px-4 py-4 sm:py-5">
-        <Link href="/" aria-label="Gula Text Wingman home" className="shrink-0"><Logo size="sm" showText /></Link>
+        <Link href="/" aria-label="Text Wingman home" className="shrink-0"><Logo size="sm" showText /></Link>
         <nav aria-label="Main navigation" className="flex items-center gap-1 whitespace-nowrap sm:gap-3">
           <Link href="/guides" className="hidden rounded-xl px-3 py-2 text-sm text-white/65 hover:text-white sm:block">Texting guides</Link>
           <a href="#pricing" className="rounded-xl px-3 py-2 text-sm text-white/65 hover:text-white">Pricing</a>
@@ -68,7 +68,7 @@ export default function HomePage() {
               {[
                 { icon: MessageSquare, title: '1. Share the context', text: 'Paste the latest message or a few lines of the conversation. Leave out names and numbers.' },
                 { icon: UserRound, title: '2. Make the choice', text: 'Compare a short option, another angle and a warmer reply. Edit the words to fit you.' },
-                { icon: Copy, title: '3. Copy, then send', text: 'Keep control of your conversation. Gula never messages someone on your behalf.' },
+                { icon: Copy, title: '3. Copy, then send', text: 'Keep control of your conversation. Text Wingman never messages someone on your behalf.' },
               ].map(step => <div key={step.title} className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5"><step.icon className="mb-4 h-5 w-5 text-violet-300" /><h3 className="mb-2 font-bold">{step.title}</h3><p className="text-sm leading-relaxed text-white/60">{step.text}</p></div>)}
             </div>
           </div>
@@ -81,21 +81,21 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="container mx-auto px-4 py-14 sm:py-20" aria-labelledby="faq-title"><h2 id="faq-title" className="mb-8 text-center text-2xl font-bold sm:text-3xl">Before you paste.</h2><div className="mx-auto max-w-2xl space-y-3">{faqs.map(faq => <details key={faq.question} className="group overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.025]"><summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 p-5 text-sm font-semibold">{faq.question}<ChevronDown className="h-4 w-4 shrink-0 text-white/50 transition-transform group-open:rotate-180" /></summary><p className="px-5 pb-5 text-sm leading-relaxed text-white/60">{faq.answer}</p></details>)}</div></section>
+
         <section id="pricing" className="scroll-mt-6 border-y border-white/[0.06] px-4 py-14 sm:py-20" aria-labelledby="pricing-title">
           <div className="mb-8 text-center"><h2 id="pricing-title" className="text-2xl font-bold sm:text-3xl">Start free. Upgrade only if it helps.</h2><p className="mt-3 text-sm text-white/60">Use your first replies before deciding on Pro.</p></div>
           <div className="mx-auto grid max-w-5xl gap-5 md:grid-cols-3">
-            <PricingCard title="Free" amount="$0" interval="to start" items={['5 generations per day', '3 reply options per generation', 'Paste text or upload a screenshot', 'No account or card to try']} href="#reply-composer" cta="Try it here" detail="An example also uses one free generation." />
+            <PricingCard title="Free" amount="$0" interval="to start" items={['5 generations per day', '3 reply options per generation', 'Paste text or upload a screenshot', 'No account or card to try']} href="#reply-composer" cta="Try it here" detail="Examples are free and don't use a generation." />
             <PricingCard title="Pro Monthly" amount={PLAN_PRICES.monthly.displayAmount} interval="billed monthly" items={['Unlimited replies and Coach', 'Decodes, openers and revives', 'Saved conversation history', 'Manage renewal from billing']} href="/pricing?plan=monthly" cta="Review Monthly" detail="Review trial and payment details before confirming." featured />
             <PricingCard title="Pro Annual" amount={PLAN_PRICES.annual.displayAmount} interval="billed yearly" items={['Everything in Pro Monthly', `Save ${ANNUAL_SAVINGS_DISPLAY} compared with 12 monthly payments`, 'One annual payment', 'Manage renewal from billing']} href="/pricing?plan=annual" cta="Review Annual" detail={`Save ${ANNUAL_SAVINGS_PERCENT}% versus paying monthly.`} />
           </div>
         </section>
 
-        <section className="container mx-auto px-4 py-14 sm:py-20" aria-labelledby="faq-title"><h2 id="faq-title" className="mb-8 text-center text-2xl font-bold sm:text-3xl">Before you paste.</h2><div className="mx-auto max-w-2xl space-y-3">{faqs.map(faq => <details key={faq.question} className="group overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.025]"><summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 p-5 text-sm font-semibold">{faq.question}<ChevronDown className="h-4 w-4 shrink-0 text-white/50 transition-transform group-open:rotate-180" /></summary><p className="px-5 pb-5 text-sm leading-relaxed text-white/60">{faq.answer}</p></details>)}</div></section>
-
         <section className="px-4 pb-14 text-center sm:pb-20"><h2 className="text-2xl font-bold sm:text-3xl">Get unstuck on this text.</h2><a href="#reply-composer" className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-7 py-3 font-bold hover:from-violet-500 hover:to-fuchsia-500">Try a reply free <ArrowRight className="h-4 w-4" /></a><p className="mt-3 text-xs text-white/50">No account. No card. You choose what to send.</p></section>
       </main>
 
-      <footer className="border-t border-white/[0.06] px-4 py-8"><div className="mx-auto flex max-w-5xl flex-col items-center gap-5"><Logo size="sm" showText /><nav aria-label="Footer navigation" className="flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-white/55"><Link href="/features">Features</Link><Link href="/guides">Guides</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/contact">Contact</Link><Link href="/changelog">What&apos;s new</Link>{Object.entries(SOCIAL_LINKS).map(([name, href]) => <a key={name} href={href} target="_blank" rel="noopener noreferrer" className="capitalize">{name}</a>)}</nav><p className="text-xs text-white/40">&copy; {new Date().getFullYear()} Gula Text Wingman.</p></div></footer>
+      <footer className="border-t border-white/[0.06] px-4 py-8"><div className="mx-auto flex max-w-5xl flex-col items-center gap-5"><Logo size="sm" showText /><nav aria-label="Footer navigation" className="flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-white/55"><Link href="/features">Features</Link><Link href="/guides">Guides</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/contact">Contact</Link><Link href="/changelog">What&apos;s new</Link>{Object.entries(SOCIAL_LINKS).map(([name, href]) => <a key={name} href={href} target="_blank" rel="noopener noreferrer" className="capitalize">{name}</a>)}</nav><p className="text-xs text-white/40">&copy; {new Date().getFullYear()} Text Wingman by Gula Labs.</p></div></footer>
     </div>
   );
 }
