@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link2, Copy, Check, Plus, Trash2, Download, RotateCcw } from 'lucide-react';
-import { SOCIAL_BIO_LINKS } from '@/lib/site';
+import { SITE_URL, SOCIAL_BIO_LINKS } from '@/lib/site';
 
 // Platform presets — each sets utm_source + a sensible utm_medium.
 const PLATFORMS = [
@@ -53,10 +53,9 @@ export default function LinkGeneratorPage() {
   const [copied, setCopied] = useState(false);
   const [batch, setBatch] = useState<BatchLink[]>([]);
 
-  // Derive default base URL from env (production) or current origin.
+  // Use the same canonical destination as checkout and public metadata.
   useEffect(() => {
-    const fromEnv = process.env.NEXT_PUBLIC_APP_URL;
-    setBaseUrl((fromEnv && !fromEnv.includes('localhost') ? fromEnv : window.location.origin).replace(/\/$/, ''));
+    setBaseUrl(SITE_URL);
     try {
       const savedNum = localStorage.getItem('tw_link_video_num');
       const parsedNum = parseInt(savedNum || '', 10) || 1;
