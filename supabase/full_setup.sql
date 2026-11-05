@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Existing profiles tables also need the field used by the signup trigger.
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS pending_invite_code TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON public.profiles(created_at);
 
