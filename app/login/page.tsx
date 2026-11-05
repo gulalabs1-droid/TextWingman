@@ -5,94 +5,85 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
-import { Sparkles, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Loader2, Mail } from 'lucide-react'
 import { track } from '@/lib/analytics'
 import { isSavedThreadReturn, safeReturnPath } from '@/lib/navigation'
+import {
+  OTP_RESEND_COOLDOWN_SECONDS,
+  friendlyAuthError,
+  isNewlyCreatedUser,
+  isPlausibleOtp,
+  normalizeOtp,
+  postAuthDestination,
+} from '@/lib/auth-flow'
+
+type Step = 'email' | 'code' | 'password'
+
+// Turn on only after the Supabase email templates include {{ .Token }} (scripts/apply-auth-email-templates.mjs).
+// Until then the email contains a link, so we ask people to tap it instead of typing a code.
+const EMAIL_CODE_ENABLED = process.env.NEXT_PUBLIC_AUTH_EMAIL_CODE === 'true'
+
+const inputClass = 'mt-1.5 w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-base text-white placeholder-white/30 transition-colors focus:border-violet-400/60 focus:outline-none focus:ring-4 focus:ring-violet-500/15'
+const primaryButtonClass = 'flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 font-bold text-white shadow-lg shadow-violet-600/20 transition-all hover:from-violet-500 hover:to-fuchsia-500 active:scale-[0.98] disabled:opacity-60'
+const linkButtonClass = 'min-h-11 text-sm font-semibold text-violet-200 hover:text-white disabled:opacity-50'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [mode, setMode] = useState<'signin' | 'signup'>(searchParams.get('mode') === 'signin' ? 'signin' : 'signup')
   const supabase = createClient()
-  
-  // Get redirect URL from query params (for checkout flow)
+
+  const [mode, setMode] = useState<'signin' | 'signup'>(searchParams.get('mode') === 'signin' ? 'signin' : 'signup')
+  const [step, setStep] = useState<Step>('email')
+  const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [resendIn, setResendIn] = useState(0)
+  const [error, setError] = useState<string | null>(
+    searchParams.get('error') === 'verification_failed'
+      ? 'That email link expired or opened in a different browser. Enter your email to get a new code.'
+      : null,
+  )
+
   const redirectUrl = searchParams.get('redirect') ? safeReturnPath(searchParams.get('redirect')) : null
   const selectedPlan = searchParams.get('plan')
   const isReplySaveFlow = redirectUrl ? isSavedThreadReturn(redirectUrl) : false
+  const from = isReplySaveFlow ? 'save_thread' : redirectUrl ? 'checkout' : 'login'
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-    track('sign_in_started', { from: isReplySaveFlow ? 'save_thread' : redirectUrl ? 'checkout' : 'login' })
+  useEffect(() => {
+    if (resendIn <= 0) return
+    const timer = window.setTimeout(() => setResendIn(seconds => seconds - 1), 1000)
+    return () => window.clearTimeout(timer)
+  }, [resendIn])
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) {
-      setError(error.message)
-      setIsLoading(false)
-      return
+  const finishSignIn = async (userId: string) => {
+    let onboardingComplete = false
+    if (!redirectUrl) {
+      const { data: profile } = await supabase.from('profiles').select('onboarding_completed').eq('id', userId).single()
+      onboardingComplete = Boolean(profile?.onboarding_completed)
     }
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      // If there's a redirect URL (from checkout flow), go there
-      if (redirectUrl) {
-        router.push(redirectUrl)
-      } else {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_completed')
-          .eq('id', user.id)
-          .single()
-        
-        router.push(profile?.onboarding_completed ? '/dashboard' : '/onboarding')
-      }
-    } else {
-      router.push('/dashboard')
-    }
+    router.push(postAuthDestination(redirectUrl, onboardingComplete))
     router.refresh()
   }
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const sendCode = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    const address = email.trim()
+    if (!address) return
     setIsLoading(true)
     setError(null)
-    setMessage(null)
+    track(mode === 'signup' ? 'signup_start' : 'sign_in_started', { from, method: 'email_code', plan: selectedPlan || undefined })
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      setIsLoading(false)
-      return
-    }
-
-    track('signup_start', { from: isReplySaveFlow ? 'save_thread' : redirectUrl ? 'checkout' : 'login', plan: selectedPlan || undefined })
-
-    // Build the email redirect URL to preserve the invite/checkout redirect
-    const siteUrl = window.location.origin;
-    const emailRedirectTo = redirectUrl
-      ? `${siteUrl}/auth/confirm?next=${encodeURIComponent(redirectUrl)}`
-      : `${siteUrl}/auth/confirm`;
-
-    // Extract invite code from redirect URL (e.g. /invite/FRIENDSV2 → FRIENDSV2)
-    const inviteMatch = redirectUrl?.match(/^\/invite\/(.+)$/i);
-    const pendingInviteCode = inviteMatch ? inviteMatch[1].toUpperCase() : undefined;
-
-    const { data: signUpData, error } = await supabase.auth.signUp({
-      email,
-      password,
+    const inviteMatch = redirectUrl?.match(/^\/invite\/(.+)$/i)
+    const pendingInviteCode = inviteMatch ? inviteMatch[1].toUpperCase() : undefined
+    const siteUrl = window.location.origin
+    const { error } = await supabase.auth.signInWithOtp({
+      email: address,
       options: {
-        emailRedirectTo,
+        shouldCreateUser: true,
+        // Fallback if someone taps the email link instead of typing the code.
+        emailRedirectTo: redirectUrl ? `${siteUrl}/auth/confirm?next=${encodeURIComponent(redirectUrl)}` : `${siteUrl}/auth/confirm`,
         data: {
           ...(pendingInviteCode ? { pending_invite_code: pendingInviteCode } : {}),
           ...(redirectUrl ? { signup_return_to: redirectUrl } : {}),
@@ -100,221 +91,192 @@ export default function LoginPage() {
       },
     })
 
-    if (error) {
-      setError(error.message)
-      setIsLoading(false)
-      return
-    }
-
-    track('signup_complete', {
-      from: isReplySaveFlow ? 'save_thread' : redirectUrl ? 'checkout' : 'login',
-      confirmed: Boolean(signUpData.session),
-      plan: selectedPlan || undefined,
-    })
-
-    if (signUpData.session) {
-      router.push(redirectUrl || '/onboarding')
-      router.refresh()
-      return
-    }
-
-    // Show helpful message based on redirect type
-    if (redirectUrl?.startsWith('/invite/')) {
-      setMessage(`Account created! Check your email to confirm, then you'll be redirected to activate your free Pro access.`)
-    } else if (isReplySaveFlow) {
-      setMessage(`Account created! Check your email to confirm, then your saved thread will be ready when you return.`)
-    } else if (redirectUrl) {
-      setMessage(`Account created! Check your email to confirm, then you'll be redirected to complete your ${selectedPlan || ''} subscription.`)
-    } else {
-      setMessage('Check your email to confirm your account!')
-    }
     setIsLoading(false)
+    if (error) {
+      setError(friendlyAuthError(error.message))
+      track('auth_code_failed', { from, stage: 'send', reason: error.message.slice(0, 80) })
+      return
+    }
+    track('auth_code_sent', { from })
+    setCode('')
+    setStep('code')
+    setResendIn(OTP_RESEND_COOLDOWN_SECONDS)
   }
 
+  const verifyCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const token = normalizeOtp(code)
+    if (!isPlausibleOtp(token)) {
+      setError('Enter the full code from the email.')
+      return
+    }
+    setIsLoading(true)
+    setError(null)
+    const { data, error } = await supabase.auth.verifyOtp({ email: email.trim(), token, type: 'email' })
+    if (error || !data.user) {
+      setIsLoading(false)
+      setError(friendlyAuthError(error?.message))
+      track('auth_code_failed', { from, stage: 'verify', reason: (error?.message || 'no_user').slice(0, 80) })
+      return
+    }
+    const isNew = isNewlyCreatedUser(data.user.created_at, Date.now())
+    track(isNew ? 'signup_complete' : 'sign_in_completed', { from, method: 'email_code', confirmed: true, plan: selectedPlan || undefined })
+    await finishSignIn(data.user.id)
+  }
+
+  const signInWithPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError(null)
+    track('sign_in_started', { from, method: 'password' })
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    if (error || !data.user) {
+      setIsLoading(false)
+      setError(friendlyAuthError(error?.message))
+      return
+    }
+    track('sign_in_completed', { from, method: 'password' })
+    await finishSignIn(data.user.id)
+  }
+
+  const goToStep = (next: Step) => {
+    setError(null)
+    setStep(next)
+  }
+
+  const heading = step === 'code'
+    ? 'Check your email'
+    : step === 'password'
+      ? 'Sign in with password'
+      : mode === 'signin'
+        ? 'Welcome back'
+        : isReplySaveFlow ? 'Save your thread' : 'Create your free account'
+
+  const subheading = step === 'code'
+    ? EMAIL_CODE_ENABLED
+      ? <>We sent a code to <span className="font-semibold text-white">{email.trim()}</span>. Copy it and paste it here. Keep this page open.</>
+      : <>We sent a link to <span className="font-semibold text-white">{email.trim()}</span>. Tap it to finish. You&apos;ll be signed in right away.</>
+    : step === 'password'
+      ? 'For accounts created with a password.'
+      : mode === 'signin'
+        ? `Enter your email and we will send you a sign-in ${EMAIL_CODE_ENABLED ? 'code' : 'link'}. No password needed.`
+        : isReplySaveFlow
+          ? 'Free account. Keep this reply and come back when they answer.'
+          : redirectUrl && selectedPlan ? 'Create an account to review your selected plan.' : 'Save your conversations and come back when they answer.'
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 p-4">
-      {/* Logo */}
-      <Link href="/" className="mb-8 transition-transform hover:scale-105">
-        <Logo size="lg" showText={true} />
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#0a0a0f] p-4 text-white">
+      <div aria-hidden="true" className="pointer-events-none fixed -top-40 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-violet-600/[0.08] blur-3xl" />
+      <Link href="/" aria-label="Text Wingman home" className="relative mb-6">
+        <Logo size="md" showText />
       </Link>
 
-      <div className="w-full max-w-md p-8 space-y-6 bg-white/95 backdrop-blur rounded-3xl shadow-2xl">
-        {/* Show upgrade notice if coming from pricing */}
-        {redirectUrl && selectedPlan && (
-          <div className="p-3 bg-purple-50 border-2 border-purple-200 rounded-xl mb-4">
-            <p className="text-sm text-purple-700 font-medium text-center">
-              🎉 Create an account to get your <span className="font-bold capitalize">{selectedPlan}</span> Pro subscription
-            </p>
-          </div>
-        )}
-        {isReplySaveFlow && !selectedPlan && (
-          <div className="p-3 bg-violet-50 border-2 border-violet-200 rounded-xl mb-4">
-            <p className="text-sm text-violet-700 font-medium text-center">
-              Save this thread and let Text Wingman learn the way you actually text.
-            </p>
-          </div>
+      <main className="relative w-full max-w-md space-y-5 rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
+        {step === 'email' && redirectUrl && selectedPlan && (
+          <p className="rounded-xl border border-violet-300/20 bg-violet-400/10 p-3 text-center text-sm text-violet-100">
+            Create an account to get your <span className="font-bold capitalize">{selectedPlan}</span> Pro plan.
+          </p>
         )}
 
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {mode === 'signup'
-              ? (isReplySaveFlow ? 'Save your thread' : 'Create Account')
-              : 'Welcome Back'}
-          </h1>
-          <p className="mt-2 text-gray-600">
-            {mode === 'signup' 
-              ? (isReplySaveFlow
-                ? 'Free account. Keep this reply, return when they answer, and build your Style DNA.'
-                : redirectUrl ? 'Sign up to review your selected plan' : 'Save your conversations and return when they answer.')
-              : 'Sign in to continue'}
-          </p>
+          <h1 className="text-2xl font-bold sm:text-3xl">{heading}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-white/60">{subheading}</p>
         </div>
 
-        <form className="space-y-4" onSubmit={mode === 'signup' ? handleSignUp : handleSignIn}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-1 w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                className="mt-1 w-full px-4 py-3 pr-12 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 mt-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
-            </div>
-          </div>
-
-          {mode === 'signup' && (
+        {step === 'email' && (
+          <form className="space-y-4" onSubmit={sendCode}>
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700">
-                Confirm Password
-              </label>
+              <label htmlFor="email" className="block text-sm font-semibold text-white/80">Email</label>
+              <input id="email" type="email" inputMode="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required className={inputClass} placeholder="you@example.com" />
+            </div>
+            <button type="submit" disabled={isLoading} className={primaryButtonClass}>
+              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</> : <><Mail className="h-4 w-4" /> {`Email me a ${EMAIL_CODE_ENABLED ? 'code' : 'link'}${isReplySaveFlow && mode === 'signup' ? ' to save it' : ''}`}</>}
+            </button>
+          </form>
+        )}
+
+        {step === 'code' && !EMAIL_CODE_ENABLED && (
+          <div className="space-y-4">
+            {isReplySaveFlow && (
+              <p className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-white/60">
+                Your reply is saved on this device for 24 hours. For the smoothest return, open the link in this same browser.
+              </p>
+            )}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button type="button" onClick={() => void sendCode()} disabled={isLoading || resendIn > 0} className={linkButtonClass}>
+                {resendIn > 0 ? `Send a new link in ${resendIn}s` : 'Send a new link'}
+              </button>
+              <button type="button" onClick={() => goToStep('email')} className={linkButtonClass}>Use a different email</button>
+            </div>
+            <p className="text-xs leading-relaxed text-white/45">Not there? Check spam or promotions.</p>
+          </div>
+        )}
+
+        {step === 'code' && EMAIL_CODE_ENABLED && (
+          <form className="space-y-4" onSubmit={verifyCode}>
+            <div>
+              <label htmlFor="code" className="block text-sm font-semibold text-white/80">Code from the email</label>
+              <input id="code" type="text" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(normalizeOtp(e.target.value))} required autoFocus maxLength={10} className={`${inputClass} text-center font-mono text-2xl tracking-[0.4em]`} placeholder="••••••" />
+            </div>
+            <button type="submit" disabled={isLoading} className={primaryButtonClass}>
+              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Checking…</> : isReplySaveFlow ? 'Verify and save my thread' : 'Verify and continue'}
+            </button>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button type="button" onClick={() => void sendCode()} disabled={isLoading || resendIn > 0} className={linkButtonClass}>
+                {resendIn > 0 ? `Send a new code in ${resendIn}s` : 'Send a new code'}
+              </button>
+              <button type="button" onClick={() => goToStep('email')} className={linkButtonClass}>Use a different email</button>
+            </div>
+            <p className="text-xs leading-relaxed text-white/45">Not there? Check spam or promotions. The code expires after a while, so use the newest email.</p>
+          </form>
+        )}
+
+        {step === 'password' && (
+          <form className="space-y-4" onSubmit={signInWithPassword}>
+            <div>
+              <label htmlFor="password-email" className="block text-sm font-semibold text-white/80">Email</label>
+              <input id="password-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required className={inputClass} placeholder="you@example.com" />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-semibold text-white/80">Password</label>
               <div className="relative">
-                <input
-                  id="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className={`mt-1 w-full px-4 py-3 pr-12 bg-gray-50 border-2 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all ${
-                    confirmPassword && confirmPassword !== password
-                      ? 'border-red-300 bg-red-50/50'
-                      : confirmPassword && confirmPassword === password
-                        ? 'border-green-300 bg-green-50/50'
-                        : 'border-gray-200'
-                  }`}
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 mt-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-                  tabIndex={-1}
-                >
+                <input id="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required className={`${inputClass} pr-12`} placeholder="Your password" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 p-1 text-white/45 hover:text-white">
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
-              {confirmPassword && confirmPassword !== password && (
-                <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
-              )}
             </div>
-          )}
-
-          {error && (
-            <div className="p-3 bg-red-50 border-2 border-red-200 rounded-xl">
-              <p className="text-sm text-red-600 font-medium">{error}</p>
-            </div>
-          )}
-
-          {message && (
-            <div className="p-3 bg-green-50 border-2 border-green-200 rounded-xl">
-              <p className="text-sm text-green-600 font-medium">{message}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-4 px-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-white font-bold text-lg rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              'Loading...'
-            ) : mode === 'signup' ? (
-              <>
-                <Sparkles className="h-5 w-5" />
-                {isReplySaveFlow ? 'Save My Thread Free' : 'Create Free Account'}
-              </>
-            ) : (
-              'Sign In'
-            )}
-          </button>
-        </form>
-
-        <div className="text-center">
-          {mode === 'signup' ? (
-            <p className="text-gray-600">
-              Already have an account?{' '}
-              <button
-                onClick={() => setMode('signin')}
-                className="text-purple-600 font-semibold hover:text-purple-700 transition-colors"
-              >
-                Sign In
-              </button>
-            </p>
-          ) : (
-            <p className="text-gray-600">
-              Don&apos;t have an account?{' '}
-              <button
-                onClick={() => setMode('signup')}
-                className="text-purple-600 font-semibold hover:text-purple-700 transition-colors"
-              >
-                Sign Up Free
-              </button>
-            </p>
-          )}
-        </div>
-
-        {mode === 'signup' && (
-          <p className="text-center text-xs text-gray-400">
-            5 free replies per day • No credit card required
-          </p>
+            <button type="submit" disabled={isLoading} className={primaryButtonClass}>
+              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Signing in…</> : 'Sign in'}
+            </button>
+            <button type="button" onClick={() => goToStep('email')} className={`${linkButtonClass} w-full`}>Forgot it? Get an email {EMAIL_CODE_ENABLED ? 'code' : 'link'} instead</button>
+          </form>
         )}
-      </div>
 
-      <p className="mt-6 text-purple-200 text-sm">
-        <Link href="/" className="hover:text-white transition-colors">
-          ← Back to home
-        </Link>
-      </p>
+        {error && (
+          <div role="alert" className="rounded-xl border border-red-300/20 bg-red-400/10 p-3 text-sm text-red-100">{error}</div>
+        )}
+
+        {step === 'email' && (
+          <div className="space-y-2 border-t border-white/[0.08] pt-4 text-center text-sm text-white/55">
+            <p>
+              {mode === 'signup' ? 'Already have an account? ' : 'New here? '}
+              <button type="button" onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')} className="font-semibold text-violet-200 hover:text-white">
+                {mode === 'signup' ? 'Sign in' : 'Create a free account'}
+              </button>
+            </p>
+            <button type="button" onClick={() => goToStep('password')} className="text-xs text-white/45 hover:text-white/75">Have a password? Sign in with password</button>
+          </div>
+        )}
+
+        {mode === 'signup' && step === 'email' && (
+          <p className="text-center text-xs text-white/40">Free account · No card · No password to remember</p>
+        )}
+      </main>
+
+      <Link href="/" className="relative mt-6 inline-flex min-h-11 items-center gap-1.5 text-sm text-white/50 hover:text-white">
+        <ArrowLeft className="h-4 w-4" /> Back to home
+      </Link>
     </div>
   )
 }

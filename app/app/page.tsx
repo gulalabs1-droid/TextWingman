@@ -259,7 +259,7 @@ type ContextType = 'crush' | 'friend' | 'colleague' | 'family' | 'ex' | 'new_mat
 const REPLY_TIMEOUT_MS = 20000;
 const VERIFIED_REPLY_TIMEOUT_MS = 45000;
 const PENDING_THREAD_STORAGE_KEY = 'tw_pending_thread';
-const PENDING_THREAD_MAX_AGE_MS = 30 * 60 * 1000;
+const PENDING_THREAD_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 async function fetchWithTimeout(
   input: RequestInfo | URL,

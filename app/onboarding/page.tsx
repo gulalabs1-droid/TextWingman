@@ -10,7 +10,7 @@ const getPostOnboardingPath = () => {
     const raw = localStorage.getItem('tw_pending_thread');
     if (raw) {
       const pending = JSON.parse(raw);
-      if (pending.savedAt && Date.now() - pending.savedAt <= 30 * 60 * 1000) {
+      if (pending.savedAt && Date.now() - pending.savedAt <= 24 * 60 * 60 * 1000) {
         return '/app?restore=1';
       }
       localStorage.removeItem('tw_pending_thread');
