@@ -24,7 +24,21 @@ import { useToast } from '@/components/ui/use-toast';
 import { validateMessage, validateScreenshot, validateQuickReplies } from '@/lib/quick-reply';
 
 // Pre-written so examples are instant and never use a visitor's free generations.
-const exampleChips = [
+type ExampleReply = {
+  label: string;
+  text: string;
+  replies: Record<'shorter' | 'spicier' | 'softer', string>;
+};
+
+// Texts featured in the latest videos — update this list when new videos go out
+// so the page picks up where the video left off.
+const videoExamples: ExampleReply[] = [
+  { label: '"wyd"', text: 'wyd', replies: { shorter: 'just out, you up?', spicier: 'about to get into trouble, you in?', softer: 'nothing much. what are you up to?' } },
+  { label: '"you free this weekend?"', text: 'you free this weekend?', replies: { shorter: 'might be, why?', spicier: "depends who's asking fr", softer: 'could be. what do you have in mind?' } },
+  { label: 'Ex texts "how\'ve you been"', text: "it's been a while, how've you been", replies: { shorter: "hey, honestly good. you?", spicier: "wasn't expecting to hear from you, what's up?", softer: "hey, i've been good. hope you're doing well too" } },
+];
+
+const exampleChips: ExampleReply[] = [
   { label: 'She said "maybe"', text: "haha maybe, depends who's asking", replies: { shorter: 'someone worth asking', spicier: 'someone with good taste and a friday plan', softer: 'just me, asking nicely' } },
   { label: '"We need to talk"', text: 'we need to talk', replies: { shorter: "okay, what's on your mind?", spicier: 'sure, when works for you?', softer: "of course. i'm here, what's up?" } },
   { label: 'Dry "lol"', text: 'lol', replies: { shorter: 'fair enough', spicier: 'glad i got a laugh', softer: "haha i'll take it" } },
@@ -75,6 +89,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
   const [returningOutcome, setReturningOutcome] = useState<PendingOutcome | null>(null);
   const [outcomeReply, setOutcomeReply] = useState<QuickReply | null>(null);
   const [outcomeAnswered, setOutcomeAnswered] = useState(false);
+  const [showProOffer, setShowProOffer] = useState(false);
   const copiedTexts = useRef<Record<string, string>>({});
   const generationInFlight = useRef(false);
   const resultsRef = useRef<HTMLElement>(null);
@@ -156,6 +171,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     setSentReply(null);
     setOutcomeReply(null);
     setOutcomeAnswered(false);
+    setShowProOffer(false);
     setIsExample(false);
     copiedTexts.current = {};
     track('composer_submit', { source, via, length: text.length, from: 'social_inline', context });
@@ -260,6 +276,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     clearPendingOutcome();
     if (asked === 'return_visit') setReturningOutcome(null);
     else setOutcomeAnswered(true);
+    if (outcome === 'got_reply') setShowProOffer(true);
     if (outcome !== 'not_reported') {
       toast({
         title: outcome === 'got_reply' ? 'Nice. Logged as a win.' : 'Logged. Thanks for telling us.',
@@ -278,10 +295,10 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     void generateReply(text, 'paste');
   };
 
-  const showExample = (example: typeof exampleChips[number], mode: 'chip' | 'instant_demo') => {
+  const showExample = (example: ExampleReply, mode: 'chip' | 'instant_demo' | 'video_chip') => {
     if (generationInFlight.current) return;
     track('example_clicked', { source, label: example.label, mode, static: true });
-    const generationId = `example_${exampleChips.indexOf(example)}`;
+    const generationId = `example_${example.label.slice(0, 24).replace(/\W+/g, '_').toLowerCase()}`;
     setMsg('');
     setReplyError('');
     setLimitReached(false);
@@ -291,6 +308,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     setSentReply(null);
     setOutcomeReply(null);
     setOutcomeAnswered(false);
+    setShowProOffer(false);
     setContext('crush');
     setIsExample(true);
     setLastMessage(example.text);
@@ -365,7 +383,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
   };
 
   const hasFilled = msg.trim().length > 0;
-  const stickyLabel = generating ? 'Writing your replies...' : hasFilled ? 'Get 3 free replies' : 'Paste a text to get started';
+  const stickyLabel = generating ? 'Writing your replies...' : hasFilled ? 'Get 3 free replies' : 'Paste or upload to start';
   const Content = embedded ? 'div' : 'main';
 
   return (
@@ -461,25 +479,25 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
               className="hidden"
             />
             <button
-              onClick={handlePasteSubmit}
-              disabled={generating || uploading}
-              className="h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10 disabled:opacity-60"
-            >
-              {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Writing your replies...</> : <>Get 3 free replies <Zap className="h-4 w-4" /></>}
-            </button>
-            <button
               onClick={() => {
                 track('screenshot_upload_clicked', { source });
                 fileInputRef.current?.click();
               }}
               disabled={uploading || generating}
-              className="h-[48px] rounded-2xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
+              className="h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10 disabled:opacity-60"
             >
               {uploading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</>
               ) : (
-                <><Camera className="h-4 w-4" /> Upload screenshot</>
+                <><Camera className="h-4 w-4" /> Upload a screenshot</>
               )}
+            </button>
+            <button
+              onClick={handlePasteSubmit}
+              disabled={generating || uploading}
+              className="h-[52px] rounded-2xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
+            >
+              {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Writing your replies...</> : <>Get 3 free replies <Zap className="h-4 w-4" /></>}
             </button>
           </div>
 
@@ -512,6 +530,23 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             <p className="mt-2 text-[11px] font-black text-fuchsia-100">See all 3 example replies (doesn&apos;t use your free replies)</p>
           </button>
           )}
+        </div>
+
+        {/* From the videos — taps into whatever brought them here */}
+        <div className="mb-6">
+          <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.16em] mb-2 px-1">{embedded ? 'From our videos' : 'From the videos'}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {videoExamples.map(ex => (
+              <button
+                key={ex.label}
+                onClick={() => showExample(ex, 'video_chip')}
+                disabled={generating || uploading}
+                className="rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/[0.04] px-3 py-2.5 text-left transition-all hover:border-fuchsia-300/35 hover:bg-fuchsia-300/[0.08] active:scale-[0.97] disabled:opacity-50"
+              >
+                <span className="block text-[13px] font-bold text-white/80">{ex.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {generating && <p role="status" className="mb-4 text-center text-sm text-white/65">Reading the context and writing three options. Your message stays here.</p>}
@@ -555,6 +590,15 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 Now try it with your text <ArrowRight className="h-4 w-4" />
               </button>
             )}
+            {!isExample && <div className="mt-4 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4">
+              <h3 className="font-bold">Save this reply and keep the thread free.</h3>
+              <p className="mb-3 mt-1 text-xs leading-relaxed text-white/55">Create a free account to save the thread and return when they answer.</p>
+              <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`} onClick={() => { savePendingThread(); track('signup_cta_click', { source, from: 'social_inline_result', handoff: 'restore_thread' }); }} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-500 font-bold text-white hover:bg-violet-400">
+                <BookmarkPlus className="h-4 w-4" /> Save this conversation free
+              </Link>
+              <button onClick={() => { savePendingThread(); const params = new URLSearchParams({ ...buildUtmParams(), restore: '1' }); router.push(`/app?${params.toString()}`); }} className="mt-3 w-full text-xs font-semibold text-white/50 hover:text-white">Continue in the full coach</button>
+              <p className="mt-2 text-center text-[11px] text-white/35">Free account. No card.</p>
+            </div>}
             {!isExample && outcomeReply && (
               <div className="mt-3 rounded-2xl border border-emerald-300/20 bg-emerald-400/[0.07] p-4" aria-live="polite">
                 {outcomeAnswered ? (
@@ -571,15 +615,19 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 )}
               </div>
             )}
-            {!isExample && <div className="mt-4 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4">
-              <h3 className="font-bold">Save this reply and keep the thread free.</h3>
-              <p className="mb-3 mt-1 text-xs leading-relaxed text-white/55">Create a free account to save the thread and return when they answer.</p>
-              <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`} onClick={() => { savePendingThread(); track('signup_cta_click', { source, from: 'social_inline_result', handoff: 'restore_thread' }); }} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-500 font-bold text-white hover:bg-violet-400">
-                <BookmarkPlus className="h-4 w-4" /> Save this conversation free
-              </Link>
-              <button onClick={() => { savePendingThread(); const params = new URLSearchParams({ ...buildUtmParams(), restore: '1' }); router.push(`/app?${params.toString()}`); }} className="mt-3 w-full text-xs font-semibold text-white/50 hover:text-white">Continue in the full coach</button>
-              <p className="mt-2 text-center text-[11px] text-white/35">Free account. No card.</p>
-            </div>}
+            {!isExample && showProOffer && (
+              <div className="mt-3 rounded-2xl border border-violet-300/30 bg-violet-400/10 p-4">
+                <h3 className="text-sm font-bold text-white">They replied. Keep the streak going.</h3>
+                <p className="mt-1 text-xs leading-relaxed text-white/60">Pro gives unlimited replies and Deep Analysis on every conversation.</p>
+                <Link
+                  href="/pricing"
+                  onClick={() => track('upgrade_clicked', { source, from: 'outcome_win' })}
+                  className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 font-bold text-white hover:from-violet-500 hover:to-fuchsia-500"
+                >
+                  See Pro <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            )}
           </section>
         )}
 
