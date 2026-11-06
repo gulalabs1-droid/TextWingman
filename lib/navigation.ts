@@ -14,6 +14,17 @@ export function isSavedThreadReturn(value: string): boolean {
   return url.pathname === '/app' && url.searchParams.get('restore') === '1';
 }
 
+export function confirmationReturnPath(redirectTo: string | null): string | null {
+  if (!redirectTo) return null;
+  try {
+    const url = new URL(redirectTo);
+    if (!['https://textwingman.app', 'https://gula-agents2.vercel.app'].includes(url.origin) || url.pathname !== '/auth/confirm') return null;
+    return url.searchParams.get('next');
+  } catch {
+    return null;
+  }
+}
+
 export function confirmationDestination(
   requested: string | null | undefined,
   stored: unknown,

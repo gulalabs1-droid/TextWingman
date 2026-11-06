@@ -15,10 +15,13 @@ export default function PricingPage() {
   const [isPro, setIsPro] = useState(false)
   const [planType, setPlanType] = useState<string | null>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [returningForTrial, setReturningForTrial] = useState(false)
   const { toast } = useToast()
   const supabase = createClient()
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setReturningForTrial(params.get('trial') === '1' && params.get('plan') === 'monthly')
     const attribution = captureAttribution()
     track('pricing_viewed', {
       source: typeof attribution.utm_source === 'string' ? attribution.utm_source : 'direct',
@@ -205,7 +208,7 @@ export default function PricingPage() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-5 py-1.5 rounded-full text-[10px] font-black tracking-wider shadow-lg shadow-emerald-500/30 whitespace-nowrap">
                   NO PAYMENT REQUIRED
                 </div>
-                <h3 className="text-xl font-black text-white mb-2 mt-1">7-Day Free Trial</h3>
+                <h3 className="text-xl font-black text-white mb-2 mt-1">{returningForTrial && user ? 'Your 7-Day Free Trial Is Ready' : '7-Day Free Trial'}</h3>
                 <p className="text-white/60 text-sm mb-1">Try Pro replies, follow-ups, and the conversation coach.</p>
                 <p className="text-white/50 text-xs mb-6">Free account required. No credit card needed to start.</p>
                 <button
@@ -213,7 +216,7 @@ export default function PricingPage() {
                   disabled={loading === 'trial'}
                   className="w-full max-w-sm mx-auto py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                 >
-                  {loading === 'trial' ? 'Loading...' : 'Start Free Trial →'}
+                  {loading === 'trial' ? 'Loading...' : returningForTrial && user ? 'Continue to Start Free Trial →' : 'Start Free Trial →'}
                 </button>
                 <p className="text-xs text-white/50 mt-3">After seven days, access pauses unless you add a payment method. Continue at {PLAN_PRICES.monthly.displayAmount}/month. Cancel anytime.</p>
               </div>

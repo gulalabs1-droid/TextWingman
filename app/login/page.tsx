@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
 import { ArrowLeft, Eye, EyeOff, Loader2, Mail } from 'lucide-react'
 import { track } from '@/lib/analytics'
+import { PLAN_PRICES } from '@/lib/pricing'
 import { isSavedThreadReturn, safeReturnPath } from '@/lib/navigation'
 import {
   OTP_RESEND_COOLDOWN_SECONDS,
@@ -48,6 +49,7 @@ export default function LoginPage() {
 
   const redirectUrl = searchParams.get('redirect') ? safeReturnPath(searchParams.get('redirect')) : null
   const selectedPlan = searchParams.get('plan')
+  const isTrial = redirectUrl ? new URL(redirectUrl, 'https://textwingman.app').searchParams.get('trial') === '1' : false
   const isReplySaveFlow = redirectUrl ? isSavedThreadReturn(redirectUrl) : false
   const from = isReplySaveFlow ? 'save_thread' : redirectUrl ? 'checkout' : 'login'
 
@@ -83,7 +85,7 @@ export default function LoginPage() {
       options: {
         shouldCreateUser: true,
         // Fallback if someone taps the email link instead of typing the code.
-        emailRedirectTo: redirectUrl ? `${siteUrl}/auth/confirm?next=${encodeURIComponent(redirectUrl)}` : `${siteUrl}/auth/confirm`,
+        emailRedirectTo: `${siteUrl}/auth/confirm?next=${encodeURIComponent(redirectUrl || '')}`,
         data: {
           ...(pendingInviteCode ? { pending_invite_code: pendingInviteCode } : {}),
           ...(redirectUrl ? { signup_return_to: redirectUrl } : {}),
@@ -174,7 +176,7 @@ export default function LoginPage() {
       <main className="relative w-full max-w-md space-y-5 rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
         {step === 'email' && redirectUrl && selectedPlan && (
           <p className="rounded-xl border border-violet-300/20 bg-violet-400/10 p-3 text-center text-sm text-violet-100">
-            Create an account to get your <span className="font-bold capitalize">{selectedPlan}</span> Pro plan.
+            {isTrial ? <>Sign in to continue to your 7-day free trial. No card is needed to start; after seven days, access pauses unless you add a payment method. Monthly Pro is {PLAN_PRICES.monthly.displayAmount}/month.</> : <>Sign in to review your <span className="font-bold capitalize">{selectedPlan}</span> Pro plan.</>}
           </p>
         )}
 

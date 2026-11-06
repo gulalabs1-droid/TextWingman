@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { confirmationDestination, isSavedThreadReturn, safeReturnPath } from '../lib/navigation';
+import { confirmationDestination, confirmationReturnPath, isSavedThreadReturn, safeReturnPath } from '../lib/navigation';
 
 test('return destinations preserve saved threads and selected plans', () => {
   for (const path of ['/app?restore=1', '/pricing?plan=annual&utm_source=youtube', '/invite/FRIENDSV2']) {
@@ -31,4 +31,15 @@ test('email confirmation ignores untrusted destinations', () => {
   for (const path of ['https://evil.example', '//evil.example', '/\\evil.example', '/pricing-evil']) {
     assert.equal(confirmationDestination(null, path, false), '/onboarding');
   }
+});
+
+test('email links retain the requested trial only from an approved callback origin', () => {
+  const destination = '/pricing?plan=monthly&trial=1&utm_source=youtube';
+  const callback = `https://textwingman.app/auth/confirm?next=${encodeURIComponent(destination)}`;
+  assert.equal(confirmationReturnPath(callback), destination);
+  assert.equal(confirmationDestination(confirmationReturnPath(callback), null, false), destination);
+  assert.equal(confirmationReturnPath('https://evil.example/auth/confirm?next=%2Fpricing'), null);
+  assert.equal(confirmationReturnPath('https://textwingman.app.evil.example/auth/confirm?next=%2Fpricing'), null);
+  assert.equal(confirmationReturnPath('https://textwingman.app/other?next=%2Fpricing'), null);
+  assert.equal(confirmationDestination(confirmationReturnPath('https://textwingman.app/auth/confirm?next=%2F%2Fevil.example'), null, false), '/onboarding');
 });

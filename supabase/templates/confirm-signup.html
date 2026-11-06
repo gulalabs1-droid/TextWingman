@@ -2,4 +2,4 @@
 <p>Enter this code on the page you just left:</p>
 <p style="font-size:28px;font-weight:bold;letter-spacing:6px">{{ .Token }}</p>
 <p>Or follow this link to confirm your account:</p>
-<p><a href="https://textwingman.app/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email">Confirm your email</a></p>
+<p><a href="https://textwingman.app/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;return_to={{ .RedirectTo }}">Confirm your email</a></p>

@@ -2,7 +2,7 @@ import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { redeemInviteCode, INVITE_CODES } from '@/lib/invite'
-import { confirmationDestination } from '@/lib/navigation'
+import { confirmationDestination, confirmationReturnPath } from '@/lib/navigation'
 
 /**
  * After email confirmation, check if the user signed up with a pending invite code
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
   const code = searchParams.get('code')
-  const next = searchParams.get('next')
+  const next = searchParams.get('next') || confirmationReturnPath(searchParams.get('return_to'))
 
   // Handle PKCE flow (code exchange)
   if (code) {
