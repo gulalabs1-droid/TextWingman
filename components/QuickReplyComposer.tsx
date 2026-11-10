@@ -579,7 +579,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                     <textarea aria-label={`Edit ${replyLabels[reply.tone].toLowerCase()} reply`} value={drafts[reply.replyId] ?? reply.text} onChange={event => { setDrafts(previous => ({ ...previous, [reply.replyId]: event.target.value })); setCopiedReply(null); }} maxLength={1000} rows={3} className="w-full rounded-xl border border-violet-300/40 bg-black/30 p-3 text-base leading-relaxed text-white focus:outline-none focus:ring-2 focus:ring-violet-300/40" />
                   ) : <p className="select-text break-words text-base leading-relaxed text-white">{drafts[reply.replyId] ?? reply.text}</p>}
                   <div className="mt-2 flex flex-wrap items-center gap-3">
-                    <button onClick={() => setEditingReply(editingReply === reply.replyId ? null : reply.replyId)} className="min-h-11 text-xs font-semibold text-violet-200 hover:text-white">{editingReply === reply.replyId ? 'Done editing' : 'Make it sound like you'}</button>
+                    <button onClick={() => setEditingReply(editingReply === reply.replyId ? null : reply.replyId)} className={`min-h-11 text-xs font-semibold text-violet-200 hover:text-white ${embedded ? homeStyles.composerEdit : ''}`}>{editingReply === reply.replyId ? 'Done editing' : 'Make it sound like you'}</button>
                     {!isExample && copiedReply === reply.replyId && <button onClick={() => handleSent(reply)} disabled={sentReply === reply.replyId} className="min-h-10 text-xs font-semibold text-emerald-200 disabled:opacity-60">{sentReply === reply.replyId ? 'Marked as sent by you' : 'I sent this (optional)'}</button>}
                   </div>
                 </div>
@@ -591,10 +591,10 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 Now try it with your text <ArrowRight className="h-4 w-4" />
               </button>
             )}
-            {!isExample && <div className="mt-4 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4">
+            {!isExample && <div className={`mt-4 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4 ${embedded ? homeStyles.composerSave : ''}`}>
               <h3 className="font-bold">Save this reply and keep the thread free.</h3>
               <p className="mb-3 mt-1 text-xs leading-relaxed text-white/55">Create a free account to save the thread and return when they answer.</p>
-              <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`} onClick={() => { savePendingThread(); track('signup_cta_click', { source, from: 'social_inline_result', handoff: 'restore_thread' }); }} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-500 font-bold text-white hover:bg-violet-400">
+              <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`} onClick={() => { savePendingThread(); track('signup_cta_click', { source, from: 'social_inline_result', handoff: 'restore_thread' }); }} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-500 font-bold text-white hover:bg-violet-400 ${embedded ? homeStyles.composerSaveButton : ''}`}>
                 <BookmarkPlus className="h-4 w-4" /> Save this conversation free
               </Link>
               <button onClick={() => { savePendingThread(); const params = new URLSearchParams({ ...buildUtmParams(), restore: '1' }); router.push(`/app?${params.toString()}`); }} className="mt-3 w-full text-xs font-semibold text-white/50 hover:text-white">Continue in the full coach</button>
