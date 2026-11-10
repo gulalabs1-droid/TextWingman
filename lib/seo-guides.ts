@@ -112,7 +112,7 @@ export const SEO_GUIDES: SeoGuide[] = [
     slug: 'first-message-dating-app',
     title: 'First Message on a Dating App — What Actually Works',
     metaTitle: 'Best First Messages on Dating Apps That Actually Get Replies',
-    metaDescription: 'Tired of getting no replies? These first message examples for Tinder, Hinge, and Bumble actually work — backed by AI analysis of thousands of conversations.',
+    metaDescription: 'Looking for a first message? Explore examples for Tinder, Hinge, and Bumble and find an approach that feels natural to you.',
     heroEmoji: '✨',
     situation: 'You matched. Now you need to send the first message. "Hey" won\'t cut it. Neither will a generic compliment.',
     theirMessage: '(new match — their bio says "take me somewhere I\'ve never been")',
@@ -143,7 +143,7 @@ export const SEO_GUIDES: SeoGuide[] = [
     badReply: 'goodnight beautiful!! sweet dreams 😘😘 sleep well!! talk tomorrow!!',
     badWhy: 'Overkill. Too many exclamation marks. Multiple emojis = trying way too hard.',
     goodReplies: [
-      { tone: 'Smooth', text: 'go sleep. but you owe me the rest of that story tomorrow', why: 'Casual closer that guarantees the conversation continues.' },
+      { tone: 'Smooth', text: 'go sleep. but you owe me the rest of that story tomorrow', why: 'A casual closer that leaves the door open to continue the story later.' },
       { tone: 'Warm', text: 'night. this was a good one', why: 'Simple, genuine, memorable. Says a lot with very little.' },
       { tone: 'Flirty', text: 'don\'t dream about me too much', why: 'Playful confidence. Ends on a high note with humor.' },
     ],

@@ -1,5 +1,23 @@
 export const OTP_RESEND_COOLDOWN_SECONDS = 60;
 
+export function passwordSignupError(password: string, confirmation: string): string | null {
+  if (password.length < 8) return 'Use at least 8 characters for your password.';
+  if (password !== confirmation) return 'Those passwords do not match.';
+  return null;
+}
+
+export function authEmailOptions(origin: string, redirectUrl: string | null) {
+  const inviteMatch = redirectUrl?.match(/^\/invite\/(.+)$/i);
+  const pendingInviteCode = inviteMatch ? inviteMatch[1].toUpperCase() : undefined;
+  return {
+    emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(redirectUrl || '')}`,
+    data: {
+      ...(pendingInviteCode ? { pending_invite_code: pendingInviteCode } : {}),
+      ...(redirectUrl ? { signup_return_to: redirectUrl } : {}),
+    },
+  };
+}
+
 export function normalizeOtp(value: string): string {
   return value.replace(/\D/g, '').slice(0, 10);
 }
@@ -27,10 +45,13 @@ export function friendlyAuthError(message: string | null | undefined): string {
     return 'That code is wrong or expired. Check the newest email or send a new code.';
   }
   if (/invalid login credentials/i.test(text)) {
-    return 'Email or password is incorrect. You can also sign in with an email code.';
+    return 'Email or password is incorrect. You can also sign in with an email link.';
   }
   if (/email not confirmed/i.test(text)) {
-    return 'Confirm your email first, or sign in with an email code instead.';
+    return 'Confirm your email first, or try signing in with an email link.';
+  }
+  if (/password.*(weak|at least|characters|length|requirements)/i.test(text)) {
+    return 'Choose a stronger password and try again.';
   }
   if (/signups? not allowed|signup.*disabled/i.test(text)) {
     return 'New accounts are paused right now. Please try again later.';

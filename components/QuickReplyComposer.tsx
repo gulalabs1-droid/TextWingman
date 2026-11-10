@@ -22,6 +22,7 @@ import {
 import { SOCIAL_LINKS } from '@/lib/site';
 import { useToast } from '@/components/ui/use-toast';
 import { validateMessage, validateScreenshot, validateQuickReplies } from '@/lib/quick-reply';
+import homeStyles from '@/app/homepage.module.css';
 
 // Pre-written so examples are instant and never use a visitor's free generations.
 type ExampleReply = {
@@ -429,12 +430,12 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
         )}
 
         {/* Input card — ABOVE FOLD on mobile */}
-        <div ref={inputCardRef} className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 sm:p-5 backdrop-blur-sm mb-5">
+        <div ref={inputCardRef} className={`rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 sm:p-5 backdrop-blur-sm mb-5 ${embedded ? homeStyles.composerInput : ''}`}>
           <fieldset className="mb-3">
             <legend className="mb-2 text-sm font-semibold text-white/80">Who sent it?</legend>
             <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/[0.08] bg-black/30 p-1">
               {contextOptions.map(option => (
-                <label key={option.id} className={`flex min-h-10 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-300/60 ${context === option.id ? 'bg-violet-500/25 text-white' : 'text-white/55 hover:text-white/80'}`}>
+                <label key={option.id} className={`flex min-h-10 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-300/60 ${context === option.id ? 'bg-violet-500/25 text-white' : 'text-white/55 hover:text-white/80'} ${embedded ? context === option.id ? homeStyles.composerChoiceActive : homeStyles.composerChoice : ''}`}>
                   <input type="radio" name={embedded ? 'home-context' : 'social-context'} value={option.id} checked={context === option.id} onChange={() => { setContext(option.id); track('context_selected', { source, context: option.id }); }} disabled={generating || uploading} className="sr-only" />
                   {option.label}
                 </label>
@@ -465,7 +466,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             aria-label="Their message or conversation"
             aria-describedby="message-privacy"
             disabled={generating || uploading}
-            className="w-full min-h-[88px] max-h-[200px] p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] text-white placeholder-white/40 resize-none focus:outline-none focus:border-fuchsia-400/60 focus:ring-4 focus:ring-fuchsia-500/10 transition-colors text-base leading-relaxed disabled:opacity-70"
+            className={`w-full min-h-[88px] max-h-[200px] p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] text-white placeholder-white/40 resize-none focus:outline-none focus:border-fuchsia-400/60 focus:ring-4 focus:ring-fuchsia-500/10 transition-colors text-base leading-relaxed disabled:opacity-70 ${embedded ? homeStyles.composerTextarea : ''}`}
           />
           <p id="message-privacy" className="mt-2 text-xs text-white/50">Remove names and numbers. We never connect to your inbox or send messages for you.</p>
 
@@ -484,7 +485,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 fileInputRef.current?.click();
               }}
               disabled={uploading || generating}
-              className="h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10 disabled:opacity-60"
+              className={`h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10 disabled:opacity-60 ${embedded ? homeStyles.composerUpload : ''}`}
             >
               {uploading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</>
@@ -495,14 +496,14 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             <button
               onClick={handlePasteSubmit}
               disabled={generating || uploading}
-              className="h-[52px] rounded-2xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60"
+              className={`h-[52px] rounded-2xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 ${embedded ? homeStyles.composerGenerate : ''}`}
             >
               {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Writing your replies...</> : <>Get 3 free replies <Zap className="h-4 w-4" /></>}
             </button>
           </div>
 
           <p className="mt-2.5 text-[11px] text-white/30 text-center">
-            No account or card needed · 5 free replies/day · You choose what to send
+            No account or card needed · 5 free generations/day · You choose what to send
           </p>
 
           {replyError && (
@@ -516,7 +517,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
           <button
             onClick={() => showExample(exampleChips[0], 'instant_demo')}
             aria-label="See three example replies"
-            className="mt-3 w-full rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/[0.06] p-3 text-left text-[12px] text-fuchsia-100/80 transition-colors hover:border-fuchsia-300/35 hover:bg-fuchsia-300/[0.10]"
+            className={`mt-3 w-full rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/[0.06] p-3 text-left text-[12px] text-fuchsia-100/80 transition-colors hover:border-fuchsia-300/35 hover:bg-fuchsia-300/[0.10] ${embedded ? homeStyles.composerExample : ''}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
