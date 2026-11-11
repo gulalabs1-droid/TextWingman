@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Crown, Check, ArrowLeft, CheckCircle2, Sparkles, Target, Shield } from 'lucide-react'
+import { Crown, Check, ArrowLeft, ArrowUpRight, CheckCircle2, Sparkles, Target, Shield, Send } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
-import { Logo } from '@/components/Logo'
 import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_SAVINGS_PERCENT, ANNUAL_MONTHLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from '@/lib/pricing'
 import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits'
 import { captureAttribution, track } from '@/lib/analytics'
@@ -16,6 +15,8 @@ export default function PricingPage() {
   const [isPro, setIsPro] = useState(false)
   const [planType, setPlanType] = useState<string | null>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [planLoadFailed, setPlanLoadFailed] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual' | null>(null)
   const [returningForTrial, setReturningForTrial] = useState(false)
   const { toast } = useToast()
   const supabase = createClient()
@@ -23,6 +24,8 @@ export default function PricingPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setReturningForTrial(params.get('trial') === '1' && params.get('plan') === 'monthly')
+    const requestedPlan = params.get('plan')
+    setSelectedPlan(requestedPlan === 'monthly' || requestedPlan === 'annual' ? requestedPlan : null)
     const attribution = captureAttribution()
     track('pricing_viewed', {
       source: typeof attribution.utm_source === 'string' ? attribution.utm_source : 'direct',
@@ -30,15 +33,16 @@ export default function PricingPage() {
     })
 
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError && authError.name !== 'AuthSessionMissingError') throw authError
       setUser(user ? { email: user.email || '', id: user.id } : null)
       
       if (user) {
         const res = await fetch('/api/usage')
-        if (res.ok) {
-          const data = await res.json()
-          setIsPro(data.isPro || false)
-        }
+        if (!res.ok) throw new Error('Could not verify plan access')
+        const data = await res.json()
+        if (typeof data.isPro !== 'boolean') throw new Error('Invalid plan response')
+        setIsPro(data.isPro)
         
         const { data: sub } = await supabase
           .from('subscriptions')
@@ -53,7 +57,10 @@ export default function PricingPage() {
       
       setCheckingAuth(false)
     }
-    checkAuth()
+    checkAuth().catch(() => {
+      setPlanLoadFailed(true)
+      setCheckingAuth(false)
+    })
   }, [supabase.auth, supabase])
 
   const handleCheckout = async (plan: 'monthly' | 'weekly' | 'annual', trial = false) => {
@@ -104,46 +111,69 @@ export default function PricingPage() {
     window.location.href = '/login'
   }
 
+  const trialBanner = (
+    <div className={`w-full max-w-2xl mx-auto ${returningForTrial ? 'mb-10' : 'mt-10'}`}>
+      <div className="relative bg-[#1b281a] border border-[#56694a] rounded-3xl p-7 sm:p-8 text-center">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#d3ff68] text-[#10180b] px-5 py-1.5 rounded-full text-[10px] font-black tracking-wider whitespace-nowrap">NO PAYMENT REQUIRED</div>
+        <h2 className="text-xl font-black text-white mb-2 mt-1">{returningForTrial && user ? 'Your 7-Day Free Trial Is Ready' : '7-Day Free Trial'}</h2>
+        <p className="text-white/60 text-sm mb-1">Try Pro replies, follow-ups, and the conversation coach.</p>
+        <p className="text-white/50 text-xs mb-6">Free account required. No credit card needed to start.</p>
+        <button onClick={() => handleCheckout('monthly', true)} disabled={loading !== null} className="w-full max-w-sm mx-auto py-3.5 bg-[#d3ff68] text-[#10180b] font-black text-sm rounded-xl hover:bg-[#e4ffad] transition-colors disabled:opacity-50">
+          {loading === 'trial' ? 'Loading...' : returningForTrial && user ? 'Continue to Start Free Trial →' : 'Start Free Trial →'}
+        </button>
+        <p className="text-xs text-white/50 mt-3">After seven days, access pauses unless you add a payment method. Continue at {PLAN_PRICES.monthly.displayAmount}/month. Cancel anytime.</p>
+      </div>
+    </div>
+  )
+
   return (
-    <div className="min-h-screen bg-[#0a0a0f] relative overflow-hidden">
+    <div className="min-h-screen bg-[#0b0f0c] relative overflow-hidden">
       {/* Ambient background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/[0.06] blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/[0.06] blur-[120px]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[#b4fe57]/[0.07] blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#5f9745]/[0.06] blur-[120px]" />
       </div>
 
       {/* Header */}
       <nav className="relative z-10 container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
-          <Link href={user ? '/dashboard' : '/'} className="flex items-center gap-2 text-white/60 hover:text-white transition-all">
+          <Link href={user ? '/dashboard' : '/'} aria-label={user ? 'Back to dashboard' : 'Back to home'} className="flex items-center gap-2 text-white/60 hover:text-white transition-all">
             <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-medium">{user ? 'Dashboard' : 'Home'}</span>
+            <span className="hidden text-sm font-medium sm:inline">{user ? 'Dashboard' : 'Home'}</span>
           </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/" className="transition-transform hover:scale-105">
-              <Logo size="md" showText={true} />
-            </Link>
-          </div>
+          <Link href="/" aria-label="Text Wingman home" className="inline-flex items-center gap-2 whitespace-nowrap text-base font-bold tracking-tight sm:text-lg">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#d3ff68] text-[#10180b]"><Send className="h-5 w-5" strokeWidth={2.4} /></span>
+            <span>text<span className="text-[#d3ff68]">wingman</span><span className="text-white/45">.app</span></span>
+          </Link>
           <div>
             {!checkingAuth && (
               user ? (
-                <button onClick={handleSignOut} className="text-white/40 hover:text-white/70 text-sm font-medium transition-colors">Sign Out</button>
+                <button onClick={handleSignOut} className="whitespace-nowrap text-white/40 hover:text-white/70 text-sm font-medium transition-colors">Sign Out</button>
               ) : (
-                <Link href="/login" className="text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all">Sign Up</Link>
+                <Link href="/login" className="whitespace-nowrap text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all">Sign Up</Link>
               )
             )}
           </div>
         </div>
       </nav>
 
-      <div className="relative z-10 container mx-auto px-4 py-12">
+      <main className="relative z-10 container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
+          {checkingAuth ? (
+            <div role="status" className="py-20 text-center text-sm text-white/60">Checking your plan...</div>
+          ) : planLoadFailed ? (
+            <div role="alert" className="mx-auto max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center">
+              <h1 className="text-xl font-black text-white">We couldn&apos;t check your plan.</h1>
+              <p className="mt-3 text-sm text-white/60">Please try again before starting checkout.</p>
+              <button type="button" onClick={() => window.location.reload()} className="mt-5 min-h-12 rounded-xl bg-[#d3ff68] px-6 font-bold text-[#10180b]">Try again</button>
+            </div>
+          ) : (<>
           {/* Pro User View */}
           {isPro ? (
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-emerald-500/10 px-4 py-2 rounded-full mb-6 border border-emerald-500/20">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                <span className="text-emerald-300 font-bold text-sm">Active Pro Member</span>
+              <div className="inline-flex items-center gap-2 bg-[#d3ff68]/10 px-4 py-2 rounded-full mb-6 border border-[#d3ff68]/20">
+                <CheckCircle2 className="h-4 w-4 text-[#d3ff68]" />
+                <span className="text-[#d3ff68] font-bold text-sm">Pro access active</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
                 You&apos;re Pro.
@@ -152,49 +182,50 @@ export default function PricingPage() {
                 Unlimited access to Coach Mode, Intel, Strategy, and the verified pipeline.
               </p>
               
-              <div className="bg-white/[0.04] backdrop-blur-sm border border-emerald-500/20 rounded-3xl p-8 max-w-md mx-auto">
+              <div className="bg-[#171f19] border border-[#465b48] rounded-3xl p-8 max-w-md mx-auto">
                 <div className="flex items-center justify-center gap-2 mb-6">
-                  <Sparkles className="h-5 w-5 text-emerald-400" />
-                  <h3 className="text-xl font-black text-white">Your Pro Benefits</h3>
+                  <Sparkles className="h-5 w-5 text-[#d3ff68]" />
+                  <h2 className="text-xl font-black text-white">Your Pro Benefits</h2>
                 </div>
                 <ul className="space-y-3 text-left mb-6">
                   <li className="flex items-center gap-3 text-white/80 text-sm">
-                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#d3ff68] flex-shrink-0" />
                     Unlimited replies + Coach Mode
                   </li>
                   <li className="flex items-center gap-3 text-white/80 text-sm">
-                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#d3ff68] flex-shrink-0" />
                     Intel sidebar — health, risk, timing
                   </li>
                   <li className="flex items-center gap-3 text-white/80 text-sm">
-                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#d3ff68] flex-shrink-0" />
                     V2 Verified pipeline + Strategy
                   </li>
                   <li className="flex items-center gap-3 text-white/80 text-sm">
-                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#d3ff68] flex-shrink-0" />
                     Simulated outcomes + confidence scores
                   </li>
                   <li className="flex items-center gap-3 text-white/80 text-sm">
-                    <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-[#d3ff68] flex-shrink-0" />
                     Unlimited decodes, openers &amp; revives
                   </li>
                 </ul>
                 <p className="text-white/30 text-xs mb-4">
-                  Plan: <span className="text-emerald-400 font-bold capitalize">{planType || 'Pro'}</span>
+                  Plan: <span className="text-[#d3ff68] font-bold capitalize">{planType || 'Pro'}</span>
                 </p>
-                <Link href="/app" className="block w-full py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black text-sm rounded-xl hover:scale-[1.02] transition-all text-center shadow-lg shadow-emerald-500/20">
+                <Link href="/app" className="block w-full py-3.5 bg-[#d3ff68] text-[#10180b] font-black text-sm rounded-xl hover:bg-[#e4ffad] transition-colors text-center">
                   Open Coach →
                 </Link>
+                {planType && <Link href="/billing" className="mt-3 inline-block min-h-11 px-3 py-3 text-sm font-semibold text-white/65 hover:text-white">View billing</Link>}
               </div>
             </div>
           ) : (
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-violet-500/10 px-4 py-2 rounded-full mb-6 border border-violet-500/20">
-                <Crown className="h-4 w-4 text-violet-400" />
-                <span className="text-violet-300 font-bold text-sm">Upgrade to Pro</span>
+              <div className="inline-flex items-center gap-2 bg-[#d3ff68]/10 px-4 py-2 rounded-full mb-6 border border-[#d3ff68]/20">
+                <Crown className="h-4 w-4 text-[#d3ff68]" />
+                <span className="text-[#d3ff68] font-bold text-sm">PLANS FOR YOUR NEXT MOVE</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-white mb-4">
-                More help when the conversation matters.
+                Say less. <span className="text-[#d3ff68]">Text better.</span>
               </h1>
               <p className="text-lg text-white/50">
                 Get reply ideas, follow-up suggestions, and a coach to help you think through your next move.
@@ -203,33 +234,15 @@ export default function PricingPage() {
             </div>
           )}
 
-          {/* Free Trial Banner */}
-          {!isPro && (
-            <div className="max-w-2xl mx-auto mb-10">
-              <div className="relative bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 rounded-3xl p-8 text-center">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-5 py-1.5 rounded-full text-[10px] font-black tracking-wider shadow-lg shadow-emerald-500/30 whitespace-nowrap">
-                  NO PAYMENT REQUIRED
-                </div>
-                <h3 className="text-xl font-black text-white mb-2 mt-1">{returningForTrial && user ? 'Your 7-Day Free Trial Is Ready' : '7-Day Free Trial'}</h3>
-                <p className="text-white/60 text-sm mb-1">Try Pro replies, follow-ups, and the conversation coach.</p>
-                <p className="text-white/50 text-xs mb-6">Free account required. No credit card needed to start.</p>
-                <button
-                  onClick={() => handleCheckout('monthly', true)}
-                  disabled={loading === 'trial'}
-                  className="w-full max-w-sm mx-auto py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                >
-                  {loading === 'trial' ? 'Loading...' : returningForTrial && user ? 'Continue to Start Free Trial →' : 'Start Free Trial →'}
-                </button>
-                <p className="text-xs text-white/50 mt-3">After seven days, access pauses unless you add a payment method. Continue at {PLAN_PRICES.monthly.displayAmount}/month. Cancel anytime.</p>
-              </div>
-            </div>
-          )}
+          <div className="flex flex-col">
+          {!isPro && returningForTrial && trialBanner}
 
           {/* Pricing Cards */}
           {!isPro && (
-          <div className="grid md:grid-cols-2 gap-5 max-w-2xl mx-auto">
+          <><h2 className="sr-only">Choose a plan</h2><div className="grid md:grid-cols-3 gap-5 w-full max-w-5xl mx-auto">
             {/* Monthly Plan — lower-commitment first choice */}
-            <div className="relative bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 rounded-3xl p-7">
+            <div className="relative flex flex-col bg-[#263528] border border-[#a4c778] rounded-3xl p-7">
+              {selectedPlan === 'monthly' && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#d3ff68] px-4 py-1.5 text-[10px] font-black tracking-wider text-[#10180b] whitespace-nowrap">SELECTED PLAN</span>}
               <div className="text-center mb-6 pt-2">
                 <h3 className="text-xl font-black text-white mb-1">Monthly</h3>
                 <div className="flex items-baseline justify-center gap-1">
@@ -238,7 +251,7 @@ export default function PricingPage() {
                 </div>
                 <p className="text-white/40 text-xs mt-1.5">Full access. Cancel anytime.</p>
               </div>
-              <ul className="space-y-2.5 mb-7">
+              <ul className="space-y-2.5 mb-7 flex-1">
                 <li className="flex items-center gap-2.5 text-white/80 text-sm">
                   <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Unlimited replies + Coach Mode
                 </li>
@@ -257,17 +270,32 @@ export default function PricingPage() {
               </ul>
               <button
                 onClick={() => handleCheckout('monthly')}
-                disabled={loading === 'monthly'}
-                className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-black text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50"
+                disabled={loading !== null}
+                className="w-full py-3.5 bg-[#d3ff68] text-[#10180b] font-black text-sm rounded-xl hover:bg-[#e4ffad] transition-colors disabled:opacity-50"
               >
                 {loading === 'monthly' ? 'Loading...' : 'Get Pro Monthly →'}
               </button>
             </div>
 
+            <div className="relative flex flex-col rounded-3xl border border-[#465b48] bg-[#171f19] p-7">
+              <div className="text-center mb-6 pt-2">
+                <h3 className="text-xl font-black text-white mb-1">Free</h3>
+                <div className="flex items-baseline justify-center gap-1"><span className="text-4xl font-black text-white">$0</span><span className="text-white/40 text-sm"> to start</span></div>
+                <p className="text-white/45 text-xs mt-1.5">No card required.</p>
+              </div>
+              <ul className="space-y-2.5 mb-7 flex-1">
+                <li className="flex items-start gap-2.5 text-white/80 text-sm"><Check className="mt-0.5 h-4 w-4 text-[#d3ff68] flex-shrink-0" /> {FREE_REPLY_LIMIT} free uses per {REPLY_USAGE_WINDOW_HOURS} hours</li>
+                <li className="flex items-start gap-2.5 text-white/80 text-sm"><Check className="mt-0.5 h-4 w-4 text-[#d3ff68] flex-shrink-0" /> 3 reply options per generation</li>
+                <li className="flex items-start gap-2.5 text-white/80 text-sm"><Check className="mt-0.5 h-4 w-4 text-[#d3ff68] flex-shrink-0" /> Paste a text or upload a screenshot</li>
+                <li className="flex items-start gap-2.5 text-white/80 text-sm"><Check className="mt-0.5 h-4 w-4 text-[#d3ff68] flex-shrink-0" /> Save conversations with a free account</li>
+              </ul>
+              <Link href="/#studio" className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#64765b] font-black text-sm text-white hover:border-[#d3ff68]">Try it free <ArrowUpRight className="h-4 w-4" /></Link>
+            </div>
+
             {/* Annual Plan — best value without a misleading weekly anchor */}
-            <div className="relative bg-white/[0.04] backdrop-blur-sm border border-emerald-500/25 rounded-3xl p-7">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-4 py-1 rounded-full text-[10px] font-black tracking-wider shadow-lg shadow-emerald-500/30">
-                SAVE {ANNUAL_SAVINGS_PERCENT}%
+            <div className="relative flex flex-col bg-[#171f19] border border-[#465b48] rounded-3xl p-7">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#d3ff68] text-[#10180b] px-4 py-1 rounded-full text-[10px] font-black tracking-wider whitespace-nowrap">
+                {selectedPlan === 'annual' ? 'SELECTED · ' : ''}SAVE {ANNUAL_SAVINGS_PERCENT}%
               </div>
               <div className="text-center mb-6 pt-2">
                 <h3 className="text-xl font-black text-white mb-1">Annual</h3>
@@ -275,9 +303,9 @@ export default function PricingPage() {
                   <span className="text-4xl font-black text-white">{PLAN_PRICES.annual.displayAmount}</span>
                   <span className="text-white/30 text-sm">{PLAN_PRICES.annual.displayInterval}</span>
                 </div>
-                <p className="text-emerald-400 text-xs font-bold mt-1.5">{ANNUAL_MONTHLY_EQUIVALENT_DISPLAY}/month — save {ANNUAL_SAVINGS_DISPLAY}</p>
+                <p className="text-[#d3ff68] text-xs font-bold mt-1.5">{ANNUAL_MONTHLY_EQUIVALENT_DISPLAY}/month — save {ANNUAL_SAVINGS_DISPLAY}</p>
               </div>
-              <ul className="space-y-2.5 mb-7">
+              <ul className="space-y-2.5 mb-7 flex-1">
                 <li className="flex items-center gap-2.5 text-white/80 text-sm">
                   <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Everything in Pro Monthly
                 </li>
@@ -293,14 +321,35 @@ export default function PricingPage() {
               </ul>
               <button
                 onClick={() => handleCheckout('annual')}
-                disabled={loading === 'annual'}
-                className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-400 text-black font-black text-sm rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                disabled={loading !== null}
+                className="w-full py-3.5 border border-[#859c72] bg-[#263528] text-white font-black text-sm rounded-xl hover:border-[#d3ff68] transition-colors disabled:opacity-50"
               >
                 {loading === 'annual' ? 'Loading...' : 'Get Annual →'}
               </button>
             </div>
           </div>
+          </>
           )}
+          {!isPro && !returningForTrial && trialBanner}
+          </div>
+
+          <section className="mx-auto mt-12 max-w-3xl rounded-3xl border border-[#465b48] bg-[#151e17] p-5 sm:p-7" aria-labelledby="compare-plans">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#d3ff68]">THE DETAILS</p>
+            <h2 id="compare-plans" className="mt-2 text-2xl font-black text-white">Free vs. Pro</h2>
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full table-fixed border-collapse text-left text-xs text-white/70 sm:text-sm">
+                <caption className="sr-only">Compare the Free and Pro plans</caption>
+                <thead><tr className="border-b border-white/10 text-xs uppercase tracking-wider text-white/50"><th scope="col" className="w-1/2 py-3 pr-4">Feature</th><th scope="col" className="w-1/4 px-2 py-3">Free</th><th scope="col" className="w-1/4 pl-2 py-3">Pro</th></tr></thead>
+                <tbody>
+                  <tr className="border-b border-white/[0.06]"><th scope="row" className="py-4 pr-4 font-semibold text-white/85">Current public price</th><td className="px-3 py-4">$0</td><td className="pl-3 py-4">{PLAN_PRICES.monthly.displayAmount}/mo or {PLAN_PRICES.annual.displayAmount}/yr</td></tr>
+                  <tr className="border-b border-white/[0.06]"><th scope="row" className="py-4 pr-4 font-semibold text-white/85">Reply and coach uses</th><td className="px-3 py-4">{FREE_REPLY_LIMIT} per {REPLY_USAGE_WINDOW_HOURS} hours</td><td className="pl-3 py-4">Unlimited</td></tr>
+                  <tr className="border-b border-white/[0.06]"><th scope="row" className="py-4 pr-4 font-semibold text-white/85">Reply options per generation</th><td className="px-3 py-4">3</td><td className="pl-3 py-4">3</td></tr>
+                  <tr><th scope="row" className="py-4 pr-4 font-semibold text-white/85">Save conversations</th><td className="px-3 py-4">With a free account</td><td className="pl-3 py-4">Included</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 text-xs leading-relaxed text-white/55">Free uses are shared between reply generations and coach messages in a rolling 24-hour window. Each reply generation provides three options. Paid subscriptions renew automatically until cancelled.{isPro && ' Public prices may differ from your current subscription; check your billing details.'}</p>
+          </section>
 
           {/* Trust badges */}
           {!isPro && (
@@ -311,8 +360,9 @@ export default function PricingPage() {
             <span>✓ 7-day free trial</span>
           </div>
           )}
+          </>)}
         </div>
-      </div>
+      </main>
     </div>
   )
 }
