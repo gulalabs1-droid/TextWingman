@@ -3,8 +3,12 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { createClient as createSupabaseAdminClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { getUserTier, ensureAdminAccess } from "@/lib/entitlements";
+import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
+import { buildRequestAnalytics } from "@/lib/analytics-server";
+import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
+import { reserveCoachUse } from '@/lib/usage-reservation';
 import { chatParams } from '@/lib/models';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -63,10 +67,31 @@ export async function POST(req: Request) {
 
   await ensureAdminAccess(user.id, user.email || "");
 
-  const { chatHistory, userMessage, context } = await req.json();
+  const { chatHistory, userMessage, context, analytics } = await req.json();
 
   if (!userMessage?.trim()) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
+  }
+
+  const entitlement = await getUserTier(user.id, user.email || '');
+  const requestAnalytics = buildRequestAnalytics(req, analytics, 'pending', {
+    mode: 'experimental_coach',
+    engine: 'fast',
+  });
+  let usageLogId: string | null = null;
+  let admin: SupabaseClient | null = null;
+
+  if (!hasPro(entitlement.tier)) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) return NextResponse.json({ error: 'Service temporarily unavailable. Please try again.' }, { status: 503 });
+    admin = createSupabaseAdminClient(url, key);
+    const reservation = await reserveCoachUse(admin, user.id, requestAnalytics);
+    if (reservation.status === 'unavailable') return NextResponse.json({ error: 'Unable to verify usage. Please try again.' }, { status: 503 });
+    if (reservation.status === 'limit') {
+      return NextResponse.json({ error: 'Usage limit reached', message: `You've reached your limit of ${FREE_REPLY_LIMIT} free uses per 24 hours. Upgrade to Pro for unlimited access.` }, { status: 429 });
+    }
+    usageLogId = reservation.logId;
   }
 
   const contextHint = context && context !== 'crush'
@@ -89,6 +114,11 @@ export async function POST(req: Request) {
   }));
 
   const raw = completion.choices[0].message.content || "";
+
+  if (admin && usageLogId && raw) {
+    const { error } = await admin.from('usage_logs').update({ metadata: { ...requestAnalytics.metadata, outcome: 'success' } }).eq('id', usageLogId);
+    if (error) console.error('Failed to mark coach usage successful:', error.message);
+  }
 
   // Parse optional REPLIES block
   const repliesMatch = raw.match(/REPLIES:\s*(\{[\s\S]*?\})\s*$/m);

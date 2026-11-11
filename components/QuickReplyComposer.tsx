@@ -22,6 +22,7 @@ import {
 import { SOCIAL_LINKS } from '@/lib/site';
 import { useToast } from '@/components/ui/use-toast';
 import { validateMessage, validateScreenshot, validateQuickReplies } from '@/lib/quick-reply';
+import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits';
 import homeStyles from '@/app/homepage.module.css';
 
 // Pre-written so examples are instant and never use a visitor's free generations.
@@ -503,7 +504,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
           </div>
 
           <p className="mt-2.5 text-[11px] text-white/30 text-center">
-            No account or card needed · 5 free generations/day · You choose what to send
+            No account or card needed · {FREE_REPLY_LIMIT} free uses per {REPLY_USAGE_WINDOW_HOURS} hours · You choose what to send
           </p>
 
           {replyError && (

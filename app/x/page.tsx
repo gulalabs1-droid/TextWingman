@@ -273,6 +273,10 @@ export default function ExperimentalThreadPage() {
         }),
       });
       const data = await res.json();
+      if (res.status === 429) {
+        setCoachHistory(prev => [...prev, { role: 'coach', content: data.message || 'Free limit reached. Try again later or upgrade to Pro.' }]);
+        return;
+      }
       if (!res.ok) throw new Error(data.error || 'Failed');
       const coachMsg: CoachMessage = { role: 'coach', content: data.reply, replies: data.replies, strategy: data.strategy };
       setCoachHistory(prev => [...prev, coachMsg]);

@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/Logo'
 import { ANNUAL_SAVINGS_DISPLAY, ANNUAL_SAVINGS_PERCENT, ANNUAL_MONTHLY_EQUIVALENT_DISPLAY, PLAN_PRICES } from '@/lib/pricing'
+import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits'
 import { captureAttribution, track } from '@/lib/analytics'
 
 export default function PricingPage() {
@@ -198,6 +199,7 @@ export default function PricingPage() {
               <p className="text-lg text-white/50">
                 Get reply ideas, follow-up suggestions, and a coach to help you think through your next move.
               </p>
+              <p className="mt-3 text-sm text-white/55">The free plan includes {FREE_REPLY_LIMIT} uses per {REPLY_USAGE_WINDOW_HOURS} hours, shared between reply generations and coach messages.</p>
             </div>
           )}
 

@@ -10,10 +10,9 @@ import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
 import { getContextCategory, COACHING_PHILOSOPHY, DRAFT_LABELS, TONE_OPTIONS } from "@/lib/context-category";
 import { buildRequestAnalytics, type RequestAnalytics } from "@/lib/analytics-server";
 import { chatParams } from '@/lib/models';
+import { FREE_REPLY_LIMIT, freeLimitReached, replyUsageCutoff } from '@/lib/usage-limits';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const FREE_USAGE_LIMIT = 5;
-const RESET_HOURS = 24;
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -32,7 +31,7 @@ async function trackFreeUsage(req: Request, userId: string | null, requestAnalyt
     );
   }
 
-  const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
+  const cutoffTime = replyUsageCutoff();
   const { ip, fingerprint, userAgent } = requestAnalytics.identity;
 
   let query = supabase
@@ -56,11 +55,11 @@ async function trackFreeUsage(req: Request, userId: string | null, requestAnalyt
     );
   }
 
-  if ((count || 0) >= FREE_USAGE_LIMIT) {
+  if (freeLimitReached(count || 0)) {
     return NextResponse.json(
       {
         error: "Usage limit reached",
-        message: `You've reached your daily limit of ${FREE_USAGE_LIMIT} free replies. Upgrade to Pro for unlimited!`,
+        message: `You've reached your limit of ${FREE_REPLY_LIMIT} free uses per 24 hours. Upgrade to Pro for unlimited access.`,
       },
       { status: 429 }
     );

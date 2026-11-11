@@ -10,6 +10,7 @@ import { LATEST_UPDATE, CURRENT_VERSION } from '@/lib/changelog'
 import { isAdminEmail } from '@/lib/isAdmin'
 import { Logo } from '@/components/Logo'
 import { PLAN_PRICES } from '@/lib/pricing'
+import { FREE_REPLY_LIMIT, replyUsageCutoff } from '@/lib/usage-limits'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -23,10 +24,10 @@ export default async function DashboardPage() {
   const { data: subscription } = await supabase
     .from('subscriptions').select('plan_type, status, current_period_end').eq('user_id', user.id).single()
 
-  const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const cutoffTime = replyUsageCutoff()
   const { count: userIdCount } = await supabase
     .from('usage_logs').select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id).gte('created_at', cutoffTime)
+    .eq('user_id', user.id).eq('action', 'generate_reply').gte('created_at', cutoffTime)
   const usageCount = userIdCount || 0
 
   const { data: recentReplies } = await supabase
@@ -67,7 +68,7 @@ export default async function DashboardPage() {
     if (subscription.plan_type === 'weekly' || daysLeft <= 7) showCountdown = true
   }
 
-  const usageLimit = 3
+  const usageLimit = FREE_REPLY_LIMIT
   const isAtLimit = !isPro && usageCount >= usageLimit
   const usagePercent = Math.min((usageCount / usageLimit) * 100, 100)
 
@@ -152,7 +153,7 @@ export default async function DashboardPage() {
           <Link href="/pricing" className="block rounded-3xl p-6 border border-red-500/20 bg-red-500/[0.06] hover:bg-red-500/[0.09] transition-all group">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white/80 font-black text-lg">5 free replies used today</p>
+                <p className="text-white/80 font-black text-lg">{usageLimit} free uses reached in the last 24 hours</p>
                 <p className="text-white/35 text-sm mt-1">Go unlimited — never miss the right reply.</p>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(139,92,246,0.3)] group-hover:scale-105 transition-transform">
@@ -192,8 +193,8 @@ export default async function DashboardPage() {
             {!isPro && !isAdmin && (
               <div className="mt-4 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-white/25 text-[10px] font-mono">{usageCount}/{usageLimit} today</span>
-                  <span className="text-white/20 text-[10px]">resets in 24h</span>
+                  <span className="text-white/25 text-[10px] font-mono">{usageCount}/{usageLimit} in the last 24 hours</span>
+                  <span className="text-white/20 text-[10px]">rolling 24h window</span>
                 </div>
                 <div className="w-full bg-white/[0.07] rounded-full h-1">
                   <div className={`h-1 rounded-full transition-all ${usagePercent >= 100 ? 'bg-red-500' : usagePercent >= 67 ? 'bg-orange-500' : 'bg-violet-500'}`}

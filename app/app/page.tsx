@@ -14,6 +14,7 @@ import ContextualHints from '@/components/ContextualHints';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
 import { captureAttribution, getAnalyticsContext, track, type Props } from '@/lib/analytics';
 import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
+import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
 import {
   createReplyGenerationId,
   deriveStyleSignals,
@@ -313,9 +314,9 @@ export default function AppPage() {
   const [shareMenuOpen, setShareMenuOpen] = useState<string | null>(null);
   const [vpnBlocked, setVpnBlocked] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
-  const [remainingReplies, setRemainingReplies] = useState(5);
+  const [remainingReplies, setRemainingReplies] = useState(FREE_REPLY_LIMIT);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [usageLimit, setUsageLimit] = useState(5);
+  const [usageLimit, setUsageLimit] = useState(FREE_REPLY_LIMIT);
   const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
   const [decodeUsed, setDecodeUsed] = useState(0);
   const [decodeLimit, setDecodeLimit] = useState(1);
@@ -900,7 +901,7 @@ export default function AppPage() {
 
   const handleGenerate = async () => {
     // Check if user has reached free limit
-    if (usageCount >= usageLimit) {
+    if (!isPro && usageCount >= usageLimit) {
       setShowPaywall(true);
       return;
     }
@@ -2691,9 +2692,9 @@ export default function AppPage() {
               <Crown className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;ve used all 5 free replies</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;ve used all {usageLimit} free uses</h2>
               <p className="text-gray-600">Unlock unlimited replies + full style control</p>
-              <p className="text-sm text-gray-400 mt-2">Free replies reset in 24 hours</p>
+              <p className="text-sm text-gray-400 mt-2">Each free use becomes available again 24 hours after it was used.</p>
             </div>
             <div className="space-y-3">
               <Button 
@@ -2850,7 +2851,7 @@ export default function AppPage() {
                     <p className="text-sm font-bold">
                       {usageCount >= usageLimit 
                         ? 'Free limit reached' 
-                        : `${remainingReplies} free ${remainingReplies === 1 ? 'reply' : 'replies'} left today`}
+                        : `${remainingReplies} free ${remainingReplies === 1 ? 'use' : 'uses'} left in your 24-hour window`}
                     </p>
                     <p className="text-xs text-white/60">
                       {Math.min(usageCount, usageLimit)}/{usageLimit} used

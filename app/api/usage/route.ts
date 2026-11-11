@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 import { getRequestIdentity } from '@/lib/request-identity';
+import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS, freeLimitReached, remainingFreeUses, replyUsageCutoff } from '@/lib/usage-limits';
 
 let supabase: SupabaseClient | null = null;
 
@@ -20,11 +21,8 @@ function getSupabase() {
   return supabase;
 }
 
-const FREE_LIMIT = 5; // 5 free replies per day for regular users
 const FREE_DECODE_LIMIT = 1; // 1 free decode per day
 const FREE_OPENER_LIMIT = 1; // 1 free opener per day
-const BETA_LIMIT = 20; // 20 free replies per day for FAMTEST7 beta testers
-const RESET_HOURS = 24;
 
 // VPN/Abuse Detection - Moderate tolerance
 const VPN_ABUSE_THRESHOLD = 5; // Max different IPs per fingerprint in 1 hour
@@ -34,7 +32,7 @@ export async function GET(request: NextRequest) {
   try {
     const requestIdentity = getRequestIdentity(request);
     const ip = requestIdentity.ip;
-    const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
+    const cutoffTime = replyUsageCutoff();
 
     // Check if user is logged in
     const serverSupabase = await createServerClient();
@@ -88,20 +86,20 @@ export async function GET(request: NextRequest) {
     }
     
     // Determine user's limit
-    const userLimit = isBetaTester ? BETA_LIMIT : FREE_LIMIT;
+    const userLimit = FREE_REPLY_LIMIT;
 
     // Pro/Elite users get unlimited - skip usage check
     if (isPro) {
       return NextResponse.json({
         usageCount: 0,
         remaining: 999,
-        limit: FREE_LIMIT,
+        limit: FREE_REPLY_LIMIT,
         canGenerate: true,
         decodeUsed: 0,
         decodeLimit: 999,
         openerUsed: 0,
         openerLimit: 999,
-        resetHours: RESET_HOURS,
+        resetHours: REPLY_USAGE_WINDOW_HOURS,
         isPro: true,
         isAdmin,
         tier,
@@ -141,8 +139,8 @@ export async function GET(request: NextRequest) {
     }
 
     const usageCount = replyRes.count || 0;
-    const remaining = Math.max(0, userLimit - usageCount);
-    const canGenerate = usageCount < userLimit;
+    const remaining = remainingFreeUses(usageCount);
+    const canGenerate = !freeLimitReached(usageCount);
     const decodeUsed = decodeRes.count || 0;
     const openerUsed = openerRes.count || 0;
 
@@ -155,7 +153,7 @@ export async function GET(request: NextRequest) {
       decodeLimit: FREE_DECODE_LIMIT,
       openerUsed,
       openerLimit: FREE_OPENER_LIMIT,
-      resetHours: RESET_HOURS,
+      resetHours: REPLY_USAGE_WINDOW_HOURS,
       isPro: false,
       isBetaTester,
       userId: userId,
@@ -172,7 +170,7 @@ export async function POST(request: NextRequest) {
   try {
     const requestIdentity = getRequestIdentity(request);
     const { ip, userAgent, fingerprint } = requestIdentity;
-    const cutoffTime = new Date(Date.now() - RESET_HOURS * 60 * 60 * 1000).toISOString();
+    const cutoffTime = replyUsageCutoff();
     const vpnCheckTime = new Date(Date.now() - VPN_CHECK_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
 
     // Check if user is logged in
@@ -180,8 +178,7 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await serverSupabase.auth.getUser();
     const userId = user?.id || null;
 
-    // Check entitlements and beta tester status
-    let isBetaTester = false;
+    // Check entitlements before applying the free-tier allowance.
     let isPro = false;
     
     if (userId && user?.email) {
@@ -201,16 +198,8 @@ export async function POST(request: NextRequest) {
           canGenerate: true,
         });
       }
-      
-      // Check beta tester status
-      const { data: subscription } = await getSupabase()
-        .from('subscriptions')
-        .select('is_beta_tester')
-        .eq('user_id', userId)
-        .single();
-      isBetaTester = subscription?.is_beta_tester === true;
     }
-    const userLimit = isBetaTester ? BETA_LIMIT : FREE_LIMIT;
+    const userLimit = FREE_REPLY_LIMIT;
 
     // VPN/Abuse check: Count unique IPs for this fingerprint in last hour (skip for logged-in users)
     if (!userId) {
@@ -230,7 +219,7 @@ export async function POST(request: NextRequest) {
             error: 'vpn_abuse_detected',
             message: 'Unusual activity detected. Upgrade to Pro for unlimited access.',
             upgradeUrl: '/#pricing',
-            usageCount: FREE_LIMIT,
+            usageCount: FREE_REPLY_LIMIT,
             remaining: 0,
             canGenerate: false,
           }, { status: 429 });
@@ -263,7 +252,7 @@ export async function POST(request: NextRequest) {
 
     const usageCount = count || 0;
 
-    if (usageCount >= userLimit) {
+    if (freeLimitReached(usageCount)) {
       return NextResponse.json({
         error: 'Free limit reached',
         usageCount,
@@ -290,13 +279,13 @@ export async function POST(request: NextRequest) {
     }
 
     const newCount = usageCount + 1;
-    const remaining = Math.max(0, userLimit - newCount);
+    const remaining = remainingFreeUses(newCount);
 
     return NextResponse.json({
       usageCount: newCount,
       remaining,
       limit: userLimit,
-      canGenerate: newCount < userLimit,
+      canGenerate: !freeLimitReached(newCount),
     });
   } catch (error) {
     console.error('Usage POST API error:', error);

@@ -10,6 +10,18 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.9.1',
+    date: '2026-11-10',
+    title: 'Free Plan Allowance Update',
+    description: 'The free plan now includes three uses per rolling 24 hours.',
+    type: 'improvement',
+    highlights: [
+      'Three free uses are shared between reply generations and coach messages',
+      'Each reply generation still offers three reply options',
+      'Existing Pro access remains unlimited',
+    ],
+  },
+  {
     version: '4.9.0',
     date: '2026-10-27',
     title: 'Your Next Reply. Right Here.',

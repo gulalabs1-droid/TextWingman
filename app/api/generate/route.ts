@@ -5,8 +5,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 import { buildRequestAnalytics } from '@/lib/analytics-server';
 import { validateMessage } from '@/lib/quick-reply';
-
-const FREE_USAGE_LIMIT = 5; // 5 free replies per day
+import { FREE_REPLY_LIMIT, freeLimitReached, replyUsageCutoff } from '@/lib/usage-limits';
 
 // Use service role key to bypass RLS for usage tracking
 function getSupabaseAdmin() {
@@ -94,7 +93,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const cutoffTime = replyUsageCutoff();
     // Build count query
     let query = supabase
       .from('usage_logs')
@@ -123,11 +122,11 @@ export async function POST(request: NextRequest) {
 
     const usageCount = count ?? 0;
 
-    if (usageCount >= FREE_USAGE_LIMIT) {
+    if (freeLimitReached(usageCount)) {
       return NextResponse.json(
         { 
           error: 'Usage limit reached',
-          message: `You've reached your daily limit of ${FREE_USAGE_LIMIT} free replies. Upgrade to Pro for unlimited!`,
+          message: `You've reached your limit of ${FREE_REPLY_LIMIT} free uses per 24 hours. Upgrade to Pro for unlimited access.`,
         },
         { status: 429 }
       );

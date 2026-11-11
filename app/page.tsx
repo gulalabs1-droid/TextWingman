@@ -4,10 +4,11 @@ import QuickReplyComposer from '@/components/QuickReplyComposer';
 import HomeCourt from '@/components/HomeCourt';
 import { SITE_URL, SOCIAL_LINKS } from '@/lib/site';
 import { PLAN_PRICES } from '@/lib/pricing';
+import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits';
 import styles from './homepage.module.css';
 
 const faqs = [
-  { question: 'Can I try it without signing up?', answer: 'Yes. Paste a message above and get three reply options without an account or card. The free allowance is five generations per day.' },
+  { question: 'Can I try it without signing up?', answer: `Yes. Paste a message and get three reply options without an account or card. Free users get ${FREE_REPLY_LIMIT} uses per ${REPLY_USAGE_WINDOW_HOURS} hours, shared between reply generations and coach messages.` },
   { question: 'Does it send messages or connect to my inbox?', answer: 'No. Text Wingman only sees the text or screenshot you choose to share. You copy, edit and send the reply yourself. Remove names, phone numbers and anything private first.' },
   { question: 'Will it know what the other person means?', answer: 'It can suggest possibilities from the context you provide, not read minds. Replies are drafts, not guarantees of a response or a date.' },
   { question: 'How is this different from a general chatbot?', answer: 'Text Wingman puts the conversation, three reply options, editing and saved threads in one focused texting workspace.' },
@@ -20,7 +21,7 @@ const softwareSchema = {
   applicationCategory: 'LifestyleApplication', operatingSystem: 'Web', url: SITE_URL,
   description: 'Paste a text or upload a conversation screenshot. Compare three reply drafts, edit one and copy it. Try free without an account or card.',
   offers: [
-    { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: 'Five free generations per day' },
+    { '@type': 'Offer', price: '0', priceCurrency: 'USD', description: `${FREE_REPLY_LIMIT} free uses per ${REPLY_USAGE_WINDOW_HOURS} hours` },
     { '@type': 'Offer', price: String(PLAN_PRICES.monthly.amount), priceCurrency: 'USD', description: 'Pro billed monthly' },
     { '@type': 'Offer', price: String(PLAN_PRICES.annual.amount), priceCurrency: 'USD', description: 'Pro billed annually' },
   ],
@@ -48,7 +49,7 @@ export default function HomePage() {
           <h1 className={styles.heroTitle}>SAY LESS.<br /><em>TEXT</em> <span>BETTER.</span></h1>
           <p className={styles.heroCopy}>Caught staring at that message? Drop it in. Get three reply ideas you can make sound like <strong>you</strong>, not a robot. Then get back to your life.</p>
           <div className={styles.heroActions}><a className={`${styles.button} ${styles.buttonLime}`} href="#studio">Try the reply studio <ArrowUpRight size={17} /></a><a className={`${styles.button} ${styles.buttonOutline}`} href="#shows">Enter the group chat <ArrowDownRight size={17} /></a></div>
-          <div className={styles.trust}><span><Check size={15} /> 5 free generations daily</span><span><Check size={15} /> 3 reply options</span><span><Check size={15} /> No signup to try</span></div>
+          <div className={styles.trust}><span><Check size={15} /> {FREE_REPLY_LIMIT} free uses per day</span><span><Check size={15} /> 3 reply options per generation</span><span><Check size={15} /> No signup to try</span></div>
         </div>
         <div id="studio" className={styles.studioFrame}><div className={styles.studio}><div className={styles.studioHead}><strong>THE REPLY STUDIO ✳</strong><span><i /> REAL AI, YOUR CALL</span></div><div id="reply-composer" className={styles.studioBody}><QuickReplyComposer embedded /></div></div></div>
       </div></section>

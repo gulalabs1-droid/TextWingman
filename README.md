@@ -11,7 +11,7 @@ AI-powered text message reply generator that helps you craft perfect responses. 
   - **Softer** - Warm & genuine, shows care
 - 📱 **Mobile-First Design**: Clean, Apple-level UI built with Tailwind & shadcn/ui
 - 💳 **Stripe Integration**: $12.99/month or $99.99/year subscriptions
-- 📊 **Usage Tracking**: Free tier with 5 daily replies
+- 📊 **Usage Tracking**: Free tier with 3 uses per rolling 24 hours, shared between reply generations and coach messages
 - 🔒 **Secure**: Supabase backend with proper rate limiting
 
 ## Tech Stack
@@ -65,7 +65,6 @@ STRIPE_PRICE_ID_ANNUAL=price_...
 
 # App Config
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-FREE_USAGE_LIMIT=5
 ```
 
 3. **Set up Supabase database**:
@@ -210,7 +209,7 @@ const SYSTEM_PROMPT = `Your custom prompt here...`;
 
 ### Changing Usage Limits
 
-Update `FREE_USAGE_LIMIT` in your environment variables.
+Update `FREE_REPLY_LIMIT` in `lib/usage-limits.ts`, then redeploy. One reply generation can produce three reply options; coach messages share the same free allowance.
 
 ### Styling
 
