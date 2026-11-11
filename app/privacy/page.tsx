@@ -18,6 +18,7 @@ export default function PrivacyPage() {
         <li><strong>Conversation content you paste or upload:</strong> Messages, screenshots, and OCR-extracted text are sent to OpenAI for processing. Saved threads and coach sessions are stored in our database so you can resume them later.</li>
         <li><strong>Generated content:</strong> AI replies, drafts, and strategy outputs are saved to your account history.</li>
         <li><strong>Usage data:</strong> Daily limits, copy events, and feature interactions for product analytics and abuse prevention.</li>
+        <li><strong>Wingman Court votes:</strong> A random browser identifier is stored in a cookie for up to one year; a hashed version and your selected option are stored to record and update your vote. Clearing cookies or changing browsers can allow another vote.</li>
         <li><strong>Billing info:</strong> Handled by Stripe — we never see your card number.</li>
         <li><strong>Anonymous analytics:</strong> Page views and performance metrics via Vercel Analytics (no third-party cookies).</li>
         <li><strong>Error logs:</strong> Crash reports via Sentry (text masked, media blocked) to fix bugs.</li>
