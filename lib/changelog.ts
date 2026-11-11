@@ -10,6 +10,18 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.9.2',
+    date: '2026-11-11',
+    title: 'Wingman Court Is Open',
+    description: 'Vote on a reply and see the real community results on the homepage.',
+    type: 'feature',
+    highlights: [
+      'Votes are saved and counted so results reflect actual community picks',
+      'Change your choice on the same browser when cookies are enabled',
+      'No account is needed to participate',
+    ],
+  },
+  {
     version: '4.9.1',
     date: '2026-11-10',
     title: 'Free Plan Allowance Update',

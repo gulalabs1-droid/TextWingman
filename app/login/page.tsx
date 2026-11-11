@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, ArrowUpRight, Eye, EyeOff, Loader2, Mail, Send } from 'lucide-react'
 import { track } from '@/lib/analytics'
 import { PLAN_PRICES } from '@/lib/pricing'
+import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits'
 import { isSavedThreadReturn, safeReturnPath } from '@/lib/navigation'
 import {
   OTP_RESEND_COOLDOWN_SECONDS,
@@ -331,7 +332,7 @@ export default function LoginPage() {
         )}
 
         {mode === 'signup' && (step === 'email' || step === 'password') && (
-          <p className="text-center text-xs text-white/45">Free account · No card required</p>
+          <p className="text-center text-xs text-white/45">Free plan: {FREE_REPLY_LIMIT} uses per {REPLY_USAGE_WINDOW_HOURS} hours · No card required for Free</p>
         )}
       </main>
 

@@ -529,7 +529,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
               </div>
               <ArrowRight className="mt-6 h-4 w-4 shrink-0 text-fuchsia-200" />
             </div>
-            <p className="mt-2 text-[11px] font-black text-fuchsia-100">See all 3 example replies (doesn&apos;t use your free replies)</p>
+            <p className="mt-2 text-[11px] font-black text-fuchsia-100">See all 3 example replies (doesn&apos;t count toward your free uses)</p>
           </button>
           )}
         </div>

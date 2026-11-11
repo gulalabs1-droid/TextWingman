@@ -49,7 +49,7 @@ export default function HomePage() {
           <h1 className={styles.heroTitle}>SAY LESS.<br /><em>TEXT</em> <span>BETTER.</span></h1>
           <p className={styles.heroCopy}>Caught staring at that message? Drop it in. Get three reply ideas you can make sound like <strong>you</strong>, not a robot. Then get back to your life.</p>
           <div className={styles.heroActions}><a className={`${styles.button} ${styles.buttonLime}`} href="#studio">Try the reply studio <ArrowUpRight size={17} /></a><a className={`${styles.button} ${styles.buttonOutline}`} href="#shows">Enter the group chat <ArrowDownRight size={17} /></a></div>
-          <div className={styles.trust}><span><Check size={15} /> {FREE_REPLY_LIMIT} free uses per day</span><span><Check size={15} /> 3 reply options per generation</span><span><Check size={15} /> No signup to try</span></div>
+          <div className={styles.trust}><span><Check size={15} /> {FREE_REPLY_LIMIT} free uses per {REPLY_USAGE_WINDOW_HOURS} hours</span><span><Check size={15} /> 3 reply options per generation</span><span><Check size={15} /> No signup to try</span></div>
         </div>
         <div id="studio" className={styles.studioFrame}><div className={styles.studio}><div className={styles.studioHead}><strong>THE REPLY STUDIO ✳</strong><span><i /> REAL AI, YOUR CALL</span></div><div id="reply-composer" className={styles.studioBody}><QuickReplyComposer embedded /></div></div></div>
       </div></section>

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/Logo';
 import { Sparkles, MessageCircle } from 'lucide-react';
 import { track } from '@/lib/analytics';
-import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
+import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits';
 
 type ShareData = {
   theirMessage: string;
@@ -211,7 +211,7 @@ export default function SharePage() {
             Try this exact scenario free
           </Button>
           <p className="text-purple-300 text-sm">
-            Get {FREE_REPLY_LIMIT} free uses per day, with three reply options per generation ⚡
+            Get {FREE_REPLY_LIMIT} free uses per {REPLY_USAGE_WINDOW_HOURS} hours, with three reply options per generation ⚡
           </p>
         </div>
 
