@@ -429,6 +429,13 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
           <p className="text-sm text-white/50">
             Short, playful or warm. Choose what you would actually send.
           </p>
+          <Link
+            href="/court?case=case-07#docket-heading"
+            onClick={() => track('culture_link_clicked', { source, from: 'social_landing', case_id: 'case-07' })}
+            className="inline-flex min-h-10 items-center gap-1.5 text-xs font-semibold text-lime-200/90 hover:text-lime-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-200"
+          >
+            From the video: vote on &ldquo;what are we?&rdquo; <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>}
 
         {returningOutcome && (
@@ -501,7 +508,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 fileInputRef.current?.click();
               }}
               disabled={uploading || generating}
-              className={`h-[52px] rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] flex items-center justify-center gap-2 shadow-xl shadow-violet-600/30 transition-all active:scale-[0.98] ring-1 ring-white/10 disabled:opacity-60 ${embedded ? homeStyles.composerUpload : ''}`}
+              className={`h-[52px] rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 ${embedded ? `bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] shadow-xl shadow-violet-600/30 ring-1 ring-white/10 ${homeStyles.composerUpload}` : 'border border-white/10 bg-white/[0.05] text-sm font-semibold text-white/80 hover:bg-white/[0.10]'}`}
             >
               {uploading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</>
@@ -512,7 +519,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             <button
               onClick={handlePasteSubmit}
               disabled={generating || uploading}
-              className={`h-[52px] rounded-2xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 ${embedded ? homeStyles.composerGenerate : ''}`}
+              className={`h-[52px] rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 ${embedded ? `bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm ${homeStyles.composerGenerate}` : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-[15px] font-black shadow-xl shadow-violet-600/30 ring-1 ring-white/10 hover:from-violet-500 hover:to-fuchsia-500'}`}
             >
               {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Writing your replies...</> : <>Get 3 free replies <Zap className="h-4 w-4" /></>}
             </button>
