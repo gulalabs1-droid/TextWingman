@@ -127,6 +127,21 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     el.style.height = Math.min(el.scrollHeight, 200) + 'px';
   }, [msg]);
 
+  useEffect(() => {
+    const caseId = new URL(window.location.href).searchParams.get('case');
+    if (!caseId || !/^case-\d{2}$/.test(caseId)) return;
+    let active = true;
+    fetch(`/api/court/example?case=${encodeURIComponent(caseId)}`)
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (!active || !data || typeof data.message !== 'string' || textareaRef.current?.value) return;
+        setMsg(data.message);
+        if (['crush', 'friend', 'work'].includes(data.context)) setContext(data.context as ReplyContext);
+        track('culture_example_loaded', { case_id: caseId });
+      }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
   const buildUtmParams = () => {
     const params: Record<string, string> = { src: source, mode: 'fast' };
     if (typeof window !== 'undefined') {

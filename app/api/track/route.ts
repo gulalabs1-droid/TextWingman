@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const sessionId = clamp(input.sessionId, 128);
     const creativeId = clamp(input.creativeId, 128);
 
-    const allowedUtm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'via', 'video_id'];
+    const allowedUtm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'src', 'via', 'video_id', 'culture_origin'];
     let safeUtm: Record<string, string> | undefined;
     if (input.utm && typeof input.utm === 'object' && !Array.isArray(input.utm)) {
       const entries: [string, string][] = [];

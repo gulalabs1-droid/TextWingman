@@ -14,6 +14,7 @@ const UTM_KEYS = [
   'utm_term',
   'video_id',
   'src',
+  'culture_origin',
 ] as const;
 
 const STORAGE_KEY = 'tw_attribution';
@@ -115,7 +116,7 @@ export function captureAttribution(): Props {
     let changed = false;
     for (const key of UTM_KEYS) {
       const value = url.searchParams.get(key);
-      if (value) {
+      if (value && (key !== 'culture_origin' || /^(court(?:_case-\d{2})?|dont_send_[a-z0-9-]+|after_dark_[a-z0-9-]+)$/.test(value))) {
         captured[key] = value.slice(0, 128);
         changed = true;
       }

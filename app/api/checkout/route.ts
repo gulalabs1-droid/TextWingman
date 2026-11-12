@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const trackingMetadata: Record<string, string> = {};
     const attribution = analytics?.attribution;
     if (attribution && typeof attribution === 'object' && !Array.isArray(attribution)) {
-      for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id', 'src']) {
+      for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id', 'src', 'culture_origin']) {
         const value = attribution[key];
         if (typeof value === 'string' && value.trim()) trackingMetadata[key] = value.trim().slice(0, 128);
       }

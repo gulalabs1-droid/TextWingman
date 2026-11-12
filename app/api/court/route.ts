@@ -1,14 +1,21 @@
 import { randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-import { isCourtChoice } from '@/lib/court';
+import { COURT_POLL_ID, isCourtChoice } from '@/lib/court';
 import { courtVoterHash, readCourtResults, saveCourtVote } from '@/lib/court-server';
+import { publishedCourtCases } from '@/lib/culture-content';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const COOKIE_NAME = 'tw_court_voter';
 const NO_STORE = { 'Cache-Control': 'no-store' };
+
+function validPollId(value: unknown): string | null {
+  if (value === undefined || value === null) return COURT_POLL_ID;
+  if (typeof value !== 'string') return null;
+  return value === COURT_POLL_ID || publishedCourtCases().some(item => item.id === value) ? value : null;
+}
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -17,11 +24,13 @@ function adminClient() {
 }
 
 export async function GET(request: NextRequest) {
+  const pollId = validPollId(request.nextUrl.searchParams.get('poll'));
+  if (!pollId) return NextResponse.json({ error: 'Case not found.' }, { status: 404, headers: NO_STORE });
   const admin = adminClient();
   if (!admin) return NextResponse.json({ error: 'Voting is temporarily unavailable.' }, { status: 503, headers: NO_STORE });
   const hash = courtVoterHash(request.cookies.get(COOKIE_NAME)?.value || '');
   try {
-    return NextResponse.json(await readCourtResults(admin, hash), { headers: NO_STORE });
+    return NextResponse.json(await readCourtResults(admin, hash, pollId), { headers: NO_STORE });
   } catch (error) {
     console.error('Court results unavailable:', error);
     return NextResponse.json({ error: 'Voting is temporarily unavailable.' }, { status: 503, headers: NO_STORE });
@@ -37,7 +46,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 415, headers: NO_STORE });
   }
   const body = await request.json().catch(() => null);
-  if (!body || !isCourtChoice(body.choice)) {
+  const pollId = validPollId(body?.pollId);
+  if (!pollId) return NextResponse.json({ error: 'Case not found.' }, { status: 404, headers: NO_STORE });
+  if (!body || !isCourtChoice(body.choice) || (pollId !== COURT_POLL_ID && body.choice === 'C')) {
     return NextResponse.json({ error: 'Choose one of the listed replies.' }, { status: 400, headers: NO_STORE });
   }
   const admin = adminClient();
@@ -47,7 +58,7 @@ export async function POST(request: NextRequest) {
   const token = courtVoterHash(existingToken) ? existingToken : randomBytes(32).toString('hex');
   const hash = courtVoterHash(token)!;
   try {
-    await saveCourtVote(admin, hash, body.choice);
+    await saveCourtVote(admin, hash, body.choice, pollId);
     const response = NextResponse.json({ saved: true, selected: body.choice }, { headers: NO_STORE });
     response.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,

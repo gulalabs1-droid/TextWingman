@@ -290,6 +290,7 @@ const CONTEXT_OPTIONS = [
   { value: 'ex', label: 'Ex', emoji: '💔', description: 'Complicated' },
   { value: 'new_match', label: 'New Match', emoji: '✨', description: 'First messages' },
 ] as const;
+const CULTURE_REWRITE_PROMPT = 'Help me rewrite my draft: ';
 
 export default function AppPage() {
   const searchParams = useSearchParams();
@@ -404,10 +405,21 @@ export default function AppPage() {
   const [smartPreviewDismissed, setSmartPreviewDismissed] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const isSocialTraffic = useRef(false);
+  const isCultureDraft = useRef(false);
+  const cultureDraftTracked = useRef(false);
   const [prefillAutoRun, setPrefillAutoRun] = useState<string | null>(null);
   const { toast } = useToast();
   
   const charCount = message.length;
+
+  const updateCoachInput = (value: string) => {
+    setStrategyChatInput(value);
+    const draft = value.startsWith(CULTURE_REWRITE_PROMPT) ? value.slice(CULTURE_REWRITE_PROMPT.length) : value;
+    if (isCultureDraft.current && !cultureDraftTracked.current && draft.trim() && !CULTURE_REWRITE_PROMPT.trim().startsWith(value.trim())) {
+      cultureDraftTracked.current = true;
+      track('composer_start', { from: 'culture_draft', length: draft.length });
+    }
+  };
 
   const tagReplies = (items: Reply[], runId: string): Reply[] => items.map(reply => ({
     ...reply,
@@ -557,6 +569,7 @@ export default function AppPage() {
       const mode = params.get('mode');
       const prefill = params.get('prefill');
       const via = params.get('via');
+      const intent = params.get('intent');
 
       if (src || mode) {
         track('app_view', { src: src || undefined, mode: mode || undefined, via: via || undefined });
@@ -566,6 +579,12 @@ export default function AppPage() {
       if (isFastEntry) {
         setUseV2(false);
         isSocialTraffic.current = true;
+      }
+      if (intent === 'rewrite' && prefill !== '1') {
+        isCultureDraft.current = true;
+        setAppMode('coach');
+        setStrategyChatInput(previous => previous || CULTURE_REWRITE_PROMPT);
+        track('culture_draft_ready', { from: 'dont_send_that' });
       }
       if (prefill === '1') {
         const msg = sessionStorage.getItem('tw_prefill_message');
@@ -3641,7 +3660,7 @@ export default function AppPage() {
               <textarea
                 ref={coachTextareaRef}
                 value={strategyChatInput}
-                onChange={(e) => { setStrategyChatInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
+                onChange={(e) => { updateCoachInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
                 rows={1}
                 disabled={strategyChatLoading}
@@ -5063,7 +5082,7 @@ export default function AppPage() {
                   <input
                     type="text"
                     value={strategyChatInput}
-                    onChange={(e) => setStrategyChatInput(e.target.value)}
+                    onChange={(e) => updateCoachInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
                     placeholder="Ask anything or add context..."
                     maxLength={300}

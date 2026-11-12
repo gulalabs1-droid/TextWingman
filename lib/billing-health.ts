@@ -21,6 +21,7 @@ export type StripeSubscriptionSummary = {
   status: string;
   createdAt: string | null;
   firstPaidAt: string | null;
+  cultureOrigin: string | null;
 };
 
 export type StripeBillingSnapshot = {
@@ -146,6 +147,7 @@ export async function getStripeBillingSnapshot(): Promise<StripeBillingSnapshot>
         status: row.status,
         createdAt: row.created ? new Date(row.created * 1000).toISOString() : null,
         firstPaidAt: paymentDates.get(row.id) || null,
+        cultureOrigin: row.metadata?.culture_origin || null,
       };
     };
     const allSubscriptions = subscriptions.map(summarize);

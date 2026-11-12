@@ -10,6 +10,18 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.10.0',
+    date: '2026-11-11',
+    title: 'The Culture Has Entered the Chat',
+    description: 'Explore new Court cases, written texting dilemmas, and paragraphs worth pausing before you send.',
+    type: 'feature',
+    highlights: [
+      'Vote on Wingman Court cases and see real community results after you choose',
+      'Read fictional examples in Don\'t Send That and the After Dark show concept',
+      'New cases and written examples appear weekly, with a direct path to the reply tool',
+    ],
+  },
+  {
     version: '4.9.2',
     date: '2026-11-11',
     title: 'Wingman Court Is Open',

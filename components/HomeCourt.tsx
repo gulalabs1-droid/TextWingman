@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { COURT_CHOICES, type CourtChoice, type CourtResults, votePercent } from '@/lib/court';
 import styles from '@/app/homepage.module.css';
 
@@ -93,6 +94,6 @@ export default function HomeCourt() {
       {COURT_CHOICES.map(choice => <button key={choice.id} type="button" aria-pressed={selected === choice.id} disabled={!results || pending !== null} className={`${styles.vote} ${selected === choice.id ? styles.voteSelected : ''}`} onClick={() => void submitVote(choice.id)}>
         <strong>{choice.id}</strong><span className={styles.voteText}>{choice.text}</span>{results && total > 0 && <span className={styles.voteCount}>{results.counts[choice.id]} · {votePercent(results.counts[choice.id], total)}%</span>}
       </button>)}
-    </div><p className={styles.pollFeedback} aria-live="polite">{error || (pending ? 'Saving your vote...' : !results ? 'Loading votes...' : selected ? `Vote saved. ${total} ${total === 1 ? 'vote' : 'votes'} so far.` : total ? `${total} ${total === 1 ? 'vote' : 'votes'} so far. Pick your move.` : 'Be the first to vote.')}</p></div>
+    </div><p className={styles.pollFeedback} aria-live="polite">{error || (pending ? 'Saving your vote...' : !results ? 'Loading votes...' : selected ? `Vote saved. ${total} ${total === 1 ? 'vote' : 'votes'} so far.` : total ? `${total} ${total === 1 ? 'vote' : 'votes'} so far. Pick your move.` : 'Be the first to vote.')}</p><Link href="/court" className={styles.courtMore}>Explore more Court cases →</Link></div>
   </div>;
 }

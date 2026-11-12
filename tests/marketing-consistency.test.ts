@@ -23,7 +23,7 @@ test('Court is described as a real community vote and linked from the features p
   const features = source('app/features/page.tsx');
   assert.match(homepage, /COMMUNITY VOTE/);
   assert.match(court, /COMMUNITY VOTE/);
-  assert.match(features, /href="\/#court-poll"/);
+  assert.match(features, /href="\/court"/);
   assert.doesNotMatch(`${homepage}\n${court}`, /local preview|not a live audience vote|preview is not recorded/i);
-  assert.equal(CHANGELOG[0].title, 'Wingman Court Is Open');
+  assert.match(CHANGELOG[0].title, /Culture/);
 });

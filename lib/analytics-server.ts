@@ -9,6 +9,7 @@ const UTM_KEYS = [
   'src',
   'via',
   'video_id',
+  'culture_origin',
 ] as const;
 
 type Primitive = string | number | boolean | null;

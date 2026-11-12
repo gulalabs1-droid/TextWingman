@@ -7,13 +7,13 @@ export function courtVoterHash(token: string): string | null {
   return createHash('sha256').update(token).digest('hex');
 }
 
-export async function readCourtResults(admin: SupabaseClient, voterHash: string | null): Promise<CourtResults> {
+export async function readCourtResults(admin: SupabaseClient, voterHash: string | null, pollId = COURT_POLL_ID): Promise<CourtResults> {
   const countRequests = COURT_CHOICES.map(choice => admin.from('wingman_court_votes')
     .select('choice', { count: 'exact', head: true })
-    .eq('poll_id', COURT_POLL_ID)
+    .eq('poll_id', pollId)
     .eq('choice', choice.id));
   const selectedRequest = voterHash
-    ? admin.from('wingman_court_votes').select('choice').eq('poll_id', COURT_POLL_ID).eq('voter_hash', voterHash).maybeSingle()
+    ? admin.from('wingman_court_votes').select('choice').eq('poll_id', pollId).eq('voter_hash', voterHash).maybeSingle()
     : Promise.resolve({ data: null, error: null });
   const [countResults, selectedResult] = await Promise.all([Promise.all(countRequests), selectedRequest]);
   if (countResults.some(result => result.error || typeof result.count !== 'number') || selectedResult.error) {
@@ -28,9 +28,9 @@ export async function readCourtResults(admin: SupabaseClient, voterHash: string 
   };
 }
 
-export async function saveCourtVote(admin: SupabaseClient, voterHash: string, choice: CourtChoice): Promise<void> {
+export async function saveCourtVote(admin: SupabaseClient, voterHash: string, choice: CourtChoice, pollId = COURT_POLL_ID): Promise<void> {
   const { error } = await admin.from('wingman_court_votes').upsert({
-    poll_id: COURT_POLL_ID,
+    poll_id: pollId,
     voter_hash: voterHash,
     choice,
     updated_at: new Date().toISOString(),

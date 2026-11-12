@@ -45,8 +45,8 @@ test('Court endpoint saves, changes and reads votes while rejecting invalid requ
   process.env.NEXT_PUBLIC_SUPABASE_URL = `http://127.0.0.1:${(database.address() as AddressInfo).port}`;
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-only-key';
 
-  const request = (choice: string, cookie?: string, origin = 'https://textwingman.app') => new NextRequest('https://textwingman.app/api/court', {
-    method: 'POST', headers: { 'content-type': 'application/json', origin, ...(cookie ? { cookie } : {}) }, body: JSON.stringify({ choice }),
+  const request = (choice: string, cookie?: string, origin = 'https://textwingman.app', pollId?: string) => new NextRequest('https://textwingman.app/api/court', {
+    method: 'POST', headers: { 'content-type': 'application/json', origin, ...(cookie ? { cookie } : {}) }, body: JSON.stringify({ choice, ...(pollId ? { pollId } : {}) }),
   });
   try {
     assert.equal((await POST(request('D'))).status, 400);
@@ -64,6 +64,13 @@ test('Court endpoint saves, changes and reads votes while rejecting invalid requ
     assert.deepEqual(await (await current()).json(), { counts: { A: 0, B: 0, C: 1 }, total: 1, selected: 'C' });
     assert.equal(ballots.size, 1);
     assert.notEqual([...ballots.values()][0].voter_hash, token);
+    assert.equal((await POST(request('C', cookie, undefined, 'case-01'))).status, 400);
+    assert.equal((await POST(request('A', cookie, undefined, 'case-99'))).status, 404);
+    assert.equal((await POST(request('B', cookie, undefined, 'case-01'))).status, 200);
+    const newCase = await GET(new NextRequest('https://textwingman.app/api/court?poll=case-01', { headers: { cookie } }));
+    assert.deepEqual(await newCase.json(), { counts: { A: 0, B: 1, C: 0 }, total: 1, selected: 'B' });
+    assert.deepEqual(await (await current()).json(), { counts: { A: 0, B: 0, C: 1 }, total: 1, selected: 'C' });
+    assert.equal(ballots.size, 2);
   } finally {
     if (previousUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
     else process.env.NEXT_PUBLIC_SUPABASE_URL = previousUrl;
