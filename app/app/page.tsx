@@ -568,7 +568,7 @@ function CoachOrchestrationResult({
                             {/* Expand/collapse all candidates */}
                             <button
                               onClick={() => onToggleExpand()}
-                              className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-white/50 hover:text-white/50 transition-colors"
+                              className="flex items-center gap-1.5 min-h-10 px-2 text-[11px] text-white/50 hover:text-white/50 transition-colors"
                             >
                               {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                               {expanded ? 'Hide' : 'Show'} all {orch.candidates?.length || 0} candidates + scores
@@ -673,7 +673,7 @@ function CoachDraftCards({
                                 </div>
                                 <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
                               </button>
-                              <button onClick={() => { onCoachThis(msg.draft!.shorter!) }} className="w-full px-4 py-1 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
+                              <button onClick={() => { onCoachThis(msg.draft!.shorter!) }} className="w-full px-4 py-2.5 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
                             </div>
                           )}
                           {msg.draft.spicier && (
@@ -685,7 +685,7 @@ function CoachDraftCards({
                                 </div>
                                 <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
                               </button>
-                              <button onClick={() => { onCoachThis(msg.draft!.spicier!) }} className="w-full px-4 py-1 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
+                              <button onClick={() => { onCoachThis(msg.draft!.spicier!) }} className="w-full px-4 py-2.5 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
                             </div>
                           )}
                           {msg.draft.softer && (
@@ -697,7 +697,7 @@ function CoachDraftCards({
                                 </div>
                                 <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
                               </button>
-                              <button onClick={() => { onCoachThis(msg.draft!.softer!) }} className="w-full px-4 py-1 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
+                              <button onClick={() => { onCoachThis(msg.draft!.softer!) }} className="w-full px-4 py-2.5 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
                             </div>
                           )}
                         {!isPro && (
@@ -3581,7 +3581,7 @@ export default function AppPage() {
               <div className="flex items-center gap-2">
               <button
                 onClick={() => { fetchThreads(); setShowCoachThreads(true); }}
-                className="lg:hidden flex min-h-9 items-center gap-1.5 px-3 rounded-xl text-[12px] font-bold border bg-white/[0.06] border-white/[0.12] text-white/70 hover:bg-white/[0.12] transition-all active:scale-95"
+                className="lg:hidden flex min-h-11 items-center gap-1.5 px-3.5 rounded-xl text-[13px] font-bold border bg-white/[0.06] border-white/[0.12] text-white/70 hover:bg-white/[0.12] transition-all active:scale-95"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 Chats{savedThreads.length > 0 ? ` (${savedThreads.length})` : ''}
@@ -3682,7 +3682,7 @@ export default function AppPage() {
                 </div>
                 <button
                   onClick={() => { setUseV2(v => !v); dismissModeReminder(); }}
-                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                  className={`relative hit-area shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
                     useV2
                       ? 'bg-violet-500/15 border-violet-500/25 text-violet-300 hover:bg-violet-500/25'
                       : 'bg-emerald-500/15 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25'
@@ -3692,7 +3692,7 @@ export default function AppPage() {
                 </button>
                 <button
                   onClick={dismissModeReminder}
-                  className="shrink-0 p-1 text-white/45 hover:text-white/50 transition-colors"
+                  className="relative hit-area shrink-0 p-1 text-white/60 hover:text-white/50 transition-colors"
                   aria-label="Dismiss"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -3909,7 +3909,7 @@ export default function AppPage() {
                 <button
                   key={ctx.value}
                   onClick={() => setSelectedContext(selectedContext === ctx.value ? null : ctx.value as ContextType)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all active:scale-95 ${
+                  className={`shrink-0 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all active:scale-95 ${
                     selectedContext === ctx.value
                       ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
                       : 'bg-white/[0.05] text-white/60 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/60'
@@ -4059,7 +4059,7 @@ export default function AppPage() {
                 {customContext && (
                   <button
                     onClick={() => setCustomContext('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 hit-area p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -4245,7 +4245,7 @@ export default function AppPage() {
                     ))}
                     <button
                       onClick={() => setShowToneBar(false)}
-                      className="p-1.5 rounded-lg text-white/45 hover:text-white/50 transition-colors"
+                      className="relative hit-area p-1.5 rounded-lg text-white/45 hover:text-white/50 transition-colors"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -4268,7 +4268,7 @@ export default function AppPage() {
                 {userIntent && (
                   <button
                     onClick={() => setUserIntent('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 hit-area p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -4317,7 +4317,7 @@ export default function AppPage() {
                   {!extracting && (
                     <button
                       onClick={clearScreenshot}
-                      className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+                      className="absolute top-2 right-2 hit-area w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
                     >
                       <X className="h-4 w-4 text-white" />
                     </button>
@@ -4599,7 +4599,7 @@ export default function AppPage() {
                           </div>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all"
+                            className="relative hit-area opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all"
                           >
                             <Trash2 className="h-3 w-3 text-red-400" />
                           </button>
@@ -4645,7 +4645,7 @@ export default function AppPage() {
                     </div>
                   )}
                   {!extracting && (
-                    <button onClick={clearScreenshot} className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors">
+                    <button onClick={clearScreenshot} className="absolute top-2 right-2 hit-area w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors">
                       <X className="h-4 w-4 text-white" />
                     </button>
                   )}
@@ -4794,7 +4794,7 @@ export default function AppPage() {
                 {customContext && (
                   <button
                     onClick={() => setCustomContext('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 hit-area p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -4830,7 +4830,7 @@ export default function AppPage() {
                 <img src={screenshotPreview} alt="Screenshot" decoding="async" className="w-full max-h-40 object-cover opacity-70" />
                 <button
                   onClick={clearScreenshot}
-                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-all"
+                  className="absolute top-2 right-2 hit-area w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-all"
                 >
                   <X className="h-3.5 w-3.5 text-white" />
                 </button>
@@ -4878,7 +4878,7 @@ export default function AppPage() {
                   </div>
                   <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">decoded</span>
                 </div>
-                <button onClick={() => setDecodeResult(null)} className="w-7 h-7 rounded-xl bg-white/[0.05] flex items-center justify-center hover:bg-white/10 transition-all">
+                <button onClick={() => setDecodeResult(null)} className="relative hit-area w-7 h-7 rounded-xl bg-white/[0.05] flex items-center justify-center hover:bg-white/10 transition-all">
                   <X className="h-3 w-3 text-white/55" />
                 </button>
               </div>

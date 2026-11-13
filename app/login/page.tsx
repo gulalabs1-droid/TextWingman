@@ -292,7 +292,7 @@ export default function LoginPage() {
               <label htmlFor="password" className="block text-sm font-semibold text-white/80">Password</label>
               <div className="relative">
                 <input id="password" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={mode === 'signup' ? 8 : undefined} value={password} onChange={e => setPassword(e.target.value)} required className={`${inputClass} pr-12`} placeholder={mode === 'signup' ? 'At least 8 characters' : 'Your password'} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 mt-0.5 -translate-y-1/2 p-1 text-white/45 hover:text-white">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-1 top-1/2 mt-0.5 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-white/45 hover:text-white">
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
@@ -326,7 +326,7 @@ export default function LoginPage() {
           <div className="space-y-2 border-t border-white/[0.08] pt-4 text-center text-sm text-white/55">
             <p>
               {mode === 'signup' ? 'Already have an account? ' : 'New here? '}
-              <button type="button" onClick={switchMode} className="font-semibold text-[#c7f75c] hover:text-white">
+              <button type="button" onClick={switchMode} className="-my-3 inline-flex min-h-11 items-center px-1 font-semibold text-[#c7f75c] hover:text-white">
                 {mode === 'signup' ? 'Sign in' : 'Create a free account'}
               </button>
             </p>

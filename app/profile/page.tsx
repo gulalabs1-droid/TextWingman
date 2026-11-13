@@ -193,13 +193,13 @@ export default function ProfilePage() {
       <div className="relative z-10 max-w-lg mx-auto px-4 py-8 pb-28">
         {/* Nav */}
         <div className="flex items-center justify-between mb-8">
-          <Link href="/dashboard" className="w-9 h-9 rounded-2xl border border-white/[0.08] bg-white/[0.04] flex items-center justify-center text-white/40 hover:text-white/70 transition-all active:scale-90">
-            <ArrowLeft className="h-4 w-4" />
+          <Link href="/app" aria-label="Back to Coach" className="w-11 h-11 rounded-2xl border border-white/[0.08] bg-white/[0.04] flex items-center justify-center text-white/60 hover:text-white/80 transition-all active:scale-90">
+            <ArrowLeft className="h-5 w-5" />
           </Link>
           <Link href="/dashboard" className="transition-transform hover:scale-105">
             <Logo size="sm" showText={true} />
           </Link>
-          <div className="w-9" />
+          <div className="w-11" />
         </div>
 
         {!user ? (
@@ -216,12 +216,12 @@ export default function ProfilePage() {
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
+                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
               </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                 <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
+                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
               </div>
               <button type="submit" disabled={authLoading}
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-black text-sm shadow-[0_4px_20px_rgba(139,92,246,0.3)] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
@@ -229,7 +229,7 @@ export default function ProfilePage() {
               </button>
             </form>
             <p className="text-center">
-              <button onClick={() => setIsSignUp(!isSignUp)} className="text-violet-400 hover:text-violet-300 transition-colors text-sm font-medium">
+              <button onClick={() => setIsSignUp(!isSignUp)} className="min-h-11 px-2 text-violet-400 hover:text-violet-300 transition-colors text-sm font-medium">
                 {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
               </button>
             </p>
@@ -254,7 +254,7 @@ export default function ProfilePage() {
                   })()}
                 </div>
               </div>
-              <button onClick={handleSignOut} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/[0.15] text-xs font-bold transition-all active:scale-95 shrink-0">
+              <button onClick={handleSignOut} className="flex min-h-11 items-center gap-1.5 px-3.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/60 hover:text-white/80 hover:border-white/[0.15] text-xs font-bold transition-all active:scale-95 shrink-0">
                 <LogOut className="h-3.5 w-3.5" /> Out
               </button>
             </div>
@@ -330,7 +330,7 @@ export default function ProfilePage() {
                 <div className="rounded-2xl border border-white/[0.08] p-8 text-center space-y-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <MessageCircle className="h-8 w-8 text-white/40 mx-auto" />
                   <p className="text-white/40 text-sm font-medium">No history yet</p>
-                  <Link href="/app" className="inline-block px-4 py-2 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 text-xs font-bold hover:bg-violet-500/25 transition-all">Start a session</Link>
+                  <Link href="/app" className="inline-flex min-h-11 items-center px-5 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 text-sm font-bold hover:bg-violet-500/25 transition-all">Start a session</Link>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -396,9 +396,9 @@ export default function ProfilePage() {
               ) : (
                 <div className="flex gap-2">
                   <input value={suggestion} onChange={(e) => setSuggestion(e.target.value)} placeholder="What would make this better?" maxLength={500}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-sm focus:outline-none focus:border-violet-500/30 transition-all" />
+                    className="flex-1 min-w-0 h-12 px-3.5 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-violet-500/30 transition-all" />
                   <button onClick={handleSuggestionSubmit} disabled={suggestionSubmitting || !suggestion.trim()}
-                    className="px-4 py-2.5 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-bold hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 shrink-0 flex items-center justify-center">
+                    className="h-12 px-4 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-bold hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 shrink-0 flex items-center justify-center">
                     {suggestionSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
                   </button>
                 </div>
@@ -408,7 +408,7 @@ export default function ProfilePage() {
             {/* Delete account */}
             <div className="pt-2">
               {!showDeleteConfirm ? (
-                <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center justify-center gap-2 text-red-400/40 hover:text-red-400/70 text-xs transition-colors w-full py-2">
+                <button onClick={() => setShowDeleteConfirm(true)} className="flex min-h-11 items-center justify-center gap-2 text-red-400/60 hover:text-red-400/90 text-xs transition-colors w-full">
                   <Trash2 className="h-3.5 w-3.5" /> Delete my account
                 </button>
               ) : (
@@ -423,13 +423,13 @@ export default function ProfilePage() {
                   <div>
                     <label className="text-white/40 text-xs block mb-1.5">Type <span className="font-bold text-red-400">DELETE</span> to confirm</label>
                     <input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="DELETE"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-red-500/30 text-white placeholder-white/40 text-sm focus:outline-none transition-all" />
+                      className="w-full h-12 px-3.5 rounded-xl bg-white/[0.06] border border-red-500/30 text-white placeholder-white/40 text-base md:text-sm focus:outline-none transition-all" />
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
-                      className="flex-1 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/50 text-sm font-bold hover:bg-white/[0.08] transition-all">Cancel</button>
+                      className="flex-1 min-h-12 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/70 text-sm font-bold hover:bg-white/[0.08] transition-all">Cancel</button>
                     <button onClick={handleDeleteAccount} disabled={deleteConfirmText !== 'DELETE' || deleting}
-                      className="flex-1 py-2.5 rounded-xl bg-red-600/80 text-white text-sm font-bold hover:bg-red-600 transition-all disabled:opacity-30 flex items-center justify-center gap-2">
+                      className="flex-1 min-h-12 rounded-xl bg-red-600/80 text-white text-sm font-bold hover:bg-red-600 transition-all disabled:opacity-30 flex items-center justify-center gap-2">
                       {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete Forever'}
                     </button>
                   </div>

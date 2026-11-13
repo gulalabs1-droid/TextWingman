@@ -606,7 +606,7 @@ export default function ExperimentalThreadPage() {
                             <p className="text-white/60 text-xs font-semibold truncate">{t.name}</p>
                             <p className="text-white/15 text-[9px] font-mono">{t.message_count} MSG</p>
                           </div>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/15 transition-all"><Trash2 className="h-2.5 w-2.5 text-red-400/60" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }} className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/15 transition-all"><Trash2 className="h-2.5 w-2.5 text-red-400/60" /></button>
                         </button>
                       ))}
                     </div>

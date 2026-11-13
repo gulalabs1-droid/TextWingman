@@ -125,8 +125,8 @@ export default function HistoryPage() {
       <div className="max-w-lg mx-auto px-4 py-6 pb-24">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href="/app" aria-label="Back to Coach" className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/[0.10] flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/[0.10] transition-all">
-            <ArrowLeft className="h-4 w-4" />
+          <Link href="/app" aria-label="Back to Coach" className="w-11 h-11 rounded-2xl bg-white/[0.06] border border-white/[0.10] flex items-center justify-center text-white/60 hover:text-white/80 hover:bg-white/[0.10] transition-all active:scale-95">
+            <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="flex-1">
             <h1 className="text-lg font-bold text-white">History</h1>
@@ -141,7 +141,10 @@ export default function HistoryPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search names, messages and replies"
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-sm focus:outline-none focus:border-violet-500/30 transition-all"
+            type="search"
+            enterKeyHint="search"
+            aria-label="Search history"
+            className="w-full h-12 pl-10 pr-4 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-violet-500/40 transition-all"
           />
         </div>
 
@@ -155,7 +158,7 @@ export default function HistoryPage() {
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
-              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 ${
+              className={`min-h-10 px-4 rounded-xl text-[13px] font-bold transition-all shrink-0 active:scale-95 ${
                 filter === tab.key
                   ? 'bg-violet-500/15 border border-violet-500/25 text-violet-300'
                   : 'bg-white/[0.04] border border-white/[0.08] text-white/60 hover:text-white/60'
@@ -226,9 +229,9 @@ export default function HistoryPage() {
                       onClick={() => handleDelete(t.id)}
                       disabled={deleting === t.id}
                       aria-label={`Delete ${t.name}`}
-                      className="p-2 rounded-lg hover:bg-red-500/15 text-white/45 hover:text-red-400 transition-all"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-red-500/15 text-white/50 hover:text-red-400 transition-all active:scale-95"
                     >
-                      {deleting === t.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      {deleting === t.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
@@ -255,9 +258,9 @@ export default function HistoryPage() {
                       </p>
                       <div className="space-y-1.5">
                         {parsedReplies.slice(0, 3).map((reply, idx) => (
-                          <button key={idx} onClick={() => void copyReply(reply.text)} aria-label={`Copy ${reply.tone} reply`} className="flex w-full items-start gap-2 rounded-lg py-1 text-left hover:bg-white/[0.05] active:scale-[0.99]">
-                            <span className="text-[10px] font-black text-violet-400/60 uppercase mt-0.5 shrink-0 w-10">{reply.tone}</span>
-                            <p className="text-white/70 text-xs leading-relaxed">{reply.text}</p>
+                          <button key={idx} onClick={() => void copyReply(reply.text)} aria-label={`Copy ${reply.tone} reply`} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 py-2 text-left hover:bg-white/[0.05] active:scale-[0.99]">
+                            <span className="text-[10px] font-black text-violet-400/70 uppercase shrink-0 w-12">{reply.tone}</span>
+                            <p className="text-white/75 text-[13px] leading-relaxed">{reply.text}</p>
                           </button>
                         ))}
                       </div>

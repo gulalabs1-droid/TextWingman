@@ -101,7 +101,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Nav */}
-      <nav className="relative z-10 max-w-2xl mx-auto px-5 py-6">
+      <nav className="relative z-10 max-w-2xl mx-auto px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))] sm:py-6">
         <div className="flex items-center justify-between">
           <Link href="/dashboard">
             <Logo size="sm" showText={true} />
@@ -130,8 +130,8 @@ export default async function DashboardPage() {
                 <Lock className="h-3 w-3" /> Limit reached
               </Link>
             ) : null}
-            <Link href="/profile" className="w-8 h-8 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-white/40 hover:text-white/70 hover:border-white/[0.15] transition-all">
-              <User className="h-3.5 w-3.5" />
+            <Link href="/profile" aria-label="Account" className="w-11 h-11 rounded-2xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-white/60 hover:text-white/80 hover:border-white/[0.15] transition-all active:scale-95">
+              <User className="h-5 w-5" />
             </Link>
             <SignOutButton />
           </div>
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
             <p className="text-[10px] font-bold text-white/45 uppercase tracking-[0.15em] mb-1.5">Plan</p>
             <p className={`font-black text-sm ${planColor}`}>{planLabel}</p>
             {!isPro && !isAdmin && (
-              <Link href="/pricing" className="text-[11px] text-violet-400/60 hover:text-violet-400 font-bold mt-1 block transition-colors">Upgrade →</Link>
+              <Link href="/pricing" className="-mb-2 flex min-h-9 items-center text-xs text-violet-300 hover:text-violet-200 font-bold transition-colors">Upgrade →</Link>
             )}
             {isPro && !isAdmin && !isTrialEntitlement && (
               <ManageSubscriptionButton compact />
@@ -246,7 +246,7 @@ export default async function DashboardPage() {
                 <Sparkles className="h-3.5 w-3.5 text-violet-400" />
                 <span className="text-[11px] font-bold text-white/55 uppercase tracking-[0.15em]">History</span>
               </div>
-              <Link href="/history" className="text-[11px] text-violet-400/50 hover:text-violet-400 font-bold transition-colors">View all →</Link>
+              <Link href="/history" className="-my-3 flex min-h-11 items-center text-xs text-violet-300 hover:text-violet-200 font-bold transition-colors">View all →</Link>
             </div>
             <div className="divide-y divide-white/[0.05]">
               {/* Saved threads + coach sessions */}
@@ -258,7 +258,7 @@ export default async function DashboardPage() {
                 const mins = Math.floor(diffMs / 60000)
                 const timeAgo = mins < 1 ? 'Just now' : mins < 60 ? `${mins}m` : Math.floor(mins / 60) < 24 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
                 return (
-                  <Link key={t.id} href={`/app?load=${t.id}`} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors">
+                  <Link key={t.id} href={`/app?load=${t.id}`} className="flex min-h-14 items-center gap-3 px-5 py-3 hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors">
                     <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-violet-500/20">
                       <Sparkles className="h-3 w-3 text-violet-400" />
                     </div>

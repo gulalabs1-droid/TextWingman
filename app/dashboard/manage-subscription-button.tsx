@@ -32,7 +32,7 @@ export default function ManageSubscriptionButton({ compact }: { compact?: boolea
   if (compact) {
     return (
       <button onClick={handleManageSubscription} disabled={loading}
-        className="text-[10px] text-white/25 hover:text-white/50 font-bold mt-1 block transition-colors disabled:opacity-40">
+        className="-mb-2 flex min-h-9 items-center text-xs text-white/60 hover:text-white/80 font-bold transition-colors disabled:opacity-40">
         {loading ? <Loader2 className="h-3 w-3 animate-spin inline" /> : 'Manage →'}
       </button>
     );

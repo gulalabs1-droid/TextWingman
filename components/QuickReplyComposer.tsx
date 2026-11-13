@@ -411,7 +411,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
         <Link
           href="/login?mode=signin"
           onClick={() => track('sign_in_started', { source, from: 'tiktok_nav' })}
-          className="text-white/40 hover:text-white text-xs font-medium transition-colors"
+          className="inline-flex min-h-11 items-center px-2 text-white/65 hover:text-white text-sm font-semibold transition-colors"
         >
           Sign in
         </Link>

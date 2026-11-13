@@ -247,6 +247,13 @@
   .touch-target {
     position: relative;
   }
+  /* Same idea for elements that are already positioned (absolute close
+     buttons, etc.): grows the tappable area ~9px each way without moving anything. */
+  .hit-area::after {
+    content: '';
+    position: absolute;
+    inset: -9px;
+  }
   .touch-target::after {
     content: '';
     position: absolute;
@@ -314,5 +321,18 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+  }
+}
+
+/* ── Phone floors (most customers are on a phone) ── */
+@media (max-width: 767px) {
+  /* iOS Safari zooms the whole page when a focused field's text is under 16px.
+     Only fields styled smaller are raised, so large inputs (OTP codes) keep their size. */
+  :is(input, textarea, select):is(.text-xs, .text-sm, .text-\[11px\], .text-\[12px\], .text-\[13px\], .text-\[14px\], .text-\[15px\]) {
+    font-size: 16px;
+  }
+  /* Nothing people need to read should render below 11px on a phone. */
+  .text-\[9px\], .text-\[10px\] {
+    font-size: 11px;
   }
 }

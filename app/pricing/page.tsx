@@ -138,9 +138,9 @@ export default function PricingPage() {
       </div>
 
       {/* Header */}
-      <nav className="relative z-10 container mx-auto px-4 py-6">
+      <nav className="relative z-10 container mx-auto px-4 py-3 sm:py-6">
         <div className="flex items-center justify-between">
-          <Link href={user ? '/dashboard' : '/'} aria-label={user ? 'Back to dashboard' : 'Back to home'} className="flex items-center gap-2 text-white/60 hover:text-white transition-all">
+          <Link href={user ? '/dashboard' : '/'} aria-label={user ? 'Back to dashboard' : 'Back to home'} className="-m-2 flex min-h-11 min-w-11 items-center justify-center gap-2 p-2 text-white/60 hover:text-white transition-all">
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden text-sm font-medium sm:inline">{user ? 'Dashboard' : 'Home'}</span>
           </Link>
@@ -151,16 +151,16 @@ export default function PricingPage() {
           <div>
             {!checkingAuth && (
               user ? (
-                <button onClick={handleSignOut} className="whitespace-nowrap text-white/40 hover:text-white/70 text-sm font-medium transition-colors">Sign Out</button>
+                <button onClick={handleSignOut} className="inline-flex min-h-11 items-center whitespace-nowrap px-2 text-white/60 hover:text-white text-sm font-medium transition-colors">Sign Out</button>
               ) : (
-                <Link href="/login" className="whitespace-nowrap text-white/60 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm transition-all">Sign Up</Link>
+                <Link href="/login" className="inline-flex min-h-11 items-center whitespace-nowrap text-white/70 hover:text-white hover:bg-white/[0.06] rounded-xl px-3 text-sm font-semibold transition-all">Sign Up</Link>
               )
             )}
           </div>
         </div>
       </nav>
 
-      <main className="relative z-10 container mx-auto px-4 py-12">
+      <main className="relative z-10 container mx-auto px-4 py-6 sm:py-12">
         <div className="max-w-4xl mx-auto">
           {checkingAuth ? (
             <div role="status" className="py-20 text-center text-sm text-white/60">Checking your plan...</div>
