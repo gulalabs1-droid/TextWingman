@@ -6,11 +6,13 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Home } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
+import AppNav from '@/components/AppNav';
+import { ARRIVAL_STORAGE_KEY, arrivalGreeting, parseArrival, parseStartIntent } from '@/lib/first-run';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
 import { captureAttribution, getAnalyticsContext, track, type Props } from '@/lib/analytics';
 import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
@@ -385,8 +387,9 @@ function ConversationList({ threads, userId, isThreadActive, onLoad, onDelete }:
 }
 
 
-function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread }: {
+function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread, highlightUpload = false }: {
   threads: SavedThread[];
+  highlightUpload?: boolean;
   onUpload: () => void;
   onPaste: () => void;
   onLoadThread: (t: SavedThread) => void;
@@ -401,11 +404,15 @@ function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread }: {
                   <div className={`grid gap-2 ${recentThread ? 'grid-cols-3' : 'grid-cols-2'}`}>
                     <button
                       onClick={() => onUpload()}
-                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                      className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border transition-all active:scale-95 text-center ${
+                        highlightUpload
+                          ? 'bg-violet-500/[0.16] border-violet-400/60 shadow-lg shadow-violet-500/20 ring-2 ring-violet-400/30 motion-safe:animate-pulse'
+                          : 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20'
+                      }`}
                     >
                       <span className="text-xl">📸</span>
-                      <span className="text-[11px] font-semibold text-white/55">Screenshot</span>
-                      <span className="text-[10px] text-white/50">Upload a convo</span>
+                      <span className={`text-[11px] font-semibold ${highlightUpload ? 'text-white' : 'text-white/55'}`}>Screenshot</span>
+                      <span className={`text-[10px] ${highlightUpload ? 'text-violet-200' : 'text-white/50'}`}>{highlightUpload ? 'Tap to upload yours' : 'Upload a convo'}</span>
                     </button>
                     <button
                       onClick={() => { onPaste() }}
@@ -753,6 +760,8 @@ export default function AppPage() {
   const [extracting, setExtracting] = useState(false);
   const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
   const [showFeatureSpotlight, setShowFeatureSpotlight] = useState(false);
+  // Set when onboarding hands off with ?start=screenshot: points at the upload card.
+  const [highlightUpload, setHighlightUpload] = useState(false);
   const [appMode, setAppMode] = useState<AppMode>('coach');
   const [decodeResult, setDecodeResult] = useState<DecodeResult>(null);
   const [decoding, setDecoding] = useState(false);
@@ -942,7 +951,11 @@ export default function AppPage() {
       const top = el.getBoundingClientRect().top;
       const vh = window.visualViewport?.height ?? window.innerHeight;
       const bottomGap = 12; // breathing room above the bottom safe area
-      const h = Math.max(380, vh - top - bottomGap);
+      // The signed-in tab bar sits under the card on phones; it hides while the keyboard is open.
+      const keyboardOpen = window.innerHeight - vh > 80;
+      const nav = document.querySelector<HTMLElement>('[data-app-nav]');
+      const navHeight = keyboardOpen ? 0 : nav?.offsetHeight || 0;
+      const h = Math.max(380, vh - top - bottomGap - navHeight);
       el.style.height = `${h}px`;
     };
     recompute();
@@ -960,7 +973,7 @@ export default function AppPage() {
       window.removeEventListener('resize', recompute);
       window.removeEventListener('orientationchange', recompute);
     };
-  }, [appMode, usageCount, isPro, trialDaysLeft, strategyChatHistory.length]);
+  }, [appMode, usageCount, isPro, trialDaysLeft, strategyChatHistory.length, userId]);
 
   // Rotate placeholder text every 4s when input is empty
   useEffect(() => {
@@ -987,6 +1000,24 @@ export default function AppPage() {
       const prefill = params.get('prefill');
       const via = params.get('via');
       const intent = params.get('intent');
+      const start = parseStartIntent(params.get('start'));
+
+      // Onboarding hands off with the first action the person picked.
+      if (start) {
+        setAppMode('coach');
+        if (start === 'paste') {
+          setStrategyChatInput(previous => previous || 'Help me reply to this: ');
+          window.setTimeout(() => {
+            const input = coachTextareaRef.current;
+            if (!input) return;
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+          }, 400);
+        } else {
+          setHighlightUpload(true);
+        }
+        track('first_run_start', { start });
+      }
 
       if (src || mode) {
         track('app_view', { src: src || undefined, mode: mode || undefined, via: via || undefined });
@@ -1021,7 +1052,7 @@ export default function AppPage() {
         }
       }
       // Strip params from URL so refresh doesn't re-trigger prefill
-      if (src || mode || prefill) {
+      if (src || mode || prefill || start) {
         const cleanUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, '', cleanUrl);
       }
@@ -1180,6 +1211,20 @@ export default function AppPage() {
             setTrialDaysLeft(data.trialDaysLeft);
           }
           if (data.userName) setUserName(data.userName);
+          // One-time greeting right after sign-in or onboarding.
+          try {
+            const arrival = parseArrival(sessionStorage.getItem(ARRIVAL_STORAGE_KEY));
+            if (arrival && data.userId) {
+              sessionStorage.removeItem(ARRIVAL_STORAGE_KEY);
+              toast(arrivalGreeting({
+                arrival,
+                fullName: data.userName,
+                isPro: Boolean(data.isPro),
+                remaining: typeof data.remaining === 'number' ? data.remaining : FREE_REPLY_LIMIT,
+                limit: data.limit || FREE_REPLY_LIMIT,
+              }));
+            }
+          } catch {}
         }
       } catch (error) {
         console.error('Failed to fetch usage:', error);
@@ -3345,8 +3390,8 @@ export default function AppPage() {
       <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl lg:max-w-5xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-3 sm:mb-6">
-          <Link href={userId ? '/dashboard' : '/pricing'} aria-label={userId ? 'Dashboard' : 'Plans'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
-            <ArrowLeft className="h-5 w-5 text-white/70" />
+          <Link href={userId ? '/dashboard' : '/pricing'} aria-label={userId ? 'Home' : 'Plans'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            {userId ? <Home className="h-5 w-5 text-white/70" /> : <ArrowLeft className="h-5 w-5 text-white/70" />}
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/" className="transition-transform hover:scale-105">
@@ -3361,9 +3406,16 @@ export default function AppPage() {
               {hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-violet-500 animate-pulse" />}
             </Link>
           </div>
-          <Link href="/profile" aria-label="Account" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
-            <User className="h-5 w-5 text-white/70" />
-          </Link>
+          <div className="flex items-center gap-2">
+            {userId && (
+              <Link href="/history" className="hidden md:flex h-10 items-center gap-2 px-3.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-sm font-semibold text-white/70 hover:bg-white/15 hover:text-white transition-all active:scale-95">
+                <Clock className="h-4 w-4" /> History
+              </Link>
+            )}
+            <Link href={userId ? '/profile' : '/login'} aria-label={userId ? 'Account' : 'Sign in'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+              <User className="h-5 w-5 text-white/70" />
+            </Link>
+          </div>
         </div>
 
         {/* Trial Banner - shows for invite/beta trial users */}
@@ -3652,7 +3704,8 @@ export default function AppPage() {
             {!loadingSession && strategyChatHistory.length === 0 && (
               <CoachEntryCards
                 threads={savedThreads}
-                onUpload={() => coachFileInputRef.current?.click()}
+                highlightUpload={highlightUpload}
+                onUpload={() => { setHighlightUpload(false); coachFileInputRef.current?.click(); }}
                 onPaste={() => { setStrategyChatInput('Help me reply to this: '); setTimeout(() => coachTextareaRef.current?.focus(), 50); }}
                 onLoadThread={handleLoadThread}
               />
@@ -5689,7 +5742,10 @@ export default function AppPage() {
             </div>
           </div>
         )}
+        {/* Room for the signed-in tab bar below scrolling modes (Coach sizes itself to fit). */}
+        {userId && appMode !== 'coach' && <div className="h-20 md:hidden" aria-hidden="true" />}
       </div>
+      {userId && <AppNav />}
     </div>
   </>
   );

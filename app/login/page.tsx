@@ -9,6 +9,7 @@ import { track } from '@/lib/analytics'
 import { PLAN_PRICES } from '@/lib/pricing'
 import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits'
 import { isSavedThreadReturn, safeReturnPath } from '@/lib/navigation'
+import { ARRIVAL_STORAGE_KEY } from '@/lib/first-run'
 import {
   OTP_RESEND_COOLDOWN_SECONDS,
   authEmailOptions,
@@ -68,6 +69,8 @@ export default function LoginPage() {
       const { data: profile } = await supabase.from('profiles').select('onboarding_completed').eq('id', userId).single()
       onboardingComplete = Boolean(profile?.onboarding_completed)
     }
+    // Coach greets people once when they arrive from sign-in.
+    try { sessionStorage.setItem(ARRIVAL_STORAGE_KEY, 'returning') } catch {}
     router.push(postAuthDestination(redirectUrl, onboardingComplete))
     router.refresh()
   }

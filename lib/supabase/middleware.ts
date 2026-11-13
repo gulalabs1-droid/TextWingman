@@ -98,9 +98,9 @@ export async function updateSession(request: NextRequest) {
       return redirectWithSession('/onboarding')
     }
 
-    // If on onboarding but already completed, redirect to dashboard
+    // If on onboarding but already completed, go to Coach (the signed-in home)
     if (pathname === '/onboarding' && profile?.onboarding_completed) {
-      return redirectWithSession('/dashboard')
+      return redirectWithSession('/app')
     }
   }
 
