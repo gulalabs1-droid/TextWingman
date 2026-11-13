@@ -173,21 +173,21 @@ export default function ProfilePage() {
 
   const isPro = entitlement?.tier === 'pro' || entitlement?.tier === 'elite' || subscription?.status === 'active' || subscription?.status === 'trialing';
   const planLabel = entitlement?.tier === 'elite' ? 'Owner' : entitlement?.tier === 'pro' ? 'Pro' : (subscription?.status === 'active' || subscription?.status === 'trialing') ? (subscription?.status === 'trialing' ? 'Trial' : 'Pro') : 'Free';
-  const planGradient = entitlement?.tier === 'elite' ? 'from-yellow-500 to-orange-500' : isPro ? 'from-emerald-500 to-cyan-500' : 'from-violet-600 to-fuchsia-600';
+  const planGradient = entitlement?.tier === 'elite' ? 'from-yellow-500 to-orange-500' : isPro ? 'from-emerald-500 to-cyan-500' : 'from-brand to-brand';
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#030305] flex items-center justify-center">
-        <Loader2 className="h-6 w-6 text-violet-400 animate-spin" />
+      <div className="min-h-screen bg-ink flex items-center justify-center">
+        <Loader2 className="h-6 w-6 text-brand animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#030305] relative">
+    <div className="min-h-screen bg-ink relative">
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute w-[500px] h-[500px] rounded-full top-[-15%] left-[-10%]" style={{ background: 'rgba(139,92,246,0.12)', filter: 'blur(120px)' }} />
-        <div className="absolute w-[400px] h-[400px] rounded-full bottom-[-10%] right-[-10%]" style={{ background: 'rgba(236,72,153,0.10)', filter: 'blur(120px)' }} />
+        <div className="absolute w-[500px] h-[500px] rounded-full top-[-15%] left-[-10%]" style={{ background: 'rgba(211,255,104,0.07)', filter: 'blur(120px)' }} />
+        <div className="absolute w-[400px] h-[400px] rounded-full bottom-[-10%] right-[-10%]" style={{ background: 'rgba(211,255,104,0.04)', filter: 'blur(120px)' }} />
       </div>
 
       <div className="relative z-10 max-w-lg mx-auto px-4 py-8 pb-28">
@@ -206,8 +206,8 @@ export default function ProfilePage() {
           /* Auth Form */
           <div className="rounded-3xl border border-white/[0.08] p-8 space-y-6" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(40px)' }}>
             <div className="text-center space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(139,92,246,0.3)]">
-                <Crown className="h-7 w-7 text-white" />
+              <div className="w-14 h-14 rounded-2xl bg-brand flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(211,255,104,0.18)]">
+                <Crown className="h-7 w-7 text-brand-ink" />
               </div>
               <h1 className="text-white font-black text-xl">{isSignUp ? 'Create Account' : 'Welcome Back'}</h1>
               <p className="text-white/60 text-sm">{isSignUp ? 'Sign up to save your history' : 'Sign in to access your account'}</p>
@@ -216,20 +216,20 @@ export default function ProfilePage() {
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
+                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-brand/40 transition-all" />
               </div>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                 <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
+                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-brand/40 transition-all" />
               </div>
               <button type="submit" disabled={authLoading}
-                className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-black text-sm shadow-[0_4px_20px_rgba(139,92,246,0.3)] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
+                className="w-full h-12 rounded-xl bg-brand text-brand-ink font-black text-sm shadow-[0_4px_20px_rgba(211,255,104,0.18)] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
                 {authLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignUp ? 'Create Account' : 'Sign In'}
               </button>
             </form>
             <p className="text-center">
-              <button onClick={() => setIsSignUp(!isSignUp)} className="min-h-11 px-2 text-violet-400 hover:text-violet-300 transition-colors text-sm font-medium">
+              <button onClick={() => setIsSignUp(!isSignUp)} className="min-h-11 px-2 text-brand hover:text-brand transition-colors text-sm font-medium">
                 {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
               </button>
             </p>
@@ -239,7 +239,7 @@ export default function ProfilePage() {
 
             {/* Profile row */}
             <div className="rounded-3xl border border-white/[0.08] p-5 flex items-center gap-4" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(40px)' }}>
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${planGradient} flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.2)] shrink-0`}>
+              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${planGradient} flex items-center justify-center shadow-[0_0_20px_rgba(211,255,104,0.2)] shrink-0`}>
                 <span className="text-white font-black text-xl">{user.email[0].toUpperCase()}</span>
               </div>
               <div className="flex-1 min-w-0">
@@ -274,12 +274,12 @@ export default function ProfilePage() {
                 {subscription && <span className="text-emerald-300/60 text-xs font-bold">{subscription.plan_type === 'monthly' ? `${PLAN_PRICES.monthly.displayAmount}/mo` : subscription.plan_type === 'weekly' ? `${PLAN_PRICES.weekly.displayAmount}/wk` : subscription.plan_type === 'annual' ? `${PLAN_PRICES.annual.displayAmount}/yr` : 'Plan unavailable'}</span>}
               </div>
             ) : (
-              <Link href="/#pricing" className="rounded-2xl p-4 border border-violet-500/20 bg-violet-500/10 flex items-center justify-between group hover:border-violet-500/40 transition-all">
+              <Link href="/#pricing" className="rounded-2xl p-4 border border-brand/20 bg-brand/10 flex items-center justify-between group hover:border-brand/40 transition-all">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(139,92,246,0.3)]"><Zap className="h-5 w-5 text-white" /></div>
-                  <div><p className="text-violet-300 font-black text-sm">Upgrade to Pro</p><p className="text-white/60 text-xs">Unlimited replies + strategy</p></div>
+                  <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(211,255,104,0.18)]"><Zap className="h-5 w-5 text-brand-ink" /></div>
+                  <div><p className="text-brand font-black text-sm">Upgrade to Pro</p><p className="text-white/60 text-xs">Unlimited replies + strategy</p></div>
                 </div>
-                <span className="text-violet-300 font-black text-sm">{PLAN_PRICES.monthly.displayAmount}/mo →</span>
+                <span className="text-brand font-black text-sm">{PLAN_PRICES.monthly.displayAmount}/mo →</span>
               </Link>
             )}
 
@@ -307,7 +307,7 @@ export default function ProfilePage() {
             {/* Quick links */}
             <div className="rounded-2xl border border-white/[0.08] overflow-hidden divide-y divide-white/[0.06]" style={{ background: 'rgba(255,255,255,0.03)' }}>
               <Link href="/app" className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.04] transition-all group">
-                <div className="flex items-center gap-3"><Sparkles className="h-4 w-4 text-violet-400" /><span className="text-white/70 text-sm font-medium">Open App</span></div>
+                <div className="flex items-center gap-3"><Sparkles className="h-4 w-4 text-brand" /><span className="text-white/70 text-sm font-medium">Open App</span></div>
                 <ChevronRight className="h-4 w-4 text-white/45 group-hover:text-white/40 transition-colors" />
               </Link>
               {isPro && (
@@ -330,7 +330,7 @@ export default function ProfilePage() {
                 <div className="rounded-2xl border border-white/[0.08] p-8 text-center space-y-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
                   <MessageCircle className="h-8 w-8 text-white/40 mx-auto" />
                   <p className="text-white/40 text-sm font-medium">No history yet</p>
-                  <Link href="/app" className="inline-flex min-h-11 items-center px-5 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 text-sm font-bold hover:bg-violet-500/25 transition-all">Start a session</Link>
+                  <Link href="/app" className="inline-flex min-h-11 items-center px-5 rounded-xl bg-brand/15 border border-brand/25 text-brand text-sm font-bold hover:bg-brand/25 transition-all">Start a session</Link>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -342,13 +342,13 @@ export default function ProfilePage() {
                     return (
                       <Link key={t.id} href="/app" className="block rounded-2xl border border-white/[0.08] p-4 space-y-2 hover:bg-white/[0.04] transition-all active:scale-[0.99]" style={{ background: 'rgba(255,255,255,0.03)' }}>
                         <div className="flex items-center gap-2">
-                          <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${isCoach ? 'bg-violet-500/20' : 'bg-white/[0.07]'}`}>
+                          <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${isCoach ? 'bg-brand/20' : 'bg-white/[0.07]'}`}>
                             {isCoach
-                              ? <Sparkles className="h-3 w-3 text-violet-400" />
+                              ? <Sparkles className="h-3 w-3 text-brand" />
                               : <MessageCircle className="h-3 w-3 text-white/40" />
                             }
                           </div>
-                          <span className={`text-[10px] font-black uppercase tracking-widest ${isCoach ? 'text-violet-400/70' : 'text-white/55'}`}>{isCoach ? 'Coach' : 'Thread'}</span>
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${isCoach ? 'text-brand/70' : 'text-white/55'}`}>{isCoach ? 'Coach' : 'Thread'}</span>
                           <span className="text-white/40 text-[10px] ml-auto">{new Date(t.updated_at).toLocaleDateString()}</span>
                         </div>
                         <p className="text-white/75 text-sm font-semibold truncate">{t.name}</p>
@@ -370,7 +370,7 @@ export default function ProfilePage() {
                             <div className="space-y-1.5">
                               {parsedReplies.slice(0, 3).map((reply, idx) => (
                                 <div key={idx} className="flex items-start gap-2">
-                                  <span className="text-[10px] font-black text-violet-400/60 uppercase mt-0.5 shrink-0 w-10">{reply.tone}</span>
+                                  <span className="text-[10px] font-black text-brand/60 uppercase mt-0.5 shrink-0 w-10">{reply.tone}</span>
                                   <p className="text-white/70 text-xs leading-relaxed">{reply.text}</p>
                                 </div>
                               ))}
@@ -396,9 +396,9 @@ export default function ProfilePage() {
               ) : (
                 <div className="flex gap-2">
                   <input value={suggestion} onChange={(e) => setSuggestion(e.target.value)} placeholder="What would make this better?" maxLength={500}
-                    className="flex-1 min-w-0 h-12 px-3.5 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-violet-500/30 transition-all" />
+                    className="flex-1 min-w-0 h-12 px-3.5 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-brand/30 transition-all" />
                   <button onClick={handleSuggestionSubmit} disabled={suggestionSubmitting || !suggestion.trim()}
-                    className="h-12 px-4 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-bold hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 shrink-0 flex items-center justify-center">
+                    className="h-12 px-4 rounded-xl bg-brand/20 border border-brand/30 text-brand text-sm font-bold hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30 shrink-0 flex items-center justify-center">
                     {suggestionSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
                   </button>
                 </div>

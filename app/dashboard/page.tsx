@@ -93,11 +93,11 @@ export default async function DashboardPage() {
   const firstName = profile?.full_name?.split(' ')[0] || null
 
   return (
-    <div className="min-h-screen bg-[#030305] relative overflow-hidden">
+    <div className="min-h-screen bg-ink relative overflow-hidden">
       {/* Ambient orbs */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full" style={{ background: 'rgba(139,92,246,0.08)', filter: 'blur(120px)' }} />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full" style={{ background: 'rgba(236,72,153,0.07)', filter: 'blur(120px)' }} />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full" style={{ background: 'rgba(211,255,104,0.08)', filter: 'blur(120px)' }} />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full" style={{ background: 'rgba(211,255,104,0.04)', filter: 'blur(120px)' }} />
       </div>
 
       {/* Nav */}
@@ -116,7 +116,7 @@ export default async function DashboardPage() {
               <Link href="/pricing" className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all ${
                 daysLeft <= 1 ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15'
                 : daysLeft <= 3 ? 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/15'
-                : 'bg-violet-500/10 border-violet-500/20 text-violet-400 hover:bg-violet-500/15'
+                : 'bg-brand/10 border-brand/20 text-brand hover:bg-brand/15'
               }`}>
                 <Sparkles className="h-3 w-3" />
                 {daysLeft <= 0 ? 'Trial expired' : `${daysLeft}d trial left`}
@@ -156,11 +156,11 @@ export default async function DashboardPage() {
                 <p className="text-white/80 font-black text-lg">{usageLimit} free uses reached in the last 24 hours</p>
                 <p className="text-white/60 text-sm mt-1">Go unlimited — never miss the right reply.</p>
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(139,92,246,0.3)] group-hover:scale-105 transition-transform">
-                <Crown className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 rounded-2xl bg-brand flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(211,255,104,0.18)] group-hover:scale-105 transition-transform">
+                <Crown className="h-6 w-6 text-brand-ink" />
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-2 text-violet-300 text-sm font-bold">
+            <div className="mt-4 flex items-center gap-2 text-brand text-sm font-bold">
               Upgrade to Pro <ArrowRight className="h-4 w-4" />
             </div>
           </Link>
@@ -168,7 +168,7 @@ export default async function DashboardPage() {
           <Link href="/app" className={`block rounded-3xl p-6 border transition-all hover:scale-[1.01] active:scale-[0.99] group ${
             isAdmin ? 'bg-amber-500/[0.06] border-amber-500/20 hover:bg-amber-500/[0.09]'
             : isPro ? 'bg-emerald-500/[0.06] border-emerald-500/20 hover:bg-emerald-500/[0.09]'
-            : 'bg-violet-500/[0.06] border-violet-500/20 hover:bg-violet-500/[0.09]'
+            : 'bg-brand/[0.06] border-brand/20 hover:bg-brand/[0.09]'
           }`}>
             <div className="flex items-center justify-between">
               <div>
@@ -184,9 +184,9 @@ export default async function DashboardPage() {
                 </p>
               </div>
               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
-                isAdmin ? 'bg-amber-500/15' : isPro ? 'bg-emerald-500/15' : 'bg-violet-500/15'
+                isAdmin ? 'bg-amber-500/15' : isPro ? 'bg-emerald-500/15' : 'bg-brand/15'
               }`}>
-                <MessageCircle className={`h-6 w-6 ${isAdmin ? 'text-amber-400' : isPro ? 'text-emerald-400' : 'text-violet-400'}`} />
+                <MessageCircle className={`h-6 w-6 ${isAdmin ? 'text-amber-400' : isPro ? 'text-emerald-400' : 'text-brand'}`} />
               </div>
             </div>
             {/* Usage bar for free users */}
@@ -197,7 +197,7 @@ export default async function DashboardPage() {
                   <span className="text-white/45 text-[11px]">rolling 24h window</span>
                 </div>
                 <div className="w-full bg-white/[0.07] rounded-full h-1">
-                  <div className={`h-1 rounded-full transition-all ${usagePercent >= 100 ? 'bg-red-500' : usagePercent >= 67 ? 'bg-orange-500' : 'bg-violet-500'}`}
+                  <div className={`h-1 rounded-full transition-all ${usagePercent >= 100 ? 'bg-red-500' : usagePercent >= 67 ? 'bg-orange-500' : 'bg-brand'}`}
                     style={{ width: `${usagePercent}%` }} />
                 </div>
               </div>
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
             <p className="text-[10px] font-bold text-white/45 uppercase tracking-[0.15em] mb-1.5">Plan</p>
             <p className={`font-black text-sm ${planColor}`}>{planLabel}</p>
             {!isPro && !isAdmin && (
-              <Link href="/pricing" className="-mb-2 flex min-h-9 items-center text-xs text-violet-300 hover:text-violet-200 font-bold transition-colors">Upgrade →</Link>
+              <Link href="/pricing" className="-mb-2 flex min-h-9 items-center text-xs text-brand hover:text-brand-soft font-bold transition-colors">Upgrade →</Link>
             )}
             {isPro && !isAdmin && !isTrialEntitlement && (
               <ManageSubscriptionButton compact />
@@ -243,10 +243,10 @@ export default async function DashboardPage() {
           <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] overflow-hidden">
             <div className="flex items-center justify-between px-5 pt-4 pb-3">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                <Sparkles className="h-3.5 w-3.5 text-brand" />
                 <span className="text-[11px] font-bold text-white/55 uppercase tracking-[0.15em]">History</span>
               </div>
-              <Link href="/history" className="-my-3 flex min-h-11 items-center text-xs text-violet-300 hover:text-violet-200 font-bold transition-colors">View all →</Link>
+              <Link href="/history" className="-my-3 flex min-h-11 items-center text-xs text-brand hover:text-brand-soft font-bold transition-colors">View all →</Link>
             </div>
             <div className="divide-y divide-white/[0.05]">
               {/* Saved threads + coach sessions */}
@@ -259,8 +259,8 @@ export default async function DashboardPage() {
                 const timeAgo = mins < 1 ? 'Just now' : mins < 60 ? `${mins}m` : Math.floor(mins / 60) < 24 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`
                 return (
                   <Link key={t.id} href={`/app?load=${t.id}`} className="flex min-h-14 items-center gap-3 px-5 py-3 hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors">
-                    <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-violet-500/20">
-                      <Sparkles className="h-3 w-3 text-violet-400" />
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-brand/20">
+                      <Sparkles className="h-3 w-3 text-brand" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white/65 text-sm font-medium truncate">{t.name}</p>

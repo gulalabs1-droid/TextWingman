@@ -16,7 +16,7 @@ const items = [
 export default function AppNav() {
   const pathname = usePathname();
   return (
-    <nav data-app-nav aria-label="App navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-[#0a0a0f]/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden [html[data-keyboard='open']_&]:hidden">
+    <nav data-app-nav aria-label="App navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden [html[data-keyboard='open']_&]:hidden">
       <ul className="mx-auto grid max-w-lg grid-cols-4">
         {items.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
@@ -25,7 +25,7 @@ export default function AppNav() {
               <Link
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${active ? 'text-violet-300' : 'text-white/55 hover:text-white/85'}`}
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${active ? 'text-brand' : 'text-white/55 hover:text-white/85'}`}
               >
                 <Icon className="h-5 w-5" />
                 {label}

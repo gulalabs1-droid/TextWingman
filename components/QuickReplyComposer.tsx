@@ -404,7 +404,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
   const Content = embedded ? 'div' : 'main';
 
   return (
-    <div className={embedded ? 'text-white' : 'min-h-screen bg-[#0a0a0f] text-white'}>
+    <div className={embedded ? 'text-white' : 'min-h-screen bg-ink text-white'}>
       {/* Minimal top bar */}
       {!embedded && <header className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Logo size="sm" showText={true} className="cursor-pointer opacity-70" />
@@ -422,7 +422,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
         {!embedded && <div className="text-center space-y-2.5 mb-5">
           <h1 className="text-[26px] sm:text-3xl font-black tracking-tight leading-[1.15]">
             Paste the text they sent.
-            <span className="block bg-gradient-to-r from-violet-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
+            <span className="block text-brand">
               Get 3 replies that sound like you.
             </span>
           </h1>
@@ -458,7 +458,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             <legend className="mb-2 text-sm font-semibold text-white/80">Who sent it?</legend>
             <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-white/[0.08] bg-black/30 p-1">
               {contextOptions.map(option => (
-                <label key={option.id} className={`flex min-h-10 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-violet-300/60 ${context === option.id ? 'bg-violet-500/25 text-white' : 'text-white/55 hover:text-white/80'} ${embedded ? context === option.id ? homeStyles.composerChoiceActive : homeStyles.composerChoice : ''}`}>
+                <label key={option.id} className={`flex min-h-10 cursor-pointer items-center justify-center rounded-xl text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/60 ${context === option.id ? 'bg-brand/25 text-white' : 'text-white/55 hover:text-white/80'} ${embedded ? context === option.id ? homeStyles.composerChoiceActive : homeStyles.composerChoice : ''}`}>
                   <input type="radio" name={embedded ? 'home-context' : 'social-context'} value={option.id} checked={context === option.id} onChange={() => { setContext(option.id); track('context_selected', { source, context: option.id }); }} disabled={generating || uploading} className="sr-only" />
                   {option.label}
                 </label>
@@ -489,7 +489,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             aria-label="Their message or conversation"
             aria-describedby="message-privacy"
             disabled={generating || uploading}
-            className={`w-full min-h-[88px] max-h-[200px] p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] text-white placeholder-white/40 resize-none focus:outline-none focus:border-fuchsia-400/60 focus:ring-4 focus:ring-fuchsia-500/10 transition-colors text-base leading-relaxed disabled:opacity-70 ${embedded ? homeStyles.composerTextarea : ''}`}
+            className={`w-full min-h-[88px] max-h-[200px] p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] text-white placeholder-white/40 resize-none focus:outline-none focus:border-brand/60 focus:ring-4 focus:ring-brand/10 transition-colors text-base leading-relaxed disabled:opacity-70 ${embedded ? homeStyles.composerTextarea : ''}`}
           />
           <p id="message-privacy" className="mt-2 text-xs text-white/50">Remove names and numbers. We never connect to your inbox or send messages for you.</p>
 
@@ -508,7 +508,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 fileInputRef.current?.click();
               }}
               disabled={uploading || generating}
-              className={`h-[52px] rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 ${embedded ? `bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-black text-[15px] shadow-xl shadow-violet-600/30 ring-1 ring-white/10 ${homeStyles.composerUpload}` : 'border border-white/10 bg-white/[0.05] text-sm font-semibold text-white/80 hover:bg-white/[0.10]'}`}
+              className={`h-[52px] rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 ${embedded ? `bg-brand hover:bg-brand-soft text-brand-ink font-black text-[15px] shadow-xl shadow-brand/30 ring-1 ring-white/10 ${homeStyles.composerUpload}` : 'border border-white/10 bg-white/[0.05] text-sm font-semibold text-white/80 hover:bg-white/[0.10]'}`}
             >
               {uploading ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</>
@@ -519,7 +519,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             <button
               onClick={handlePasteSubmit}
               disabled={generating || uploading}
-              className={`h-[52px] rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 ${embedded ? `bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm ${homeStyles.composerGenerate}` : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-[15px] font-black shadow-xl shadow-violet-600/30 ring-1 ring-white/10 hover:from-violet-500 hover:to-fuchsia-500'}`}
+              className={`h-[52px] rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-60 ${embedded ? `bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.10] text-white/80 font-semibold text-sm ${homeStyles.composerGenerate}` : 'bg-brand text-brand-ink text-[15px] font-black shadow-xl shadow-brand/30 ring-1 ring-white/10 hover:bg-brand-soft'}`}
             >
               {generating ? <><Loader2 className="h-4 w-4 animate-spin" /> Writing your replies...</> : <>Get 3 free replies <Zap className="h-4 w-4" /></>}
             </button>
@@ -540,18 +540,18 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
           <button
             onClick={() => showExample(exampleChips[0], 'instant_demo')}
             aria-label="See three example replies"
-            className={`mt-3 w-full rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/[0.06] p-3 text-left text-[12px] text-fuchsia-100/80 transition-colors hover:border-fuchsia-300/35 hover:bg-fuchsia-300/[0.10] ${embedded ? homeStyles.composerExample : ''}`}
+            className={`mt-3 w-full rounded-2xl border border-brand/20 bg-brand/[0.06] p-3 text-left text-[12px] text-brand/80 transition-colors hover:border-brand/35 hover:bg-brand/[0.10] ${embedded ? homeStyles.composerExample : ''}`}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-fuchsia-200/70">Example, before you try</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-brand/70">Example, before you try</p>
                 <p className="truncate text-white/55">Them: &quot;haha maybe, depends who&apos;s asking&quot;</p>
                 <p className="truncate text-red-200/70">Don&apos;t send: &quot;so... maybe?&quot;</p>
                 <p className="font-bold text-emerald-200/90">Try: &quot;someone with good taste and a friday plan&quot;</p>
               </div>
-              <ArrowRight className="mt-6 h-4 w-4 shrink-0 text-fuchsia-200" />
+              <ArrowRight className="mt-6 h-4 w-4 shrink-0 text-brand-soft" />
             </div>
-            <p className="mt-2 text-[11px] font-black text-fuchsia-100">See all 3 example replies (doesn&apos;t count toward your free uses)</p>
+            <p className="mt-2 text-[11px] font-black text-brand-soft">See all 3 example replies (doesn&apos;t count toward your free uses)</p>
           </button>
           )}
         </div>
@@ -565,7 +565,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 key={ex.label}
                 onClick={() => showExample(ex, 'video_chip')}
                 disabled={generating || uploading}
-                className="rounded-2xl border border-fuchsia-300/15 bg-fuchsia-300/[0.04] px-3 py-2.5 text-left transition-all hover:border-fuchsia-300/35 hover:bg-fuchsia-300/[0.08] active:scale-[0.97] disabled:opacity-50"
+                className="rounded-2xl border border-brand/15 bg-brand/[0.04] px-3 py-2.5 text-left transition-all hover:border-brand/35 hover:bg-brand/[0.08] active:scale-[0.97] disabled:opacity-50"
               >
                 <span className="block text-[13px] font-bold text-white/80">{ex.label}</span>
               </button>
@@ -579,7 +579,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
           <section ref={resultsRef} tabIndex={-1} aria-label={isExample ? 'Example reply options' : 'Your reply options'} className="mb-6 scroll-mt-4 outline-none">
             {isExample ? (
               <>
-                <p className="mb-1 text-xs font-bold uppercase tracking-widest text-fuchsia-200">Example</p>
+                <p className="mb-1 text-xs font-bold uppercase tracking-widest text-brand-soft">Example</p>
                 <h2 className="text-xl font-bold">They said &ldquo;{lastMessage}&rdquo;</h2>
                 <p className="mb-3 mt-1 text-xs text-white/50">Pre-written examples. Yours are written for your exact conversation.</p>
               </>
@@ -599,10 +599,10 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                     </button>
                   </div>
                   {editingReply === reply.replyId ? (
-                    <textarea aria-label={`Edit ${replyLabels[reply.tone].toLowerCase()} reply`} value={drafts[reply.replyId] ?? reply.text} onChange={event => { setDrafts(previous => ({ ...previous, [reply.replyId]: event.target.value })); setCopiedReply(null); }} maxLength={1000} rows={3} className="w-full rounded-xl border border-violet-300/40 bg-black/30 p-3 text-base leading-relaxed text-white focus:outline-none focus:ring-2 focus:ring-violet-300/40" />
+                    <textarea aria-label={`Edit ${replyLabels[reply.tone].toLowerCase()} reply`} value={drafts[reply.replyId] ?? reply.text} onChange={event => { setDrafts(previous => ({ ...previous, [reply.replyId]: event.target.value })); setCopiedReply(null); }} maxLength={1000} rows={3} className="w-full rounded-xl border border-brand/40 bg-black/30 p-3 text-base leading-relaxed text-white focus:outline-none focus:ring-2 focus:ring-brand/40" />
                   ) : <p className="select-text break-words text-base leading-relaxed text-white">{drafts[reply.replyId] ?? reply.text}</p>}
                   <div className="mt-2 flex flex-wrap items-center gap-3">
-                    <button onClick={() => setEditingReply(editingReply === reply.replyId ? null : reply.replyId)} className={`min-h-11 text-xs font-semibold text-violet-200 hover:text-white ${embedded ? homeStyles.composerEdit : ''}`}>{editingReply === reply.replyId ? 'Done editing' : 'Make it sound like you'}</button>
+                    <button onClick={() => setEditingReply(editingReply === reply.replyId ? null : reply.replyId)} className={`min-h-11 text-xs font-semibold text-brand-soft hover:text-white ${embedded ? homeStyles.composerEdit : ''}`}>{editingReply === reply.replyId ? 'Done editing' : 'Make it sound like you'}</button>
                     {!isExample && copiedReply === reply.replyId && <button onClick={() => handleSent(reply)} disabled={sentReply === reply.replyId} className="min-h-10 text-xs font-semibold text-emerald-200 disabled:opacity-60">{sentReply === reply.replyId ? 'Marked as sent by you' : 'I sent this (optional)'}</button>}
                   </div>
                 </div>
@@ -610,14 +610,14 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             </div>
             <p role="status" className="mt-2 text-xs text-white/45">{copiedReply ? 'Copied. Edit it if you want, then send it in your chat.' : 'You are in control. Copy a reply, edit it, and send it yourself.'}</p>
             {isExample && (
-              <button onClick={tryOwnText} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 font-bold text-white hover:from-violet-500 hover:to-fuchsia-500">
+              <button onClick={tryOwnText} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand font-bold text-brand-ink hover:bg-brand-soft">
                 Now try it with your text <ArrowRight className="h-4 w-4" />
               </button>
             )}
-            {!isExample && <div className={`mt-4 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4 ${embedded ? homeStyles.composerSave : ''}`}>
+            {!isExample && <div className={`mt-4 rounded-2xl border border-brand/25 bg-brand/10 p-4 ${embedded ? homeStyles.composerSave : ''}`}>
               <h3 className="font-bold">Save this reply and keep the thread free.</h3>
               <p className="mb-3 mt-1 text-xs leading-relaxed text-white/55">Create a free account to save the thread and return when they answer.</p>
-              <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`} onClick={() => { savePendingThread(); track('signup_cta_click', { source, from: 'social_inline_result', handoff: 'restore_thread' }); }} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl bg-violet-500 font-bold text-white hover:bg-violet-400 ${embedded ? homeStyles.composerSaveButton : ''}`}>
+              <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`} onClick={() => { savePendingThread(); track('signup_cta_click', { source, from: 'social_inline_result', handoff: 'restore_thread' }); }} className={`flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand font-bold text-brand-ink hover:bg-brand-soft ${embedded ? homeStyles.composerSaveButton : ''}`}>
                 <BookmarkPlus className="h-4 w-4" /> Save this conversation free
               </Link>
               <button onClick={() => { savePendingThread(); const params = new URLSearchParams({ ...buildUtmParams(), restore: '1' }); router.push(`/app?${params.toString()}`); }} className="mt-3 w-full text-xs font-semibold text-white/50 hover:text-white">Continue in the full coach</button>
@@ -640,13 +640,13 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
               </div>
             )}
             {!isExample && showProOffer && (
-              <div className="mt-3 rounded-2xl border border-violet-300/30 bg-violet-400/10 p-4">
+              <div className="mt-3 rounded-2xl border border-brand/30 bg-brand/10 p-4">
                 <h3 className="text-sm font-bold text-white">They replied. Keep the streak going.</h3>
                 <p className="mt-1 text-xs leading-relaxed text-white/60">Pro gives unlimited replies and Deep Analysis on every conversation.</p>
                 <Link
                   href="/pricing"
                   onClick={() => track('upgrade_clicked', { source, from: 'outcome_win' })}
-                  className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 font-bold text-white hover:from-violet-500 hover:to-fuchsia-500"
+                  className="mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand font-bold text-brand-ink hover:bg-brand-soft"
                 >
                   See Pro <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -664,7 +664,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 key={ex.label}
                 onClick={() => showExample(ex, 'chip')}
                 disabled={generating || uploading}
-                className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5 text-left transition-all hover:border-fuchsia-300/30 hover:bg-white/[0.06] active:scale-[0.97] disabled:opacity-50"
+                className="rounded-2xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5 text-left transition-all hover:border-brand/30 hover:bg-white/[0.06] active:scale-[0.97] disabled:opacity-50"
               >
                 <span className="block text-[13px] font-bold text-white/80">{ex.label}</span>
               </button>
@@ -674,7 +674,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
 
         {/* Why this works — compact */}
         {!embedded && <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4 mb-6">
-          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-fuchsia-200/70 mb-2">
+          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-brand/70 mb-2">
             Why this beats random rizz lines
           </div>
           <div className="grid gap-2 text-[13px]">
@@ -738,7 +738,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
 
       {/* Sticky mobile CTA — text changes based on textarea state */}
       {!embedded && replies.length === 0 && <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pointer-events-auto bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent">
+        <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pointer-events-auto bg-gradient-to-t from-ink via-ink/95 to-transparent">
           <div className="max-w-lg mx-auto">
             <button
               onClick={() => {
@@ -750,7 +750,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
                 }
               }}
               disabled={generating || uploading}
-              className="w-full h-12 text-[15px] font-black rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-2xl shadow-violet-600/30 transition-all active:scale-[0.98] disabled:opacity-60"
+              className="w-full h-12 text-[15px] font-black rounded-2xl bg-brand hover:bg-brand-soft text-brand-ink shadow-2xl shadow-brand/30 transition-all active:scale-[0.98] disabled:opacity-60"
             >
               {stickyLabel}
             </button>

@@ -121,7 +121,7 @@ export default function HistoryPage() {
   const totalCount = threads.length + replyHistory.length;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-ink">
       <div className="max-w-lg mx-auto px-4 py-6 pb-24">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
@@ -144,7 +144,7 @@ export default function HistoryPage() {
             type="search"
             enterKeyHint="search"
             aria-label="Search history"
-            className="w-full h-12 pl-10 pr-4 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-violet-500/40 transition-all"
+            className="w-full h-12 pl-10 pr-4 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/40 text-base md:text-sm focus:outline-none focus:border-brand/40 transition-all"
           />
         </div>
 
@@ -160,7 +160,7 @@ export default function HistoryPage() {
               onClick={() => setFilter(tab.key)}
               className={`min-h-10 px-4 rounded-xl text-[13px] font-bold transition-all shrink-0 active:scale-95 ${
                 filter === tab.key
-                  ? 'bg-violet-500/15 border border-violet-500/25 text-violet-300'
+                  ? 'bg-brand/15 border border-brand/25 text-brand'
                   : 'bg-white/[0.04] border border-white/[0.08] text-white/60 hover:text-white/60'
               }`}
             >
@@ -171,7 +171,7 @@ export default function HistoryPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-violet-400/50" />
+            <Loader2 className="h-6 w-6 animate-spin text-brand/50" />
           </div>
         ) : error ? (
           <div className="text-center py-16 space-y-4">
@@ -189,7 +189,7 @@ export default function HistoryPage() {
               <p className="text-white/50 text-sm font-semibold">No history yet</p>
               <p className="text-white/50 text-xs mt-1">Start a coach session and it&apos;ll appear here</p>
             </div>
-            <Link href="/app" className="inline-block px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-bold hover:opacity-90 transition-all">
+            <Link href="/app" className="inline-block px-5 py-2.5 rounded-xl bg-brand text-brand-ink text-sm font-bold hover:opacity-90 transition-all">
               Start a session
             </Link>
           </div>
@@ -212,8 +212,8 @@ export default function HistoryPage() {
                     className="w-full text-left p-4 space-y-2"
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-violet-500/20">
-                        <Sparkles className="h-3 w-3 text-violet-400" />
+                      <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 bg-brand/20">
+                        <Sparkles className="h-3 w-3 text-brand" />
                       </div>
                       <span className="text-white/45 text-[11px] ml-auto flex items-center gap-1">
                         <Clock className="h-2.5 w-2.5" />
@@ -259,7 +259,7 @@ export default function HistoryPage() {
                       <div className="space-y-1.5">
                         {parsedReplies.slice(0, 3).map((reply, idx) => (
                           <button key={idx} onClick={() => void copyReply(reply.text)} aria-label={`Copy ${reply.tone} reply`} className="flex min-h-11 w-full items-center gap-2 rounded-lg px-1 py-2 text-left hover:bg-white/[0.05] active:scale-[0.99]">
-                            <span className="text-[10px] font-black text-violet-400/70 uppercase shrink-0 w-12">{reply.tone}</span>
+                            <span className="text-[10px] font-black text-brand/70 uppercase shrink-0 w-12">{reply.tone}</span>
                             <p className="text-white/75 text-[13px] leading-relaxed">{reply.text}</p>
                           </button>
                         ))}

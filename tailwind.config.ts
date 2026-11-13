@@ -34,6 +34,18 @@ const config: Config = {
         'screen-dyn': ['100vh', '100dvh'] as unknown as string,
       },
       colors: {
+        // Brand palette, shared with the homepage (app/homepage.module.css).
+        ink: "#0b0f0c",
+        panel: "#141c16",
+        raised: "#171f19",
+        line: "#344036",
+        cream: "#f5f7ec",
+        sage: "#abb7aa",
+        brand: {
+          DEFAULT: "#d3ff68",
+          soft: "#e4ffad",
+          ink: "#14200e",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -250,7 +250,7 @@ const OPENER_CONTEXTS = [
 
 const OPENER_TONE_CONFIG: Record<string, { label: string; emoji: string; gradient: string; lightBg: string }> = {
   bold: { label: 'Bold', emoji: '🎯', gradient: 'from-red-500 to-orange-500', lightBg: 'bg-red-50' },
-  witty: { label: 'Witty', emoji: '⚡', gradient: 'from-purple-500 to-pink-500', lightBg: 'bg-purple-50' },
+  witty: { label: 'Witty', emoji: '⚡', gradient: 'from-lime-400 to-emerald-500', lightBg: 'bg-lime-50' },
   warm: { label: 'Warm', emoji: '💚', gradient: 'from-green-500 to-emerald-500', lightBg: 'bg-green-50' },
 };
 
@@ -268,7 +268,7 @@ const ENERGY_CONFIG: Record<string, { emoji: string; color: string; bg: string }
   flirty: { emoji: '😏', color: 'text-pink-400', bg: 'bg-pink-500/20' },
   confrontational: { emoji: '⚡', color: 'text-orange-400', bg: 'bg-orange-500/20' },
   anxious: { emoji: '😰', color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
-  playful: { emoji: '😜', color: 'text-purple-400', bg: 'bg-purple-500/20' },
+  playful: { emoji: '😜', color: 'text-brand', bg: 'bg-brand/20' },
   cold: { emoji: '🥶', color: 'text-blue-400', bg: 'bg-blue-500/20' },
   warm: { emoji: '🤗', color: 'text-green-400', bg: 'bg-green-500/20' },
 };
@@ -329,6 +329,130 @@ function CoachScoreBar({ label, value, inverted = false }: { label: string; valu
   );
 }
 
+const READ_TONES = {
+  good: { dot: 'bg-emerald-400', text: 'text-emerald-300' },
+  caution: { dot: 'bg-amber-400', text: 'text-amber-300' },
+  risk: { dot: 'bg-red-400', text: 'text-red-300' },
+  neutral: { dot: 'bg-white/25', text: 'text-white/80' },
+} as const;
+
+/** Desktop side panel: Coach's latest read of the conversation, in full. */
+function CoachReadPanel({ strategy }: { strategy: StrategyData }) {
+  if (!strategy) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center text-center">
+        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05]">
+          <TrendingUp className="h-5 w-5 text-white/45" />
+        </div>
+        <p className="text-sm font-bold text-white/80">No read yet</p>
+        <p className="mt-1.5 max-w-[15rem] text-xs leading-relaxed text-white/50">
+          Share a conversation and Coach shows who is leading, where it is heading, and the move to make next.
+        </p>
+      </div>
+    );
+  }
+  const { momentum, balance, move } = strategy;
+  const signals: { label: string; value: string; tone: keyof typeof READ_TONES }[] = [
+    { label: 'Momentum', value: momentum, tone: momentum === 'Rising' ? 'good' : momentum === 'Declining' || momentum === 'Stalling' ? 'risk' : 'caution' },
+    { label: 'Balance', value: balance, tone: balance === 'Balanced' || balance === 'You lead' ? 'good' : balance === 'They lead' ? 'caution' : 'neutral' },
+    { label: 'Energy', value: move.energy.replace('_', ' '), tone: move.energy === 'escalate' ? 'good' : move.energy === 'pull_back' ? 'risk' : move.energy === 'match' ? 'caution' : 'neutral' },
+    { label: 'Risk', value: move.risk || 'low', tone: move.risk === 'high' ? 'risk' : move.risk === 'medium' ? 'caution' : 'good' },
+  ];
+  const guardrails = [
+    move.constraints?.keep_short && 'Keep it short',
+    move.constraints?.no_questions && 'No questions',
+    move.constraints?.add_tease && 'Add a tease',
+    move.constraints?.push_meetup && 'Push the meetup',
+  ].filter((item): item is string => Boolean(item));
+  return (
+    <div className="space-y-5 animate-in fade-in duration-300">
+      {move.one_liner && (
+        <div className="rounded-2xl border border-brand/25 bg-brand/10 p-4">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-brand">Your move</p>
+          <p className="mt-1.5 text-sm font-semibold leading-relaxed text-white/90">{move.one_liner}</p>
+        </div>
+      )}
+      <dl className="divide-y divide-white/[0.06] rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+        {signals.map(signal => (
+          <div key={signal.label} className="flex items-center justify-between gap-3 px-4 py-3">
+            <dt className="text-xs text-white/50">{signal.label}</dt>
+            <dd className={`flex items-center gap-2 text-xs font-bold capitalize ${READ_TONES[signal.tone].text}`}>
+              <span className={`h-2 w-2 rounded-full ${READ_TONES[signal.tone].dot}`} />
+              {signal.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {guardrails.length > 0 && (
+        <div>
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-white/50">For this reply</p>
+          <div className="flex flex-wrap gap-1.5">
+            {guardrails.map(item => (
+              <span key={item} className="rounded-full border border-white/[0.10] bg-white/[0.05] px-2.5 py-1 text-[11px] font-semibold text-white/75">{item}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One reply the person can send. On phones the cards sit in a swipeable row
+ * (see ReplyOptionRail) and the whole-width Copy button is the main action.
+ */
+function ReplyOptionCard({ label, text, note, copied, onCopy, onCoach, featured = false, solo = false }: {
+  label: React.ReactNode;
+  text: string;
+  note?: string | null;
+  copied: boolean;
+  onCopy: () => void;
+  onCoach?: () => void;
+  featured?: boolean;
+  solo?: boolean;
+}) {
+  return (
+    <div className={`flex shrink-0 snap-center flex-col rounded-2xl border p-4 sm:w-full ${solo ? 'w-full' : 'w-[86%]'} ${
+      featured ? 'border-brand/30 bg-brand/[0.07]' : 'border-white/[0.10] bg-white/[0.05]'
+    }`}>
+      <div className="mb-2 flex min-h-5 items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-white/55">{label}</div>
+      <p className="flex-1 select-text whitespace-pre-wrap text-[15px] leading-relaxed text-white/90">{text}</p>
+      {note && <p className="mt-2 text-xs leading-relaxed text-white/50">{note}</p>}
+      <div className="mt-3 flex items-stretch gap-2">
+        <button
+          onClick={onCopy}
+          className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-bold transition-all active:scale-[0.98] ${
+            copied
+              ? 'border border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+              : featured
+                ? 'bg-brand text-brand-ink hover:bg-brand-soft'
+                : 'border border-white/[0.14] bg-white/[0.07] text-white/90 hover:bg-white/[0.12]'
+          }`}
+        >
+          {copied ? <><Check className="h-4 w-4" /> Copied</> : <><Copy className="h-4 w-4" /> Copy</>}
+        </button>
+        {onCoach && (
+          <button onClick={onCoach} className="flex min-h-11 items-center rounded-xl border border-white/[0.10] px-3 text-xs font-semibold text-white/60 transition-colors hover:border-brand/30 hover:text-brand active:scale-[0.98]">
+            Coach this
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Swipeable on phones (next card peeks in), stacked from the sm breakpoint up. */
+function ReplyOptionRail({ count, children }: { count: number; children: React.ReactNode }) {
+  return (
+    <>
+      <div className="-mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 scrollbar-hide sm:mx-0 sm:flex-col sm:overflow-visible sm:px-0">
+        {children}
+      </div>
+      {count > 1 && <p className="px-1 text-[11px] text-white/40 sm:hidden">Swipe to compare all {count}</p>}
+    </>
+  );
+}
+
 function ConversationList({ threads, userId, isThreadActive, onLoad, onDelete }: {
   threads: SavedThread[];
   userId: string | null;
@@ -360,12 +484,12 @@ function ConversationList({ threads, userId, isThreadActive, onLoad, onDelete }:
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onLoad(t); } }}
                 className={`group w-full flex items-center gap-2.5 p-2.5 rounded-2xl transition-all cursor-pointer active:scale-[0.98] ${
                   active
-                    ? 'bg-violet-500/15 border border-violet-500/20'
+                    ? 'bg-brand/15 border border-brand/20'
                     : 'border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
                 }`}
               >
-                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${active ? 'bg-violet-500/20' : 'bg-white/[0.05]'}`}>
-                  <Sparkles className={`h-3 w-3 ${active ? 'text-violet-400' : 'text-white/55'}`} />
+                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${active ? 'bg-brand/20' : 'bg-white/[0.05]'}`}>
+                  <Sparkles className={`h-3 w-3 ${active ? 'text-brand' : 'text-white/55'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white/80 text-[13px] font-semibold truncate">{t.name}</p>
@@ -406,17 +530,17 @@ function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread, highlightUp
                       onClick={() => onUpload()}
                       className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border transition-all active:scale-95 text-center ${
                         highlightUpload
-                          ? 'bg-violet-500/[0.16] border-violet-400/60 shadow-lg shadow-violet-500/20 ring-2 ring-violet-400/30 motion-safe:animate-pulse'
-                          : 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20'
+                          ? 'bg-brand/[0.16] border-brand/60 shadow-lg shadow-brand/20 ring-2 ring-brand/30 motion-safe:animate-pulse'
+                          : 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] hover:border-brand/20'
                       }`}
                     >
                       <span className="text-xl">📸</span>
                       <span className={`text-[11px] font-semibold ${highlightUpload ? 'text-white' : 'text-white/55'}`}>Screenshot</span>
-                      <span className={`text-[10px] ${highlightUpload ? 'text-violet-200' : 'text-white/50'}`}>{highlightUpload ? 'Tap to upload yours' : 'Upload a convo'}</span>
+                      <span className={`text-[10px] ${highlightUpload ? 'text-brand-soft' : 'text-white/50'}`}>{highlightUpload ? 'Tap to upload yours' : 'Upload a convo'}</span>
                     </button>
                     <button
                       onClick={() => { onPaste() }}
-                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-brand/20 transition-all active:scale-95 text-center"
                     >
                       <span className="text-xl">💬</span>
                       <span className="text-[11px] font-semibold text-white/55">Paste message</span>
@@ -425,10 +549,10 @@ function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread, highlightUp
                     {recentThread && (
                       <button
                         onClick={() => onLoadThread(recentThread)}
-                        className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-violet-500/[0.07] border border-violet-500/15 hover:bg-violet-500/[0.12] hover:border-violet-500/25 transition-all active:scale-95 text-center"
+                        className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-brand/[0.07] border border-brand/15 hover:bg-brand/[0.12] hover:border-brand/25 transition-all active:scale-95 text-center"
                       >
                         <span className="text-xl">🔥</span>
-                        <span className="text-[11px] font-semibold text-violet-300/70 truncate w-full">{recentThread.name?.split(' ').slice(0, 2).join(' ') || 'Last convo'}</span>
+                        <span className="text-[11px] font-semibold text-brand/70 truncate w-full">{recentThread.name?.split(' ').slice(0, 2).join(' ') || 'Last convo'}</span>
                         <span className="text-[10px] text-white/50">Pick up here</span>
                       </button>
                     )}
@@ -473,7 +597,7 @@ function CoachOrchestrationResult({
                               <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                                 orch.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
                                 orch.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
-                                'bg-violet-500/15 text-violet-300'
+                                'bg-brand/15 text-brand'
                               }`}>{orch.strategy.move.energy.replace('_', ' ')}</span>
                               {orch.strategy.move.risk === 'high' && (
                                 <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-500/15 text-red-400">⚠ high risk</span>
@@ -481,88 +605,57 @@ function CoachOrchestrationResult({
                             </div>
                             <p className="text-[12px] text-white/50 italic px-1">&ldquo;{orch.strategy.move.one_liner}&rdquo;</p>
 
-                            {/* Quick copy winner row + they replied prompt */}
+                            {/* Winner and backup — swipeable on phones, one Copy button each */}
                             {orch.winner && (
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2 px-1">
-                                  <button
-                                    onClick={() => { onCopy(orch.winner!.text, `qw-${index}`, { msg, index, slot: 'winner', tone: orch.winner!.style }); onQuickCopyDone(); }}
-                                    className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/[0.10] border border-amber-500/25 hover:bg-amber-500/[0.16] hover:border-amber-500/40 transition-all active:scale-[0.98] group"
-                                  >
-                                    <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                                    <p className="text-[13px] text-white/90 font-medium truncate flex-1">{orch.winner.text}</p>
-                                    <span className="text-[11px] font-bold text-amber-400/60 group-hover:text-amber-400 transition-colors shrink-0">
-                                      {copiedId === `qw-${index}` ? '✓ Copied' : 'Copy →'}
-                                    </span>
-                                  </button>
-                                </div>
-                                {theyRepliedOpen && (
-                                  <div className="flex items-center gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <input
-                                      autoFocus
-                                      value={theyRepliedInput}
-                                      onChange={e => onTheyRepliedInput(e.target.value)}
-                                      onKeyDown={e => {
-                                        if (e.key === 'Enter' && theyRepliedInput.trim()) onTheyRepliedSubmit(theyRepliedInput.trim());
-                                        if (e.key === 'Escape') onTheyRepliedClose();
-                                      }}
-                                      placeholder="They replied: paste it here..."
-                                      className="flex-1 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-[12px] focus:outline-none focus:border-amber-500/30 transition-all"
-                                    />
-                                    <button
-                                      onClick={() => { if (theyRepliedInput.trim()) onTheyRepliedSubmit(theyRepliedInput.trim()); else onTheyRepliedClose(); }}
-                                      className="px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 text-[11px] font-bold hover:bg-amber-500/25 transition-all active:scale-95"
-                                    >→</button>
-                                    <button onClick={onTheyRepliedClose} className="text-white/45 hover:text-white/50 transition-colors"><X className="h-3.5 w-3.5" /></button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Winner card detail */}
-                            {orch.winner && (
-                              <div className="relative">
-                                <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 z-10">
-                                  <Trophy className="h-2.5 w-2.5 text-amber-400" />
-                                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Winner</span>
-                                </div>
-                                <button
-                                  onClick={() => onCopy(orch.winner!.text, `w-${index}`, { msg, index, slot: 'winner', tone: orch.winner!.style })}
-                                  className="w-full text-left mt-1 px-4 pt-5 pb-3 rounded-xl bg-amber-500/[0.08] border border-amber-500/20 hover:bg-amber-500/[0.12] hover:border-amber-500/35 transition-all active:scale-[0.98] group"
-                                >
-                                  <div className="flex items-center justify-between mb-1.5">
-                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[orch.winner.style]?.color || 'bg-white/10 text-white/50'}`}>
+                              <ReplyOptionRail count={orch.backup && orch.backup.text !== orch.winner.text ? 2 : 1}>
+                                <ReplyOptionCard
+                                  featured
+                                  solo={!orch.backup || orch.backup.text === orch.winner.text}
+                                  label={<>
+                                    <span className="flex items-center gap-1 text-amber-400"><Trophy className="h-3 w-3" /> Top pick</span>
+                                    <span className={`rounded-full px-2 py-0.5 normal-case tracking-normal ${STYLE_CONFIG[orch.winner.style]?.color || 'bg-white/10 text-white/50'}`}>
                                       {STYLE_CONFIG[orch.winner.style]?.emoji} {STYLE_CONFIG[orch.winner.style]?.label || orch.winner.style}
                                     </span>
-                                    <span className="text-[11px] text-amber-400/50 group-hover:text-amber-400 transition-colors">
-                                      {copiedId === `w-${index}` ? <Check className="h-3 w-3" /> : 'Copy →'}
-                                    </span>
-                                  </div>
-                                  <p className="text-[14px] text-white/90 font-medium">{orch.winner.text}</p>
-                                  {orch.winner_reason && <p className="text-[11px] text-amber-400/40 mt-1.5">💡 {orch.winner_reason}</p>}
-                                </button>
-                              </div>
+                                  </>}
+                                  text={orch.winner.text}
+                                  note={orch.winner_reason}
+                                  copied={copiedId === `w-${index}`}
+                                  onCopy={() => { onCopy(orch.winner!.text, `w-${index}`, { msg, index, slot: 'winner', tone: orch.winner!.style }); onQuickCopyDone(); }}
+                                />
+                                {orch.backup && orch.backup.text !== orch.winner.text && (
+                                  <ReplyOptionCard
+                                    label={<>
+                                      <span>Backup</span>
+                                      <span className={`rounded-full px-2 py-0.5 normal-case tracking-normal ${STYLE_CONFIG[orch.backup.style]?.color || 'bg-white/10 text-white/50'}`}>
+                                        {STYLE_CONFIG[orch.backup.style]?.emoji} {STYLE_CONFIG[orch.backup.style]?.label || orch.backup.style}
+                                      </span>
+                                    </>}
+                                    text={orch.backup.text}
+                                    copied={copiedId === `b-${index}`}
+                                    onCopy={() => onCopy(orch.backup!.text, `b-${index}`, { msg, index, slot: 'backup', tone: orch.backup!.style })}
+                                  />
+                                )}
+                              </ReplyOptionRail>
                             )}
-
-                            {/* Backup card */}
-                            {orch.backup && orch.backup.text !== orch.winner?.text && (
-                              <button
-                                onClick={() => onCopy(orch.backup!.text, `b-${index}`, { msg, index, slot: 'backup', tone: orch.backup!.style })}
-                                className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] transition-all active:scale-[0.98] group"
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-bold text-white/55 uppercase tracking-wider">Backup</span>
-                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[orch.backup.style]?.color || 'bg-white/10 text-white/50'}`}>
-                                      {STYLE_CONFIG[orch.backup.style]?.emoji} {STYLE_CONFIG[orch.backup.style]?.label || orch.backup.style}
-                                    </span>
-                                  </div>
-                                  <span className="text-[11px] text-white/55 group-hover:text-white/60 transition-colors">
-                                    {copiedId === `b-${index}` ? <Check className="h-3 w-3" /> : 'Copy →'}
-                                  </span>
-                                </div>
-                                <p className="text-[13px] text-white/70">{orch.backup.text}</p>
-                              </button>
+                            {theyRepliedOpen && (
+                              <div className="flex items-center gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <input
+                                  autoFocus
+                                  value={theyRepliedInput}
+                                  onChange={e => onTheyRepliedInput(e.target.value)}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter' && theyRepliedInput.trim()) onTheyRepliedSubmit(theyRepliedInput.trim());
+                                    if (e.key === 'Escape') onTheyRepliedClose();
+                                  }}
+                                  placeholder="They replied: paste it here..."
+                                  className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-[12px] focus:outline-none focus:border-amber-500/30 transition-all"
+                                />
+                                <button
+                                  onClick={() => { if (theyRepliedInput.trim()) onTheyRepliedSubmit(theyRepliedInput.trim()); else onTheyRepliedClose(); }}
+                                  aria-label="Add their reply" className="min-h-11 px-4 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 text-[11px] font-bold hover:bg-amber-500/25 transition-all active:scale-95"
+                                >→</button>
+                                <button onClick={onTheyRepliedClose} aria-label="Dismiss" className="flex h-11 w-9 items-center justify-center text-white/45 hover:text-white/70 transition-colors"><X className="h-3.5 w-3.5" /></button>
+                              </div>
                             )}
 
                             {/* Expand/collapse all candidates */}
@@ -654,57 +747,34 @@ function CoachDraftCards({
   if (!msg.draft) return null;
   const draftLabels = DRAFT_LABELS[getContextCategory(context)];
   const cat = getContextCategory(context);
-  const accentA = cat === 'professional' ? 'hover:border-amber-500/30' : cat === 'platonic' ? 'hover:border-blue-500/30' : 'hover:border-violet-500/30';
-  const accentB = cat === 'professional' ? 'hover:border-amber-500/20' : cat === 'platonic' ? 'hover:border-cyan-500/30' : 'hover:border-orange-500/30';
-  const accentC = cat === 'professional' ? 'hover:border-amber-400/20' : cat === 'platonic' ? 'hover:border-blue-400/30' : 'hover:border-emerald-500/30';
-  const copyA = cat === 'professional' ? 'text-amber-400/50 group-hover:text-amber-400' : cat === 'platonic' ? 'text-blue-400/50 group-hover:text-blue-400' : 'text-violet-400/50 group-hover:text-violet-400';
-  const copyB = cat === 'professional' ? 'text-amber-300/50 group-hover:text-amber-300' : cat === 'platonic' ? 'text-cyan-400/50 group-hover:text-cyan-400' : 'text-orange-400/50 group-hover:text-orange-400';
-  const copyC = cat === 'professional' ? 'text-amber-200/50 group-hover:text-amber-200' : cat === 'platonic' ? 'text-blue-300/50 group-hover:text-blue-300' : 'text-emerald-400/50 group-hover:text-emerald-400';
   const headerColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-emerald-400/70';
+  const options = [
+    { key: 'shorter', label: `⚡ ${draftLabels.a}`, text: msg.draft.shorter },
+    { key: 'spicier', label: `✦ ${draftLabels.b}`, text: msg.draft.spicier },
+    { key: 'softer', label: `💚 ${draftLabels.c}`, text: msg.draft.softer },
+  ].filter((option): option is { key: string; label: string; text: string } => Boolean(option.text));
   return (
-                                                <div className="w-full space-y-2">
+                        <div className="w-full space-y-2">
                           <p className={`text-[11px] font-bold uppercase tracking-wider px-1 ${headerColor}`}>Coach drafts</p>
-                          {msg.draft.shorter && (
-                            <div>
-                              <button onClick={() => onCopy(msg.draft!.shorter!, `d-${index}-shorter`, { msg, index, slot: 'shorter', tone: 'shorter' })} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentA} transition-all active:scale-[0.98] group`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[11px] text-white/40 font-bold uppercase tracking-wider">⚡ {draftLabels.a}</span>
-                                  <span className={`text-[11px] transition-colors ${copyA}`}>{copiedId === `d-${index}-shorter` ? '✓ Copied' : 'Copy →'}</span>
-                                </div>
-                                <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
-                              </button>
-                              <button onClick={() => { onCoachThis(msg.draft!.shorter!) }} className="w-full px-4 py-2.5 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
-                            </div>
-                          )}
-                          {msg.draft.spicier && (
-                            <div>
-                              <button onClick={() => onCopy(msg.draft!.spicier!, `d-${index}-spicier`, { msg, index, slot: 'spicier', tone: 'spicier' })} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentB} transition-all active:scale-[0.98] group`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[11px] text-white/40 font-bold uppercase tracking-wider">✦ {draftLabels.b}</span>
-                                  <span className={`text-[11px] transition-colors ${copyB}`}>{copiedId === `d-${index}-spicier` ? '✓ Copied' : 'Copy →'}</span>
-                                </div>
-                                <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
-                              </button>
-                              <button onClick={() => { onCoachThis(msg.draft!.spicier!) }} className="w-full px-4 py-2.5 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
-                            </div>
-                          )}
-                          {msg.draft.softer && (
-                            <div>
-                              <button onClick={() => onCopy(msg.draft!.softer!, `d-${index}-softer`, { msg, index, slot: 'softer', tone: 'softer' })} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentC} transition-all active:scale-[0.98] group`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[11px] text-white/40 font-bold uppercase tracking-wider">💚 {draftLabels.c}</span>
-                                  <span className={`text-[11px] transition-colors ${copyC}`}>{copiedId === `d-${index}-softer` ? '✓ Copied' : 'Copy →'}</span>
-                                </div>
-                                <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
-                              </button>
-                              <button onClick={() => { onCoachThis(msg.draft!.softer!) }} className="w-full px-4 py-2.5 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
-                            </div>
-                          )}
+                          <ReplyOptionRail count={options.length}>
+                            {options.map((option, optionIndex) => (
+                              <ReplyOptionCard
+                                key={option.key}
+                                featured={optionIndex === 0}
+                                solo={options.length === 1}
+                                label={option.label}
+                                text={option.text}
+                                copied={copiedId === `d-${index}-${option.key}`}
+                                onCopy={() => onCopy(option.text, `d-${index}-${option.key}`, { msg, index, slot: option.key, tone: option.key })}
+                                onCoach={() => onCoachThis(option.text)}
+                              />
+                            ))}
+                          </ReplyOptionRail>
                         {!isPro && (
-                          <a href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/[0.06] border border-violet-500/15 hover:bg-violet-500/[0.10] transition-all mt-1">
-                            <Shield className="h-3 w-3 text-violet-400 shrink-0" />
-                            <span className="text-[11px] text-violet-300/60 flex-1">Pro gets 6 scored candidates + strategy</span>
-                            <span className="text-[11px] text-violet-400/40">→</span>
+                          <a href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand/[0.06] border border-brand/15 hover:bg-brand/[0.10] transition-all mt-1">
+                            <Shield className="h-3 w-3 text-brand shrink-0" />
+                            <span className="text-[11px] text-brand/60 flex-1">Pro gets 6 scored candidates + strategy</span>
+                            <span className="text-[11px] text-brand/40">→</span>
                           </a>
                         )}
                         </div>
@@ -3264,27 +3334,27 @@ export default function AppPage() {
   // VPN Abuse Block Modal
   if (vpnBlocked) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-white/95 backdrop-blur rounded-3xl overflow-hidden">
+      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-panel border border-line rounded-3xl overflow-hidden">
           <CardContent className="p-8 text-center space-y-6">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto">
               <span className="text-3xl">🛡️</span>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Unusual Activity Detected</h2>
-              <p className="text-gray-600">We noticed multiple connections from different locations.</p>
-              <p className="text-sm text-gray-400 mt-2">This can happen with VPNs or shared networks.</p>
+              <h2 className="text-2xl font-bold text-cream mb-2">Unusual Activity Detected</h2>
+              <p className="text-sage">We noticed multiple connections from different locations.</p>
+              <p className="text-sm text-sage/70 mt-2">This can happen with VPNs or shared networks.</p>
             </div>
             <div className="space-y-3">
               <Button 
                 onClick={() => handleCheckout('monthly')}
-                className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl"
+                className="w-full h-14 bg-brand text-brand-ink font-bold text-lg rounded-2xl"
               >
                 Unlock Pro - {PLAN_PRICES.monthly.displayAmount}/month
               </Button>
-              <p className="text-xs text-gray-500">Pro users get unlimited access from anywhere</p>
+              <p className="text-xs text-sage/80">Pro users get unlimited access from anywhere</p>
             </div>
-            <button onClick={() => setVpnBlocked(false)} className="text-sm text-gray-400 hover:text-gray-600">
+            <button onClick={() => setVpnBlocked(false)} className="text-sm text-sage/70 hover:text-sage">
               Try again later
             </button>
           </CardContent>
@@ -3296,21 +3366,21 @@ export default function AppPage() {
   // Paywall Modal
   if (showPaywall) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-white/95 backdrop-blur rounded-3xl overflow-hidden">
+      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-panel border border-line rounded-3xl overflow-hidden">
           <CardContent className="p-8 text-center space-y-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto">
-              <Crown className="h-8 w-8 text-white" />
+            <div className="w-16 h-16 bg-brand rounded-2xl flex items-center justify-center mx-auto">
+              <Crown className="h-8 w-8 text-brand-ink" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">You&apos;ve used all {usageLimit} free uses</h2>
-              <p className="text-gray-600">Unlock unlimited replies + full style control</p>
-              <p className="text-sm text-gray-400 mt-2">Each free use becomes available again 24 hours after it was used.</p>
+              <h2 className="text-2xl font-bold text-cream mb-2">You&apos;ve used all {usageLimit} free uses</h2>
+              <p className="text-sage">Unlock unlimited replies + full style control</p>
+              <p className="text-sm text-sage/70 mt-2">Each free use becomes available again 24 hours after it was used.</p>
             </div>
             <div className="space-y-3">
               <Button 
                 onClick={() => handleCheckout('monthly')}
-                className="w-full h-14 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg rounded-2xl relative"
+                className="w-full h-14 bg-brand text-brand-ink font-bold text-lg rounded-2xl relative"
               >
                 <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">Most flexible</span>
                 Unlock Pro - {PLAN_PRICES.monthly.displayAmount}/month
@@ -3318,13 +3388,13 @@ export default function AppPage() {
               <Button 
                 onClick={() => handleCheckout('annual')}
                 variant="outline"
-                className="w-full h-12 border-2 border-purple-300 text-purple-700 font-semibold rounded-2xl hover:bg-purple-50"
+                className="w-full h-12 rounded-2xl font-semibold border border-line bg-transparent text-cream hover:bg-white/5 hover:text-cream"
               >
                 Save {ANNUAL_SAVINGS_PERCENT}% with Annual - {PLAN_PRICES.annual.displayAmount}/year
               </Button>
-              <p className="text-xs text-gray-500">Cancel anytime</p>
+              <p className="text-xs text-sage/80">Cancel anytime</p>
             </div>
-            <button onClick={() => setShowPaywall(false)} className="text-sm text-gray-400 hover:text-gray-600">
+            <button onClick={() => setShowPaywall(false)} className="text-sm text-sage/70 hover:text-sage">
               Wait for reset
             </button>
           </CardContent>
@@ -3338,13 +3408,13 @@ export default function AppPage() {
     {/* Post-result Deep Analysis upsell — non-Pro, Fast-mode, one-time */}
     {showDeepUpsell && (
       <div className="fixed bottom-safe-4 left-1/2 -translate-x-1/2 z-[9998] w-[calc(100%-2rem)] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
-        <div className="rounded-2xl bg-gradient-to-br from-violet-600/95 to-fuchsia-600/95 border border-violet-400/40 shadow-2xl shadow-violet-600/40 backdrop-blur-sm p-4 flex items-center gap-3">
+        <div className="rounded-2xl bg-brand border border-brand shadow-2xl shadow-black/50 backdrop-blur-sm p-4 flex items-center gap-3">
           <div className="text-2xl shrink-0" aria-hidden>🎯</div>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-black text-sm leading-tight">
+            <p className="text-brand-ink font-black text-sm leading-tight">
               Want 6 scored options + the backup reply?
             </p>
-            <p className="text-white/80 text-[11px] leading-tight mt-0.5">
+            <p className="text-brand-ink/80 text-[11px] leading-tight mt-0.5">
               Unlock Deep Analysis — every candidate scored, winner badge, full strategy.
             </p>
           </div>
@@ -3352,13 +3422,13 @@ export default function AppPage() {
             <Link
               href="/pricing?src=deep_upsell"
               onClick={() => { try { track('deep_upsell_click'); } catch {} }}
-              className="px-3 py-1.5 rounded-xl bg-white text-violet-700 text-[11px] font-black hover:bg-white/90 transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-brand-ink text-brand text-[11px] font-black hover:bg-ink transition-colors"
             >
               Unlock
             </Link>
             <button
               onClick={dismissDeepUpsell}
-              className="text-white/70 hover:text-white text-[11px] font-semibold transition-colors"
+              className="text-brand-ink/70 hover:text-brand-ink text-[11px] font-semibold transition-colors"
             >
               Dismiss
             </button>
@@ -3375,19 +3445,19 @@ export default function AppPage() {
         <a href="/app" className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition-colors">Exit →</a>
       </div>
     )}
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-ink relative overflow-hidden">
       {/* Ambient background mesh */}
       <div className="fixed inset-0 pointer-events-none hidden md:block">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/8 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600/8 blur-[120px]" />
-        <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-cyan-600/5 blur-[100px]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-brand/8 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-brand/8 blur-[120px]" />
+        <div className="absolute top-[40%] left-[50%] w-[40%] h-[40%] rounded-full bg-brand/5 blur-[100px]" />
       </div>
       <div className="fixed inset-0 pointer-events-none md:hidden">
-        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] rounded-full bg-violet-600/6 blur-[80px]" />
-        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/6 blur-[80px]" />
+        <div className="absolute top-[-10%] left-[-5%] w-[50%] h-[50%] rounded-full bg-brand/6 blur-[80px]" />
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-brand/6 blur-[80px]" />
       </div>
 
-      <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl lg:max-w-5xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
+      <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] lg:pb-3 max-w-lg md:max-w-3xl lg:max-w-6xl xl:max-w-[88rem] ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-3 sm:mb-6">
           <Link href={userId ? '/dashboard' : '/pricing'} aria-label={userId ? 'Home' : 'Plans'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
@@ -3403,7 +3473,7 @@ export default function AppPage() {
               className="relative hidden sm:block px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[11px] font-bold text-white/50 hover:text-white/80 transition-colors"
             >
               v{CURRENT_VERSION}
-              {hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-violet-500 animate-pulse" />}
+              {hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand animate-pulse" />}
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -3425,13 +3495,13 @@ export default function AppPage() {
               ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30'
               : trialDaysLeft <= 3
                 ? 'bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border-orange-500/30'
-                : 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-500/30'
+                : 'bg-brand/10 border-brand/30'
           }`}>
             <div className="flex items-center gap-3">
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                trialDaysLeft <= 1 ? 'bg-red-500' : trialDaysLeft <= 3 ? 'bg-orange-500' : 'bg-purple-500'
+                trialDaysLeft <= 1 ? 'bg-red-500' : trialDaysLeft <= 3 ? 'bg-orange-500' : 'bg-brand'
               }`}>
-                <Sparkles className="h-4 w-4 text-white" />
+                <Sparkles className={`h-4 w-4 ${trialDaysLeft > 3 ? 'text-brand-ink' : 'text-white'}`} />
               </div>
               <div>
                 <p className="text-white font-bold text-sm">
@@ -3459,7 +3529,7 @@ export default function AppPage() {
           <div className={`fixed top-0 left-0 right-0 z-50 text-white animate-in slide-in-from-top duration-300 ${
             usageCount >= usageLimit 
               ? 'bg-[#1a0a0f] border-b border-red-500/30' 
-              : 'bg-[#0f0a1a] border-b border-violet-500/20'
+              : 'bg-panel border-b border-brand/20'
           }`}>
             <div className="mx-auto px-5 py-2.5">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
@@ -3561,6 +3631,30 @@ export default function AppPage() {
             <div className="flex-1 overflow-y-auto px-2 py-2 min-h-0">
               <ConversationList threads={savedThreads} userId={userId} isThreadActive={(id) => activeCoachSessionId === id || activeThreadId === id} onLoad={handleLoadThread} onDelete={handleDeleteThread} />
             </div>
+            {/* Plan and shortcuts — the desktop stand-in for the phone tab bar */}
+            <div className="shrink-0 border-t border-white/[0.06] p-3 space-y-2">
+              {!userId ? (
+                <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app')}`} className="flex h-10 items-center justify-center rounded-xl bg-brand text-xs font-bold text-brand-ink hover:bg-brand-soft transition-colors">Create a free account</Link>
+              ) : isPro ? (
+                <div className="flex items-center gap-2 rounded-xl border border-brand/20 bg-brand/10 px-3 py-2.5">
+                  <Crown className="h-4 w-4 text-brand" />
+                  <span className="text-xs font-bold text-brand">Pro</span>
+                  <span className="text-xs text-white/50">Unlimited replies</span>
+                </div>
+              ) : (
+                <Link href="/pricing?src=coach_sidebar" className="group flex items-center justify-between gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 hover:border-brand/30 transition-colors">
+                  <span className="text-xs text-white/60"><span className="font-bold text-white/90">{Math.max(0, remainingReplies)} of {usageLimit}</span> free replies left</span>
+                  <span className="text-xs font-bold text-brand group-hover:underline">Go unlimited</span>
+                </Link>
+              )}
+              {userId && (
+                <div className="grid grid-cols-3 gap-1">
+                  <Link href="/dashboard" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><Home className="h-4 w-4" />Home</Link>
+                  <Link href="/history" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><Clock className="h-4 w-4" />History</Link>
+                  <Link href="/profile" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><User className="h-4 w-4" />Account</Link>
+                </div>
+              )}
+            </div>
           </aside>
 
           {/* ── Coach card ── */}
@@ -3570,11 +3664,11 @@ export default function AppPage() {
             <div className="flex items-center justify-between gap-2 mb-1">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 {userName ? (
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-[13px] font-black text-white shadow-sm shadow-violet-500/30">
+                  <div className="w-7 h-7 rounded-lg bg-brand flex items-center justify-center text-[13px] font-black text-brand-ink shadow-sm shadow-brand/30">
                     {userName.charAt(0).toUpperCase()}
                   </div>
                 ) : (
-                  <Sparkles className="h-5 w-5 text-violet-400 animate-pulse" />
+                  <Sparkles className="h-5 w-5 text-brand animate-pulse" />
                 )}
                 Coach
               </h2>
@@ -3590,7 +3684,7 @@ export default function AppPage() {
                 <button
                   onClick={() => setUseV2(v => !v)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                    useV2 ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20' : 'bg-violet-500/10 border-violet-500/25 text-violet-400 hover:bg-violet-500/20'
+                    useV2 ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20' : 'bg-brand/10 border-brand/25 text-brand hover:bg-brand/20'
                   }`}
                 >
                   {useV2 ? <Shield className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
@@ -3605,7 +3699,7 @@ export default function AppPage() {
 
             {/* Strategy Status Indicator — only visible when Coach has strategy data */}
             {strategyData && (
-              <div className="flex items-center gap-3 mt-3 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] animate-in fade-in slide-in-from-top-1 duration-300">
+              <div className="flex xl:hidden items-center gap-3 mt-3 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] animate-in fade-in slide-in-from-top-1 duration-300">
                 {(() => {
                   const sd = strategyData;
                   const momentumColor =
@@ -3669,11 +3763,11 @@ export default function AppPage() {
               <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-3 border animate-in fade-in slide-in-from-top-2 duration-300 ${
                 useV2
                   ? 'bg-emerald-500/[0.07] border-emerald-500/20'
-                  : 'bg-violet-500/[0.07] border-violet-500/20'
+                  : 'bg-brand/[0.07] border-brand/20'
               }`}>
                 <span className={`text-lg shrink-0`}>{useV2 ? '🛡️' : '⚡'}</span>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-[11px] font-bold leading-tight ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>
+                  <p className={`text-[11px] font-bold leading-tight ${useV2 ? 'text-emerald-300' : 'text-brand'}`}>
                     {useV2 ? 'Deep Analysis on' : 'Fast Mode on'}
                   </p>
                   <p className="text-[11px] text-white/55 leading-tight mt-0.5">
@@ -3684,7 +3778,7 @@ export default function AppPage() {
                   onClick={() => { setUseV2(v => !v); dismissModeReminder(); }}
                   className={`relative hit-area shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
                     useV2
-                      ? 'bg-violet-500/15 border-violet-500/25 text-violet-300 hover:bg-violet-500/25'
+                      ? 'bg-brand/15 border-brand/25 text-brand hover:bg-brand/25'
                       : 'bg-emerald-500/15 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25'
                   }`}
                 >
@@ -3715,7 +3809,7 @@ export default function AppPage() {
             {loadingSession && (
               <div className="flex items-center justify-center py-16">
                 <div className="flex items-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                  <Loader2 className="h-5 w-5 animate-spin text-brand" />
                   <span className="text-sm text-white/40 font-medium">Loading session...</span>
                 </div>
               </div>
@@ -3763,7 +3857,7 @@ export default function AppPage() {
                       onClick={() => setStrategyChatInput(chip.prompt)}
                       className={`px-3 py-2.5 rounded-xl text-left transition-all active:scale-95 border ${
                         chip.glow
-                          ? 'bg-violet-500/[0.10] border-violet-500/25 hover:bg-violet-500/[0.18] hover:border-violet-500/40 shadow-sm shadow-violet-500/10'
+                          ? 'bg-brand/[0.10] border-brand/25 hover:bg-brand/[0.18] hover:border-brand/40 shadow-sm shadow-brand/10'
                           : 'bg-white/[0.07] border-white/[0.12] hover:bg-white/[0.12]'
                       }`}
                     >
@@ -3783,7 +3877,7 @@ export default function AppPage() {
               <div className="space-y-4">
                 {strategyChatHistory.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                    <div className={`max-w-[90%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`${msg.orchestration || msg.draft ? 'w-full min-w-0 sm:w-auto sm:max-w-[90%]' : 'max-w-[90%]'} lg:max-w-[80%] flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                       {/* Inline image thumbnails */}
                       {msg.images && msg.images.length > 0 && (
                         <div className={`flex gap-2 flex-wrap ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in zoom-in-95 duration-500`}>
@@ -3797,9 +3891,9 @@ export default function AppPage() {
                       )}
                       {/* Message bubble — skip if empty (orchestration-only messages) */}
                       {msg.content && (
-                        <div className={`px-4 py-3 rounded-2xl text-[14px] leading-relaxed ${
+                        <div className={`px-4 py-3 rounded-2xl text-[14px] lg:text-[15px] leading-relaxed ${
                           msg.role === 'user'
-                            ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-br-md shadow-md shadow-violet-500/20'
+                            ? 'bg-brand text-brand-ink rounded-br-md shadow-md shadow-brand/20'
                             : 'bg-white/[0.07] text-white/90 border border-white/[0.08] rounded-bl-md'
                         }`}>
                           <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -3837,7 +3931,7 @@ export default function AppPage() {
 
                       {/* Strategy badges — only for non-orchestration coach responses */}
                       {msg.role === 'assistant' && !msg.orchestration && strategyData && i === strategyChatHistory.length - 1 && (
-                        <div className="flex flex-wrap gap-1.5 px-1">
+                        <div className="flex xl:hidden flex-wrap gap-1.5 px-1">
                           <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
                             strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
                             strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
@@ -3850,7 +3944,7 @@ export default function AppPage() {
                           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                             strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
                             strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
-                            'bg-violet-500/15 text-violet-300'
+                            'bg-brand/15 text-brand'
                           }`}>{strategyData.move.energy.replace('_', ' ')}</span>
                         </div>
                       )}
@@ -3869,7 +3963,7 @@ export default function AppPage() {
                 {strategyChatLoading && !coachStreaming && (
                   <div className="flex justify-start">
                     <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.08] flex items-center gap-2">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
                       <span className="text-[13px] text-white/40">
                         {coachPipelineStep === 'analyzing' ? 'Analyzing conversation...' :
                          coachPipelineStep === 'generating' ? 'Generating 6 candidates...' :
@@ -3911,7 +4005,7 @@ export default function AppPage() {
                   onClick={() => setSelectedContext(selectedContext === ctx.value ? null : ctx.value as ContextType)}
                   className={`shrink-0 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all active:scale-95 ${
                     selectedContext === ctx.value
-                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                      ? 'bg-brand/20 text-brand border border-brand/30'
                       : 'bg-white/[0.05] text-white/60 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/60'
                   }`}
                 >
@@ -3952,7 +4046,7 @@ export default function AppPage() {
                 autoCorrect="on"
                 spellCheck
                 inputMode="text"
-                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/40 text-[16px] md:text-[13px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/40 text-[16px] md:text-[15px] focus:outline-none focus:border-brand/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
                 style={{ minHeight: '42px' }}
                 placeholder={selectedContext ? (
                   getContextCategory(selectedContext) === 'professional'
@@ -3965,10 +4059,10 @@ export default function AppPage() {
               <button
                 onClick={handleStrategyChatSend}
                 disabled={!strategyChatInput.trim() || strategyChatLoading}
-                className={`rounded-xl flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${
+                className={`rounded-xl flex items-center justify-center text-brand-ink transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${
                   strategyChatInput.trim()
-                    ? 'px-4 h-10 gap-1.5 bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-md shadow-violet-500/25 hover:shadow-violet-500/40'
-                    : 'w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 shadow-md shadow-violet-500/20 hover:shadow-violet-500/35 disabled:shadow-none'
+                    ? 'px-4 h-10 gap-1.5 bg-brand shadow-md shadow-brand/25 hover:shadow-brand/40'
+                    : 'w-10 h-10 bg-brand shadow-md shadow-brand/20 hover:shadow-brand/35 disabled:shadow-none'
                 }`}
               >
                 {strategyChatInput.trim() ? (
@@ -3988,6 +4082,19 @@ export default function AppPage() {
             )}
           </div>
           </div>
+
+          {/* ── The read — desktop-only panel; phones show the same signals inside the card ── */}
+          <aside className="hidden xl:flex xl:flex-col w-80 shrink-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+            <div className="shrink-0 px-5 pt-5 pb-3 border-b border-white/[0.06]">
+              <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">The read</span>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0 p-5">
+              <CoachReadPanel strategy={strategyData} />
+            </div>
+            <div className="shrink-0 border-t border-white/[0.06] px-5 py-3 text-[11px] text-white/40">
+              <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-white/60">Enter</kbd> to send · <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-white/60">Shift + Enter</kbd> for a new line
+            </div>
+          </aside>
         </div>
         )}
         {/* End of Coach split view */}
@@ -3995,7 +4102,7 @@ export default function AppPage() {
         {showCoachThreads && (
           <div className="fixed inset-0 z-[90] lg:hidden" role="dialog" aria-modal="true" aria-label="Your conversations">
             <button aria-label="Close conversations" className="absolute inset-0 bg-black/70" onClick={() => setShowCoachThreads(false)} />
-            <div className="absolute inset-x-0 bottom-0 flex max-h-[80dvh] flex-col rounded-t-3xl border-t border-white/[0.10] bg-[#0d0d14] pb-[max(1rem,env(safe-area-inset-bottom))] animate-in slide-in-from-bottom-4 duration-200">
+            <div className="absolute inset-x-0 bottom-0 flex max-h-[80dvh] flex-col rounded-t-3xl border-t border-white/[0.10] bg-panel pb-[max(1rem,env(safe-area-inset-bottom))] animate-in slide-in-from-bottom-4 duration-200">
               <div className="flex shrink-0 items-center justify-between px-5 pb-3 pt-4">
                 <h2 className="text-base font-bold text-white">Conversations</h2>
                 <div className="flex items-center gap-2">
@@ -4011,7 +4118,7 @@ export default function AppPage() {
               {userId ? (
                 <Link href="/history" className="mx-5 mt-1 flex min-h-11 items-center justify-center rounded-xl border border-white/[0.10] text-xs font-semibold text-white/70 hover:bg-white/[0.06]">Search all history</Link>
               ) : (
-                <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app')}`} className="mx-5 mt-1 flex min-h-11 items-center justify-center rounded-xl bg-violet-500 text-xs font-bold text-white hover:bg-violet-400">Create a free account</Link>
+                <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app')}`} className="mx-5 mt-1 flex min-h-11 items-center justify-center rounded-xl bg-brand text-xs font-bold text-brand-ink hover:bg-brand-soft">Create a free account</Link>
               )}
             </div>
           </div>
@@ -4054,7 +4161,7 @@ export default function AppPage() {
                   onChange={(e) => setCustomContext(e.target.value)}
                   placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
                   maxLength={200}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-brand/30 transition-all"
                 />
                 {customContext && (
                   <button
@@ -4078,8 +4185,8 @@ export default function AppPage() {
                   className="w-full flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/[0.04] border border-white/[0.08] border-b-0 transition-colors hover:bg-white/[0.06]"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                      <MessageCircle className="h-3 w-3 text-violet-400" />
+                    <div className="w-5 h-5 rounded-lg bg-brand/20 flex items-center justify-center">
+                      <MessageCircle className="h-3 w-3 text-brand" />
                     </div>
                     <span className="text-white/60 text-xs font-bold">
                       {thread.length} message{thread.length !== 1 ? 's' : ''}
@@ -4112,7 +4219,7 @@ export default function AppPage() {
                                         isGroupEnd ? 'rounded-2xl rounded-tl-md rounded-bl-lg' :
                                         'rounded-xl rounded-l-md'
                                       }`
-                                    : `bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/10 ${
+                                    : `bg-brand text-brand-ink shadow-lg shadow-brand/10 ${
                                         isGroupStart && isGroupEnd ? 'rounded-2xl rounded-br-lg' :
                                         isGroupStart ? 'rounded-2xl rounded-br-md' :
                                         isGroupEnd ? 'rounded-2xl rounded-tr-md rounded-br-lg' :
@@ -4164,7 +4271,7 @@ export default function AppPage() {
                       ? "What did they say back?"
                       : "Add the next message, or generate a reply"
                 }
-                className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-violet-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
+                className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-brand/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
                 maxLength={2000}
                 aria-label="Message input"
               />
@@ -4180,7 +4287,7 @@ export default function AppPage() {
               <div className="animate-in fade-in slide-in-from-top-1 duration-300">
                 {vibeLoading ? (
                   <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-                    <Loader2 className="h-3 w-3 animate-spin text-violet-400" />
+                    <Loader2 className="h-3 w-3 animate-spin text-brand" />
                     <span className="text-[11px] text-white/55 font-medium">Checking vibe...</span>
                   </div>
                 ) : vibeCheck && (
@@ -4230,7 +4337,7 @@ export default function AppPage() {
                       { key: 'flirty', label: '😏 Flirty', color: 'hover:bg-pink-500/15 hover:border-pink-500/30 hover:text-pink-300' },
                       { key: 'chill', label: '😎 Chill', color: 'hover:bg-blue-500/15 hover:border-blue-500/30 hover:text-blue-300' },
                       { key: 'bold', label: '🔥 Bold', color: 'hover:bg-orange-500/15 hover:border-orange-500/30 hover:text-orange-300' },
-                      { key: 'witty', label: '⚡ Witty', color: 'hover:bg-purple-500/15 hover:border-purple-500/30 hover:text-purple-300' },
+                      { key: 'witty', label: '⚡ Witty', color: 'hover:bg-brand/15 hover:border-brand/30 hover:text-brand' },
                       { key: 'warm', label: '💚 Warm', color: 'hover:bg-green-500/15 hover:border-green-500/30 hover:text-green-300' },
                       { key: 'pro', label: '💼 Pro', color: 'hover:bg-slate-500/15 hover:border-slate-500/30 hover:text-slate-300' },
                     ].map(t => (
@@ -4263,7 +4370,7 @@ export default function AppPage() {
                   onChange={(e) => setUserIntent(e.target.value)}
                   placeholder="What do you want to say? (optional) — e.g. ask what happened subtly"
                   maxLength={120}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-brand/30 transition-all"
                 />
                 {userIntent && (
                   <button
@@ -4289,7 +4396,7 @@ export default function AppPage() {
                 <button
                   onClick={handleAddMyMessage}
                   disabled={!message.trim()}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-300/60 hover:bg-violet-500/15 hover:text-violet-300 text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-violet-500/10 disabled:hover:text-violet-300/60"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-brand/10 border border-brand/20 text-brand/60 hover:bg-brand/15 hover:text-brand text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-brand/10 disabled:hover:text-brand/60"
                 >
                   <Plus className="h-3 w-3" /> Add as my message
                 </button>
@@ -4309,7 +4416,7 @@ export default function AppPage() {
                   {extracting && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <div className="flex items-center gap-3">
-                        <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+                        <Loader2 className="h-5 w-5 animate-spin text-brand" />
                         <span className="text-sm font-bold text-white/80">Reading screenshot...</span>
                       </div>
                     </div>
@@ -4336,24 +4443,24 @@ export default function AppPage() {
               {/* Feature Spotlight — shows once per device */}
               {showFeatureSpotlight && (
                 <div className="absolute -top-[88px] left-0 right-0 z-50 animate-in fade-in slide-in-from-bottom-3 duration-500">
-                  <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl p-4 shadow-2xl shadow-purple-500/30">
+                  <div className="relative bg-brand text-brand-ink rounded-2xl p-4 shadow-2xl shadow-brand/30">
                     <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-                        <Camera className="h-5 w-5 text-white" />
+                      <div className="w-9 h-9 bg-brand-ink/10 rounded-xl flex items-center justify-center shrink-0">
+                        <Camera className="h-5 w-5 text-brand-ink" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-sm">New: Screenshot Upload</p>
-                        <p className="text-xs text-white/80 mt-0.5">Take a screenshot of any convo and we&apos;ll read it for you. No more copy-pasting!</p>
+                        <p className="text-xs text-brand-ink/80 mt-0.5">Take a screenshot of any convo and we&apos;ll read it for you. No more copy-pasting!</p>
                       </div>
                       <button 
                         onClick={dismissSpotlight}
-                        className="text-white/60 hover:text-white text-lg leading-none shrink-0 -mt-1"
+                        className="text-brand-ink/60 hover:text-brand-ink text-lg leading-none shrink-0 -mt-1"
                       >
                         ✕
                       </button>
                     </div>
                     {/* Arrow pointing down */}
-                    <div className="absolute -bottom-2 left-12 w-4 h-4 bg-gradient-to-br from-purple-600 to-pink-600 rotate-45" />
+                    <div className="absolute -bottom-2 left-12 w-4 h-4 bg-brand rotate-45" />
                   </div>
                 </div>
               )}
@@ -4365,7 +4472,7 @@ export default function AppPage() {
                 disabled={extracting}
                 className={`flex-1 p-3 rounded-xl transition-all text-white/60 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
                   showFeatureSpotlight 
-                    ? 'bg-violet-500/20 border border-violet-500/30 text-violet-300' 
+                    ? 'bg-brand/20 border border-brand/30 text-brand' 
                     : 'bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/80'
                 }`}
               >
@@ -4397,7 +4504,7 @@ export default function AppPage() {
               <div className="space-y-2 animate-in slide-in-from-top duration-300 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 text-sm font-semibold text-white/60">
-                    <Sparkles className="h-4 w-4 text-violet-400" />
+                    <Sparkles className="h-4 w-4 text-brand" />
                     <span>Try these examples:</span>
                   </div>
                   <button 
@@ -4414,7 +4521,7 @@ export default function AppPage() {
                       onClick={() => handleExampleClick(example)}
                       className="text-left text-sm p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all text-white/70 font-medium"
                     >
-                      <span className="text-violet-400 font-bold mr-2">{idx + 1}.</span>
+                      <span className="text-brand font-bold mr-2">{idx + 1}.</span>
                       &ldquo;{example}&rdquo;
                     </button>
                   ))}
@@ -4429,26 +4536,26 @@ export default function AppPage() {
                 className={`flex items-center gap-2.5 p-3.5 rounded-2xl w-full text-left transition-all ${
                   useV2
                     ? 'bg-emerald-500/10 border border-emerald-500/20'
-                    : 'bg-violet-500/10 border border-violet-500/20'
+                    : 'bg-brand/10 border border-brand/20'
                 }`}
               >
                 {useV2 ? (
                   <Shield className="h-5 w-5 text-emerald-400" />
                 ) : (
-                  <Zap className="h-5 w-5 text-violet-400" />
+                  <Zap className="h-5 w-5 text-brand" />
                 )}
                 <div className="flex-1">
-                  <p className={`text-sm font-bold ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>
+                  <p className={`text-sm font-bold ${useV2 ? 'text-emerald-300' : 'text-brand'}`}>
                     {useV2 ? 'V2 Verified' : 'V1 Fast Mode'}
                   </p>
-                  <p className={`text-xs ${useV2 ? 'text-emerald-400/60' : 'text-violet-400/60'}`}>
+                  <p className={`text-xs ${useV2 ? 'text-emerald-400/60' : 'text-brand/60'}`}>
                     {useV2 ? 'Strategy + 3-agent pipeline • Tap for V1' : 'Quick replies, no strategy • Tap for V2'}
                   </p>
                 </div>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                   useV2
                     ? 'text-emerald-400 bg-emerald-500/15'
-                    : 'text-violet-300 bg-violet-500/15'
+                    : 'text-brand bg-brand/15'
                 }`}>
                   {useV2 ? 'V2' : 'V1'}
                 </span>
@@ -4459,14 +4566,14 @@ export default function AppPage() {
                   setShowPaywall(true);
                   toast({ title: "🔒 V2 is Pro-only", description: "Upgrade to unlock 3-agent verified replies" });
                 }}
-                className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 w-full text-left hover:border-violet-500/30 transition-colors"
+                className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-brand/10 border border-brand/20 w-full text-left hover:border-brand/30 transition-colors"
               >
-                <Shield className="h-5 w-5 text-violet-400" />
+                <Shield className="h-5 w-5 text-brand" />
                 <div className="flex-1">
                   <p className="text-sm font-bold text-white/80">V2 Verified Mode <span className="text-xs font-normal text-white/40">(Pro)</span></p>
                   <p className="text-xs text-white/40">3-agent pipeline • ≤18 words • Tone-verified</p>
                 </div>
-                <span className="text-xs font-bold text-violet-300 bg-violet-500/15 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <span className="text-xs font-bold text-brand bg-brand/15 px-2.5 py-1 rounded-full flex items-center gap-1">
                   <Lock className="h-3 w-3" /> Upgrade
                 </span>
               </button>
@@ -4478,8 +4585,8 @@ export default function AppPage() {
                 disabled={loading || !(message.trim() || (thread.length > 0 && thread[thread.length - 1]?.role === 'them'))}
                 className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed ${
                   isPro
-                    ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-black shadow-lg shadow-emerald-500/30'
-                    : 'bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500 text-white shadow-xl shadow-violet-600/50'
+                    ? 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
+                    : 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
                 }`}
                 size="lg"
               >
@@ -4507,7 +4614,7 @@ export default function AppPage() {
                   onClick={() => { fetchThreads(); setShowThreads(!showThreads); }}
                   className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all active:scale-95 ${
                     showThreads
-                      ? 'bg-violet-500/25 text-violet-300 border border-violet-500/30'
+                      ? 'bg-brand/25 text-brand border border-brand/30'
                       : 'bg-white/[0.08] text-white/60 border border-white/[0.12] hover:bg-white/[0.14] hover:text-white/80'
                   }`}
                 >
@@ -4521,29 +4628,29 @@ export default function AppPage() {
                   <Plus className="h-3.5 w-3.5" /> New
                 </button>
                 {activeThreadName && (
-                  <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-violet-500/10 border border-violet-500/20 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shrink-0" />
+                  <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand/10 border border-brand/20 min-w-0">
+                    <div className="w-2 h-2 rounded-full bg-brand animate-pulse shrink-0" />
                     {editingThreadName ? (
                       <input
                         autoFocus
                         defaultValue={activeThreadName}
-                        className="bg-transparent text-violet-300 text-xs font-semibold outline-none border-b border-violet-400/40 w-full"
+                        className="bg-transparent text-brand text-xs font-semibold outline-none border-b border-brand/40 w-full"
                         onBlur={(e) => handleRenameThread(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleRenameThread((e.target as HTMLInputElement).value); if (e.key === 'Escape') setEditingThreadName(false); }}
                       />
                     ) : (
                       <span
                         onClick={() => setEditingThreadName(true)}
-                        className="text-violet-300 text-xs font-semibold truncate cursor-pointer hover:text-violet-200 transition-colors"
+                        className="text-brand text-xs font-semibold truncate cursor-pointer hover:text-brand-soft transition-colors"
                         title="Tap to rename"
                       >{activeThreadName}</span>
                     )}
-                    {saving && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 ml-auto text-violet-400" />}
+                    {saving && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 ml-auto text-brand" />}
                   </div>
                 )}
                 {!activeThreadName && saving && (
-                  <div className="flex items-center gap-1.5 px-3 py-2.5 text-violet-400 text-[11px] font-medium">
-                    <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" /> syncing
+                  <div className="flex items-center gap-1.5 px-3 py-2.5 text-brand text-[11px] font-medium">
+                    <div className="w-2 h-2 rounded-full bg-brand animate-pulse" /> syncing
                   </div>
                 )}
               </div>
@@ -4582,14 +4689,14 @@ export default function AppPage() {
                           onClick={() => handleLoadThread(t)}
                           className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all group text-left active:scale-[0.98] ${
                             isActive
-                              ? 'bg-violet-500/15 border border-violet-500/20'
+                              ? 'bg-brand/15 border border-brand/20'
                               : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
                           }`}
                         >
                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                            isActive ? 'bg-violet-500/20' : 'bg-white/[0.05]'
+                            isActive ? 'bg-brand/20' : 'bg-white/[0.05]'
                           }`}>
-                            <Sparkles className={`h-3.5 w-3.5 ${isActive ? 'text-violet-400' : 'text-white/55'}`} />
+                            <Sparkles className={`h-3.5 w-3.5 ${isActive ? 'text-brand' : 'text-white/55'}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white/80 text-sm font-semibold truncate">{t.name}</p>
@@ -4670,7 +4777,7 @@ export default function AppPage() {
               className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
                 !isPro && decodeUsed >= decodeLimit
                   ? 'bg-white/[0.08] text-white/55'
-                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/30'
+                  : 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
               }`}
               size="lg"
             >
@@ -4739,7 +4846,7 @@ export default function AppPage() {
               className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
                 !isPro && openerUsed >= openerLimit
                   ? 'bg-white/[0.08] text-white/55'
-                  : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30'
+                  : 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
               }`}
               size="lg"
             >
@@ -4847,7 +4954,7 @@ export default function AppPage() {
               className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
                 !isPro && reviveUsed >= reviveLimit
                   ? 'bg-white/[0.08] text-white/55'
-                  : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
+                  : 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
               }`}
               size="lg"
             >
@@ -4918,8 +5025,8 @@ export default function AppPage() {
                 </div>
               )}
               {/* Coach Tip */}
-              <div className="rounded-2xl bg-violet-500/5 border border-violet-500/10 p-4">
-                <p className="text-violet-400/60 text-[11px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1">
+              <div className="rounded-2xl bg-brand/5 border border-brand/10 p-4">
+                <p className="text-brand/60 text-[11px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> coach tip
                 </p>
                 <p className="text-white/70 text-xs font-medium leading-relaxed">{decodeResult.coach_tip}</p>
@@ -5055,8 +5162,8 @@ export default function AppPage() {
           <div className="animate-in fade-in slide-in-from-bottom-3 duration-400 mb-8">
             {/* Context header */}
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                <Camera className="h-4 w-4 text-white" />
+              <div className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center">
+                <Camera className="h-4 w-4 text-brand-ink" />
               </div>
               <div className="flex-1">
                 <p className="text-white/80 text-sm font-bold">Screenshot Briefing</p>
@@ -5107,7 +5214,7 @@ export default function AppPage() {
                   <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                     scanResult.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
                     scanResult.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
-                    'bg-violet-500/15 text-violet-300'
+                    'bg-brand/15 text-brand'
                   }`}>
                     {scanResult.strategy.move.energy.replace('_', ' ')}
                   </span>
@@ -5156,7 +5263,7 @@ export default function AppPage() {
                             <textarea
                               value={editText}
                               onChange={(e) => setEditText(e.target.value)}
-                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-violet-500/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/50 transition-all min-h-[60px] text-sm leading-relaxed"
+                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-brand/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-brand/50 transition-all min-h-[60px] text-sm leading-relaxed"
                               placeholder="Edit this reply, add your ideas..."
                               autoFocus
                             />
@@ -5164,7 +5271,7 @@ export default function AppPage() {
                               <button
                                 onClick={() => handleRefine(reply.tone, reply.text, true)}
                                 disabled={refining || !editText.trim()}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-brand/20 border border-brand/30 text-brand hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30"
                               >
                                 {refining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                                 {refining ? 'Polishing...' : 'Polish'}
@@ -5218,7 +5325,7 @@ export default function AppPage() {
             <div className="flex gap-2">
               <button
                 onClick={handleContinueInThread}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-violet-500/15 border border-violet-500/25 text-violet-300 hover:bg-violet-500/25 text-xs font-bold transition-all active:scale-95"
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-brand/15 border border-brand/25 text-brand hover:bg-brand/25 text-xs font-bold transition-all active:scale-95"
               >
                 <MessageCircle className="h-3.5 w-3.5" /> Continue in Thread
               </button>
@@ -5278,7 +5385,7 @@ export default function AppPage() {
                   <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                     strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
                     strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
-                    'bg-violet-500/15 text-violet-300'
+                    'bg-brand/15 text-brand'
                   }`}>
                     {strategyData.move.energy.replace('_', ' ')}
                   </span>
@@ -5303,8 +5410,8 @@ export default function AppPage() {
               <div className="mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
                 {/* Header */}
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-                  <div className="w-5 h-5 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                    <MessageCircle className="h-3 w-3 text-violet-400" />
+                  <div className="w-5 h-5 rounded-lg bg-brand/20 flex items-center justify-center">
+                    <MessageCircle className="h-3 w-3 text-brand" />
                   </div>
                   <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Ask your coach</span>
                   <span className="text-[11px] text-white/45 ml-auto">Thread context always in background</span>
@@ -5318,7 +5425,7 @@ export default function AppPage() {
                         <div className={`max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
                           <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
                             msg.role === 'user'
-                              ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-br-md'
+                              ? 'bg-brand text-brand-ink rounded-br-md'
                               : 'bg-white/[0.07] text-white/85 border border-white/[0.06] rounded-bl-md'
                           }`}>
                             <p className="font-medium whitespace-pre-wrap">{msg.content}</p>
@@ -5365,7 +5472,7 @@ export default function AppPage() {
                     {strategyChatLoading && (
                       <div className="flex justify-start">
                         <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.06] flex items-center gap-2">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
                           <span className="text-[12px] text-white/40 font-medium">Thinking...</span>
                         </div>
                       </div>
@@ -5382,7 +5489,7 @@ export default function AppPage() {
                     title="Upload screenshot for context"
                   >
                     {coachScreenshotExtracting ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
                     ) : (
                       <Camera className="h-3.5 w-3.5" />
                     )}
@@ -5395,12 +5502,12 @@ export default function AppPage() {
                     placeholder="Ask anything or add context..."
                     maxLength={300}
                     disabled={strategyChatLoading || coachScreenshotExtracting}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-[13px] focus:outline-none focus:border-violet-500/30 transition-all disabled:opacity-50"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-[13px] focus:outline-none focus:border-brand/30 transition-all disabled:opacity-50"
                   />
                   <button
                     onClick={handleStrategyChatSend}
                     disabled={!strategyChatInput.trim() || strategyChatLoading}
-                    className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                    className="w-9 h-9 rounded-xl bg-brand/20 border border-brand/30 flex items-center justify-center text-brand hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                   >
                     <Send className="h-3.5 w-3.5" />
                   </button>
@@ -5424,7 +5531,7 @@ export default function AppPage() {
                     {isSocialTraffic.current && (
                       <button
                         onClick={() => coachFileInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-full bg-violet-500/10 border border-violet-400/20 text-violet-300/70 text-[11px] font-medium hover:bg-violet-500/20 hover:text-violet-200 transition-all active:scale-95"
+                        className="px-3 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand/70 text-[11px] font-medium hover:bg-brand/20 hover:text-brand-soft transition-all active:scale-95"
                       >
                         📸 Upload screenshot
                       </button>
@@ -5453,7 +5560,7 @@ export default function AppPage() {
             <div className="mb-4">
               {showCraftedMessage && (
                 <p className={`text-[11px] font-bold uppercase tracking-widest mb-2 ${
-                  isPro ? 'text-emerald-400/60' : 'text-violet-400/60'
+                  isPro ? 'text-emerald-400/60' : 'text-brand/60'
                 }`}>
                   {isPro ? '✅ 3-agent verified • Safe to send' : 'Crafted with care'}
                 </p>
@@ -5464,10 +5571,10 @@ export default function AppPage() {
             </div>
 
             {!userId && replies.length > 0 && (
-              <div className="mb-4 rounded-2xl bg-violet-500/[0.10] border border-violet-400/25 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="mb-4 rounded-2xl bg-brand/[0.10] border border-brand/25 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-violet-400/15 flex items-center justify-center shrink-0">
-                    <BookmarkPlus className="h-4 w-4 text-violet-300" />
+                  <div className="w-8 h-8 rounded-xl bg-brand/15 flex items-center justify-center shrink-0">
+                    <BookmarkPlus className="h-4 w-4 text-brand" />
                   </div>
                   <div>
                     <p className="text-white/90 text-sm font-bold">Save this thread + build your Style DNA</p>
@@ -5496,7 +5603,7 @@ export default function AppPage() {
                       source: isSocialTraffic.current ? 'social' : 'organic',
                     });
                   }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-violet-500/35 border border-violet-300/35 text-white text-xs font-black hover:bg-violet-500/50 transition-all active:scale-95 whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand/35 border border-brand/35 text-white text-xs font-black hover:bg-brand/50 transition-all active:scale-95 whitespace-nowrap"
                 >
                   Save + learn my style <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
@@ -5528,7 +5635,7 @@ export default function AppPage() {
                           <span className="text-white/50 text-[11px]">{reply.text ? reply.text.split(' ').length : 0}w</span>
                           {isPro && (
                             <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                              useV2 ? 'text-emerald-500/60 bg-emerald-500/10' : 'text-violet-400/60 bg-violet-500/10'
+                              useV2 ? 'text-emerald-500/60 bg-emerald-500/10' : 'text-brand/60 bg-brand/10'
                             }`}>
                               {useV2 ? 'v2' : 'v1'}
                             </span>
@@ -5544,7 +5651,7 @@ export default function AppPage() {
                             <textarea
                               value={editText}
                               onChange={(e) => setEditText(e.target.value)}
-                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-violet-500/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/50 transition-all min-h-[60px] text-sm leading-relaxed"
+                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-brand/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-brand/50 transition-all min-h-[60px] text-sm leading-relaxed"
                               placeholder="Edit this reply, add your ideas..."
                               autoFocus
                             />
@@ -5552,7 +5659,7 @@ export default function AppPage() {
                               <button
                                 onClick={() => handleRefine(reply.tone, reply.text)}
                                 disabled={refining || !editText.trim()}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-brand/20 border border-brand/30 text-brand hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30"
                               >
                                 {refining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                                 {refining ? 'Polishing...' : 'Polish'}
@@ -5590,7 +5697,7 @@ export default function AppPage() {
                           </button>
                           <button
                             onClick={() => handleMarkSent(reply)}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-violet-500/15 border border-violet-500/25 text-violet-300 hover:bg-violet-500/25 transition-all active:scale-95"
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-brand/15 border border-brand/25 text-brand hover:bg-brand/25 transition-all active:scale-95"
                           >
                             <Send className="h-3.5 w-3.5" /> I sent this
                           </button>
@@ -5607,14 +5714,14 @@ export default function AppPage() {
                               onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
                               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
                                 sharing === reply.tone
-                                  ? 'bg-violet-500/20 text-violet-400'
+                                  ? 'bg-brand/20 text-brand'
                                   : 'bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/70 hover:bg-white/[0.10]'
                               }`}
                             >
                               {sharing === reply.tone ? '✓ Shared' : <><Sparkles className="h-3.5 w-3.5" /> Share</>}
                             </button>
                             {shareMenuOpen === reply.tone && (
-                              <div className="absolute bottom-full mb-2 left-0 right-0 min-w-[180px] rounded-xl bg-[#1a1a2e] border border-white/[0.12] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                              <div className="absolute bottom-full mb-2 left-0 right-0 min-w-[180px] rounded-xl bg-raised border border-white/[0.12] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                                 <button
                                   onClick={() => handleShareLink(reply)}
                                   className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2 border-b border-white/[0.06]"
@@ -5663,13 +5770,13 @@ export default function AppPage() {
                   I said something else...
                 </button>
               ) : (
-                <div className="rounded-2xl bg-white/[0.04] border border-violet-500/20 p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <p className="text-violet-300 text-xs font-bold">What did you actually send?</p>
+                <div className="rounded-2xl bg-white/[0.04] border border-brand/20 p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <p className="text-brand text-xs font-bold">What did you actually send?</p>
                   <textarea
                     value={customSent}
                     onChange={(e) => setCustomSent(e.target.value)}
                     placeholder="Type what you sent them..."
-                    className="w-full p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/30 resize-none focus:outline-none focus:border-violet-500/30 transition-all min-h-[60px] text-sm"
+                    className="w-full p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/30 resize-none focus:outline-none focus:border-brand/30 transition-all min-h-[60px] text-sm"
                     maxLength={500}
                     autoFocus
                   />
@@ -5677,7 +5784,7 @@ export default function AppPage() {
                     <button
                       onClick={handleCustomSentSubmit}
                       disabled={!customSent.trim()}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30"
+                      className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand/20 border border-brand/30 text-brand hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30"
                     >
                       <Send className="h-3.5 w-3.5" /> Add to thread
                     </button>
@@ -5710,7 +5817,7 @@ export default function AppPage() {
           <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden animate-in fade-in duration-300">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex gap-4 px-5 py-5">
-                <div className="w-1 shrink-0 self-stretch rounded-full bg-violet-500/20 animate-pulse" />
+                <div className="w-1 shrink-0 self-stretch rounded-full bg-brand/20 animate-pulse" />
                 <div className="flex-1 space-y-3">
                   <div className="flex items-center gap-2.5">
                     <div className="h-4 w-20 bg-white/[0.06] rounded-lg animate-pulse" />
@@ -5736,7 +5843,7 @@ export default function AppPage() {
             <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/50">
               <span>them</span>
               <span>→</span>
-              <span className="text-violet-400/40">you</span>
+              <span className="text-brand/40">you</span>
               <span>→</span>
               <span>send</span>
             </div>

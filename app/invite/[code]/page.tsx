@@ -80,7 +80,7 @@ export default function InvitePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-purple-900 to-purple-600 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-ink flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block transition-transform hover:scale-105">
@@ -101,7 +101,7 @@ export default function InvitePage() {
             <p className="text-white/60 text-sm mb-6">
               Unlimited replies + V2 Verified Mode unlocked
             </p>
-            <Button asChild className="w-full h-14 text-lg font-bold rounded-2xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white">
+            <Button asChild className="w-full h-14 text-lg font-bold rounded-2xl bg-brand hover:bg-brand-soft text-brand-ink">
               <Link href="/app">
                 Start Texting
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -110,12 +110,12 @@ export default function InvitePage() {
           </div>
         ) : (
           /* Invite Card */
-          <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 border border-purple-500/30 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-              <Gift className="h-8 w-8 text-white" />
+          <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 border border-brand/30 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-brand flex items-center justify-center">
+              <Gift className="h-8 w-8 text-brand-ink" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">You&apos;re Invited!</h1>
-            <p className="text-purple-200 mb-1">
+            <p className="text-brand-soft mb-1">
               Free V2 Pro access — no payment needed
             </p>
             <p className="text-white/50 text-sm mb-6">
@@ -138,8 +138,8 @@ export default function InvitePage() {
             </div>
 
             {/* Invite Code Badge */}
-            <div className="inline-flex items-center gap-2 bg-purple-500/20 px-4 py-2 rounded-full mb-6">
-              <span className="text-purple-300 text-sm font-mono font-bold">{code}</span>
+            <div className="inline-flex items-center gap-2 bg-brand/20 px-4 py-2 rounded-full mb-6">
+              <span className="text-brand text-sm font-mono font-bold">{code}</span>
             </div>
 
             {result?.error && (
@@ -168,7 +168,7 @@ export default function InvitePage() {
                 <Button
                   onClick={handleRedeem}
                   disabled={loading}
-                  className="w-full h-14 text-lg font-bold rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-xl"
+                  className="w-full h-14 text-lg font-bold rounded-2xl bg-brand hover:bg-brand-soft text-brand-ink shadow-xl"
                 >
                   {loading ? (
                     <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Activating...</>
@@ -179,14 +179,14 @@ export default function InvitePage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <Button asChild className="w-full h-14 text-lg font-bold rounded-2xl bg-white text-purple-700 hover:bg-gray-100 shadow-xl">
+                <Button asChild className="w-full h-14 text-lg font-bold rounded-2xl bg-white text-brand-ink hover:bg-gray-100 shadow-xl">
                   <Link href={`/login?redirect=/invite/${code}`}>
                     Sign Up to Claim
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
                 <p className="text-white/40 text-xs">
-                  Already have an account? <Link href={`/login?redirect=/invite/${code}`} className="text-purple-300 underline">Log in</Link>
+                  Already have an account? <Link href={`/login?redirect=/invite/${code}`} className="text-brand underline">Log in</Link>
                 </p>
               </div>
             )}

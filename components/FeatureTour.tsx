@@ -7,7 +7,7 @@ const TOUR_STEPS = [
   {
     id: 'coach',
     emoji: '✨',
-    iconBg: 'from-violet-500 to-fuchsia-500',
+    iconBg: 'from-brand to-brand',
     title: 'Just talk to Coach',
     description: 'Type anything, paste a message, or tap a chip. Coach handles replies, decodes, openers, and revives — all in one conversation. No tabs, no modes.',
     tip: 'Try: "Help me reply to this" or "Am I being played?"',
@@ -15,7 +15,7 @@ const TOUR_STEPS = [
   {
     id: 'screenshot',
     emoji: '📸',
-    iconBg: 'from-blue-500 to-cyan-500',
+    iconBg: 'from-brand to-brand',
     title: 'Drop a screenshot',
     description: 'Hit the camera button and upload from iMessage, Tinder, WhatsApp, IG — anywhere. Coach reads the full convo and tells you exactly what to say.',
     tip: 'Works with multiple screenshots at once.',
@@ -23,7 +23,7 @@ const TOUR_STEPS = [
   {
     id: 'memory',
     emoji: '🧠',
-    iconBg: 'from-emerald-500 to-teal-500',
+    iconBg: 'from-brand to-brand',
     title: 'It remembers everything',
     description: 'Every session auto-saves. Next time you open Coach, your last conversation is one tap away, and the rest are under Chats.',
     tip: 'Search everything in History.',
@@ -91,11 +91,11 @@ export default function FeatureTour() {
       <div className="fixed bottom-0 left-0 right-0 z-[101] flex justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom,1.5rem))]">
         <div className="w-full max-w-lg animate-in fade-in slide-in-from-bottom-6 duration-400">
           {/* Card */}
-          <div className="bg-[#0d0d14] border border-white/[0.10] rounded-3xl overflow-hidden shadow-2xl shadow-black/60">
+          <div className="bg-panel border border-white/[0.10] rounded-3xl overflow-hidden shadow-2xl shadow-black/60">
             {/* Progress bar */}
             <div className="h-[2px] bg-white/[0.06]">
               <div
-                className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500 ease-out"
+                className="h-full bg-brand transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -110,7 +110,7 @@ export default function FeatureTour() {
                       key={i}
                       className={`rounded-full transition-all duration-300 ${
                         i === step
-                          ? 'w-4 h-1.5 bg-violet-400'
+                          ? 'w-4 h-1.5 bg-brand'
                           : i < step
                           ? 'w-1.5 h-1.5 bg-white/30'
                           : 'w-1.5 h-1.5 bg-white/10'
@@ -139,13 +139,13 @@ export default function FeatureTour() {
 
               {/* Tip pill */}
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2 mb-4">
-                <p className="text-[11px] text-violet-300/70 font-medium">{current.tip}</p>
+                <p className="text-[11px] text-brand/70 font-medium">{current.tip}</p>
               </div>
 
               {/* CTA */}
               <button
                 onClick={next}
-                className="w-full h-11 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-[14px] font-bold flex items-center justify-center gap-2 shadow-md shadow-violet-500/20 active:scale-[0.98] transition-all"
+                className="w-full h-11 rounded-2xl bg-brand hover:bg-brand-soft text-brand-ink text-[14px] font-bold flex items-center justify-center gap-2 shadow-md shadow-brand/20 active:scale-[0.98] transition-all"
               >
                 {isLast ? (
                   <>Let&apos;s go <Sparkles className="h-3.5 w-3.5" /></>

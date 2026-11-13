@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Your AI texting companion — reads the conversation, coaches the move, writes the reply.',
     start_url: '/app',
     display: 'standalone',
-    background_color: '#0a0a0f',
-    theme_color: '#0a0a0f',
+    background_color: '#0b0f0c',
+    theme_color: '#0b0f0c',
     orientation: 'portrait',
     categories: ['lifestyle', 'utilities', 'social'],
     icons: [

@@ -61,7 +61,7 @@ export default function FeedbackSection({ userEmail, planType }: FeedbackSection
             <Button
               onClick={handleSuggestionSubmit}
               disabled={suggestionSubmitting || !suggestion.trim()}
-              className="bg-violet-500/20 border border-violet-500/30 hover:bg-violet-500/30 text-violet-300 rounded-xl px-4 text-xs font-bold"
+              className="bg-brand/20 border border-brand/30 hover:bg-brand/30 text-brand rounded-xl px-4 text-xs font-bold"
             >
               {suggestionSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
             </Button>
@@ -78,7 +78,7 @@ export default function FeedbackSection({ userEmail, planType }: FeedbackSection
           href={`mailto:gulalabs1@gmail.com?subject=Text Wingman Feedback&body=${encodeURIComponent(
             `\n\n---\nUser: ${userEmail}\nPlan: ${planType}\nBrowser: `
           )}`}
-          className="inline-flex items-center gap-2 text-violet-400/50 hover:text-violet-400 text-xs font-medium transition-colors"
+          className="inline-flex items-center gap-2 text-brand/50 hover:text-brand text-xs font-medium transition-colors"
         >
           <MessageCircle className="h-4 w-4" />
           Report an issue

@@ -125,10 +125,10 @@ export default function OnboardingFlow() {
   const busy = saving !== null
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[#030305] text-white">
+    <div className="relative min-h-[100dvh] overflow-hidden bg-ink text-white">
       <div className="pointer-events-none fixed inset-0" aria-hidden="true">
-        <div className="absolute left-[-10%] top-[-20%] h-[60%] w-[60%] rounded-full" style={{ background: 'rgba(139,92,246,0.10)', filter: 'blur(120px)' }} />
-        <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full" style={{ background: 'rgba(236,72,153,0.08)', filter: 'blur(120px)' }} />
+        <div className="absolute left-[-10%] top-[-20%] h-[60%] w-[60%] rounded-full" style={{ background: 'rgba(211,255,104,0.10)', filter: 'blur(120px)' }} />
+        <div className="absolute bottom-[-10%] right-[-10%] h-[50%] w-[50%] rounded-full" style={{ background: 'rgba(211,255,104,0.05)', filter: 'blur(120px)' }} />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
@@ -150,7 +150,7 @@ export default function OnboardingFlow() {
             {steps.map((name, index) => (
               <span
                 key={name}
-                className={`h-1.5 rounded-full transition-all duration-300 ${index === stepIndex ? 'w-6 bg-violet-400' : index < stepIndex ? 'w-1.5 bg-white/40' : 'w-1.5 bg-white/15'}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${index === stepIndex ? 'w-6 bg-brand' : index < stepIndex ? 'w-1.5 bg-white/40' : 'w-1.5 bg-white/15'}`}
               />
             ))}
           </div>
@@ -175,7 +175,7 @@ export default function OnboardingFlow() {
               onSubmit={(event) => { event.preventDefault(); setStep('context') }}
               className="animate-in fade-in slide-in-from-bottom-3 duration-300"
             >
-              <p className="text-sm font-semibold text-violet-300">Welcome to Text Wingman</p>
+              <p className="text-sm font-semibold text-brand">Welcome to Text Wingman</p>
               <h1 className="mt-2 text-3xl font-black leading-tight">What should Coach call you?</h1>
               <p className="mt-2 text-[15px] leading-relaxed text-white/60">Coach talks to you like a friend would. A first name is plenty.</p>
               <label htmlFor="fullName" className="sr-only">Your name</label>
@@ -190,11 +190,11 @@ export default function OnboardingFlow() {
                 maxLength={80}
                 autoFocus
                 placeholder="Your first name"
-                className="mt-6 h-14 w-full rounded-2xl border border-white/[0.12] bg-white/[0.06] px-4 text-lg text-white placeholder-white/35 outline-none transition-colors focus:border-violet-400/70 focus:bg-white/[0.08]"
+                className="mt-6 h-14 w-full rounded-2xl border border-white/[0.12] bg-white/[0.06] px-4 text-lg text-white placeholder-white/35 outline-none transition-colors focus:border-brand/70 focus:bg-white/[0.08]"
               />
               <button
                 type="submit"
-                className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-base font-bold text-white shadow-lg shadow-violet-500/20 transition-all hover:from-violet-500 hover:to-fuchsia-500 active:scale-[0.98]"
+                className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-brand text-base font-bold text-brand-ink shadow-lg shadow-brand/20 transition-all hover:bg-brand-soft active:scale-[0.98]"
               >
                 Continue <ArrowRight className="h-5 w-5" />
               </button>
@@ -217,7 +217,7 @@ export default function OnboardingFlow() {
                       disabled={busy}
                       aria-pressed={selected}
                       onClick={() => afterContext(option.value)}
-                      className={`flex min-h-[4.5rem] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all active:scale-[0.97] disabled:opacity-50 ${selected ? 'border-violet-400/60 bg-violet-500/[0.16]' : 'border-white/[0.10] bg-white/[0.05] hover:border-white/[0.20] hover:bg-white/[0.08]'}`}
+                      className={`flex min-h-[4.5rem] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all active:scale-[0.97] disabled:opacity-50 ${selected ? 'border-brand/60 bg-brand/[0.16]' : 'border-white/[0.10] bg-white/[0.05] hover:border-white/[0.20] hover:bg-white/[0.08]'}`}
                     >
                       <span className="text-2xl" aria-hidden="true">{option.emoji}</span>
                       <span className="min-w-0">
@@ -247,16 +247,16 @@ export default function OnboardingFlow() {
                   type="button"
                   disabled={busy}
                   onClick={() => void finish('screenshot')}
-                  className="flex w-full items-center gap-4 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 p-4 text-left shadow-lg shadow-violet-500/20 transition-all hover:from-violet-500 hover:to-fuchsia-500 active:scale-[0.98] disabled:opacity-60"
+                  className="flex w-full items-center gap-4 rounded-2xl bg-brand p-4 text-left text-brand-ink shadow-lg shadow-brand/20 transition-all hover:bg-brand-soft active:scale-[0.98] disabled:opacity-60"
                 >
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-ink/10">
                     {saving === 'screenshot' ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-base font-bold">Upload a screenshot</span>
-                    <span className="block text-sm text-white/80">Coach reads the whole thread for you</span>
+                    <span className="block text-sm text-brand-ink/75">Coach reads the whole thread for you</span>
                   </span>
-                  <ArrowRight className="h-5 w-5 shrink-0 text-white/80" />
+                  <ArrowRight className="h-5 w-5 shrink-0 text-brand-ink/80" />
                 </button>
                 <button
                   type="button"
@@ -265,7 +265,7 @@ export default function OnboardingFlow() {
                   className="flex w-full items-center gap-4 rounded-2xl border border-white/[0.12] bg-white/[0.06] p-4 text-left transition-all hover:border-white/[0.22] hover:bg-white/[0.09] active:scale-[0.98] disabled:opacity-60"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/[0.08]">
-                    {saving === 'paste' ? <Loader2 className="h-6 w-6 animate-spin" /> : <MessageSquareText className="h-6 w-6 text-violet-300" />}
+                    {saving === 'paste' ? <Loader2 className="h-6 w-6 animate-spin" /> : <MessageSquareText className="h-6 w-6 text-brand" />}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-base font-bold text-white/90">Paste their message</span>

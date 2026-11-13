@@ -33,9 +33,9 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
         >
           <defs>
             <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#9333EA" />
-              <stop offset="50%" stopColor="#A855F7" />
-              <stop offset="100%" stopColor="#EC4899" />
+              <stop offset="0%" stopColor="#E4FFAD" />
+              <stop offset="50%" stopColor="#D3FF68" />
+              <stop offset="100%" stopColor="#B4FE57" />
             </linearGradient>
             <filter id="glow">
               <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
@@ -118,20 +118,20 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
           </g>
           
           {/* Sparkle dots inside bubble */}
-          <circle cx="40" cy="38" r="3" fill="white" opacity="0.9" />
-          <circle cx="52" cy="38" r="3" fill="white" opacity="0.9" />
-          <circle cx="64" cy="38" r="3" fill="white" opacity="0.9" />
+          <circle cx="40" cy="38" r="3" fill="#14200E" opacity="0.9" />
+          <circle cx="52" cy="38" r="3" fill="#14200E" opacity="0.9" />
+          <circle cx="64" cy="38" r="3" fill="#14200E" opacity="0.9" />
           
           {/* Small sparkle accents */}
-          <circle cx="25" cy="25" r="2" fill="#EC4899" opacity="0.6" />
-          <circle cx="78" cy="22" r="2" fill="#EC4899" opacity="0.6" />
+          <circle cx="25" cy="25" r="2" fill="#D3FF68" opacity="0.6" />
+          <circle cx="78" cy="22" r="2" fill="#D3FF68" opacity="0.6" />
         </svg>
       </div>
 
       {/* Logo Text */}
       {showText && (
         <div className="flex flex-col">
-          <span className={`${textSizeClasses[size]} font-bold tracking-tight bg-gradient-to-r from-purple-600 via-purple-500 to-pink-500 bg-clip-text text-transparent`}>
+          <span className={`${textSizeClasses[size]} font-bold tracking-tight text-cream`}>
             Text Wingman
           </span>
         </div>

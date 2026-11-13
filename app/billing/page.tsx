@@ -88,7 +88,7 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-purple-600 flex items-center justify-center">
+      <div className="min-h-screen bg-ink flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     );
@@ -96,7 +96,7 @@ export default function BillingPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-purple-600 flex items-center justify-center">
+      <div className="min-h-screen bg-ink flex items-center justify-center">
         <Card className="bg-white/95 backdrop-blur rounded-3xl p-8 text-center">
           <p className="text-gray-700 mb-4">Please sign in to view billing</p>
           <Button asChild>
@@ -108,7 +108,7 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-900 via-purple-800 to-purple-600">
+    <div className="min-h-screen bg-ink">
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -194,9 +194,9 @@ export default function BillingPage() {
 
             {/* Days Active - Value Reinforcement */}
             {daysActive > 0 && (
-              <Card className="bg-purple-500/20 backdrop-blur border-purple-500/30 rounded-3xl">
+              <Card className="bg-brand/20 backdrop-blur border-brand/30 rounded-3xl">
                 <CardContent className="p-6 text-center">
-                  <p className="text-purple-200 text-sm mb-1">You&apos;ve been using Verified Replies for</p>
+                  <p className="text-brand-soft text-sm mb-1">You&apos;ve been using Verified Replies for</p>
                   <p className="text-white text-3xl font-bold">{daysActive} {daysActive === 1 ? 'day' : 'days'}</p>
                 </CardContent>
               </Card>
@@ -224,7 +224,7 @@ export default function BillingPage() {
                   href={`mailto:gulalabs1@gmail.com?subject=Receipt Request - ${user.email}&body=${encodeURIComponent(
                     `Hi, I'd like to request a copy of my receipt.\n\nEmail: ${user.email}\nPlan: ${getPlanLabel(subscription.plan_type)}\n\nThank you!`
                   )}`}
-                  className="inline-flex items-center gap-2 text-purple-300 hover:text-white text-sm transition-colors"
+                  className="inline-flex items-center gap-2 text-brand hover:text-white text-sm transition-colors"
                 >
                   <Mail className="h-4 w-4" />
                   Need a receipt? Contact us
@@ -248,7 +248,7 @@ export default function BillingPage() {
                     toast({ title: 'Error', description: 'Could not open billing portal', variant: 'destructive' });
                   }
                 }}
-                className="text-purple-300 hover:text-white text-sm font-medium transition-colors"
+                className="text-brand hover:text-white text-sm font-medium transition-colors"
               >
                 Manage subscription in Stripe →
               </button>
@@ -257,10 +257,10 @@ export default function BillingPage() {
         ) : (
           <Card className="bg-white/10 backdrop-blur border-white/20 rounded-3xl">
             <CardContent className="p-8 text-center">
-              <CreditCard className="h-12 w-12 text-purple-300 mx-auto mb-4" />
+              <CreditCard className="h-12 w-12 text-brand mx-auto mb-4" />
               <p className="text-white font-medium mb-2">No active subscription</p>
-              <p className="text-purple-200 text-sm mb-4">Upgrade to Pro to see billing details</p>
-              <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl">
+              <p className="text-brand-soft text-sm mb-4">Upgrade to Pro to see billing details</p>
+              <Button asChild className="bg-brand hover:bg-brand-soft text-brand-ink rounded-xl">
                 <Link href="/pricing">View Plans</Link>
               </Button>
             </CardContent>

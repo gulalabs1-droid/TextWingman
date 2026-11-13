@@ -40,12 +40,12 @@ const TONE_CONFIG = {
   },
   playful: {
     label: 'Playful',
-    gradient: 'from-purple-500 to-pink-500',
+    gradient: 'from-lime-400 to-emerald-500',
     emoji: '😏',
   },
   direct: {
     label: 'Direct',
-    gradient: 'from-blue-500 to-indigo-500',
+    gradient: 'from-blue-500 to-cyan-500',
     emoji: '🎯',
   },
   escalation: {
@@ -88,13 +88,13 @@ export default function SharePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-white/95 backdrop-blur">
+      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-panel border border-line">
           <CardContent className="p-8 text-center space-y-4">
             <div className="text-6xl mb-4">😅</div>
-            <h1 className="text-2xl font-bold text-gray-900">Oops!</h1>
-            <p className="text-gray-600">This share link isn&apos;t valid.</p>
-            <Button asChild className="bg-gradient-to-r from-purple-600 to-indigo-600">
+            <h1 className="text-2xl font-bold text-cream">Oops!</h1>
+            <p className="text-sage">This share link isn&apos;t valid.</p>
+            <Button asChild className="bg-brand text-brand-ink hover:bg-brand-soft">
               <Link href="/app">Try Text Wingman</Link>
             </Button>
           </CardContent>
@@ -105,7 +105,7 @@ export default function SharePage() {
 
   if (!shareData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
+      <div className="min-h-screen bg-ink flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
       </div>
     );
@@ -133,7 +133,7 @@ export default function SharePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 py-12 px-4">
+    <div className="min-h-screen bg-ink py-12 px-4">
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -144,25 +144,25 @@ export default function SharePage() {
             <h1 className="text-3xl md:text-4xl font-bold text-white">
               Check out this reply! 🔥
             </h1>
-            <p className="text-purple-200">
+            <p className="text-brand-soft">
               AI-powered by Text Wingman
             </p>
           </div>
         </div>
 
         {/* Share Card */}
-        <Card className="bg-white/95 backdrop-blur-xl border-0 shadow-2xl rounded-3xl overflow-hidden">
+        <Card className="bg-panel border border-line shadow-2xl shadow-black/40 rounded-3xl overflow-hidden">
           <div className={`h-2 bg-gradient-to-r ${config.gradient}`} />
           
           <CardContent className="p-8 space-y-6">
             {/* Their Message */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
+              <div className="flex items-center gap-2 text-sm font-semibold text-sage">
                 <MessageCircle className="h-4 w-4" />
                 <span>They said:</span>
               </div>
-              <div className="bg-gray-100 rounded-2xl p-4 border-l-4 border-gray-300">
-                <p className="text-gray-800 text-lg italic">
+              <div className="bg-white/[0.05] rounded-2xl p-4 border-l-4 border-line">
+                <p className="text-cream text-lg italic">
                   &ldquo;{shareData.theirMessage}&rdquo;
                 </p>
               </div>
@@ -170,19 +170,19 @@ export default function SharePage() {
 
             {/* Divider */}
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
-              <Sparkles className="h-5 w-5 text-purple-500" />
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
+              <Sparkles className="h-5 w-5 text-brand" />
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-line to-transparent" />
             </div>
 
             {/* My Reply */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-500">
+              <div className="flex items-center gap-2 text-sm font-semibold text-sage">
                 <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${config.gradient}`} />
                 <span>I replied with ({config.label} {config.emoji}):</span>
               </div>
-              <div className={`bg-gradient-to-br ${config.gradient} rounded-2xl p-6 shadow-xl`}>
-                <p className="text-white text-lg font-medium leading-relaxed">
+              <div className="bg-brand rounded-2xl p-6">
+                <p className="text-brand-ink text-lg font-medium leading-relaxed">
                   &ldquo;{shareData.myReply}&rdquo;
                 </p>
               </div>
@@ -190,7 +190,7 @@ export default function SharePage() {
 
             {/* Success Badge */}
             <div className="flex items-center justify-center gap-2 py-4">
-              <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg">
+              <div className="border border-brand/30 bg-brand/10 text-brand px-6 py-2 rounded-full font-bold text-sm">
                 ✨ Crafted with AI
               </div>
             </div>
@@ -199,18 +199,18 @@ export default function SharePage() {
 
         {/* CTA */}
         <div className="text-center space-y-4">
-          <p className="text-purple-200 text-lg font-medium">
+          <p className="text-cream text-lg font-medium">
             Want perfect replies like this?
           </p>
           <Button
             onClick={handleTryThis}
             size="lg"
-            className="bg-white text-purple-700 hover:bg-gray-100 rounded-2xl font-bold text-lg px-8 h-14 shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
+            className="bg-brand text-brand-ink hover:bg-brand-soft rounded-2xl font-bold text-lg px-8 h-14 transition-all active:scale-[0.98]"
           >
             <Sparkles className="h-5 w-5 mr-2" />
             Try this exact scenario free
           </Button>
-          <p className="text-purple-300 text-sm">
+          <p className="text-sage text-sm">
             Get {FREE_REPLY_LIMIT} free uses per {REPLY_USAGE_WINDOW_HOURS} hours, with three reply options per generation ⚡
           </p>
         </div>
@@ -219,21 +219,21 @@ export default function SharePage() {
         <div className="grid grid-cols-3 gap-4 pt-8">
           <div className="text-center space-y-2">
             <div className="text-3xl">⚡</div>
-            <p className="text-purple-200 text-sm font-medium">Instant Replies</p>
+            <p className="text-brand-soft text-sm font-medium">Instant Replies</p>
           </div>
           <div className="text-center space-y-2">
             <div className="text-3xl">🎯</div>
-            <p className="text-purple-200 text-sm font-medium">3 Tones</p>
+            <p className="text-brand-soft text-sm font-medium">3 Tones</p>
           </div>
           <div className="text-center space-y-2">
             <div className="text-3xl">✨</div>
-            <p className="text-purple-200 text-sm font-medium">AI-Powered</p>
+            <p className="text-brand-soft text-sm font-medium">AI-Powered</p>
           </div>
         </div>
 
         {/* Footer */}
         <div className="text-center pt-8 border-t border-white/10">
-          <p className="text-purple-300 text-xs">
+          <p className="text-sage/70 text-xs">
             &copy; 2024 Text Wingman. All rights reserved.
           </p>
         </div>
