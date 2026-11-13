@@ -90,7 +90,7 @@ export async function updateSession(request: NextRequest) {
         // User came from pricing/checkout — send them where they wanted to go
         return redirectWithSession(redirectParam)
       }
-      return redirectWithSession(profile?.onboarding_completed ? '/dashboard' : '/onboarding')
+      return redirectWithSession(profile?.onboarding_completed ? '/app' : '/onboarding')
     }
 
     // If trying to access dashboard but onboarding not complete, redirect to onboarding

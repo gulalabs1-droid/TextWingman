@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe, PRICING } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 import { SITE_URL } from '@/lib/site';
+import { createClient as createAdminClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +28,26 @@ export async function POST(request: NextRequest) {
 
     const userId = user.id;
     const userEmail = user.email || '';
+
+    // Prevent a second subscription (double billing). Existing subscribers
+    // change plans through the Stripe billing portal instead.
+    const adminUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const adminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (adminUrl && adminKey) {
+      const admin = createAdminClient(adminUrl, adminKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: existing } = await admin
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', userId)
+        .in('status', ['active', 'trialing', 'past_due'])
+        .maybeSingle();
+      if (existing) {
+        return NextResponse.json(
+          { error: 'You already have an active subscription. Manage or change your plan from billing.', alreadySubscribed: true },
+          { status: 409 },
+        );
+      }
+    }
 
     const planConfig = PRICING[plan as keyof typeof PRICING];
     const trackingMetadata: Record<string, string> = {};

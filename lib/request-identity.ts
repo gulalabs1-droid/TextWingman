@@ -18,10 +18,18 @@ function readCookie(cookieHeader: string | null, name: string): string | null {
   return null;
 }
 
+// Only IPv4/IPv6 characters are accepted. The IP is interpolated into
+// PostgREST filters (e.g. `.or(ip_address.eq.${ip},...)`), so a spoofed header
+// must never be able to inject filter syntax.
+function cleanIp(value: string | null | undefined): string | null {
+  const candidate = value?.trim();
+  return candidate && candidate.length <= 45 && /^[0-9a-fA-F:.]+$/.test(candidate) ? candidate : null;
+}
+
 export function getClientIp(request: Request): string {
   const forwardedFor = request.headers.get('x-forwarded-for');
   const realIp = request.headers.get('x-real-ip');
-  return forwardedFor?.split(',')[0]?.trim() || realIp?.trim() || '127.0.0.1';
+  return cleanIp(forwardedFor?.split(',')[0]) || cleanIp(realIp) || '127.0.0.1';
 }
 
 export function getRequestIdentity(request: Request, visitorIdOverride?: string | null) {

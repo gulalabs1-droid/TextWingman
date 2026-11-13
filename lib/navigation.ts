@@ -36,5 +36,5 @@ export function confirmationDestination(
   if (isSavedThreadReturn(next) || path === '/pricing') return next;
   if (!onboardingComplete) return '/onboarding';
   if (path.startsWith('/invite/')) return next;
-  return '/dashboard';
+  return '/app';
 }

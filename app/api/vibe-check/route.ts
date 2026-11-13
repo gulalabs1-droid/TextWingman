@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { chatParams } from '@/lib/models';
+import { clipText, rateLimit, tooManyRequests } from '@/lib/api-guards';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -13,7 +14,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { draft, context, customContext, lastReceived } = await request.json();
+    const limit = rateLimit(`vibe:${user.id}`, 30, 60_000);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
+    const body = await request.json().catch(() => null) || {};
+    const draft = clipText(body.draft, 2000);
+    const context = clipText(body.context, 100);
+    const customContext = clipText(body.customContext, 1000);
+    const lastReceived = clipText(body.lastReceived, 2000);
 
     if (!draft || typeof draft !== 'string' || draft.trim().length < 8) {
       return NextResponse.json({ error: 'Message too short to analyze' }, { status: 400 });

@@ -15,7 +15,7 @@ test('after sign-in, a saved thread or plan wins over onboarding', () => {
   assert.equal(postAuthDestination('/app?restore=1', false), '/app?restore=1');
   assert.equal(postAuthDestination('/pricing?plan=annual', false), '/pricing?plan=annual');
   assert.equal(postAuthDestination(null, false), '/onboarding');
-  assert.equal(postAuthDestination(null, true), '/dashboard');
+  assert.equal(postAuthDestination(null, true), '/app');
 });
 
 test('new accounts are distinguished from returning sign-ins', () => {

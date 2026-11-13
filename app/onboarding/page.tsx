@@ -16,7 +16,7 @@ const getPostOnboardingPath = () => {
       localStorage.removeItem('tw_pending_thread');
     }
   } catch {}
-  return '/dashboard';
+  return '/app';
 };
 
 export default function OnboardingPage() {

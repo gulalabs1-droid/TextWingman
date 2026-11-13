@@ -23,7 +23,7 @@ test('email confirmation preserves a selected plan or saved thread before onboar
   assert.equal(confirmationDestination('/pricing?plan=annual', '/pricing?plan=monthly', false), '/pricing?plan=annual');
   assert.equal(confirmationDestination(null, '/app?restore=1', false), '/app?restore=1');
   assert.equal(confirmationDestination(null, null, false), '/onboarding');
-  assert.equal(confirmationDestination(null, null, true), '/dashboard');
+  assert.equal(confirmationDestination(null, null, true), '/app');
   assert.equal(confirmationDestination(null, '/invite/FRIENDSV2', true), '/invite/FRIENDSV2');
 });
 

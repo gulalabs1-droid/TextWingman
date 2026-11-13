@@ -1,25 +1,21 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/admin';
 
+export const dynamic = 'force-dynamic';
+
+// Admin-only configuration check. Never exposes the admin list or secrets —
+// only whether the pieces an admin session needs are configured.
 export async function GET() {
-  try {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-
-    const adminEmails = process.env.ADMIN_EMAILS || '(NOT SET)';
-    const adminList = adminEmails.split(',').map(e => e.trim().toLowerCase());
-
-    return NextResponse.json({
-      userEmail: user?.email || '(no user / not logged in)',
-      userId: user?.id || null,
-      authError: error?.message || null,
-      adminEmailsEnvRaw: adminEmails,
-      adminEmailsParsed: adminList,
-      emailMatch: user?.email ? adminList.includes(user.email.toLowerCase()) : false,
-      hasAdminSecret: !!process.env.ADMIN_SECRET,
-      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  const { user, isAdmin } = await requireAdmin();
+  if (!isAdmin || !user) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
+
+  return NextResponse.json({
+    userEmail: user.email,
+    userId: user.id,
+    adminEmailsConfigured: Boolean(process.env.ADMIN_EMAILS?.trim()),
+    hasAdminSecret: Boolean(process.env.ADMIN_SECRET),
+    hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }

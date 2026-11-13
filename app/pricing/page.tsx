@@ -94,6 +94,9 @@ export default function PricingPage() {
       if (data.url) {
         track('checkout_viewed', { plan, trial, source })
         window.location.href = data.url
+      } else if (data.alreadySubscribed) {
+        // Already subscribed: plan changes happen in the billing portal.
+        window.location.href = '/dashboard'
       } else {
         track('checkout_failed', { plan, trial, source, reason: data.error || 'missing_url' })
         toast({ title: 'Error', description: 'Failed to start checkout', variant: 'destructive' })

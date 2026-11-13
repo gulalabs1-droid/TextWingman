@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { getUserTier } from '@/lib/entitlements';
 import { chatParams } from '@/lib/models';
+import { clipText, rateLimit, tooManyRequests } from '@/lib/api-guards';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -20,13 +21,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { original, edited, tone, context, customContext } = await request.json();
+    const limit = rateLimit(`refine:${user.id}`, 30, 60_000);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
+    const body = await request.json().catch(() => null) || {};
+    const tone: string = typeof body.tone === 'string' && Object.hasOwn(TONE_GUIDANCE, body.tone) ? body.tone : 'shorter';
+    const original = clipText(body.original, 1000);
+    const edited = clipText(body.edited, 1000);
+    const context = clipText(body.context, 100);
+    const customContext = clipText(body.customContext, 1000);
 
     if (!edited || typeof edited !== 'string') {
       return NextResponse.json({ error: 'Edited text is required' }, { status: 400 });
     }
 
-    const toneHint = TONE_GUIDANCE[tone] || TONE_GUIDANCE.shorter;
+    const toneHint = TONE_GUIDANCE[tone];
 
     const completion = await openai.chat.completions.create(chatParams('fast', {
       messages: [
@@ -50,7 +59,7 @@ Return ONLY the polished text. No quotes, no explanation, no JSON — just the f
         },
         {
           role: 'user',
-          content: `Original AI reply: "${original || ''}"\nUser's edited version: "${edited}"\n\nPolish the user's edit to sound smooth while keeping their additions. Keep the ${tone || 'shorter'} tone.`,
+          content: `Original AI reply: "${original || ''}"\nUser's edited version: "${edited}"\n\nPolish the user's edit to sound smooth while keeping their additions. Keep the ${tone} tone.`,
         },
       ],
       temperature: 0.7,

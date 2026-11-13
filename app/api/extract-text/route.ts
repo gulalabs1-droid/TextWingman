@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { chatParams } from '@/lib/models';
+import { createClient as createServerClient } from '@/lib/supabase/server';
+import { getClientIp } from '@/lib/request-identity';
+import { rateLimit, tooManyRequests } from '@/lib/api-guards';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -8,10 +11,20 @@ const openai = new OpenAI({
 
 // Max image size: 4MB (base64 encoded)
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024;
+const WINDOW_MS = 10 * 60 * 1000;
 
 export async function POST(request: NextRequest) {
   try {
-    const { image } = await request.json();
+    // Screenshot reading is open to signed-out visitors (landing composer), so
+    // throttle per account, or per IP when signed out, to cap vision-model spend.
+    const supabase = await createServerClient();
+    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const limit = user
+      ? rateLimit(`extract:user:${user.id}`, 30, WINDOW_MS)
+      : rateLimit(`extract:ip:${getClientIp(request)}`, 10, WINDOW_MS);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
+    const { image } = await request.json().catch(() => ({ image: null }));
 
     if (!image || typeof image !== 'string') {
       return NextResponse.json(

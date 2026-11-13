@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Mail, Lock, Loader2, LogOut, Crown, Sparkles, Clock, MessageCircle, Trash2, AlertTriangle, ChevronRight, Shield, Zap, Star, Activity } from 'lucide-react';
 import { Logo } from '@/components/Logo';
+import AppNav from '@/components/AppNav';
 import { createClient } from '@/lib/supabase/client';
 import { PLAN_PRICES } from '@/lib/pricing';
 
@@ -189,7 +190,7 @@ export default function ProfilePage() {
         <div className="absolute w-[400px] h-[400px] rounded-full bottom-[-10%] right-[-10%]" style={{ background: 'rgba(236,72,153,0.10)', filter: 'blur(120px)' }} />
       </div>
 
-      <div className="relative z-10 max-w-lg mx-auto px-4 py-8 pb-20">
+      <div className="relative z-10 max-w-lg mx-auto px-4 py-8 pb-28">
         {/* Nav */}
         <div className="flex items-center justify-between mb-8">
           <Link href="/dashboard" className="w-9 h-9 rounded-2xl border border-white/[0.08] bg-white/[0.04] flex items-center justify-center text-white/40 hover:text-white/70 transition-all active:scale-90">
@@ -209,18 +210,18 @@ export default function ProfilePage() {
                 <Crown className="h-7 w-7 text-white" />
               </div>
               <h1 className="text-white font-black text-xl">{isSignUp ? 'Create Account' : 'Welcome Back'}</h1>
-              <p className="text-white/35 text-sm">{isSignUp ? 'Sign up to save your history' : 'Sign in to access your account'}</p>
+              <p className="text-white/60 text-sm">{isSignUp ? 'Sign up to save your history' : 'Sign in to access your account'}</p>
             </div>
             <form onSubmit={handleAuth} className="space-y-3">
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/25" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                 <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/25 text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
+                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
               </div>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/25" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
                 <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/25 text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
+                  className="w-full pl-10 pr-4 h-12 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-sm focus:outline-none focus:border-violet-500/40 transition-all" />
               </div>
               <button type="submit" disabled={authLoading}
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-black text-sm shadow-[0_4px_20px_rgba(139,92,246,0.3)] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2">
@@ -244,12 +245,12 @@ export default function ProfilePage() {
               <div className="flex-1 min-w-0">
                 <p className="text-white font-bold text-sm truncate">{user.email}</p>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r ${planGradient} text-white`}>{planLabel}</span>
+                  <span className={`text-[11px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r ${planGradient} text-white`}>{planLabel}</span>
                   {subscription?.current_period_end && isPro && (() => {
                     const daysLeft = Math.ceil((new Date(subscription.current_period_end).getTime() - Date.now()) / 86400000);
                     return daysLeft <= 7
-                      ? <span key="days" className={`text-[10px] font-bold ${daysLeft <= 1 ? 'text-red-400' : daysLeft <= 3 ? 'text-orange-400' : 'text-white/40'}`}>{daysLeft <= 0 ? 'Expires today' : `${daysLeft}d left`}</span>
-                      : <span key="renews" className="text-white/25 text-[10px]">Renews {new Date(subscription.current_period_end).toLocaleDateString()}</span>;
+                      ? <span key="days" className={`text-[11px] font-bold ${daysLeft <= 1 ? 'text-red-400' : daysLeft <= 3 ? 'text-orange-400' : 'text-white/40'}`}>{daysLeft <= 0 ? 'Expires today' : `${daysLeft}d left`}</span>
+                      : <span key="renews" className="text-white/50 text-[11px]">Renews {new Date(subscription.current_period_end).toLocaleDateString()}</span>;
                   })()}
                 </div>
               </div>
@@ -262,13 +263,13 @@ export default function ProfilePage() {
             {entitlement?.tier === 'elite' ? (
               <div className="rounded-2xl p-4 border border-yellow-500/25 bg-yellow-500/10 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(251,191,36,0.3)]"><Crown className="h-5 w-5 text-white" /></div>
-                <div><p className="text-yellow-300 font-black text-sm">Owner Access</p><p className="text-white/35 text-xs">Full access to everything</p></div>
+                <div><p className="text-yellow-300 font-black text-sm">Owner Access</p><p className="text-white/60 text-xs">Full access to everything</p></div>
               </div>
             ) : isPro ? (
               <div className="rounded-2xl p-4 border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(52,211,153,0.3)]"><Shield className="h-5 w-5 text-white" /></div>
-                  <div><p className="text-emerald-300 font-black text-sm">Pro Member</p><p className="text-white/35 text-xs">Unlimited replies unlocked</p></div>
+                  <div><p className="text-emerald-300 font-black text-sm">Pro Member</p><p className="text-white/60 text-xs">Unlimited replies unlocked</p></div>
                 </div>
                 {subscription && <span className="text-emerald-300/60 text-xs font-bold">{subscription.plan_type === 'monthly' ? `${PLAN_PRICES.monthly.displayAmount}/mo` : subscription.plan_type === 'weekly' ? `${PLAN_PRICES.weekly.displayAmount}/wk` : subscription.plan_type === 'annual' ? `${PLAN_PRICES.annual.displayAmount}/yr` : 'Plan unavailable'}</span>}
               </div>
@@ -276,7 +277,7 @@ export default function ProfilePage() {
               <Link href="/#pricing" className="rounded-2xl p-4 border border-violet-500/20 bg-violet-500/10 flex items-center justify-between group hover:border-violet-500/40 transition-all">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(139,92,246,0.3)]"><Zap className="h-5 w-5 text-white" /></div>
-                  <div><p className="text-violet-300 font-black text-sm">Upgrade to Pro</p><p className="text-white/35 text-xs">Unlimited replies + strategy</p></div>
+                  <div><p className="text-violet-300 font-black text-sm">Upgrade to Pro</p><p className="text-white/60 text-xs">Unlimited replies + strategy</p></div>
                 </div>
                 <span className="text-violet-300 font-black text-sm">{PLAN_PRICES.monthly.displayAmount}/mo →</span>
               </Link>
@@ -289,45 +290,45 @@ export default function ProfilePage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-black text-cyan-200">Style DNA</p>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300/55">{styleStats?.styleDna?.confidence || 0}% confidence</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-300/55">{styleStats?.styleDna?.confidence || 0}% confidence</span>
                   </div>
                   <p className="mt-1 text-xs leading-relaxed text-white/40">Learns from the replies you actually choose, edit, and send.</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[10px] uppercase tracking-wider text-white/25">Samples</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna?.sampleCount || 0}</p></div>
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[10px] uppercase tracking-wider text-white/25">Words</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna?.averageWordCount || '--'}</p></div>
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[10px] uppercase tracking-wider text-white/25">Questions</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna ? `${styleStats.styleDna.questionRate}%` : '--'}</p></div>
-                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[10px] uppercase tracking-wider text-white/25">Favorite</p><p className="mt-1 truncate text-sm font-black text-white/80">{styleStats?.favoriteTone || '--'}</p></div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[11px] uppercase tracking-wider text-white/50">Samples</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna?.sampleCount || 0}</p></div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[11px] uppercase tracking-wider text-white/50">Words</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna?.averageWordCount || '--'}</p></div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[11px] uppercase tracking-wider text-white/50">Questions</p><p className="mt-1 text-sm font-black text-white/80">{styleStats?.styleDna ? `${styleStats.styleDna.questionRate}%` : '--'}</p></div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-2.5"><p className="text-[11px] uppercase tracking-wider text-white/50">Favorite</p><p className="mt-1 truncate text-sm font-black text-white/80">{styleStats?.favoriteTone || '--'}</p></div>
               </div>
-              <p className="text-[10px] text-white/25">No raw conversations are stored in Style DNA.</p>
+              <p className="text-[11px] text-white/50">No raw conversations are stored in Style DNA.</p>
             </div>
 
             {/* Quick links */}
             <div className="rounded-2xl border border-white/[0.08] overflow-hidden divide-y divide-white/[0.06]" style={{ background: 'rgba(255,255,255,0.03)' }}>
               <Link href="/app" className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.04] transition-all group">
                 <div className="flex items-center gap-3"><Sparkles className="h-4 w-4 text-violet-400" /><span className="text-white/70 text-sm font-medium">Open App</span></div>
-                <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/40 transition-colors" />
+                <ChevronRight className="h-4 w-4 text-white/45 group-hover:text-white/40 transition-colors" />
               </Link>
               {isPro && (
                 <Link href="/billing" className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.04] transition-all group">
                   <div className="flex items-center gap-3"><Star className="h-4 w-4 text-emerald-400" /><span className="text-white/70 text-sm font-medium">Billing & Receipts</span></div>
-                  <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/40 transition-colors" />
+                  <ChevronRight className="h-4 w-4 text-white/45 group-hover:text-white/40 transition-colors" />
                 </Link>
               )}
               <a href={`mailto:gulalabs1@gmail.com?subject=Text Wingman Feedback&body=${encodeURIComponent(`\n\n---\nUser: ${user.email}\nPlan: ${planLabel}\nBrowser: ${typeof window !== 'undefined' ? navigator.userAgent : 'Unknown'}`)}`}
                 className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.04] transition-all group">
                 <div className="flex items-center gap-3"><MessageCircle className="h-4 w-4 text-cyan-400" /><span className="text-white/70 text-sm font-medium">Report an Issue</span></div>
-                <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white/40 transition-colors" />
+                <ChevronRight className="h-4 w-4 text-white/45 group-hover:text-white/40 transition-colors" />
               </a>
             </div>
 
             {/* Unified History — saved threads + coach sessions */}
             <div className="space-y-3">
-              <p className="text-white/25 text-[9px] font-mono font-bold tracking-[0.4em] px-1 flex items-center gap-2"><Clock className="h-3 w-3" />HISTORY</p>
+              <p className="text-white/50 text-[10px] font-mono font-bold tracking-[0.4em] px-1 flex items-center gap-2"><Clock className="h-3 w-3" />HISTORY</p>
               {savedThreads.length === 0 && history.length === 0 ? (
                 <div className="rounded-2xl border border-white/[0.08] p-8 text-center space-y-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                  <MessageCircle className="h-8 w-8 text-white/15 mx-auto" />
+                  <MessageCircle className="h-8 w-8 text-white/40 mx-auto" />
                   <p className="text-white/40 text-sm font-medium">No history yet</p>
                   <Link href="/app" className="inline-block px-4 py-2 rounded-xl bg-violet-500/15 border border-violet-500/25 text-violet-300 text-xs font-bold hover:bg-violet-500/25 transition-all">Start a session</Link>
                 </div>
@@ -347,19 +348,19 @@ export default function ProfilePage() {
                               : <MessageCircle className="h-3 w-3 text-white/40" />
                             }
                           </div>
-                          <span className={`text-[9px] font-black uppercase tracking-widest ${isCoach ? 'text-violet-400/70' : 'text-white/30'}`}>{isCoach ? 'Coach' : 'Thread'}</span>
-                          <span className="text-white/15 text-[9px] ml-auto">{new Date(t.updated_at).toLocaleDateString()}</span>
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${isCoach ? 'text-violet-400/70' : 'text-white/55'}`}>{isCoach ? 'Coach' : 'Thread'}</span>
+                          <span className="text-white/40 text-[10px] ml-auto">{new Date(t.updated_at).toLocaleDateString()}</span>
                         </div>
                         <p className="text-white/75 text-sm font-semibold truncate">{t.name}</p>
-                        {preview && <p className="text-white/35 text-xs truncate">{preview}</p>}
-                        <p className="text-white/20 text-[10px]">{t.message_count} messages</p>
+                        {preview && <p className="text-white/60 text-xs truncate">{preview}</p>}
+                        <p className="text-white/45 text-[11px]">{t.message_count} messages</p>
                       </Link>
                     );
                   })}
                   {/* Reply history (quick generations without a thread) */}
                   {history.length > 0 && (
                     <>
-                      <p className="text-white/15 text-[9px] font-mono font-bold tracking-[0.3em] px-1 pt-2">QUICK REPLIES</p>
+                      <p className="text-white/40 text-[10px] font-mono font-bold tracking-[0.3em] px-1 pt-2">QUICK REPLIES</p>
                       {history.map((item) => {
                         let parsedReplies: Array<{tone: string; text: string}> = [];
                         try { const r = item.generated_replies; parsedReplies = typeof r === 'string' ? JSON.parse(r) : Array.isArray(r) ? r : []; } catch { parsedReplies = []; }
@@ -369,12 +370,12 @@ export default function ProfilePage() {
                             <div className="space-y-1.5">
                               {parsedReplies.slice(0, 3).map((reply, idx) => (
                                 <div key={idx} className="flex items-start gap-2">
-                                  <span className="text-[9px] font-black text-violet-400/60 uppercase mt-0.5 shrink-0 w-10">{reply.tone}</span>
+                                  <span className="text-[10px] font-black text-violet-400/60 uppercase mt-0.5 shrink-0 w-10">{reply.tone}</span>
                                   <p className="text-white/70 text-xs leading-relaxed">{reply.text}</p>
                                 </div>
                               ))}
                             </div>
-                            <p className="text-white/20 text-[10px] font-mono">{new Date(item.created_at).toLocaleDateString()}</p>
+                            <p className="text-white/45 text-[11px] font-mono">{new Date(item.created_at).toLocaleDateString()}</p>
                           </div>
                         );
                       })}
@@ -388,14 +389,14 @@ export default function ProfilePage() {
             <div className="rounded-2xl border border-white/[0.08] p-5 space-y-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
               <div>
                 <p className="text-white/60 text-sm font-bold">Help shape what&apos;s next</p>
-                <p className="text-white/25 text-xs mt-0.5">You&apos;re early — your input matters</p>
+                <p className="text-white/50 text-xs mt-0.5">You&apos;re early — your input matters</p>
               </div>
               {suggestionSubmitted ? (
                 <p className="text-emerald-400 text-sm font-medium">✓ Thanks! We read every suggestion.</p>
               ) : (
                 <div className="flex gap-2">
                   <input value={suggestion} onChange={(e) => setSuggestion(e.target.value)} placeholder="What would make this better?" maxLength={500}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-500/30 transition-all" />
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white placeholder-white/40 text-sm focus:outline-none focus:border-violet-500/30 transition-all" />
                   <button onClick={handleSuggestionSubmit} disabled={suggestionSubmitting || !suggestion.trim()}
                     className="px-4 py-2.5 rounded-xl bg-violet-500/20 border border-violet-500/30 text-violet-300 text-sm font-bold hover:bg-violet-500/30 transition-all active:scale-95 disabled:opacity-30 shrink-0 flex items-center justify-center">
                     {suggestionSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
@@ -422,7 +423,7 @@ export default function ProfilePage() {
                   <div>
                     <label className="text-white/40 text-xs block mb-1.5">Type <span className="font-bold text-red-400">DELETE</span> to confirm</label>
                     <input value={deleteConfirmText} onChange={(e) => setDeleteConfirmText(e.target.value)} placeholder="DELETE"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-red-500/30 text-white placeholder-white/20 text-sm focus:outline-none transition-all" />
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.06] border border-red-500/30 text-white placeholder-white/40 text-sm focus:outline-none transition-all" />
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmText(''); }}
@@ -439,6 +440,7 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+      {user && <AppNav />}
     </div>
   );
 }

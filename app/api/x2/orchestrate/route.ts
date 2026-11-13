@@ -8,6 +8,7 @@ import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
+import { clipText, rateLimit, sanitizeChatHistory, tooManyRequests } from "@/lib/api-guards";
 import {
   analyzeStrategy,
   formatStrategyForDraft,
@@ -431,15 +432,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "X2 requires Pro access" }, { status: 403 });
   }
 
+  const limit = rateLimit(`x2:${user.id}`, 20, 60_000);
+  if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
+  const body = await req.json().catch(() => null) || {};
   const {
-    threadText,
-    userMessage,
-    chatHistory = [],
     goal = "general" as Goal,
     relationshipContext = "crush",
     mode = "chat", // "chat" (coaching) or "orchestrate" (full pipeline on a thread)
     analytics,
-  } = await req.json();
+  } = body;
+  const threadText = clipText(body.threadText, 12000) || '';
+  const userMessage = clipText(body.userMessage, 6000) || '';
+  const chatHistory = sanitizeChatHistory(body.chatHistory);
 
   if (!userMessage?.trim() && !threadText?.trim()) {
     return NextResponse.json({ error: "Message or thread required" }, { status: 400 });

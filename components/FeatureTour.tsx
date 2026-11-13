@@ -25,8 +25,8 @@ const TOUR_STEPS = [
     emoji: '🧠',
     iconBg: 'from-emerald-500 to-teal-500',
     title: 'It remembers everything',
-    description: 'Every session auto-saves. Next time you open Coach, Smart Preview shows your last convo at the top — tap once to pick up right where you left off.',
-    tip: 'Your full history lives in the History tab.',
+    description: 'Every session auto-saves. Next time you open Coach, your last conversation is one tap away, and the rest are under Chats.',
+    tip: 'Search everything in History.',
   },
 ];
 

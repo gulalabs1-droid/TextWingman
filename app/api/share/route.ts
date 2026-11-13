@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { theirMessage, myReply, tone } = await request.json();
+    const body = await request.json().catch(() => null) || {};
+    const { theirMessage, myReply } = body;
+    const tone = typeof body.tone === 'string' ? body.tone.replace(/[^a-z_-]/gi, '').slice(0, 24) : '';
 
-    if (!theirMessage || !myReply || !tone) {
+    if (typeof theirMessage !== 'string' || typeof myReply !== 'string' || !theirMessage.trim() || !myReply.trim() || !tone) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
     // - Identify popular tones
     
     // Generate image URL for OG sharing
-    const imageUrl = `/api/share/image?their=${encodeURIComponent(shareData.theirMessage)}&reply=${encodeURIComponent(shareData.myReply)}&tone=${tone}`;
+    const imageUrl = `/api/share/image?their=${encodeURIComponent(shareData.theirMessage)}&reply=${encodeURIComponent(shareData.myReply)}&tone=${encodeURIComponent(tone)}`;
     
     return NextResponse.json({
       slug,

@@ -32,3 +32,6 @@ if (SENTRY_DSN) {
     environment: process.env.NODE_ENV,
   });
 }
+
+// Lets Sentry trace client-side navigations in the App Router.
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

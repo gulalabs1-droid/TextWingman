@@ -10,11 +10,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { email, ref } = body;
 
     // Validate email
-    if (!email || !email.includes('@')) {
+    if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json(
         { error: 'Valid email is required' },
         { status: 400 }
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       .insert([
         {
           email: normalizedEmail,
-          referral_source: ref || null,
+          referral_source: typeof ref === 'string' ? ref.slice(0, 128) : null,
           created_at: new Date().toISOString(),
         },
       ])

@@ -28,7 +28,7 @@ export function isPlausibleOtp(value: string): boolean {
 
 export function postAuthDestination(redirectUrl: string | null, onboardingComplete: boolean): string {
   if (redirectUrl) return redirectUrl;
-  return onboardingComplete ? '/dashboard' : '/onboarding';
+  return onboardingComplete ? '/app' : '/onboarding';
 }
 
 export function isNewlyCreatedUser(createdAt: string | undefined, now: number): boolean {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { chatParams } from '@/lib/models';
+import { clipText, rateLimit, tooManyRequests } from '@/lib/api-guards';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -22,13 +23,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { draft, tone, context, customContext } = await request.json();
+    const limit = rateLimit(`tone:${user.id}`, 30, 60_000);
+    if (!limit.ok) return tooManyRequests(limit.retryAfter);
+
+    const body = await request.json().catch(() => null) || {};
+    const { tone } = body;
+    const draft = clipText(body.draft, 2000);
+    const context = clipText(body.context, 100);
+    const customContext = clipText(body.customContext, 1000);
 
     if (!draft || typeof draft !== 'string' || !draft.trim()) {
       return NextResponse.json({ error: 'Draft message is required' }, { status: 400 });
     }
 
-    if (!tone || !TONE_MAP[tone]) {
+    if (typeof tone !== 'string' || !Object.hasOwn(TONE_MAP, tone)) {
       return NextResponse.json({ error: 'Invalid tone' }, { status: 400 });
     }
 

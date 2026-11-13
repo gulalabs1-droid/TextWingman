@@ -10,6 +10,7 @@ import { buildRequestAnalytics } from "@/lib/analytics-server";
 import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
 import { reserveCoachUse } from '@/lib/usage-reservation';
 import { chatParams } from '@/lib/models';
+import { clipText, rateLimit, sanitizeChatHistory, tooManyRequests } from '@/lib/api-guards';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -67,9 +68,15 @@ export async function POST(req: Request) {
 
   await ensureAdminAccess(user.id, user.email || "");
 
-  const { chatHistory, userMessage, context, analytics } = await req.json();
+  const limit = rateLimit(`coach:${user.id}`, 20, 60_000);
+  if (!limit.ok) return tooManyRequests(limit.retryAfter);
 
-  if (!userMessage?.trim()) {
+  const body = await req.json().catch(() => null);
+  const { context, analytics } = body || {};
+  const chatHistory = sanitizeChatHistory(body?.chatHistory);
+  const userMessage = clipText(body?.userMessage, 6000);
+
+  if (!userMessage) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
 
@@ -100,11 +107,8 @@ export async function POST(req: Request) {
 
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: SYSTEM_PROMPT + contextHint },
-    ...(chatHistory || []).map((m: { role: string; content: string }) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
-    { role: "user", content: userMessage.trim() },
+    ...chatHistory,
+    { role: "user", content: userMessage },
   ];
 
   const completion = await openai.chat.completions.create(chatParams('fast', {

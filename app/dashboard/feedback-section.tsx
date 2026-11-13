@@ -46,7 +46,7 @@ export default function FeedbackSection({ userEmail, planType }: FeedbackSection
       {/* Help Shape What's Next */}
       <div className="text-center">
         <h3 className="text-white/60 font-bold text-sm mb-1">Help shape what&apos;s next</h3>
-        <p className="text-white/25 text-xs mb-3">You&apos;re early — your input matters</p>
+        <p className="text-white/50 text-xs mb-3">You&apos;re early — your input matters</p>
         {suggestionSubmitted ? (
           <p className="text-emerald-400/80 text-xs font-medium">✓ Thanks! We read every suggestion.</p>
         ) : (
@@ -71,7 +71,7 @@ export default function FeedbackSection({ userEmail, planType }: FeedbackSection
 
       {/* Report an Issue */}
       <div className="text-center pt-4">
-        <p className="text-white/20 text-xs mb-2">
+        <p className="text-white/45 text-xs mb-2">
           Something feel off? Tell us — we read everything.
         </p>
         <a

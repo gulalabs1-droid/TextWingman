@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
@@ -16,13 +16,19 @@ import { captureAttribution, getAnalyticsContext, track, type Props } from '@/li
 import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
 import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
 import {
+  clearPendingOutcome,
   createReplyGenerationId,
   deriveStyleSignals,
+  isOutcomeDue,
+  readPendingOutcome,
   recordLocalStyleSignal,
   replyIdFor,
+  savePendingOutcome,
   sendReplyLearningEvent,
   type ReplyLearningEvent,
+  type ReplyOutcome,
 } from '@/lib/reply-learning';
+import { readCoachStream, type CoachDraft } from '@/lib/coach-stream';
 
 type Reply = {
   tone: 'shorter' | 'spicier' | 'softer';
@@ -202,6 +208,16 @@ type StrategyChatMessage = {
   draft?: { shorter?: string; spicier?: string; softer?: string } | null;
   orchestration?: OrchestrateResult | null;
   images?: string[];
+  generationId?: string;
+};
+
+type CoachOutcomePrompt = {
+  generationId: string;
+  replyId: string;
+  tone: string;
+  context: string | null;
+  asked: 'after_copy' | 'return_visit';
+  preview?: string;
 };
 
 type ScanResult = {
@@ -292,6 +308,402 @@ const CONTEXT_OPTIONS = [
 ] as const;
 const CULTURE_REWRITE_PROMPT = 'Help me rewrite my draft: ';
 
+
+type CoachCopyLearn = { msg: StrategyChatMessage; index: number; slot: string; tone: string };
+type CoachCopyFn = (text: string, id: string, learn?: CoachCopyLearn) => void;
+
+function CoachScoreBar({ label, value, inverted = false }: { label: string; value: number; inverted?: boolean }) {
+  const displayValue = inverted ? 100 - value : value;
+  const color =
+    displayValue >= 80 ? 'bg-emerald-500' : displayValue >= 60 ? 'bg-amber-500' : 'bg-red-500';
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[11px] text-white/40 w-20 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${displayValue}%` }} />
+      </div>
+      <span className="text-[11px] text-white/50 w-8 text-right">{value}</span>
+    </div>
+  );
+}
+
+function ConversationList({ threads, userId, isThreadActive, onLoad, onDelete }: {
+  threads: SavedThread[];
+  userId: string | null;
+  isThreadActive: (id: string) => boolean;
+  onLoad: (t: SavedThread) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+
+    threads.length === 0 ? (
+      <div className="text-center py-10 px-3">
+        <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
+          <MessageCircle className="h-5 w-5 text-white/45" />
+        </div>
+        <p className="text-white/50 text-xs leading-relaxed">{userId ? 'Your conversations save here automatically' : 'Create a free account to save your conversations'}</p>
+      </div>
+    ) : (
+      <div className="space-y-1">
+        {[...threads]
+          .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+          .map(t => {
+            const active = isThreadActive(t.id);
+            return (
+              <div
+                key={t.id}
+                onClick={() => onLoad(t)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onLoad(t); } }}
+                className={`group w-full flex items-center gap-2.5 p-2.5 rounded-2xl transition-all cursor-pointer active:scale-[0.98] ${
+                  active
+                    ? 'bg-violet-500/15 border border-violet-500/20'
+                    : 'border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
+                }`}
+              >
+                <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${active ? 'bg-violet-500/20' : 'bg-white/[0.05]'}`}>
+                  <Sparkles className={`h-3 w-3 ${active ? 'text-violet-400' : 'text-white/55'}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white/80 text-[13px] font-semibold truncate">{t.name}</p>
+                  <p className="text-white/50 text-[11px] mt-0.5">{t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}</p>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(t.id); }}
+                  className="opacity-50 hover:opacity-100 focus-visible:opacity-100 p-2 rounded-lg hover:bg-red-500/20 transition-all shrink-0"
+                  aria-label="Delete conversation"
+                >
+                  <Trash2 className="h-3 w-3 text-red-400" />
+                </button>
+              </div>
+            );
+          })}
+      </div>
+    )
+  );
+}
+
+
+function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread }: {
+  threads: SavedThread[];
+  onUpload: () => void;
+  onPaste: () => void;
+  onLoadThread: (t: SavedThread) => void;
+}) {
+  const recentThread = threads.length > 0
+    ? [...threads].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0]
+    : null;
+  return (
+
+                              <div className="mb-4 animate-in fade-in duration-500">
+                  <p className="text-[11px] text-white/45 font-bold uppercase tracking-wider mb-2 px-1">Start with</p>
+                  <div className={`grid gap-2 ${recentThread ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                    <button
+                      onClick={() => onUpload()}
+                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                    >
+                      <span className="text-xl">📸</span>
+                      <span className="text-[11px] font-semibold text-white/55">Screenshot</span>
+                      <span className="text-[10px] text-white/50">Upload a convo</span>
+                    </button>
+                    <button
+                      onClick={() => { onPaste() }}
+                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
+                    >
+                      <span className="text-xl">💬</span>
+                      <span className="text-[11px] font-semibold text-white/55">Paste message</span>
+                      <span className="text-[10px] text-white/50">Get a reply</span>
+                    </button>
+                    {recentThread && (
+                      <button
+                        onClick={() => onLoadThread(recentThread)}
+                        className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-violet-500/[0.07] border border-violet-500/15 hover:bg-violet-500/[0.12] hover:border-violet-500/25 transition-all active:scale-95 text-center"
+                      >
+                        <span className="text-xl">🔥</span>
+                        <span className="text-[11px] font-semibold text-violet-300/70 truncate w-full">{recentThread.name?.split(' ').slice(0, 2).join(' ') || 'Last convo'}</span>
+                        <span className="text-[10px] text-white/50">Pick up here</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+  );
+}
+
+function CoachOrchestrationResult({
+  orch, msg, index, copiedId, expanded, onToggleExpand, onCopy,
+  onQuickCopyDone, theyRepliedOpen, theyRepliedInput, onTheyRepliedInput,
+  onTheyRepliedSubmit, onTheyRepliedClose,
+}: {
+  orch: OrchestrateResult;
+  msg: StrategyChatMessage;
+  index: number;
+  copiedId: string | null;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onCopy: CoachCopyFn;
+  onQuickCopyDone: () => void;
+  theyRepliedOpen: boolean;
+  theyRepliedInput: string;
+  onTheyRepliedInput: (v: string) => void;
+  onTheyRepliedSubmit: (text: string) => void;
+  onTheyRepliedClose: () => void;
+}) {
+  return (
+
+                                                  <div className="w-full space-y-2">
+                            {/* Strategy pills */}
+                            <div className="flex flex-wrap gap-1.5 px-1">
+                              <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                                orch.strategy.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
+                                orch.strategy.momentum === 'Declining' || orch.strategy.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
+                                'bg-white/[0.08] text-white/50'
+                              }`}>
+                                {orch.strategy.momentum === 'Rising' ? <TrendingUp className="h-2.5 w-2.5" /> : orch.strategy.momentum === 'Declining' || orch.strategy.momentum === 'Stalling' ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
+                                {orch.strategy.momentum}
+                              </span>
+                              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{orch.strategy.balance}</span>
+                              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                                orch.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
+                                orch.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
+                                'bg-violet-500/15 text-violet-300'
+                              }`}>{orch.strategy.move.energy.replace('_', ' ')}</span>
+                              {orch.strategy.move.risk === 'high' && (
+                                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-500/15 text-red-400">⚠ high risk</span>
+                              )}
+                            </div>
+                            <p className="text-[12px] text-white/50 italic px-1">&ldquo;{orch.strategy.move.one_liner}&rdquo;</p>
+
+                            {/* Quick copy winner row + they replied prompt */}
+                            {orch.winner && (
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2 px-1">
+                                  <button
+                                    onClick={() => { onCopy(orch.winner!.text, `qw-${index}`, { msg, index, slot: 'winner', tone: orch.winner!.style }); onQuickCopyDone(); }}
+                                    className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/[0.10] border border-amber-500/25 hover:bg-amber-500/[0.16] hover:border-amber-500/40 transition-all active:scale-[0.98] group"
+                                  >
+                                    <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                                    <p className="text-[13px] text-white/90 font-medium truncate flex-1">{orch.winner.text}</p>
+                                    <span className="text-[11px] font-bold text-amber-400/60 group-hover:text-amber-400 transition-colors shrink-0">
+                                      {copiedId === `qw-${index}` ? '✓ Copied' : 'Copy →'}
+                                    </span>
+                                  </button>
+                                </div>
+                                {theyRepliedOpen && (
+                                  <div className="flex items-center gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <input
+                                      autoFocus
+                                      value={theyRepliedInput}
+                                      onChange={e => onTheyRepliedInput(e.target.value)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter' && theyRepliedInput.trim()) onTheyRepliedSubmit(theyRepliedInput.trim());
+                                        if (e.key === 'Escape') onTheyRepliedClose();
+                                      }}
+                                      placeholder="They replied: paste it here..."
+                                      className="flex-1 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-[12px] focus:outline-none focus:border-amber-500/30 transition-all"
+                                    />
+                                    <button
+                                      onClick={() => { if (theyRepliedInput.trim()) onTheyRepliedSubmit(theyRepliedInput.trim()); else onTheyRepliedClose(); }}
+                                      className="px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 text-[11px] font-bold hover:bg-amber-500/25 transition-all active:scale-95"
+                                    >→</button>
+                                    <button onClick={onTheyRepliedClose} className="text-white/45 hover:text-white/50 transition-colors"><X className="h-3.5 w-3.5" /></button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Winner card detail */}
+                            {orch.winner && (
+                              <div className="relative">
+                                <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 z-10">
+                                  <Trophy className="h-2.5 w-2.5 text-amber-400" />
+                                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Winner</span>
+                                </div>
+                                <button
+                                  onClick={() => onCopy(orch.winner!.text, `w-${index}`, { msg, index, slot: 'winner', tone: orch.winner!.style })}
+                                  className="w-full text-left mt-1 px-4 pt-5 pb-3 rounded-xl bg-amber-500/[0.08] border border-amber-500/20 hover:bg-amber-500/[0.12] hover:border-amber-500/35 transition-all active:scale-[0.98] group"
+                                >
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[orch.winner.style]?.color || 'bg-white/10 text-white/50'}`}>
+                                      {STYLE_CONFIG[orch.winner.style]?.emoji} {STYLE_CONFIG[orch.winner.style]?.label || orch.winner.style}
+                                    </span>
+                                    <span className="text-[11px] text-amber-400/50 group-hover:text-amber-400 transition-colors">
+                                      {copiedId === `w-${index}` ? <Check className="h-3 w-3" /> : 'Copy →'}
+                                    </span>
+                                  </div>
+                                  <p className="text-[14px] text-white/90 font-medium">{orch.winner.text}</p>
+                                  {orch.winner_reason && <p className="text-[11px] text-amber-400/40 mt-1.5">💡 {orch.winner_reason}</p>}
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Backup card */}
+                            {orch.backup && orch.backup.text !== orch.winner?.text && (
+                              <button
+                                onClick={() => onCopy(orch.backup!.text, `b-${index}`, { msg, index, slot: 'backup', tone: orch.backup!.style })}
+                                className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] transition-all active:scale-[0.98] group"
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-bold text-white/55 uppercase tracking-wider">Backup</span>
+                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[orch.backup.style]?.color || 'bg-white/10 text-white/50'}`}>
+                                      {STYLE_CONFIG[orch.backup.style]?.emoji} {STYLE_CONFIG[orch.backup.style]?.label || orch.backup.style}
+                                    </span>
+                                  </div>
+                                  <span className="text-[11px] text-white/55 group-hover:text-white/60 transition-colors">
+                                    {copiedId === `b-${index}` ? <Check className="h-3 w-3" /> : 'Copy →'}
+                                  </span>
+                                </div>
+                                <p className="text-[13px] text-white/70">{orch.backup.text}</p>
+                              </button>
+                            )}
+
+                            {/* Expand/collapse all candidates */}
+                            <button
+                              onClick={() => onToggleExpand()}
+                              className="flex items-center gap-1.5 px-2 py-1 text-[11px] text-white/50 hover:text-white/50 transition-colors"
+                            >
+                              {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                              {expanded ? 'Hide' : 'Show'} all {orch.candidates?.length || 0} candidates + scores
+                              <span className="text-white/40 ml-1">{orch.latency.total}ms</span>
+                            </button>
+
+                            {/* Expanded trace */}
+                            {expanded && (
+                              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {/* Context extraction */}
+                                <div className="px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-2">Context Extraction</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">tone: {orch.context_extraction.her_tone}</span>
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">topic: {orch.context_extraction.topic}</span>
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">goal: {orch.context_extraction.goal_detected}</span>
+                                  </div>
+                                  {orch.context_extraction.must_acknowledge.length > 0 && (
+                                    <div className="mt-1.5">
+                                      <p className="text-[10px] text-red-400/50 font-bold">Must acknowledge:</p>
+                                      {orch.context_extraction.must_acknowledge.map((a, idx) => (
+                                        <p key={idx} className="text-[11px] text-white/60 ml-2">• {a}</p>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* All candidates with scores */}
+                                {orch.candidates?.map((c, cIdx) => (
+                                  <button
+                                    key={cIdx}
+                                    onClick={() => onCopy(c.text, `c-${index}-${cIdx}`, { msg, index, slot: cIdx === orch.winner_id ? 'winner' : cIdx === orch.backup_id ? 'backup' : `candidate_${cIdx}`, tone: c.style })}
+                                    className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all active:scale-[0.98] group ${
+                                      cIdx === orch.winner_id ? 'bg-amber-500/[0.06] border-amber-500/20' :
+                                      cIdx === orch.backup_id ? 'bg-white/[0.03] border-white/[0.08]' :
+                                      'bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04]'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <div className="flex items-center gap-1.5">
+                                        {cIdx === orch.winner_id && <Trophy className="h-3 w-3 text-amber-400" />}
+                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[c.style]?.color || 'bg-white/10 text-white/50'}`}>
+                                          {STYLE_CONFIG[c.style]?.emoji} {STYLE_CONFIG[c.style]?.label || c.style}
+                                        </span>
+                                        <span className="text-[10px] text-white/45">{c.word_count}w</span>
+                                      </div>
+                                      <span className="text-[11px] text-white/45 group-hover:text-white/50 transition-colors">
+                                        {copiedId === `c-${index}-${cIdx}` ? <Check className="h-3 w-3 text-emerald-400" /> : 'Copy'}
+                                      </span>
+                                    </div>
+                                    <p className="text-[13px] text-white/75 mb-2">{c.text}</p>
+                                    <div className="space-y-1">
+                                      <CoachScoreBar label="Neediness" value={c.scores.neediness_risk} inverted />
+                                      <CoachScoreBar label="Clarity" value={c.scores.clarity} />
+                                      <CoachScoreBar label="Forward" value={c.scores.forward_motion} />
+                                      <CoachScoreBar label="Tone match" value={c.scores.tone_match} />
+                                    </div>
+                                    {c.notes && <p className="text-[10px] text-white/45 mt-1.5">{c.notes}</p>}
+                                  </button>
+                                ))}
+                                <div className="flex gap-3 px-2 text-[10px] text-white/40">
+                                  <span>Strategy: {orch.latency.strategy}ms</span>
+                                  <span>Gen: {orch.latency.generation}ms</span>
+                                  <span>Critic: {orch.latency.critic}ms</span>
+                                  <span className="text-white/50 font-bold">Total: {orch.latency.total}ms</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+  );
+}
+
+function CoachDraftCards({
+  msg, index, context, copiedId, onCopy, onCoachThis, isPro,
+}: {
+  msg: StrategyChatMessage;
+  index: number;
+  context: ContextType | null;
+  copiedId: string | null;
+  onCopy: CoachCopyFn;
+  onCoachThis: (text: string) => void;
+  isPro: boolean;
+}) {
+  if (!msg.draft) return null;
+  const draftLabels = DRAFT_LABELS[getContextCategory(context)];
+  const cat = getContextCategory(context);
+  const accentA = cat === 'professional' ? 'hover:border-amber-500/30' : cat === 'platonic' ? 'hover:border-blue-500/30' : 'hover:border-violet-500/30';
+  const accentB = cat === 'professional' ? 'hover:border-amber-500/20' : cat === 'platonic' ? 'hover:border-cyan-500/30' : 'hover:border-orange-500/30';
+  const accentC = cat === 'professional' ? 'hover:border-amber-400/20' : cat === 'platonic' ? 'hover:border-blue-400/30' : 'hover:border-emerald-500/30';
+  const copyA = cat === 'professional' ? 'text-amber-400/50 group-hover:text-amber-400' : cat === 'platonic' ? 'text-blue-400/50 group-hover:text-blue-400' : 'text-violet-400/50 group-hover:text-violet-400';
+  const copyB = cat === 'professional' ? 'text-amber-300/50 group-hover:text-amber-300' : cat === 'platonic' ? 'text-cyan-400/50 group-hover:text-cyan-400' : 'text-orange-400/50 group-hover:text-orange-400';
+  const copyC = cat === 'professional' ? 'text-amber-200/50 group-hover:text-amber-200' : cat === 'platonic' ? 'text-blue-300/50 group-hover:text-blue-300' : 'text-emerald-400/50 group-hover:text-emerald-400';
+  const headerColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-emerald-400/70';
+  return (
+                                                <div className="w-full space-y-2">
+                          <p className={`text-[11px] font-bold uppercase tracking-wider px-1 ${headerColor}`}>Coach drafts</p>
+                          {msg.draft.shorter && (
+                            <div>
+                              <button onClick={() => onCopy(msg.draft!.shorter!, `d-${index}-shorter`, { msg, index, slot: 'shorter', tone: 'shorter' })} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentA} transition-all active:scale-[0.98] group`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[11px] text-white/40 font-bold uppercase tracking-wider">⚡ {draftLabels.a}</span>
+                                  <span className={`text-[11px] transition-colors ${copyA}`}>{copiedId === `d-${index}-shorter` ? '✓ Copied' : 'Copy →'}</span>
+                                </div>
+                                <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
+                              </button>
+                              <button onClick={() => { onCoachThis(msg.draft!.shorter!) }} className="w-full px-4 py-1 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
+                            </div>
+                          )}
+                          {msg.draft.spicier && (
+                            <div>
+                              <button onClick={() => onCopy(msg.draft!.spicier!, `d-${index}-spicier`, { msg, index, slot: 'spicier', tone: 'spicier' })} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentB} transition-all active:scale-[0.98] group`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[11px] text-white/40 font-bold uppercase tracking-wider">✦ {draftLabels.b}</span>
+                                  <span className={`text-[11px] transition-colors ${copyB}`}>{copiedId === `d-${index}-spicier` ? '✓ Copied' : 'Copy →'}</span>
+                                </div>
+                                <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
+                              </button>
+                              <button onClick={() => { onCoachThis(msg.draft!.spicier!) }} className="w-full px-4 py-1 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
+                            </div>
+                          )}
+                          {msg.draft.softer && (
+                            <div>
+                              <button onClick={() => onCopy(msg.draft!.softer!, `d-${index}-softer`, { msg, index, slot: 'softer', tone: 'softer' })} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentC} transition-all active:scale-[0.98] group`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-[11px] text-white/40 font-bold uppercase tracking-wider">💚 {draftLabels.c}</span>
+                                  <span className={`text-[11px] transition-colors ${copyC}`}>{copiedId === `d-${index}-softer` ? '✓ Copied' : 'Copy →'}</span>
+                                </div>
+                                <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
+                              </button>
+                              <button onClick={() => { onCoachThis(msg.draft!.softer!) }} className="w-full px-4 py-1 text-left text-[11px] text-white/45 hover:text-violet-400 transition-colors">Coach this →</button>
+                            </div>
+                          )}
+                        {!isPro && (
+                          <a href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/[0.06] border border-violet-500/15 hover:bg-violet-500/[0.10] transition-all mt-1">
+                            <Shield className="h-3 w-3 text-violet-400 shrink-0" />
+                            <span className="text-[11px] text-violet-300/60 flex-1">Pro gets 6 scored candidates + strategy</span>
+                            <span className="text-[11px] text-violet-400/40">→</span>
+                          </a>
+                        )}
+                        </div>
+  );
+}
+
 export default function AppPage() {
   const searchParams = useSearchParams();
   const lightMode = searchParams.get('lm') === '1';
@@ -377,6 +789,11 @@ export default function AppPage() {
   const [theyRepliedForIdx, setTheyRepliedForIdx] = useState<number | null>(null);
   const [theyRepliedInput, setTheyRepliedInput] = useState('');
   const [coachPipelineStep, setCoachPipelineStep] = useState<string | null>(null);
+  const [coachStreaming, setCoachStreaming] = useState(false);
+  const [coachOutcome, setCoachOutcome] = useState<CoachOutcomePrompt | null>(null);
+  const [showCoachThreads, setShowCoachThreads] = useState(false);
+  const coachRunIds = useRef<Record<number, string>>({});
+  const coachCopiedReplies = useRef<Record<string, string>>({});
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [saving, setSaving] = useState(false);
   const [savingCoach, setSavingCoach] = useState(false);
@@ -876,6 +1293,17 @@ export default function AppPage() {
     if (!container) return;
     container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   }, [strategyChatHistory, strategyChatLoading]);
+
+  // Ask about the last copied reply when someone comes back later.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const pending = readPendingOutcome();
+      if (pending && isOutcomeDue(pending, Date.now())) {
+        setCoachOutcome({ ...pending, asked: 'return_visit', preview: pending.theirMessagePreview });
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   // Auto-save thread after 2+ messages (1.5s debounce)
   useEffect(() => {
@@ -2183,6 +2611,9 @@ export default function AppPage() {
       }
 
       setActiveCoachSessionId(saved.id);
+      setCoachOutcome(null);
+      setShowCoachThreads(false);
+      coachRunIds.current = {};
       setActiveThreadId(null);
       setActiveThreadName(null);
       setThread([]);
@@ -2270,31 +2701,160 @@ export default function AppPage() {
     setExpandedCoachTrace(null);
     setCoachCopiedId(null);
     setCoachPipelineStep(null);
+    setCoachOutcome(null);
+    coachRunIds.current = {};
   };
 
-  const copyCoachText = (text: string, id: string) => {
+  const coachSource = () => (isSocialTraffic.current ? 'social' : 'organic');
+
+  // One "generated" event per Coach answer that contains replies someone could send.
+  const logCoachGenerated = (engine: 'fast' | 'verified' | 'deep', replyCount: number): string => {
+    const runId = createReplyGenerationId();
+    sendReplyLearningEvent({
+      event: 'generated',
+      generationId: runId,
+      replyId: runId,
+      context: selectedContext,
+      props: { source: coachSource(), mode: 'coach', engine, reply_count: replyCount },
+    });
+    return runId;
+  };
+
+  // Copying a Coach reply is a real choice: it feeds Style DNA and lets us ask whether it worked.
+  const copyCoachText = (
+    text: string,
+    id: string,
+    learn?: { msg: StrategyChatMessage; index: number; slot: string; tone: string },
+  ) => {
     navigator.clipboard.writeText(text);
     if (navigator.vibrate) navigator.vibrate(30);
     setCoachCopiedId(id);
     toast({ title: '✓ Copied' });
-    track('reply_copied', { from: 'coach', id });
     setTimeout(() => setCoachCopiedId(null), 2000);
+    if (!learn) {
+      track('reply_copied', { from: 'coach', id });
+      return;
+    }
+    const runId = learn.msg.generationId || (coachRunIds.current[learn.index] ||= createReplyGenerationId());
+    const replyId = replyIdFor(runId, learn.slot);
+    if (coachCopiedReplies.current[replyId] !== text) {
+      coachCopiedReplies.current[replyId] = text;
+      const styleSignals = deriveStyleSignals(text);
+      recordLocalStyleSignal(styleSignals, learn.tone, 'copied');
+      for (const event of ['selected', 'copied'] as const) {
+        sendReplyLearningEvent({
+          event,
+          generationId: runId,
+          replyId,
+          tone: learn.tone,
+          context: selectedContext,
+          styleSignals,
+          props: { source: coachSource(), from: 'coach', engine: learn.msg.orchestration ? 'deep' : isPro ? 'verified' : 'fast', slot: learn.slot },
+        });
+      }
+    }
+    const lastUserText = [...strategyChatHistory.slice(0, learn.index)].reverse().find(m => m.role === 'user' && m.content)?.content || '';
+    savePendingOutcome({ generationId: runId, replyId, tone: learn.tone, context: selectedContext || 'crush', theirMessagePreview: lastUserText });
+    setCoachOutcome({ generationId: runId, replyId, tone: learn.tone, context: selectedContext, asked: 'after_copy' });
   };
 
-  const CoachScoreBar = ({ label, value, inverted = false }: { label: string; value: number; inverted?: boolean }) => {
-    const displayValue = inverted ? 100 - value : value;
-    const color =
-      displayValue >= 80 ? 'bg-emerald-500' : displayValue >= 60 ? 'bg-amber-500' : 'bg-red-500';
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] text-white/40 w-20 shrink-0">{label}</span>
-        <div className="flex-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
-          <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${displayValue}%` }} />
-        </div>
-        <span className="text-[10px] text-white/50 w-8 text-right">{value}</span>
-      </div>
-    );
+  const submitTheyReplied = (text: string) => {
+    setStrategyChatInput(`They replied: "${text}"`);
+    setTheyRepliedForIdx(null);
+    setTheyRepliedInput('');
+    setTimeout(() => handleStrategyChatSend(), 50);
   };
+
+  const closeTheyReplied = () => {
+    setTheyRepliedForIdx(null);
+    setTheyRepliedInput('');
+  };
+
+  const coachThisDraft = (text: string) => {
+    setStrategyChatInput(`I'm thinking of sending this: "${text}" — is this the right move?`);
+    setTimeout(() => coachTextareaRef.current?.focus(), 50);
+  };
+
+  const reportCoachOutcome = (outcome: ReplyOutcome) => {
+    if (!coachOutcome) return;
+    sendReplyLearningEvent({
+      event: 'outcome_reported',
+      generationId: coachOutcome.generationId,
+      replyId: coachOutcome.replyId,
+      tone: coachOutcome.tone,
+      context: coachOutcome.context,
+      outcome,
+      props: { source: coachSource(), from: 'coach', asked: coachOutcome.asked },
+    });
+    clearPendingOutcome();
+    setCoachOutcome(null);
+    if (outcome === 'got_reply') {
+      toast({ title: 'Nice. Logged as a win.', description: 'Paste what they said and get your next move.' });
+      setStrategyChatInput('They replied: ');
+      setTimeout(() => coachTextareaRef.current?.focus(), 50);
+    } else if (outcome === 'no_reply') {
+      toast({ title: 'Logged. Thanks for telling us.' });
+    }
+  };
+
+  // Sends one message to Coach and streams the answer into the chat as it is written.
+  const requestCoachReply = async (body: Record<string, unknown>, signal?: AbortSignal): Promise<'ok' | 'limit'> => {
+    const res = await fetch('/api/strategy-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, stream: true, analytics: getAnalyticsContext() }),
+      signal,
+    });
+    if (!res.ok) {
+      if (res.status === 429) return 'limit';
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed');
+    }
+
+    const withRunId = (draft: CoachDraft | null | undefined) => {
+      const count = draft ? [draft.shorter, draft.spicier, draft.softer].filter(Boolean).length : 0;
+      return count > 0 ? logCoachGenerated(isPro ? 'verified' : 'fast', count) : undefined;
+    };
+
+    if (!res.body || !res.headers.get('content-type')?.includes('ndjson')) {
+      const data = await res.json();
+      const runId = withRunId(data.draft);
+      setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft, generationId: runId }]);
+      return 'ok';
+    }
+
+    let started = false;
+    let finished = false;
+    let text = '';
+    const write = (patch: Partial<StrategyChatMessage>) => {
+      const isFirst = !started;
+      started = true;
+      setStrategyChatHistory(prev => isFirst
+        ? [...prev, { role: 'assistant', content: '', ...patch }]
+        : [...prev.slice(0, -1), { ...prev[prev.length - 1], ...patch }]);
+    };
+    try {
+      await readCoachStream(res.body, event => {
+        if (event.t === 'delta') {
+          text += event.v;
+          setCoachStreaming(true);
+          write({ content: text });
+        } else if (event.t === 'done') {
+          finished = true;
+          write({ content: event.reply, draft: event.draft, generationId: withRunId(event.draft) });
+        }
+      });
+      if (!finished) throw new Error('Failed');
+    } catch (error) {
+      // Drop the half-written answer so the caller can restore the person's message for a retry.
+      if (started) setStrategyChatHistory(prev => prev.slice(0, -1));
+      throw error;
+    } finally {
+      setCoachStreaming(false);
+    }
+    return 'ok';
+  };
+
 
   const handleCoachScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -2385,7 +2945,8 @@ export default function AppPage() {
             if (!res.ok) throw new Error(data.error || 'Failed');
 
             if (data.mode === 'orchestrate') {
-              setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: '', orchestration: data }]);
+              const runId = logCoachGenerated('deep', data.candidates?.length || 0);
+              setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: '', orchestration: data, generationId: runId }]);
               // Also update strategyData for the rest of the app
               if (data.strategy) {
                 setStrategyData({
@@ -2396,7 +2957,8 @@ export default function AppPage() {
                 });
               }
             } else {
-              setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+              const runId = data.draft ? logCoachGenerated('deep', Object.values(data.draft).filter(Boolean).length) : undefined;
+              setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft, generationId: runId }]);
             }
           } else {
             // Free: Use strategy-chat (single coach call)
@@ -2404,28 +2966,18 @@ export default function AppPage() {
               ? `Here's the conversation from the screenshot:\n${extracted[0]}`
               : `Here's the conversation from ${extracted.length} screenshots:\n${extracted.map((t: string, i: number) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
             const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
-            const res = await fetch('/api/strategy-chat', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                threadContext,
-                strategy: strategyData,
-                context: selectedContext || 'crush',
-                chatHistory: richHistory,
-                userMessage: contextMsg,
-                analytics: getAnalyticsContext(),
-              }),
+            const result = await requestCoachReply({
+              threadContext,
+              strategy: strategyData,
+              context: selectedContext || 'crush',
+              chatHistory: richHistory,
+              userMessage: contextMsg,
             });
-            const data = await res.json();
-            if (!res.ok) {
-              if (res.status === 429) {
-                setShowPaywall(true);
-                setStrategyChatHistory(prev => prev.slice(0, -1));
-                return;
-              }
-              throw new Error(data.error || 'Failed');
+            if (result === 'limit') {
+              setShowPaywall(true);
+              setStrategyChatHistory(prev => prev.slice(0, -1));
+              return;
             }
-            setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
           }
         } catch (err: any) {
           const msg = err?.message || '';
@@ -2529,7 +3081,8 @@ export default function AppPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed');
         if (data.mode === 'orchestrate') {
-          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: '', orchestration: data }]);
+          const runId = logCoachGenerated('deep', data.candidates?.length || 0);
+          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: '', orchestration: data, generationId: runId }]);
           if (data.strategy) {
             setStrategyData({
               momentum: data.strategy.momentum,
@@ -2539,35 +3092,25 @@ export default function AppPage() {
             });
           }
         } else {
-          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
+          const runId = data.draft ? logCoachGenerated('deep', Object.values(data.draft).filter(Boolean).length) : undefined;
+          setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft, generationId: runId }]);
         }
       } else {
         // Free users or no thread — use strategy-chat
         const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
-        const res = await fetch('/api/strategy-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            threadContext: extractedThread || threadContext,
-            strategy: strategyData,
-            context: selectedContext || 'crush',
-            chatHistory: richHistory,
-            userMessage: userMsg,
-            analytics: getAnalyticsContext(),
-          }),
-          signal: controller.signal,
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (res.status === 429) {
-            setShowPaywall(true);
-            setStrategyChatHistory(prev => prev.slice(0, -1));
-            setStrategyChatInput(userMsg);
-            return;
-          }
-          throw new Error(data.error || 'Failed');
+        const result = await requestCoachReply({
+          threadContext: extractedThread || threadContext,
+          strategy: strategyData,
+          context: selectedContext || 'crush',
+          chatHistory: richHistory,
+          userMessage: userMsg,
+        }, controller.signal);
+        if (result === 'limit') {
+          setShowPaywall(true);
+          setStrategyChatHistory(prev => prev.slice(0, -1));
+          setStrategyChatInput(userMsg);
+          return;
         }
-        setStrategyChatHistory(prev => [...prev, { role: 'assistant', content: data.reply, draft: data.draft }]);
       }
     } catch (err: any) {
       const isTimeout = err?.name === 'AbortError';
@@ -2639,6 +3182,9 @@ export default function AppPage() {
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.alreadySubscribed) {
+        // Already subscribed: plan changes happen in the billing portal.
+        window.location.href = '/dashboard';
       } else {
         track('checkout_failed', { plan, source, from: 'app_paywall', reason: data.error || 'missing_url' });
         toast({
@@ -2656,6 +3202,7 @@ export default function AppPage() {
       });
     }
   };
+
 
   // Apply light-mode filter to <html> so position:fixed children aren't broken
   useEffect(() => {
@@ -2766,7 +3313,7 @@ export default function AppPage() {
             </Link>
             <button
               onClick={dismissDeepUpsell}
-              className="text-white/70 hover:text-white text-[10px] font-semibold transition-colors"
+              className="text-white/70 hover:text-white text-[11px] font-semibold transition-colors"
             >
               Dismiss
             </button>
@@ -2797,8 +3344,8 @@ export default function AppPage() {
 
       <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] max-w-lg md:max-w-2xl lg:max-w-5xl ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Link href={userId ? '/dashboard' : '/pricing'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+        <div className="flex items-center justify-between mb-3 sm:mb-6">
+          <Link href={userId ? '/dashboard' : '/pricing'} aria-label={userId ? 'Dashboard' : 'Plans'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
             <ArrowLeft className="h-5 w-5 text-white/70" />
           </Link>
           <div className="flex items-center gap-3">
@@ -2808,14 +3355,14 @@ export default function AppPage() {
             <Link
               href="/changelog"
               onClick={() => { localStorage.setItem('tw_changelog_seen', CHANGELOG[0]?.date || ''); setHasUnread(false); }}
-              className="relative px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[10px] font-bold text-white/50 hover:text-white/80 transition-colors"
+              className="relative hidden sm:block px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[11px] font-bold text-white/50 hover:text-white/80 transition-colors"
             >
               v{CURRENT_VERSION}
               {hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-violet-500 animate-pulse" />}
             </Link>
           </div>
-          <Link href="/profile" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
-            <Crown className="h-5 w-5 text-white/70" />
+          <Link href="/profile" aria-label="Account" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            <User className="h-5 w-5 text-white/70" />
           </Link>
         </div>
 
@@ -2928,7 +3475,7 @@ export default function AppPage() {
                   </button>
                   <button
                     onClick={() => handleReportOutcome('not_reported')}
-                    className="px-2 py-2 text-xs font-semibold text-white/30 transition-colors hover:text-white/55"
+                    className="px-2 py-2 text-xs font-semibold text-white/55 transition-colors hover:text-white/55"
                   >
                     Skip
                   </button>
@@ -2960,59 +3507,15 @@ export default function AppPage() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-2 py-2 min-h-0">
-              {savedThreads.length === 0 ? (
-                <div className="text-center py-10 px-3">
-                  <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
-                    <MessageCircle className="h-5 w-5 text-white/20" />
-                  </div>
-                  <p className="text-white/25 text-xs leading-relaxed">Your conversations save here automatically</p>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {[...savedThreads]
-                    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-                    .map(t => {
-                      const isActive = activeCoachSessionId === t.id || activeThreadId === t.id;
-                      return (
-                        <div
-                          key={t.id}
-                          onClick={() => handleLoadThread(t)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLoadThread(t); } }}
-                          className={`group w-full flex items-center gap-2.5 p-2.5 rounded-2xl transition-all cursor-pointer active:scale-[0.98] ${
-                            isActive
-                              ? 'bg-violet-500/15 border border-violet-500/20'
-                              : 'border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
-                          }`}
-                        >
-                          <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-violet-500/20' : 'bg-white/[0.05]'}`}>
-                            <Sparkles className={`h-3 w-3 ${isActive ? 'text-violet-400' : 'text-white/30'}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white/80 text-[13px] font-semibold truncate">{t.name}</p>
-                            <p className="text-white/25 text-[10px] mt-0.5">{t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}</p>
-                          </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all shrink-0"
-                            aria-label="Delete conversation"
-                          >
-                            <Trash2 className="h-3 w-3 text-red-400" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
+              <ConversationList threads={savedThreads} userId={userId} isThreadActive={(id) => activeCoachSessionId === id || activeThreadId === id} onLoad={handleLoadThread} onDelete={handleDeleteThread} />
             </div>
           </aside>
 
           {/* ── Coach card ── */}
           <div className="flex-1 min-w-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col">
           {/* ─ Header — always visible, compact, personalized ─ */}
-          <div className="shrink-0 pt-5 pb-3 px-6 border-b border-white/[0.06]">
-            <div className="flex items-center justify-between mb-1">
+          <div className="shrink-0 pt-3 sm:pt-5 pb-3 px-4 sm:px-6 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between gap-2 mb-1">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 {userName ? (
                   <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-[13px] font-black text-white shadow-sm shadow-violet-500/30">
@@ -3023,6 +3526,14 @@ export default function AppPage() {
                 )}
                 Coach
               </h2>
+              <div className="flex items-center gap-2">
+              <button
+                onClick={() => { fetchThreads(); setShowCoachThreads(true); }}
+                className="lg:hidden flex min-h-9 items-center gap-1.5 px-3 rounded-xl text-[12px] font-bold border bg-white/[0.06] border-white/[0.12] text-white/70 hover:bg-white/[0.12] transition-all active:scale-95"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                Chats{savedThreads.length > 0 ? ` (${savedThreads.length})` : ''}
+              </button>
               {isPro && (
                 <button
                   onClick={() => setUseV2(v => !v)}
@@ -3034,8 +3545,9 @@ export default function AppPage() {
                   {useV2 ? 'V2 On' : 'V1 On'}
                 </button>
               )}
+              </div>
             </div>
-            <p className="text-sm text-white/40">
+            <p className={`text-sm text-white/40 ${strategyChatHistory.length > 0 ? 'hidden sm:block' : ''}`}>
               {userName ? `What's up ${userName.split(' ')[0]}? ` : ''}Drop a screenshot, paste, or pick a scenario
             </p>
 
@@ -3061,22 +3573,22 @@ export default function AppPage() {
                     <>
                       <div className="flex items-center gap-1.5">
                         <div className={`w-2 h-2 rounded-full transition-all duration-500 ${momentumColor}`} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{sd.momentum}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-white/50">{sd.momentum}</span>
                       </div>
                       <div className="w-px h-3 bg-white/[0.08]" />
                       <div className="flex items-center gap-1.5">
                         <div className={`w-2 h-2 rounded-full transition-all duration-500 ${balanceColor}`} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{sd.balance}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-white/50">{sd.balance}</span>
                       </div>
                       <div className="w-px h-3 bg-white/[0.08]" />
                       <div className="flex items-center gap-1.5">
                         <div className={`w-2 h-2 rounded-full transition-all duration-500 ${energyColor}`} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{sd.move.energy.replace('_', ' ')}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-white/50">{sd.move.energy.replace('_', ' ')}</span>
                       </div>
                       {sd.move.risk && sd.move.risk !== 'low' && (
                         <>
                           <div className="w-px h-3 bg-white/[0.08]" />
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
                             sd.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
                           }`}>{sd.move.risk} risk</span>
                         </>
@@ -3089,7 +3601,7 @@ export default function AppPage() {
           </div>
 
           {/* ─ Scrollable content — chips OR chat history ─ */}
-          <div className="flex-1 overflow-y-auto px-6 py-3 min-h-0">
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 min-h-0">
             {/* Contextual hint — inside card so it doesn't push card below safe area */}
             <ContextualHints
               hasMessage={!!message.trim()}
@@ -3112,13 +3624,13 @@ export default function AppPage() {
                   <p className={`text-[11px] font-bold leading-tight ${useV2 ? 'text-emerald-300' : 'text-violet-300'}`}>
                     {useV2 ? 'Deep Analysis on' : 'Fast Mode on'}
                   </p>
-                  <p className="text-[10px] text-white/30 leading-tight mt-0.5">
+                  <p className="text-[11px] text-white/55 leading-tight mt-0.5">
                     {useV2 ? '6 scored candidates · strategy · takes ~8s' : 'Instant replies · no scoring overhead'}
                   </p>
                 </div>
                 <button
                   onClick={() => { setUseV2(v => !v); dismissModeReminder(); }}
-                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ${
                     useV2
                       ? 'bg-violet-500/15 border-violet-500/25 text-violet-300 hover:bg-violet-500/25'
                       : 'bg-emerald-500/15 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25'
@@ -3128,7 +3640,7 @@ export default function AppPage() {
                 </button>
                 <button
                   onClick={dismissModeReminder}
-                  className="shrink-0 p-1 text-white/20 hover:text-white/50 transition-colors"
+                  className="shrink-0 p-1 text-white/45 hover:text-white/50 transition-colors"
                   aria-label="Dismiss"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -3137,44 +3649,14 @@ export default function AppPage() {
             )}
 
             {/* ── Start here — entry-point cards (empty state) ── */}
-            {!loadingSession && strategyChatHistory.length === 0 && (() => {
-              const recentThread = savedThreads.length > 0
-                ? savedThreads.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0]
-                : null;
-              return (
-                <div className="mb-4 animate-in fade-in duration-500">
-                  <p className="text-[10px] text-white/20 font-bold uppercase tracking-wider mb-2 px-1">Start with</p>
-                  <div className={`grid gap-2 ${recentThread ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                    <button
-                      onClick={() => coachFileInputRef.current?.click()}
-                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
-                    >
-                      <span className="text-xl">📸</span>
-                      <span className="text-[11px] font-semibold text-white/55">Screenshot</span>
-                      <span className="text-[9px] text-white/25">Upload a convo</span>
-                    </button>
-                    <button
-                      onClick={() => { setStrategyChatInput('Help me reply to this: '); setTimeout(() => coachTextareaRef.current?.focus(), 50); }}
-                      className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-violet-500/20 transition-all active:scale-95 text-center"
-                    >
-                      <span className="text-xl">💬</span>
-                      <span className="text-[11px] font-semibold text-white/55">Paste message</span>
-                      <span className="text-[9px] text-white/25">Get a reply</span>
-                    </button>
-                    {recentThread && (
-                      <button
-                        onClick={() => { setStrategyChatInput(`Pick up where we left off with ${recentThread.name || 'my last convo'}`); setTimeout(() => coachTextareaRef.current?.focus(), 50); setSmartPreviewDismissed(true); }}
-                        className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-violet-500/[0.07] border border-violet-500/15 hover:bg-violet-500/[0.12] hover:border-violet-500/25 transition-all active:scale-95 text-center"
-                      >
-                        <span className="text-xl">🔥</span>
-                        <span className="text-[11px] font-semibold text-violet-300/70 truncate w-full">{recentThread.name?.split(' ').slice(0, 2).join(' ') || 'Last convo'}</span>
-                        <span className="text-[9px] text-white/25">Pick up here</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+            {!loadingSession && strategyChatHistory.length === 0 && (
+              <CoachEntryCards
+                threads={savedThreads}
+                onUpload={() => coachFileInputRef.current?.click()}
+                onPaste={() => { setStrategyChatInput('Help me reply to this: '); setTimeout(() => coachTextareaRef.current?.focus(), 50); }}
+                onLoadThread={handleLoadThread}
+              />
+            )}
 
             {/* Loading session overlay */}
             {loadingSession && (
@@ -3185,42 +3667,6 @@ export default function AppPage() {
                 </div>
               </div>
             )}
-
-            {/* Smart Preview — inside scrollable area, above chips */}
-            {!loadingSession && strategyChatHistory.length === 0 && (() => {
-              const preview = getSmartPreview();
-              if (!preview) return null;
-              return (
-                <button
-                  onClick={() => {
-                    if (preview.type === 'thread' && preview.thread) {
-                      // Pre-fill coach input with thread context rather than loading the old session
-                      setStrategyChatInput(`Help me with ${preview.thread.name || 'my last conversation'}`);
-                    } else {
-                      setStrategyChatInput(preview.text.replace('?', ''));
-                    }
-                    setSmartPreviewDismissed(true);
-                  }}
-                  className="w-full mb-3 p-3.5 rounded-2xl bg-gradient-to-r from-violet-500/[0.08] to-fuchsia-500/[0.08] border border-violet-500/15 hover:border-violet-500/30 hover:from-violet-500/[0.12] hover:to-fuchsia-500/[0.12] transition-all active:scale-[0.98] text-left group animate-in fade-in duration-500"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-base shrink-0">{preview.emoji}</span>
-                      <div className="min-w-0">
-                        <p className="text-[12px] font-semibold text-white/80 truncate">{preview.text}</p>
-                        <p className="text-[10px] text-white/35 mt-0.5">{preview.sub}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      <span className="text-[9px] text-violet-400/60 font-bold uppercase tracking-wider group-hover:text-violet-400 transition-colors">
-                        {preview.type === 'thread' ? 'Ask about it' : 'Try it'}
-                      </span>
-                      <ArrowRight className="h-3 w-3 text-violet-400/40 group-hover:text-violet-400 transition-all" />
-                    </div>
-                  </div>
-                </button>
-              );
-            })()}
 
             {/* Scenario chips — only when no chat history */}
             {!loadingSession && strategyChatHistory.length === 0 && (() => {
@@ -3254,11 +3700,11 @@ export default function AppPage() {
               ];
               return (
                 <>
-                <p className="text-[9px] text-white/20 font-bold uppercase tracking-wider mb-2 px-1">
-                  {cat === 'professional' ? '💼 Work' : cat === 'platonic' ? '🤝 Friend' : '💘 Crush'} scenarios
+                <p className="text-[10px] text-white/45 font-bold uppercase tracking-wider mb-2 px-1">
+                  Or ask Coach
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  {chips.map(chip => (
+                  {chips.slice(0, 4).map(chip => (
                     <button
                       key={chip.label}
                       onClick={() => setStrategyChatInput(chip.prompt)}
@@ -3271,7 +3717,7 @@ export default function AppPage() {
                       <p className="text-[12px] font-semibold text-white/70 leading-snug">
                         <span className="mr-1">{chip.emoji}</span>{chip.label}
                       </p>
-                      <p className="text-[10px] text-white/30 mt-0.5 leading-tight">{chip.sub}</p>
+                      <p className="text-[11px] text-white/55 mt-0.5 leading-tight">{chip.sub}</p>
                     </button>
                   ))}
                 </div>
@@ -3308,209 +3754,28 @@ export default function AppPage() {
                       )}
 
                       {/* ── Orchestration results (full pipeline — Pro) ── */}
-                      {msg.orchestration && (() => {
-                        const orch = msg.orchestration;
-                        const isExp = expandedCoachTrace === i;
-                        return (
-                          <div className="w-full space-y-2">
-                            {/* Strategy pills */}
-                            <div className="flex flex-wrap gap-1.5 px-1">
-                              <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                                orch.strategy.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
-                                orch.strategy.momentum === 'Declining' || orch.strategy.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
-                                'bg-white/[0.08] text-white/50'
-                              }`}>
-                                {orch.strategy.momentum === 'Rising' ? <TrendingUp className="h-2.5 w-2.5" /> : orch.strategy.momentum === 'Declining' || orch.strategy.momentum === 'Stalling' ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
-                                {orch.strategy.momentum}
-                              </span>
-                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{orch.strategy.balance}</span>
-                              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                                orch.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
-                                orch.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
-                                'bg-violet-500/15 text-violet-300'
-                              }`}>{orch.strategy.move.energy.replace('_', ' ')}</span>
-                              {orch.strategy.move.risk === 'high' && (
-                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-500/15 text-red-400">⚠ high risk</span>
-                              )}
-                            </div>
-                            <p className="text-[12px] text-white/50 italic px-1">&ldquo;{orch.strategy.move.one_liner}&rdquo;</p>
-
-                            {/* Quick copy winner row + they replied prompt */}
-                            {orch.winner && (
-                              <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2 px-1">
-                                  <button
-                                    onClick={() => { copyCoachText(orch.winner!.text, `qw-${i}`); setTheyRepliedForIdx(i); }}
-                                    className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/[0.10] border border-amber-500/25 hover:bg-amber-500/[0.16] hover:border-amber-500/40 transition-all active:scale-[0.98] group"
-                                  >
-                                    <Trophy className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                                    <p className="text-[13px] text-white/90 font-medium truncate flex-1">{orch.winner.text}</p>
-                                    <span className="text-[10px] font-bold text-amber-400/60 group-hover:text-amber-400 transition-colors shrink-0">
-                                      {coachCopiedId === `qw-${i}` ? '✓ Copied' : 'Copy →'}
-                                    </span>
-                                  </button>
-                                </div>
-                                {theyRepliedForIdx === i && i === strategyChatHistory.length - 1 && (
-                                  <div className="flex items-center gap-2 px-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <input
-                                      autoFocus
-                                      value={theyRepliedInput}
-                                      onChange={e => setTheyRepliedInput(e.target.value)}
-                                      onKeyDown={e => {
-                                        if (e.key === 'Enter' && theyRepliedInput.trim()) {
-                                          setStrategyChatInput(`They replied: "${theyRepliedInput.trim()}"`);
-                                          setTheyRepliedForIdx(null);
-                                          setTheyRepliedInput('');
-                                          setTimeout(() => handleStrategyChatSend(), 50);
-                                        }
-                                        if (e.key === 'Escape') { setTheyRepliedForIdx(null); setTheyRepliedInput(''); }
-                                      }}
-                                      placeholder="They replied: paste it here..."
-                                      className="flex-1 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/20 text-[12px] focus:outline-none focus:border-amber-500/30 transition-all"
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        if (!theyRepliedInput.trim()) { setTheyRepliedForIdx(null); return; }
-                                        setStrategyChatInput(`They replied: "${theyRepliedInput.trim()}"`);
-                                        setTheyRepliedForIdx(null);
-                                        setTheyRepliedInput('');
-                                        setTimeout(() => handleStrategyChatSend(), 50);
-                                      }}
-                                      className="px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 text-[11px] font-bold hover:bg-amber-500/25 transition-all active:scale-95"
-                                    >→</button>
-                                    <button onClick={() => { setTheyRepliedForIdx(null); setTheyRepliedInput(''); }} className="text-white/20 hover:text-white/50 transition-colors"><X className="h-3.5 w-3.5" /></button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Winner card detail */}
-                            {orch.winner && (
-                              <div className="relative">
-                                <div className="absolute -top-1.5 left-3 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 z-10">
-                                  <Trophy className="h-2.5 w-2.5 text-amber-400" />
-                                  <span className="text-[9px] font-bold text-amber-400 uppercase tracking-wider">Winner</span>
-                                </div>
-                                <button
-                                  onClick={() => copyCoachText(orch.winner!.text, `w-${i}`)}
-                                  className="w-full text-left mt-1 px-4 pt-5 pb-3 rounded-xl bg-amber-500/[0.08] border border-amber-500/20 hover:bg-amber-500/[0.12] hover:border-amber-500/35 transition-all active:scale-[0.98] group"
-                                >
-                                  <div className="flex items-center justify-between mb-1.5">
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[orch.winner.style]?.color || 'bg-white/10 text-white/50'}`}>
-                                      {STYLE_CONFIG[orch.winner.style]?.emoji} {STYLE_CONFIG[orch.winner.style]?.label || orch.winner.style}
-                                    </span>
-                                    <span className="text-[10px] text-amber-400/50 group-hover:text-amber-400 transition-colors">
-                                      {coachCopiedId === `w-${i}` ? <Check className="h-3 w-3" /> : 'Copy →'}
-                                    </span>
-                                  </div>
-                                  <p className="text-[14px] text-white/90 font-medium">{orch.winner.text}</p>
-                                  {orch.winner_reason && <p className="text-[10px] text-amber-400/40 mt-1.5">💡 {orch.winner_reason}</p>}
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Backup card */}
-                            {orch.backup && orch.backup.text !== orch.winner?.text && (
-                              <button
-                                onClick={() => copyCoachText(orch.backup!.text, `b-${i}`)}
-                                className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] transition-all active:scale-[0.98] group"
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[9px] font-bold text-white/30 uppercase tracking-wider">Backup</span>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[orch.backup.style]?.color || 'bg-white/10 text-white/50'}`}>
-                                      {STYLE_CONFIG[orch.backup.style]?.emoji} {STYLE_CONFIG[orch.backup.style]?.label || orch.backup.style}
-                                    </span>
-                                  </div>
-                                  <span className="text-[10px] text-white/30 group-hover:text-white/60 transition-colors">
-                                    {coachCopiedId === `b-${i}` ? <Check className="h-3 w-3" /> : 'Copy →'}
-                                  </span>
-                                </div>
-                                <p className="text-[13px] text-white/70">{orch.backup.text}</p>
-                              </button>
-                            )}
-
-                            {/* Expand/collapse all candidates */}
-                            <button
-                              onClick={() => setExpandedCoachTrace(isExp ? null : i)}
-                              className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-white/25 hover:text-white/50 transition-colors"
-                            >
-                              {isExp ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                              {isExp ? 'Hide' : 'Show'} all {orch.candidates?.length || 0} candidates + scores
-                              <span className="text-white/15 ml-1">{orch.latency.total}ms</span>
-                            </button>
-
-                            {/* Expanded trace */}
-                            {isExp && (
-                              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                                {/* Context extraction */}
-                                <div className="px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                                  <p className="text-[9px] font-bold text-white/25 uppercase tracking-wider mb-2">Context Extraction</p>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">tone: {orch.context_extraction.her_tone}</span>
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">topic: {orch.context_extraction.topic}</span>
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">goal: {orch.context_extraction.goal_detected}</span>
-                                  </div>
-                                  {orch.context_extraction.must_acknowledge.length > 0 && (
-                                    <div className="mt-1.5">
-                                      <p className="text-[9px] text-red-400/50 font-bold">Must acknowledge:</p>
-                                      {orch.context_extraction.must_acknowledge.map((a, idx) => (
-                                        <p key={idx} className="text-[10px] text-white/35 ml-2">• {a}</p>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                                {/* All candidates with scores */}
-                                {orch.candidates?.map((c, cIdx) => (
-                                  <button
-                                    key={cIdx}
-                                    onClick={() => copyCoachText(c.text, `c-${i}-${cIdx}`)}
-                                    className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all active:scale-[0.98] group ${
-                                      cIdx === orch.winner_id ? 'bg-amber-500/[0.06] border-amber-500/20' :
-                                      cIdx === orch.backup_id ? 'bg-white/[0.03] border-white/[0.08]' :
-                                      'bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04]'
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between mb-1.5">
-                                      <div className="flex items-center gap-1.5">
-                                        {cIdx === orch.winner_id && <Trophy className="h-3 w-3 text-amber-400" />}
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[c.style]?.color || 'bg-white/10 text-white/50'}`}>
-                                          {STYLE_CONFIG[c.style]?.emoji} {STYLE_CONFIG[c.style]?.label || c.style}
-                                        </span>
-                                        <span className="text-[9px] text-white/20">{c.word_count}w</span>
-                                      </div>
-                                      <span className="text-[10px] text-white/20 group-hover:text-white/50 transition-colors">
-                                        {coachCopiedId === `c-${i}-${cIdx}` ? <Check className="h-3 w-3 text-emerald-400" /> : 'Copy'}
-                                      </span>
-                                    </div>
-                                    <p className="text-[13px] text-white/75 mb-2">{c.text}</p>
-                                    <div className="space-y-1">
-                                      <CoachScoreBar label="Neediness" value={c.scores.neediness_risk} inverted />
-                                      <CoachScoreBar label="Clarity" value={c.scores.clarity} />
-                                      <CoachScoreBar label="Forward" value={c.scores.forward_motion} />
-                                      <CoachScoreBar label="Tone match" value={c.scores.tone_match} />
-                                    </div>
-                                    {c.notes && <p className="text-[9px] text-white/20 mt-1.5">{c.notes}</p>}
-                                  </button>
-                                ))}
-                                <div className="flex gap-3 px-2 text-[9px] text-white/15">
-                                  <span>Strategy: {orch.latency.strategy}ms</span>
-                                  <span>Gen: {orch.latency.generation}ms</span>
-                                  <span>Critic: {orch.latency.critic}ms</span>
-                                  <span className="text-white/25 font-bold">Total: {orch.latency.total}ms</span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      {msg.orchestration && (
+                        <CoachOrchestrationResult
+                          orch={msg.orchestration} msg={msg} index={i}
+                          copiedId={coachCopiedId}
+                          expanded={expandedCoachTrace === i}
+                          onToggleExpand={() => setExpandedCoachTrace(expandedCoachTrace === i ? null : i)}
+                          onCopy={copyCoachText}
+                          onQuickCopyDone={() => setTheyRepliedForIdx(i)}
+                          theyRepliedOpen={theyRepliedForIdx === i && i === strategyChatHistory.length - 1}
+                          theyRepliedInput={theyRepliedInput}
+                          onTheyRepliedInput={setTheyRepliedInput}
+                          onTheyRepliedSubmit={submitTheyReplied}
+                          onTheyRepliedClose={closeTheyReplied}
+                        />
+                      )}
 
                       {/* Re-generate button — last assistant message only */}
                       {msg.role === 'assistant' && i === strategyChatHistory.length - 1 && (
                         <button
                           onClick={handleCoachRegenerate}
                           disabled={strategyChatLoading}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] text-white/25 hover:text-white/60 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08] transition-all disabled:opacity-30"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-white/50 hover:text-white/60 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08] transition-all disabled:opacity-30"
                         >
                           <RefreshCw className="h-3 w-3" />
                           Re-generate
@@ -3520,7 +3785,7 @@ export default function AppPage() {
                       {/* Strategy badges — only for non-orchestration coach responses */}
                       {msg.role === 'assistant' && !msg.orchestration && strategyData && i === strategyChatHistory.length - 1 && (
                         <div className="flex flex-wrap gap-1.5 px-1">
-                          <span className={`flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                          <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
                             strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
                             strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
                             'bg-white/[0.08] text-white/50'
@@ -3528,8 +3793,8 @@ export default function AppPage() {
                             {strategyData.momentum === 'Rising' ? <TrendingUp className="h-2.5 w-2.5" /> : strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
                             {strategyData.momentum}
                           </span>
-                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{strategyData.balance}</span>
-                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{strategyData.balance}</span>
+                          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                             strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
                             strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
                             'bg-violet-500/15 text-violet-300'
@@ -3538,69 +3803,17 @@ export default function AppPage() {
                       )}
 
                       {/* Draft reply cards (free tier / coaching mode) */}
-                      {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (() => {
-                        const draftLabels = DRAFT_LABELS[getContextCategory(selectedContext)];
-                        const cat = getContextCategory(selectedContext);
-                        const accentA = cat === 'professional' ? 'hover:border-amber-500/30' : cat === 'platonic' ? 'hover:border-blue-500/30' : 'hover:border-violet-500/30';
-                        const accentB = cat === 'professional' ? 'hover:border-amber-500/20' : cat === 'platonic' ? 'hover:border-cyan-500/30' : 'hover:border-orange-500/30';
-                        const accentC = cat === 'professional' ? 'hover:border-amber-400/20' : cat === 'platonic' ? 'hover:border-blue-400/30' : 'hover:border-emerald-500/30';
-                        const copyA = cat === 'professional' ? 'text-amber-400/50 group-hover:text-amber-400' : cat === 'platonic' ? 'text-blue-400/50 group-hover:text-blue-400' : 'text-violet-400/50 group-hover:text-violet-400';
-                        const copyB = cat === 'professional' ? 'text-amber-300/50 group-hover:text-amber-300' : cat === 'platonic' ? 'text-cyan-400/50 group-hover:text-cyan-400' : 'text-orange-400/50 group-hover:text-orange-400';
-                        const copyC = cat === 'professional' ? 'text-amber-200/50 group-hover:text-amber-200' : cat === 'platonic' ? 'text-blue-300/50 group-hover:text-blue-300' : 'text-emerald-400/50 group-hover:text-emerald-400';
-                        const headerColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-emerald-400/70';
-                        return (
-                        <div className="w-full space-y-2">
-                          <p className={`text-[10px] font-bold uppercase tracking-wider px-1 ${headerColor}`}>Coach drafts</p>
-                          {msg.draft.shorter && (
-                            <div>
-                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); if (navigator.vibrate) navigator.vibrate(30); toast({ title: '⚡ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentA} transition-all active:scale-[0.98] group`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">⚡ {draftLabels.a}</span>
-                                  <span className={`text-[10px] transition-colors ${copyA}`}>Copy →</span>
-                                </div>
-                                <p className="text-[13px] text-white/80">{msg.draft.shorter}</p>
-                              </button>
-                              <button onClick={() => { setStrategyChatInput(`I'm thinking of sending this: "${msg.draft!.shorter}" — is this the right move?`); setTimeout(() => coachTextareaRef.current?.focus(), 50); }} className="w-full px-4 py-1 text-left text-[10px] text-white/20 hover:text-violet-400 transition-colors">Coach this →</button>
-                            </div>
-                          )}
-                          {msg.draft.spicier && (
-                            <div>
-                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); if (navigator.vibrate) navigator.vibrate(30); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentB} transition-all active:scale-[0.98] group`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">✦ {draftLabels.b}</span>
-                                  <span className={`text-[10px] transition-colors ${copyB}`}>Copy →</span>
-                                </div>
-                                <p className="text-[13px] text-white/80">{msg.draft.spicier}</p>
-                              </button>
-                              <button onClick={() => { setStrategyChatInput(`I'm thinking of sending this: "${msg.draft!.spicier}" — is this the right move?`); setTimeout(() => coachTextareaRef.current?.focus(), 50); }} className="w-full px-4 py-1 text-left text-[10px] text-white/20 hover:text-violet-400 transition-colors">Coach this →</button>
-                            </div>
-                          )}
-                          {msg.draft.softer && (
-                            <div>
-                              <button onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); if (navigator.vibrate) navigator.vibrate(30); toast({ title: '✓ Copied' }); }} className={`w-full text-left px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.10] hover:bg-white/[0.09] ${accentC} transition-all active:scale-[0.98] group`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-[10px] text-white/40 font-bold uppercase tracking-wider">💚 {draftLabels.c}</span>
-                                  <span className={`text-[10px] transition-colors ${copyC}`}>Copy →</span>
-                                </div>
-                                <p className="text-[13px] text-white/80">{msg.draft.softer}</p>
-                              </button>
-                              <button onClick={() => { setStrategyChatInput(`I'm thinking of sending this: "${msg.draft!.softer}" — is this the right move?`); setTimeout(() => coachTextareaRef.current?.focus(), 50); }} className="w-full px-4 py-1 text-left text-[10px] text-white/20 hover:text-violet-400 transition-colors">Coach this →</button>
-                            </div>
-                          )}
-                        {!isPro && (
-                          <a href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-500/[0.06] border border-violet-500/15 hover:bg-violet-500/[0.10] transition-all mt-1">
-                            <Shield className="h-3 w-3 text-violet-400 shrink-0" />
-                            <span className="text-[10px] text-violet-300/60 flex-1">Pro gets 6 scored candidates + strategy</span>
-                            <span className="text-[10px] text-violet-400/40">→</span>
-                          </a>
-                        )}
-                        </div>
-                        );
-                      })()}
+                      {msg.role === 'assistant' && msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
+                        <CoachDraftCards
+                          msg={msg} index={i} context={selectedContext}
+                          copiedId={coachCopiedId} onCopy={copyCoachText}
+                          onCoachThis={coachThisDraft} isPro={isPro}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
-                {strategyChatLoading && (
+                {strategyChatLoading && !coachStreaming && (
                   <div className="flex justify-start">
                     <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.08] flex items-center gap-2">
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
@@ -3618,10 +3831,27 @@ export default function AppPage() {
             )}
           </div>
 
+          {coachOutcome && (
+            <div className="shrink-0 mx-4 sm:mx-6 mt-2 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2.5" aria-live="polite">
+              <p className="text-[13px] font-bold text-white/90">
+                Did they reply{coachOutcome.preview ? <> to &ldquo;{coachOutcome.preview}&rdquo;</> : null}?
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button onClick={() => reportCoachOutcome('got_reply')} className="min-h-10 rounded-xl border border-emerald-300/30 bg-emerald-400/15 px-3 text-xs font-bold text-emerald-100 hover:bg-emerald-400/25 active:scale-95">Yes, they replied</button>
+                <button onClick={() => reportCoachOutcome('no_reply')} className="min-h-10 rounded-xl border border-white/10 bg-white/[0.05] px-3 text-xs font-bold text-white/70 hover:bg-white/10 active:scale-95">No reply</button>
+                {coachOutcome.asked === 'after_copy' ? (
+                  <button onClick={() => setCoachOutcome(null)} className="min-h-10 px-2 text-xs font-semibold text-white/50 hover:text-white/80">Not sent yet</button>
+                ) : (
+                  <button onClick={() => reportCoachOutcome('not_reported')} className="min-h-10 px-2 text-xs font-semibold text-white/50 hover:text-white/80">Skip</button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ─ Context selector row ─ */}
-          <div className="shrink-0 px-6 pt-3 pb-1">
+          <div className="shrink-0 px-4 sm:px-6 pt-3 pb-1">
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-              <span className="text-[10px] text-white/25 font-bold uppercase tracking-wider shrink-0">Who?</span>
+              <span className="text-[11px] text-white/50 font-bold uppercase tracking-wider shrink-0">Who?</span>
               {CONTEXT_OPTIONS.map((ctx) => (
                 <button
                   key={ctx.value}
@@ -3629,7 +3859,7 @@ export default function AppPage() {
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all active:scale-95 ${
                     selectedContext === ctx.value
                       ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
-                      : 'bg-white/[0.05] text-white/35 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/60'
+                      : 'bg-white/[0.05] text-white/60 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/60'
                   }`}
                 >
                   {ctx.emoji} {ctx.label}
@@ -3639,20 +3869,20 @@ export default function AppPage() {
                 const cat = getContextCategory(selectedContext);
                 const catColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-pink-400/70';
                 const catIcon = cat === 'professional' ? '💼' : cat === 'platonic' ? '🤝' : '💘';
-                return <span className={`text-[10px] font-bold ml-1 shrink-0 ${catColor}`}>{catIcon} {cat}</span>;
+                return <span className={`text-[11px] font-bold ml-1 shrink-0 ${catColor}`}>{catIcon} {cat}</span>;
               })() : (
-                <span className="text-[10px] text-white/15 shrink-0 ml-1 italic">← set for smarter results</span>
+                <span className="text-[11px] text-white/40 shrink-0 ml-1 italic">← set for smarter results</span>
               )}
             </div>
           </div>
 
           {/* ─ Input — pinned at bottom, never cut off, safe-area aware ─ */}
-          <div className="shrink-0 px-6 pb-safe-5 pt-2 border-t border-white/[0.06]">
+          <div className="shrink-0 px-4 sm:px-6 pb-safe-5 pt-2 border-t border-white/[0.06]">
             <div className="flex items-end gap-2">
               <button
                 onClick={() => coachFileInputRef.current?.click()}
                 disabled={coachScreenshotExtracting}
-                className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/35 hover:text-white/70 hover:bg-white/[0.10] transition-all active:scale-90 shrink-0 disabled:opacity-40"
+                className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/60 hover:text-white/70 hover:bg-white/[0.10] transition-all active:scale-90 shrink-0 disabled:opacity-40"
                 title="Upload screenshot"
               >
                 {coachScreenshotExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
@@ -3669,7 +3899,7 @@ export default function AppPage() {
                 autoCorrect="on"
                 spellCheck
                 inputMode="text"
-                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/25 text-[16px] md:text-[13px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/40 text-[16px] md:text-[13px] focus:outline-none focus:border-violet-500/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
                 style={{ minHeight: '42px' }}
                 placeholder={selectedContext ? (
                   getContextCategory(selectedContext) === 'professional'
@@ -3700,7 +3930,7 @@ export default function AppPage() {
             </div>
             {strategyChatHistory.length > 0 && (
               <div className="flex justify-end mt-2">
-                <button onClick={() => { setStrategyChatHistory([]); setStrategyChatInput(''); }} className="text-[10px] text-white/20 hover:text-white/50 transition-colors">Clear chat</button>
+                <button onClick={() => { setStrategyChatHistory([]); setStrategyChatInput(''); setCoachOutcome(null); coachRunIds.current = {}; }} className="text-[11px] text-white/45 hover:text-white/50 transition-colors">Clear chat</button>
               </div>
             )}
           </div>
@@ -3708,6 +3938,31 @@ export default function AppPage() {
         </div>
         )}
         {/* End of Coach split view */}
+
+        {showCoachThreads && (
+          <div className="fixed inset-0 z-[90] lg:hidden" role="dialog" aria-modal="true" aria-label="Your conversations">
+            <button aria-label="Close conversations" className="absolute inset-0 bg-black/70" onClick={() => setShowCoachThreads(false)} />
+            <div className="absolute inset-x-0 bottom-0 flex max-h-[80dvh] flex-col rounded-t-3xl border-t border-white/[0.10] bg-[#0d0d14] pb-[max(1rem,env(safe-area-inset-bottom))] animate-in slide-in-from-bottom-4 duration-200">
+              <div className="flex shrink-0 items-center justify-between px-5 pb-3 pt-4">
+                <h2 className="text-base font-bold text-white">Conversations</h2>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { handleNewThread(); setShowCoachThreads(false); }} className="flex min-h-10 items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.06] px-3 text-xs font-bold text-white/80 active:scale-95">
+                    <Plus className="h-3.5 w-3.5" /> New
+                  </button>
+                  <button onClick={() => setShowCoachThreads(false)} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:text-white">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2"><ConversationList threads={savedThreads} userId={userId} isThreadActive={(id) => activeCoachSessionId === id || activeThreadId === id} onLoad={handleLoadThread} onDelete={handleDeleteThread} /></div>
+              {userId ? (
+                <Link href="/history" className="mx-5 mt-1 flex min-h-11 items-center justify-center rounded-xl border border-white/[0.10] text-xs font-semibold text-white/70 hover:bg-white/[0.06]">Search all history</Link>
+              ) : (
+                <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app')}`} className="mx-5 mt-1 flex min-h-11 items-center justify-center rounded-xl bg-violet-500 text-xs font-bold text-white hover:bg-violet-400">Create a free account</Link>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
             {/* ===== REPLY MODE (hidden, logic preserved) ===== */}
@@ -3746,12 +4001,12 @@ export default function AppPage() {
                   onChange={(e) => setCustomContext(e.target.value)}
                   placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
                   maxLength={200}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/25 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
                 />
                 {customContext && (
                   <button
                     onClick={() => setCustomContext('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -3777,7 +4032,7 @@ export default function AppPage() {
                       {thread.length} message{thread.length !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  {showThread ? <ChevronUp className="h-3.5 w-3.5 text-white/25" /> : <ChevronDown className="h-3.5 w-3.5 text-white/25" />}
+                  {showThread ? <ChevronUp className="h-3.5 w-3.5 text-white/50" /> : <ChevronDown className="h-3.5 w-3.5 text-white/50" />}
                 </button>
 
                 {showThread && (
@@ -3861,7 +4116,7 @@ export default function AppPage() {
                 aria-label="Message input"
               />
               <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
-                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/30'
+                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/55'
               }`}>
                 {charCount}/2000
               </div>
@@ -3873,7 +4128,7 @@ export default function AppPage() {
                 {vibeLoading ? (
                   <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                     <Loader2 className="h-3 w-3 animate-spin text-violet-400" />
-                    <span className="text-[11px] text-white/30 font-medium">Checking vibe...</span>
+                    <span className="text-[11px] text-white/55 font-medium">Checking vibe...</span>
                   </div>
                 ) : vibeCheck && (
                   <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all ${
@@ -3895,8 +4150,8 @@ export default function AppPage() {
                         }`}>
                           {vibeCheck.vibe}
                         </span>
-                        <span className="text-[10px] text-white/20">·</span>
-                        <span className="text-[10px] text-white/30 font-medium">{vibeCheck.score}/10</span>
+                        <span className="text-[11px] text-white/45">·</span>
+                        <span className="text-[11px] text-white/55 font-medium">{vibeCheck.score}/10</span>
                       </div>
                       <p className="text-[11px] text-white/50 truncate">{vibeCheck.tip}</p>
                     </div>
@@ -3911,13 +4166,13 @@ export default function AppPage() {
                 {!showToneBar ? (
                   <button
                     onClick={() => setShowToneBar(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white/25 hover:text-white/50 text-[11px] font-medium transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white/50 hover:text-white/50 text-[11px] font-medium transition-colors"
                   >
                     <Sparkles className="h-3 w-3" /> Rewrite in a different tone
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] text-white/30 font-bold uppercase tracking-wider mr-1">Rewrite as:</span>
+                    <span className="text-[11px] text-white/55 font-bold uppercase tracking-wider mr-1">Rewrite as:</span>
                     {[
                       { key: 'flirty', label: '😏 Flirty', color: 'hover:bg-pink-500/15 hover:border-pink-500/30 hover:text-pink-300' },
                       { key: 'chill', label: '😎 Chill', color: 'hover:bg-blue-500/15 hover:border-blue-500/30 hover:text-blue-300' },
@@ -3937,7 +4192,7 @@ export default function AppPage() {
                     ))}
                     <button
                       onClick={() => setShowToneBar(false)}
-                      className="p-1.5 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                      className="p-1.5 rounded-lg text-white/45 hover:text-white/50 transition-colors"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -3955,12 +4210,12 @@ export default function AppPage() {
                   onChange={(e) => setUserIntent(e.target.value)}
                   placeholder="What do you want to say? (optional) — e.g. ask what happened subtly"
                   maxLength={120}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 placeholder-white/20 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-violet-500/30 transition-all"
                 />
                 {userIntent && (
                   <button
                     onClick={() => setUserIntent('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -4094,7 +4349,7 @@ export default function AppPage() {
                   </div>
                   <button 
                     onClick={() => setShowExamplesDrawer(false)}
-                    className="text-white/20 hover:text-white/50 transition-colors"
+                    className="text-white/45 hover:text-white/50 transition-colors"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -4241,7 +4496,7 @@ export default function AppPage() {
               </div>
 
               {!loading && !replies.length && !thread.length && (
-                <p className="text-center text-xs text-white/30 font-medium animate-fade-in transition-opacity duration-500">
+                <p className="text-center text-xs text-white/55 font-medium animate-fade-in transition-opacity duration-500">
                   {TAGLINES[currentTagline]}
                 </p>
               )}
@@ -4253,16 +4508,16 @@ export default function AppPage() {
                 <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 space-y-2">
                   <div className="flex items-center justify-between px-1 mb-2">
                     <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Conversations</span>
-                    <button onClick={() => setShowThreads(false)} className="text-white/20 hover:text-white/50 transition-colors">
+                    <button onClick={() => setShowThreads(false)} className="text-white/45 hover:text-white/50 transition-colors">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                   {savedThreads.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
-                        <MessageCircle className="h-5 w-5 text-white/20" />
+                        <MessageCircle className="h-5 w-5 text-white/45" />
                       </div>
-                      <p className="text-white/25 text-xs">Start a thread and it&apos;ll appear here</p>
+                      <p className="text-white/50 text-xs">Start a thread and it&apos;ll appear here</p>
                     </div>
                   ) : (
                     <div className="space-y-1 max-h-60 overflow-y-auto">
@@ -4281,11 +4536,11 @@ export default function AppPage() {
                           <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                             isActive ? 'bg-violet-500/20' : 'bg-white/[0.05]'
                           }`}>
-                            <Sparkles className={`h-3.5 w-3.5 ${isActive ? 'text-violet-400' : 'text-white/30'}`} />
+                            <Sparkles className={`h-3.5 w-3.5 ${isActive ? 'text-violet-400' : 'text-white/55'}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-white/80 text-sm font-semibold truncate">{t.name}</p>
-                            <p className="text-white/25 text-[10px] mt-0.5">
+                            <p className="text-white/50 text-[11px] mt-0.5">
                               {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
                             </p>
                           </div>
@@ -4317,7 +4572,7 @@ export default function AppPage() {
                 aria-label="Message to decode"
               />
               <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
-                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/30'
+                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/55'
               }`}>
                 {charCount}/2000
               </div>
@@ -4361,7 +4616,7 @@ export default function AppPage() {
               disabled={decoding || !message.trim() || (!isPro && decodeUsed >= decodeLimit)}
               className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
                 !isPro && decodeUsed >= decodeLimit
-                  ? 'bg-white/[0.08] text-white/30'
+                  ? 'bg-white/[0.08] text-white/55'
                   : 'bg-gradient-to-r from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/30'
               }`}
               size="lg"
@@ -4375,7 +4630,7 @@ export default function AppPage() {
               )}
             </Button>
             {!isPro && (
-              <p className="text-center text-xs text-white/30 font-medium">
+              <p className="text-center text-xs text-white/55 font-medium">
                 {decodeUsed >= decodeLimit ? '0' : `${decodeLimit - decodeUsed}`}/{decodeLimit} free decode{decodeLimit === 1 ? '' : 's'} remaining today
               </p>
             )}
@@ -4400,7 +4655,7 @@ export default function AppPage() {
                   >
                     <div className="text-lg mb-1">{ctx.emoji}</div>
                     <div className="text-xs font-bold text-white/80">{ctx.label}</div>
-                    <div className="text-[10px] text-white/30">{ctx.description}</div>
+                    <div className="text-[11px] text-white/55">{ctx.description}</div>
                   </button>
                 ))}
               </div>
@@ -4413,7 +4668,7 @@ export default function AppPage() {
                 className="w-full min-h-[80px] p-4 pb-6 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-pink-500/30 transition-all text-sm"
                 maxLength={300}
               />
-              <div className={`absolute bottom-2 right-3 text-xs ${openerDescription.length > 250 ? 'text-red-400' : 'text-white/30'}`}>
+              <div className={`absolute bottom-2 right-3 text-xs ${openerDescription.length > 250 ? 'text-red-400' : 'text-white/55'}`}>
                 {openerDescription.length}/300
               </div>
             </div>
@@ -4430,7 +4685,7 @@ export default function AppPage() {
               disabled={loadingOpeners || (!isPro && openerUsed >= openerLimit)}
               className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
                 !isPro && openerUsed >= openerLimit
-                  ? 'bg-white/[0.08] text-white/30'
+                  ? 'bg-white/[0.08] text-white/55'
                   : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30'
               }`}
               size="lg"
@@ -4444,7 +4699,7 @@ export default function AppPage() {
               )}
             </Button>
             {!isPro && (
-              <p className="text-center text-xs text-white/30 font-medium">
+              <p className="text-center text-xs text-white/55 font-medium">
                 {openerUsed >= openerLimit ? '0' : `${openerLimit - openerUsed}`}/{openerLimit} free opener{openerLimit === 1 ? '' : 's'} remaining today
               </p>
             )}
@@ -4481,12 +4736,12 @@ export default function AppPage() {
                   onChange={(e) => setCustomContext(e.target.value)}
                   placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
                   maxLength={200}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/25 text-xs focus:outline-none focus:border-cyan-500/30 transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-cyan-500/30 transition-all"
                 />
                 {customContext && (
                   <button
                     onClick={() => setCustomContext('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/20 hover:text-white/50 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -4511,7 +4766,7 @@ export default function AppPage() {
                   <Camera className="h-3.5 w-3.5" />
                   {extracting ? 'Reading...' : 'Screenshot'}
                 </button>
-                <span className={`text-xs ${message.length > 2500 ? 'text-red-400' : 'text-white/30'}`}>
+                <span className={`text-xs ${message.length > 2500 ? 'text-red-400' : 'text-white/55'}`}>
                   {message.length}/3000
                 </span>
               </div>
@@ -4538,7 +4793,7 @@ export default function AppPage() {
               disabled={loadingRevive || !message.trim() || (!isPro && reviveUsed >= reviveLimit)}
               className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
                 !isPro && reviveUsed >= reviveLimit
-                  ? 'bg-white/[0.08] text-white/30'
+                  ? 'bg-white/[0.08] text-white/55'
                   : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/30'
               }`}
               size="lg"
@@ -4552,7 +4807,7 @@ export default function AppPage() {
               )}
             </Button>
             {!isPro && (
-              <p className="text-center text-xs text-white/30 font-medium">
+              <p className="text-center text-xs text-white/55 font-medium">
                 {reviveUsed >= reviveLimit ? '0' : `${reviveLimit - reviveUsed}`}/{reviveLimit} free revive{reviveLimit === 1 ? '' : 's'} remaining today
               </p>
             )}
@@ -4571,7 +4826,7 @@ export default function AppPage() {
                   <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">decoded</span>
                 </div>
                 <button onClick={() => setDecodeResult(null)} className="w-7 h-7 rounded-xl bg-white/[0.05] flex items-center justify-center hover:bg-white/10 transition-all">
-                  <X className="h-3 w-3 text-white/30" />
+                  <X className="h-3 w-3 text-white/55" />
                 </button>
               </div>
               {/* Energy Badge */}
@@ -4587,19 +4842,19 @@ export default function AppPage() {
               </div>
               {/* Intent */}
               <div className="rounded-2xl bg-amber-500/5 border border-amber-500/10 p-4">
-                <p className="text-amber-400/60 text-[10px] font-bold uppercase tracking-widest mb-1.5">what they mean</p>
+                <p className="text-amber-400/60 text-[11px] font-bold uppercase tracking-widest mb-1.5">what they mean</p>
                 <p className="text-white/80 text-sm font-medium leading-relaxed">{decodeResult.intent}</p>
               </div>
               {/* Subtext */}
               <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
-                <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-1.5">between the lines</p>
+                <p className="text-white/55 text-[11px] font-bold uppercase tracking-widest mb-1.5">between the lines</p>
                 <p className="text-white/60 text-xs leading-relaxed">{decodeResult.subtext}</p>
               </div>
               {/* Flags */}
               {decodeResult.flags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {decodeResult.flags.map((flag, i) => (
-                    <span key={i} className={`px-2.5 py-1 rounded-xl text-[10px] font-bold border ${
+                    <span key={i} className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border ${
                       flag.type === 'green' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                       flag.type === 'red' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                       'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
@@ -4611,7 +4866,7 @@ export default function AppPage() {
               )}
               {/* Coach Tip */}
               <div className="rounded-2xl bg-violet-500/5 border border-violet-500/10 p-4">
-                <p className="text-violet-400/60 text-[10px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                <p className="text-violet-400/60 text-[11px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1">
                   <Sparkles className="h-3 w-3" /> coach tip
                 </p>
                 <p className="text-white/70 text-xs font-medium leading-relaxed">{decodeResult.coach_tip}</p>
@@ -4623,7 +4878,7 @@ export default function AppPage() {
         {/* Opener Results */}
         {openers.length > 0 && (
           <div className="animate-in fade-in duration-400 mb-8">
-            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your opening lines</p>
+            <p className="text-white/60 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your opening lines</p>
             <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
               {openers.map((opener, idx) => {
                 const config = OPENER_TONE_CONFIG[opener.tone] || OPENER_TONE_CONFIG.bold;
@@ -4646,7 +4901,7 @@ export default function AppPage() {
                           <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
                         </div>
                         <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-2">{opener.text}</p>
-                        <p className="text-white/30 text-xs italic mb-3">{opener.why}</p>
+                        <p className="text-white/55 text-xs italic mb-3">{opener.why}</p>
                         <button
                           onClick={async () => {
                             await navigator.clipboard.writeText(opener.text);
@@ -4684,12 +4939,12 @@ export default function AppPage() {
               <div className="mb-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20 p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />
-                  <span className="text-cyan-400/80 text-[10px] font-bold uppercase tracking-widest">convo analysis</span>
+                  <span className="text-cyan-400/80 text-[11px] font-bold uppercase tracking-widest">convo analysis</span>
                 </div>
                 <p className="text-white/70 text-sm leading-relaxed">{reviveAnalysis}</p>
               </div>
             )}
-            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your revive messages</p>
+            <p className="text-white/60 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your revive messages</p>
             <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
               {reviveMessages.map((msg, idx) => {
                 const config = REVIVE_TONE_CONFIG[msg.tone] || REVIVE_TONE_CONFIG.smooth;
@@ -4712,7 +4967,7 @@ export default function AppPage() {
                           <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
                         </div>
                         <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-2">{msg.text}</p>
-                        <p className="text-white/30 text-xs italic mb-3">{msg.why}</p>
+                        <p className="text-white/55 text-xs italic mb-3">{msg.why}</p>
                         <button
                           onClick={async () => {
                             await navigator.clipboard.writeText(msg.text);
@@ -4752,14 +5007,14 @@ export default function AppPage() {
               </div>
               <div className="flex-1">
                 <p className="text-white/80 text-sm font-bold">Screenshot Briefing</p>
-                <p className="text-white/35 text-[11px]">
+                <p className="text-white/60 text-[11px]">
                   {scanResult.messageCount} message{scanResult.messageCount !== 1 ? 's' : ''} from {scanResult.platform !== 'unknown' ? scanResult.platform : 'conversation'}
                   {scanResult.confidence === 'high' && ' • high confidence'}
                 </p>
               </div>
               <button
                 onClick={() => { setScanResult(null); setScreenshotPreview(null); }}
-                className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white/30 hover:text-white/60 hover:bg-white/[0.10] transition-all"
+                className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white/55 hover:text-white/60 hover:bg-white/[0.10] transition-all"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -4772,7 +5027,7 @@ export default function AppPage() {
                   <Target className="h-3.5 w-3.5 text-emerald-400" />
                   <span className="text-emerald-300 text-[11px] font-bold uppercase tracking-widest">Your sharp friend says</span>
                   {scanResult.strategy.move.risk !== 'low' && (
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                       scanResult.strategy.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
                     }`}>
                       {scanResult.strategy.move.risk} risk
@@ -4804,23 +5059,23 @@ export default function AppPage() {
                     {scanResult.strategy.move.energy.replace('_', ' ')}
                   </span>
                   {scanResult.strategy.move.constraints.keep_short && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">keep short</span>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">keep short</span>
                   )}
                   {scanResult.strategy.move.constraints.no_questions && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">no questions</span>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">no questions</span>
                   )}
                   {scanResult.strategy.move.constraints.add_tease && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">add tease</span>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">add tease</span>
                   )}
                   {scanResult.strategy.move.constraints.push_meetup && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">push meetup</span>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">push meetup</span>
                   )}
                 </div>
               </div>
             )}
 
             {/* Reply options */}
-            <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your replies</p>
+            <p className="text-white/60 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your replies</p>
             <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden mb-4">
               {scanResult.replies.map((reply, idx) => {
                 const config = TONE_CONFIG[reply.tone];
@@ -4841,7 +5096,7 @@ export default function AppPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2.5 mb-2.5">
                           <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
-                          <span className="text-white/25 text-[11px]">{reply.text.split(' ').length}w</span>
+                          <span className="text-white/50 text-[11px]">{reply.text.split(' ').length}w</span>
                         </div>
                         {editingReply === `scan-${reply.tone}` ? (
                           <div className="space-y-2.5 mb-3">
@@ -4870,7 +5125,7 @@ export default function AppPage() {
                               </button>
                               <button
                                 onClick={handleCancelEdit}
-                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/30 hover:text-white/50 transition-all"
+                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/55 hover:text-white/50 transition-all"
                               >
                                 Cancel
                               </button>
@@ -4893,7 +5148,7 @@ export default function AppPage() {
                           {editingReply !== `scan-${reply.tone}` && (
                             <button
                               onClick={() => handleStartEdit(`scan-${reply.tone}`, reply.text)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/55 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
                             >
                               <MessageCircle className="h-3 w-3" /> Edit
                             </button>
@@ -4943,7 +5198,7 @@ export default function AppPage() {
                   </div>
                   <span className="text-emerald-300 text-[11px] font-bold uppercase tracking-widest">Strategy</span>
                   {strategyData.move.risk !== 'low' && (
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                       strategyData.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
                     }`}>
                       {strategyData.move.risk} risk
@@ -4975,16 +5230,16 @@ export default function AppPage() {
                     {strategyData.move.energy.replace('_', ' ')}
                   </span>
                   {strategyData.move.constraints.keep_short && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">keep short</span>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">keep short</span>
                   )}
                   {strategyData.move.constraints.no_questions && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">no questions</span>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">no questions</span>
                   )}
                   {strategyData.move.constraints.add_tease && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">add tease</span>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">add tease</span>
                   )}
                   {strategyData.move.constraints.push_meetup && (
-                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/35">push meetup</span>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">push meetup</span>
                   )}
                 </div>
               </div>
@@ -4999,7 +5254,7 @@ export default function AppPage() {
                     <MessageCircle className="h-3 w-3 text-violet-400" />
                   </div>
                   <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Ask your coach</span>
-                  <span className="text-[10px] text-white/20 ml-auto">Thread context always in background</span>
+                  <span className="text-[11px] text-white/45 ml-auto">Thread context always in background</span>
                 </div>
 
                 {/* Chat history */}
@@ -5018,15 +5273,15 @@ export default function AppPage() {
                           {/* Draft replies from coach */}
                           {msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
                             <div className="w-full space-y-1.5 mt-1">
-                              <p className="text-[10px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach draft</p>
+                              <p className="text-[11px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach draft</p>
                               {msg.draft.shorter && (
                                 <button
                                   onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '✓ Copied' }); }}
                                   className="w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-white/80 text-[13px] font-medium hover:bg-emerald-500/[0.14] transition-all active:scale-[0.98] group"
                                 >
-                                  <span className="text-[10px] text-emerald-400/60 font-bold block mb-0.5">Shorter</span>
+                                  <span className="text-[11px] text-emerald-400/60 font-bold block mb-0.5">Shorter</span>
                                   {msg.draft.shorter}
-                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                  <span className="text-[11px] text-white/45 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
                                 </button>
                               )}
                               {msg.draft.spicier && (
@@ -5034,9 +5289,9 @@ export default function AppPage() {
                                   onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }}
                                   className="w-full text-left px-3.5 py-2.5 rounded-xl bg-orange-500/[0.08] border border-orange-500/20 text-white/80 text-[13px] font-medium hover:bg-orange-500/[0.14] transition-all active:scale-[0.98] group"
                                 >
-                                  <span className="text-[10px] text-orange-400/60 font-bold block mb-0.5">Spicier</span>
+                                  <span className="text-[11px] text-orange-400/60 font-bold block mb-0.5">Spicier</span>
                                   {msg.draft.spicier}
-                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                  <span className="text-[11px] text-white/45 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
                                 </button>
                               )}
                               {msg.draft.softer && (
@@ -5044,9 +5299,9 @@ export default function AppPage() {
                                   onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }}
                                   className="w-full text-left px-3.5 py-2.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-white/80 text-[13px] font-medium hover:bg-blue-500/[0.14] transition-all active:scale-[0.98] group"
                                 >
-                                  <span className="text-[10px] text-blue-400/60 font-bold block mb-0.5">Softer</span>
+                                  <span className="text-[11px] text-blue-400/60 font-bold block mb-0.5">Softer</span>
                                   {msg.draft.softer}
-                                  <span className="text-[10px] text-white/20 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
+                                  <span className="text-[11px] text-white/45 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
                                 </button>
                               )}
                             </div>
@@ -5070,7 +5325,7 @@ export default function AppPage() {
                   <button
                     onClick={() => coachFileInputRef.current?.click()}
                     disabled={coachScreenshotExtracting || strategyChatLoading}
-                    className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30 shrink-0"
+                    className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/55 hover:text-white/60 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30 shrink-0"
                     title="Upload screenshot for context"
                   >
                     {coachScreenshotExtracting ? (
@@ -5087,7 +5342,7 @@ export default function AppPage() {
                     placeholder="Ask anything or add context..."
                     maxLength={300}
                     disabled={strategyChatLoading || coachScreenshotExtracting}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/20 text-[13px] focus:outline-none focus:border-violet-500/30 transition-all disabled:opacity-50"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-[13px] focus:outline-none focus:border-violet-500/30 transition-all disabled:opacity-50"
                   />
                   <button
                     onClick={handleStrategyChatSend}
@@ -5108,7 +5363,7 @@ export default function AppPage() {
                       <button
                         key={chip}
                         onClick={() => { setStrategyChatInput(chip); }}
-                        className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/35 text-[11px] font-medium hover:bg-white/[0.08] hover:text-white/60 transition-all active:scale-95"
+                        className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/60 text-[11px] font-medium hover:bg-white/[0.08] hover:text-white/60 transition-all active:scale-95"
                       >
                         {chip}
                       </button>
@@ -5136,9 +5391,9 @@ export default function AppPage() {
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-white/40 text-xs font-bold">Strategy Mode</p>
-                  <p className="text-white/20 text-[10px]">AI coaching for every reply — Pro only</p>
+                  <p className="text-white/45 text-[11px]">AI coaching for every reply — Pro only</p>
                 </div>
-                <Lock className="h-3.5 w-3.5 text-white/20 group-hover:text-white/40 transition-colors" />
+                <Lock className="h-3.5 w-3.5 text-white/45 group-hover:text-white/40 transition-colors" />
               </button>
             ) : null}
 
@@ -5150,7 +5405,7 @@ export default function AppPage() {
                   {isPro ? '✅ 3-agent verified • Safe to send' : 'Crafted with care'}
                 </p>
               )}
-              <p className="text-white/35 text-xs font-bold uppercase tracking-[0.15em]">
+              <p className="text-white/60 text-xs font-bold uppercase tracking-[0.15em]">
                 {isPro ? 'Your verified replies' : 'Pick your reply'}
               </p>
             </div>
@@ -5164,7 +5419,7 @@ export default function AppPage() {
                   <div>
                     <p className="text-white/90 text-sm font-bold">Save this thread + build your Style DNA</p>
                     <p className="text-white/50 text-xs leading-relaxed">Create a free account to keep this reply, return when they answer, and make future drafts sound more like you.</p>
-                    <p className="text-white/30 text-[10px] mt-1">Free account · no card · no inbox access</p>
+                    <p className="text-white/55 text-[11px] mt-1">Free account · no card · no inbox access</p>
                   </div>
                 </div>
                 <Link
@@ -5217,16 +5472,16 @@ export default function AppPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2.5 mb-2.5">
                           <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
-                          <span className="text-white/25 text-[11px]">{reply.text ? reply.text.split(' ').length : 0}w</span>
+                          <span className="text-white/50 text-[11px]">{reply.text ? reply.text.split(' ').length : 0}w</span>
                           {isPro && (
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
                               useV2 ? 'text-emerald-500/60 bg-emerald-500/10' : 'text-violet-400/60 bg-violet-500/10'
                             }`}>
                               {useV2 ? 'v2' : 'v1'}
                             </span>
                           )}
                           {v2Meta && v2Meta.toneChecks[reply.tone] && (
-                            <span className="text-[10px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded">
+                            <span className="text-[11px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded">
                               tone ✓
                             </span>
                           )}
@@ -5258,7 +5513,7 @@ export default function AppPage() {
                               </button>
                               <button
                                 onClick={handleCancelEdit}
-                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/30 hover:text-white/50 transition-all"
+                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/55 hover:text-white/50 transition-all"
                               >
                                 Cancel
                               </button>
@@ -5289,7 +5544,7 @@ export default function AppPage() {
                           {editingReply !== reply.tone && (
                             <button
                               onClick={() => handleStartEdit(reply.tone, reply.text)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/55 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
                             >
                               <MessageCircle className="h-3 w-3" /> Edit
                             </button>
@@ -5425,7 +5680,7 @@ export default function AppPage() {
             <p className="text-white/40 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
               Paste what they said above and we&apos;ll craft the perfect reply.
             </p>
-            <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/25">
+            <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/50">
               <span>them</span>
               <span>→</span>
               <span className="text-violet-400/40">you</span>

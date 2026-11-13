@@ -10,6 +10,9 @@ import { getUserTier, ensureAdminAccess, hasPro } from "@/lib/entitlements";
 import { getContextCategory, COACHING_PHILOSOPHY, DRAFT_LABELS, TONE_OPTIONS } from "@/lib/context-category";
 import { buildRequestAnalytics, type RequestAnalytics } from "@/lib/analytics-server";
 import { chatParams } from '@/lib/models';
+import { clipText, rateLimit, sanitizeChatHistory, tooManyRequests } from '@/lib/api-guards';
+import { getClientIp } from '@/lib/request-identity';
+import { parseCoachReply, visibleCoachText, type CoachStreamEvent } from '@/lib/coach-stream';
 import { FREE_REPLY_LIMIT, freeLimitReached, replyUsageCutoff } from '@/lib/usage-limits';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -192,9 +195,16 @@ export async function POST(req: Request) {
     isPro = hasPro(entitlement.tier);
   }
 
-  const { threadContext, strategy, context, chatHistory, userMessage, analytics } = await req.json();
+  const limit = rateLimit(`strategy-chat:${user?.id || getClientIp(req)}`, 20, 60_000);
+  if (!limit.ok) return tooManyRequests(limit.retryAfter);
 
-  if (!userMessage?.trim()) {
+  const body = await req.json().catch(() => null);
+  const { strategy, context, analytics, stream } = body || {};
+  const threadContext = clipText(body?.threadContext, 12000) || '';
+  const chatHistory = sanitizeChatHistory(body?.chatHistory);
+  const userMessage = clipText(body?.userMessage, 6000);
+
+  if (!userMessage) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
 
@@ -233,17 +243,18 @@ export async function POST(req: Request) {
     ? extractContext(threadContext, context || "crush")
     : Promise.resolve(null);
 
-  const strategyBlock = strategy
+  // Strategy comes from the client; only use it when it has the expected shape.
+  const strategyBlock = strategy?.move && typeof strategy.move === 'object'
     ? `\nCURRENT STRATEGY ANALYSIS:
 - Momentum: ${strategy.momentum}
 - Balance: ${strategy.balance}
-- Recommended move: ${strategy.move.energy.replace("_", " ")}
+- Recommended move: ${String(strategy.move.energy || "match").replace("_", " ")}
 - Coach says: "${strategy.move.one_liner}"
 - Constraints: ${[
-        strategy.move.constraints.no_questions ? "no questions" : null,
-        strategy.move.constraints.keep_short ? "keep short" : null,
-        strategy.move.constraints.add_tease ? "add tease" : null,
-        strategy.move.constraints.push_meetup ? "push meetup" : null,
+        strategy.move.constraints?.no_questions ? "no questions" : null,
+        strategy.move.constraints?.keep_short ? "keep short" : null,
+        strategy.move.constraints?.add_tease ? "add tease" : null,
+        strategy.move.constraints?.push_meetup ? "push meetup" : null,
       ]
         .filter(Boolean)
         .join(", ") || "none"}
@@ -329,68 +340,89 @@ FLOW:
   // Build messages array from chat history
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
-    ...(chatHistory || []).map((m: { role: string; content: string }) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
-    { role: "user", content: userMessage.trim() },
+    ...chatHistory,
+    { role: "user", content: userMessage },
   ];
 
   // The free path should feel immediate; Pro keeps the higher-quality model.
-  const completion = await openai.chat.completions.create(chatParams(isPro ? 'deep' : 'fast', {
+  const params = chatParams(isPro ? 'deep' : 'fast', {
     messages,
     temperature: 0.75,
     max_tokens: isPro ? 1000 : 700,
-  }));
-
-  const raw = completion.choices[0].message.content || "";
-
-  // Parse out optional DRAFT block
-  const draftMatch = raw.match(/DRAFT:\s*(\{[\s\S]*?\})\s*$/);
-  let draft: { shorter?: string; spicier?: string; softer?: string } | null = null;
-  let coachReply = raw;
-  let verified = false;
-
-  if (draftMatch) {
-    try {
-      draft = JSON.parse(draftMatch[1]);
-      coachReply = raw.slice(0, draftMatch.index).trim();
-
-      // ── Option 1: RuleAgent verification on drafts ──
-      if (isPro && draft && (draft.shorter || draft.spicier || draft.softer)) {
-        const strategyCtx = strategy
-          ? `STRATEGY: ${JSON.stringify({
-              momentum: strategy.momentum,
-              balance: strategy.balance,
-              energy: strategy.move?.energy,
-              sarcasm_detected: strategy.sarcasm_detected,
-              is_kidding: strategy.is_kidding,
-              constraints: strategy.move?.constraints,
-            })}`
-          : "STRATEGY: none provided";
-        draft = await verifyDrafts(draft, strategyCtx);
-        verified = true;
-      }
-    } catch {
-      // ignore parse error, return full text
-    }
-  }
-
-  if (usageLogId) {
-    const adminDb = getSupabaseAdmin();
-    if (adminDb) {
-      const { error: outcomeError } = await adminDb
-        .from('usage_logs')
-        .update({ metadata: { ...requestAnalytics.metadata, outcome: 'success' } })
-        .eq('id', usageLogId);
-      if (outcomeError) console.error('Failed to mark strategy chat successful:', outcomeError.message);
-    }
-  }
-
-  return NextResponse.json({
-    reply: coachReply,
-    draft,
-    verified,
-    context_extraction: contextData,
   });
+
+  // Separate coaching from the optional DRAFT block, verify drafts for Pro, and mark the usage row successful.
+  const finalize = async (raw: string) => {
+    const parsed = parseCoachReply(raw);
+    let draft = parsed.draft;
+    let verified = false;
+
+    // ── Option 1: RuleAgent verification on drafts ──
+    if (isPro && draft && (draft.shorter || draft.spicier || draft.softer)) {
+      const strategyCtx = strategy
+        ? `STRATEGY: ${JSON.stringify({
+            momentum: strategy.momentum,
+            balance: strategy.balance,
+            energy: strategy.move?.energy,
+            sarcasm_detected: strategy.sarcasm_detected,
+            is_kidding: strategy.is_kidding,
+            constraints: strategy.move?.constraints,
+          })}`
+        : "STRATEGY: none provided";
+      draft = await verifyDrafts(draft, strategyCtx);
+      verified = true;
+    }
+
+    if (usageLogId) {
+      const adminDb = getSupabaseAdmin();
+      if (adminDb) {
+        const { error: outcomeError } = await adminDb
+          .from('usage_logs')
+          .update({ metadata: { ...requestAnalytics.metadata, outcome: 'success' } })
+          .eq('id', usageLogId);
+        if (outcomeError) console.error('Failed to mark strategy chat successful:', outcomeError.message);
+      }
+    }
+
+    return { reply: parsed.reply, draft, verified };
+  };
+
+  if (stream === true) {
+    const encoder = new TextEncoder();
+    const send = (controller: ReadableStreamDefaultController<Uint8Array>, event: CoachStreamEvent) =>
+      controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+
+    const body = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          const completion = await openai.chat.completions.create({ ...params, stream: true });
+          let raw = '';
+          let shown = 0;
+          for await (const chunk of completion) {
+            raw += chunk.choices[0]?.delta?.content || '';
+            const visible = visibleCoachText(raw);
+            if (visible.length > shown) {
+              send(controller, { t: 'delta', v: visible.slice(shown) });
+              shown = visible.length;
+            }
+          }
+          send(controller, { t: 'done', ...(await finalize(raw)) });
+        } catch (error) {
+          console.error('Strategy chat stream failed:', error);
+          send(controller, { t: 'error' });
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(body, {
+      headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' },
+    });
+  }
+
+  const completion = await openai.chat.completions.create(params);
+  const result = await finalize(completion.choices[0].message.content || "");
+
+  return NextResponse.json({ ...result, context_extraction: contextData });
 }

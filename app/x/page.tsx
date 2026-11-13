@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getAnalyticsContext } from '@/lib/analytics';
+import { compressImage } from '@/lib/compress-image';
 import {
   ArrowLeft, Copy, Sparkles, Loader2, MessageCircle,
   Shield, Camera, X, Brain, Send, ChevronUp,
@@ -294,10 +295,15 @@ export default function ExperimentalThreadPage() {
     setCoachExtracting(true);
     try {
       const results = await Promise.all(files.map(async (file) => {
-        const fd = new FormData(); fd.append('image', file);
-        const res = await fetch('/api/extract-text', { method: 'POST', body: fd });
-        const data = await res.json();
-        return data.fullConversation || null;
+        const image = await compressImage(file).catch(() => null);
+        if (!image) return null;
+        const res = await fetch('/api/extract-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image }),
+        });
+        const data = await res.json().catch(() => ({}));
+        return data.full_conversation || data.extracted_text || null;
       }));
       const extracted = results.filter(Boolean);
       if (extracted.length > 0) {
