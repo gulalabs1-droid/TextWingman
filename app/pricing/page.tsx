@@ -301,10 +301,10 @@ export default function PricingPage() {
                   <Target className="h-4 w-4 text-emerald-400 flex-shrink-0" /> One annual payment
                 </li>
                 <li className="flex items-center gap-2.5 text-white/60 text-sm">
-                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> First access to new features
+                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Screenshot uploads and saved conversations
                 </li>
                 <li className="flex items-center gap-2.5 text-white/60 text-sm">
-                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Priority support
+                  <Check className="h-4 w-4 text-emerald-400 flex-shrink-0" /> Cancel renewal anytime
                 </li>
               </ul>
               <button
