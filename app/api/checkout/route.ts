@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe, PRICING } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 import { SITE_URL } from '@/lib/site';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { getAdminSupabase } from '@/lib/admin';
+import { findCheckoutBlocker } from '@/lib/checkout-eligibility';
+import { guardedCheckout, type CheckoutAttempt, type CheckoutPlan } from '@/lib/checkout-guard';
+import { checkoutGuardStore } from '@/lib/checkout-store';
+import { enforceSecurityRateLimit } from '@/lib/security-rate-limit';
+import { randomUUID } from 'node:crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +17,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid plan' },
         { status: 400 }
+      );
+    }
+
+    if (trial !== undefined && typeof trial !== 'boolean') {
+      return NextResponse.json(
+        { error: 'Invalid trial selection.' },
+        { status: 400 }
+      );
+    }
+
+    if (trial) {
+      return NextResponse.json(
+        { error: 'New Pro trials are temporarily unavailable. You can use the free plan or review a paid plan.' },
+        { status: 409 }
       );
     }
 
@@ -26,30 +45,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const limited = await enforceSecurityRateLimit(request, 'checkout', 20, 600);
+    if (limited) return limited;
+
     const userId = user.id;
     const userEmail = user.email || '';
 
-    // Prevent a second subscription (double billing). Existing subscribers
-    // change plans through the Stripe billing portal instead.
-    const adminUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const adminKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (adminUrl && adminKey) {
-      const admin = createAdminClient(adminUrl, adminKey, { auth: { persistSession: false, autoRefreshToken: false } });
-      const { data: existing } = await admin
-        .from('subscriptions')
-        .select('status')
-        .eq('user_id', userId)
-        .in('status', ['active', 'trialing', 'past_due'])
-        .maybeSingle();
-      if (existing) {
-        return NextResponse.json(
-          { error: 'You already have an active subscription. Manage or change your plan from billing.', alreadySubscribed: true },
-          { status: 409 },
-        );
-      }
-    }
-
-    const planConfig = PRICING[plan as keyof typeof PRICING];
+    const checkoutPlan = plan as CheckoutPlan;
+    const planConfig = PRICING[checkoutPlan];
     const trackingMetadata: Record<string, string> = {};
     const attribution = analytics?.attribution;
     if (attribution && typeof attribution === 'object' && !Array.isArray(attribution)) {
@@ -61,53 +64,57 @@ export async function POST(request: NextRequest) {
     const successParams = new URLSearchParams({ success: 'true', plan });
     const cancelParams = new URLSearchParams({ canceled: 'true', plan });
 
-    // Create Stripe Checkout session
-    const sessionParams: Record<string, unknown> = {
-      line_items: [
-        {
-          price: planConfig.priceId,
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      success_url: `${SITE_URL}/app?${successParams.toString()}`,
-      cancel_url: `${SITE_URL}/app?${cancelParams.toString()}`,
-      allow_promotion_codes: true,
-      customer_email: userEmail || undefined,
-      // CRITICAL: These fields link the checkout to the Supabase user
-      client_reference_id: userId,
-      metadata: {
+    const db = getAdminSupabase();
+    const { data: records, error: billingError } = await db.from('subscriptions')
+      .select('status,stripe_subscription_id,stripe_customer_id').eq('user_id', userId);
+    if (billingError) throw billingError;
+
+    const candidate = (): CheckoutAttempt => {
+      const attemptId = randomUUID();
+      const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60;
+      const metadata = { user_id: userId, email: userEmail, checkout_guard_id: attemptId, ...trackingMetadata };
+      return {
         user_id: userId,
-        email: userEmail,
-        ...trackingMetadata,
-      },
-      // Pass user_id to subscription metadata for webhook access
-      subscription_data: {
-        metadata: {
-          user_id: userId,
-          email: userEmail,
-          ...trackingMetadata,
+        attempt_id: attemptId,
+        plan: checkoutPlan,
+        stripe_session_id: null,
+        expires_at: new Date(expiresAt * 1000).toISOString(),
+        session_params: {
+          line_items: [{ price: planConfig.priceId, quantity: 1 }],
+          mode: 'subscription',
+          expires_at: expiresAt,
+          success_url: `${SITE_URL}/app?${successParams.toString()}`,
+          cancel_url: `${SITE_URL}/app?${cancelParams.toString()}`,
+          allow_promotion_codes: true,
+          customer_email: userEmail || undefined,
+          client_reference_id: userId,
+          metadata,
+          subscription_data: { metadata },
         },
-        ...(trial ? { trial_period_days: 7 } : {}),
-        ...(trial ? {
-          trial_settings: {
-            end_behavior: {
-              // No-card trials should pause instead of silently creating an invoice.
-              missing_payment_method: 'pause',
-            },
-          },
-        } : {}),
-      },
+      };
     };
-
-    // Free trial: skip payment method collection
-    if (trial) {
-      sessionParams.payment_method_collection = 'if_required';
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionParams as Parameters<typeof stripe.checkout.sessions.create>[0]);
-
-    return NextResponse.json({ url: session.url });
+    const result = await guardedCheckout({
+      stripe,
+      store: checkoutGuardStore(db),
+      userId,
+      plan: checkoutPlan,
+      candidate,
+      findBlocker: attemptId => findCheckoutBlocker({
+        stripe, userId, email: userEmail, records: records || [],
+        knownPriceIds: new Set(Object.values(PRICING).map(value => value.priceId)),
+        ignoreAttemptId: attemptId,
+      }),
+    });
+    if ('url' in result) return NextResponse.json({ url: result.url });
+    const messages = {
+      existing_subscription: 'You already have a subscription or trial. Please manage your billing or contact support before starting another.',
+      existing_checkout: 'A checkout is already open. Return to it or wait for it to expire before starting another.',
+      unverified_subscription: 'We could not verify your billing status. Please contact support before starting checkout.',
+      different_plan: 'A checkout for another plan is already open. Return to it or wait for it to expire.',
+      processing: 'A previous checkout is still being processed. Please check your billing before trying again.',
+      retry: 'Checkout is being prepared. Please try again shortly.',
+    };
+    return NextResponse.json({ error: messages[result.blocker] }, { status: result.blocker === 'retry' ? 503 : 409 });
   } catch (error) {
     console.error('Error creating checkout session:', error);
     return NextResponse.json(

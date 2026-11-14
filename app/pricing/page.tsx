@@ -63,14 +63,13 @@ export default function PricingPage() {
     })
   }, [supabase.auth, supabase])
 
-  const handleCheckout = async (plan: 'monthly' | 'weekly' | 'annual', trial = false) => {
+  const handleCheckout = async (plan: 'monthly' | 'weekly' | 'annual') => {
     const attribution = captureAttribution()
     const source = typeof attribution.utm_source === 'string' ? attribution.utm_source : 'direct'
     if (!user) {
       track('signup_cta_clicked', { from: 'pricing', plan, source })
       const pricingParams = new URLSearchParams()
       pricingParams.set('plan', plan)
-      if (trial) pricingParams.set('trial', '1')
       ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'video_id', 'src'].forEach((key) => {
         const value = attribution[key as keyof typeof attribution]
         if (typeof value === 'string' && value) pricingParams.set(key, value)
@@ -81,28 +80,25 @@ export default function PricingPage() {
       return
     }
 
-    setLoading(trial ? 'trial' : plan)
-    track('checkout_started', { plan, trial, from: 'pricing', source })
+    setLoading(plan)
+    track('checkout_started', { plan, trial: false, from: 'pricing', source })
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan, trial, analytics: { attribution } }),
+        body: JSON.stringify({ plan, analytics: { attribution } }),
       })
 
       const data = await res.json()
       if (data.url) {
-        track('checkout_viewed', { plan, trial, source })
+        track('checkout_viewed', { plan, trial: false, source })
         window.location.href = data.url
-      } else if (data.alreadySubscribed) {
-        // Already subscribed: plan changes happen in the billing portal.
-        window.location.href = '/dashboard'
       } else {
-        track('checkout_failed', { plan, trial, source, reason: data.error || 'missing_url' })
-        toast({ title: 'Error', description: 'Failed to start checkout', variant: 'destructive' })
+        track('checkout_failed', { plan, trial: false, source, reason: data.error || 'missing_url' })
+        toast({ title: 'Could not start checkout', description: typeof data.error === 'string' ? data.error : 'Please try again.', variant: 'destructive' })
       }
     } catch {
-      track('checkout_failed', { plan, trial, source, reason: 'network_error' })
+      track('checkout_failed', { plan, trial: false, source, reason: 'network_error' })
       toast({ title: 'Error', description: 'Something went wrong', variant: 'destructive' })
     } finally {
       setLoading(null)
@@ -113,21 +109,6 @@ export default function PricingPage() {
     await supabase.auth.signOut()
     window.location.href = '/login'
   }
-
-  const trialBanner = (
-    <div className={`w-full max-w-2xl mx-auto ${returningForTrial ? 'mb-10' : 'mt-10'}`}>
-      <div className="relative bg-[#1b281a] border border-[#56694a] rounded-3xl p-7 sm:p-8 text-center">
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#d3ff68] text-[#10180b] px-5 py-1.5 rounded-full text-[10px] font-black tracking-wider whitespace-nowrap">NO PAYMENT REQUIRED</div>
-        <h2 className="text-xl font-black text-white mb-2 mt-1">{returningForTrial && user ? 'Your 7-Day Free Trial Is Ready' : '7-Day Free Trial'}</h2>
-        <p className="text-white/60 text-sm mb-1">Try Pro replies, follow-ups, and the conversation coach.</p>
-        <p className="text-white/50 text-xs mb-6">Free account required. No credit card needed to start.</p>
-        <button onClick={() => handleCheckout('monthly', true)} disabled={loading !== null} className="w-full max-w-sm mx-auto py-3.5 bg-[#d3ff68] text-[#10180b] font-black text-sm rounded-xl hover:bg-[#e4ffad] transition-colors disabled:opacity-50">
-          {loading === 'trial' ? 'Loading...' : returningForTrial && user ? 'Continue to Start Free Trial →' : 'Start Free Trial →'}
-        </button>
-        <p className="text-xs text-white/50 mt-3">After seven days, access pauses unless you add a payment method. Continue at {PLAN_PRICES.monthly.displayAmount}/month. Cancel anytime.</p>
-      </div>
-    </div>
-  )
 
   return (
     <div className="min-h-screen bg-[#0b0f0c] relative overflow-hidden">
@@ -238,7 +219,11 @@ export default function PricingPage() {
           )}
 
           <div className="flex flex-col">
-          {!isPro && returningForTrial && trialBanner}
+          {!isPro && returningForTrial && (
+            <div role="status" className="mx-auto mb-10 max-w-2xl rounded-3xl border border-[#56694a] bg-[#1b281a] p-6 text-center text-sm text-white/80">
+              New Pro trials are temporarily unavailable. You can use the free plan or choose a paid plan below. No payment will start until you confirm it at checkout.
+            </div>
+          )}
 
           {/* Pricing Cards */}
           {!isPro && (
@@ -333,7 +318,6 @@ export default function PricingPage() {
           </div>
           </>
           )}
-          {!isPro && !returningForTrial && trialBanner}
           </div>
 
           <section className="mx-auto mt-12 max-w-3xl rounded-3xl border border-[#465b48] bg-[#151e17] p-5 sm:p-7" aria-labelledby="compare-plans">
@@ -360,7 +344,7 @@ export default function PricingPage() {
             <span>✓ Secure payment</span>
             <span>✓ Cancel anytime</span>
             <span>✓ Instant access</span>
-            <span>✓ 7-day free trial</span>
+            <span>✓ {FREE_REPLY_LIMIT} free uses per {REPLY_USAGE_WINDOW_HOURS} hours</span>
           </div>
           )}
           </>)}

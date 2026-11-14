@@ -13,7 +13,7 @@ const faqs = [
   { question: 'Will it know what the other person means?', answer: 'It can suggest possibilities from the context you provide, not read minds. Replies are drafts, not guarantees of a response or a date.' },
   { question: 'How is this different from a general chatbot?', answer: 'Text Wingman puts the conversation, three reply options, editing and saved threads in one focused texting workspace.' },
   { question: 'What happens when I create an account?', answer: 'A free account lets you keep the conversation and return when they answer. Pro is optional and is not required to try your first replies.' },
-  { question: 'What does Pro cost?', answer: `Pro Monthly is ${PLAN_PRICES.monthly.displayAmount} per month. Pro Annual is ${PLAN_PRICES.annual.displayAmount} billed yearly. Review your selected plan and any trial details before confirming in checkout.` },
+  { question: 'What does Pro cost?', answer: `Pro Monthly is ${PLAN_PRICES.monthly.displayAmount} per month. Pro Annual is ${PLAN_PRICES.annual.displayAmount} billed yearly. Review your selected plan before confirming in checkout.` },
 ];
 
 const softwareSchema = {

@@ -8,14 +8,15 @@ import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, CreditCard, Calendar, CheckCircle, Clock, Mail, Download, Crown, Loader2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { createClient } from '@/lib/supabase/client';
-import { PLAN_PRICES } from '@/lib/pricing';
+import { SUPPORT_EMAIL } from '@/lib/contact';
+import { BILLING_STATUSES, billingStatusLabel, needsBillingHelp, type BillingStatus } from '@/lib/billing-display';
 
 const supabase = createClient();
 
 type Subscription = {
   plan_type: 'monthly' | 'weekly' | 'annual' | 'unknown';
-  status: 'active' | 'trialing' | 'canceled' | 'past_due';
-  current_period_end: string;
+  status: BillingStatus;
+  current_period_end: string | null;
   created_at: string;
   stripe_subscription_id?: string;
 } | null;
@@ -24,6 +25,8 @@ export default function BillingPage() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [subscription, setSubscription] = useState<Subscription>(null);
   const [loading, setLoading] = useState(true);
+  const [billingError, setBillingError] = useState(false);
+  const [multipleSubscriptions, setMultipleSubscriptions] = useState(false);
   const [daysActive, setDaysActive] = useState(0);
   const { toast } = useToast();
 
@@ -36,10 +39,11 @@ export default function BillingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser({ id: user.id, email: user.email || '' });
-        fetchSubscription(user.id);
+        await fetchSubscription(user.id);
       }
     } catch (error) {
       console.error('Error checking user:', error);
+      setBillingError(true);
     } finally {
       setLoading(false);
     }
@@ -51,13 +55,17 @@ export default function BillingPage() {
         .from('subscriptions')
         .select('plan_type, status, current_period_end, created_at, stripe_subscription_id')
         .eq('user_id', userId)
-        .in('status', ['active', 'trialing'])
-        .maybeSingle();
+        .in('status', BILLING_STATUSES)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      if (data && !error) {
-        setSubscription(data);
+      if (error) throw error;
+      if (data?.length) {
+        const current = data.find(item => item.status === 'active' || item.status === 'trialing') || data[0];
+        setSubscription(current as Subscription);
+        setMultipleSubscriptions(data.length > 1);
         // Calculate days active
-        const startDate = new Date(data.created_at);
+        const startDate = new Date(current.created_at);
         const now = new Date();
         const diffTime = Math.abs(now.getTime() - startDate.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -65,15 +73,7 @@ export default function BillingPage() {
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);
-    }
-  };
-
-  const getPlanPrice = (planType: string) => {
-    switch (planType) {
-      case 'monthly': return `${PLAN_PRICES.monthly.displayAmount}${PLAN_PRICES.monthly.displayInterval}`;
-      case 'weekly': return `${PLAN_PRICES.weekly.displayAmount}${PLAN_PRICES.weekly.displayInterval}`;
-      case 'annual': return `${PLAN_PRICES.annual.displayAmount}${PLAN_PRICES.annual.displayInterval}`;
-      default: return 'Plan unavailable';
+      setBillingError(true);
     }
   };
 
@@ -100,12 +100,16 @@ export default function BillingPage() {
         <Card className="bg-white/95 backdrop-blur rounded-3xl p-8 text-center">
           <p className="text-gray-700 mb-4">Please sign in to view billing</p>
           <Button asChild>
-            <Link href="/profile">Sign In</Link>
+            <Link href="/login?redirect=%2Fbilling">Sign In</Link>
           </Button>
         </Card>
       </div>
     );
   }
+
+  const hasStripeSubscription = Boolean(subscription?.stripe_subscription_id?.startsWith('sub_'));
+  const billingNeedsAttention = Boolean(subscription && (needsBillingHelp(subscription.status) || !hasStripeSubscription || multipleSubscriptions));
+  const statusLabel = subscription && (hasStripeSubscription ? billingStatusLabel(subscription.status) : 'Verification needed');
 
   return (
     <div className="min-h-screen bg-ink">
@@ -126,21 +130,27 @@ export default function BillingPage() {
 
         {subscription ? (
           <div className="space-y-6">
+            {billingNeedsAttention && (
+              <div role="status" className="rounded-2xl border border-amber-300/40 bg-amber-950/50 p-4 text-sm text-amber-100">
+                {multipleSubscriptions ? 'More than one billing record needs review. Contact us before starting another subscription.' : 'This billing record needs attention. Contact us for help before starting another subscription.'}{' '}
+                <a className="underline" href={`mailto:${SUPPORT_EMAIL}?subject=Text%20Wingman%20billing%20help`}>Contact support</a>
+              </div>
+            )}
             {/* Current Plan Card */}
-            <Card className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-3xl overflow-hidden">
+            <Card className={`bg-gradient-to-r ${billingNeedsAttention ? 'from-amber-700 to-orange-800' : 'from-green-500 to-emerald-500'} text-white rounded-3xl overflow-hidden`}>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
                     <Crown className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="font-bold text-xl">{getPlanLabel(subscription.plan_type)}</p>
-                    <p className="text-green-100">{getPlanPrice(subscription.plan_type)}</p>
+                    <p className="font-bold text-xl">{hasStripeSubscription ? getPlanLabel(subscription.plan_type) : 'Billing record'}</p>
+                    <p className="text-white/80">{hasStripeSubscription ? 'See Stripe for your billed amount' : 'Billing details need verification'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-green-100">
                   <CheckCircle className="h-4 w-4" />
-                  <span>Active</span>
+                  <span>{statusLabel}</span>
                 </div>
               </CardContent>
             </Card>
@@ -161,32 +171,22 @@ export default function BillingPage() {
                     </span>
                   </div>
                   
-                  <div className="flex justify-between items-center py-2 border-b border-white/10">
+                  {hasStripeSubscription && subscription.current_period_end && (subscription.status === 'active' || subscription.status === 'trialing') && <div className="flex justify-between items-center py-2 border-b border-white/10">
                     <span className="text-white/60 flex items-center gap-2">
                       <Clock className="h-4 w-4" />
-                      Next Renewal
+                      {subscription.status === 'trialing' ? 'Trial period ends' : 'Current period ends'}
                     </span>
                     <span className="text-white font-medium">
                       {new Date(subscription.current_period_end).toLocaleDateString()}
                     </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center py-2 border-b border-white/10">
-                    <span className="text-white/60 flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      Price
-                    </span>
-                    <span className="text-white font-medium">
-                      {getPlanPrice(subscription.plan_type)}
-                    </span>
-                  </div>
+                  </div>}
                   
                   <div className="flex justify-between items-center py-2">
                     <span className="text-white/60 flex items-center gap-2">
                       <CheckCircle className="h-4 w-4" />
                       Status
                     </span>
-                    <span className="text-green-400 font-medium">Active</span>
+                    <span className="text-white font-medium">{statusLabel}</span>
                   </div>
                 </div>
               </CardContent>
@@ -196,14 +196,14 @@ export default function BillingPage() {
             {daysActive > 0 && (
               <Card className="bg-brand/20 backdrop-blur border-brand/30 rounded-3xl">
                 <CardContent className="p-6 text-center">
-                  <p className="text-brand-soft text-sm mb-1">You&apos;ve been using Verified Replies for</p>
-                  <p className="text-white text-3xl font-bold">{daysActive} {daysActive === 1 ? 'day' : 'days'}</p>
+                  <p className="text-brand-soft text-sm mb-1">Your billing record was created</p>
+                  <p className="text-white text-3xl font-bold">{daysActive} {daysActive === 1 ? 'day' : 'days'} ago</p>
                 </CardContent>
               </Card>
             )}
 
             {/* Receipts Section */}
-            <Card className="bg-white/10 backdrop-blur border-white/20 rounded-3xl">
+            {hasStripeSubscription && <Card className="bg-white/10 backdrop-blur border-white/20 rounded-3xl">
               <CardContent className="p-6 space-y-4">
                 <h2 className="font-bold text-white text-lg flex items-center gap-2">
                   <Download className="h-5 w-5" />
@@ -221,7 +221,7 @@ export default function BillingPage() {
                 </p>
 
                 <a
-                  href={`mailto:gulalabs1@gmail.com?subject=Receipt Request - ${user.email}&body=${encodeURIComponent(
+                  href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Receipt Request - ${user.email}`)}&body=${encodeURIComponent(
                     `Hi, I'd like to request a copy of my receipt.\n\nEmail: ${user.email}\nPlan: ${getPlanLabel(subscription.plan_type)}\n\nThank you!`
                   )}`}
                   className="inline-flex items-center gap-2 text-brand hover:text-white text-sm transition-colors"
@@ -230,10 +230,10 @@ export default function BillingPage() {
                   Need a receipt? Contact us
                 </a>
               </CardContent>
-            </Card>
+            </Card>}
 
             {/* Manage via Stripe Portal */}
-            <div className="text-center pt-4 space-y-3">
+            {hasStripeSubscription && <div className="text-center pt-4 space-y-3">
               <button
                 onClick={async () => {
                   try {
@@ -252,8 +252,15 @@ export default function BillingPage() {
               >
                 Manage subscription in Stripe →
               </button>
-            </div>
+            </div>}
           </div>
+        ) : billingError ? (
+          <Card className="bg-white/10 backdrop-blur border-white/20 rounded-3xl">
+            <CardContent className="p-8 text-center text-white">
+              <p>We couldn&apos;t verify your billing details right now.</p>
+              <a className="underline" href={`mailto:${SUPPORT_EMAIL}?subject=Text%20Wingman%20billing%20help`}>Contact support</a>
+            </CardContent>
+          </Card>
         ) : (
           <Card className="bg-white/10 backdrop-blur border-white/20 rounded-3xl">
             <CardContent className="p-8 text-center">
