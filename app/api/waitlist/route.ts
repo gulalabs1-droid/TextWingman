@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getAdminSupabase } from '@/lib/admin';
+import { enforceSecurityRateLimit } from '@/lib/security-rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
-    if (!supabase) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return NextResponse.json(
         { error: 'Waitlist service is not configured' },
         { status: 503 }
       );
     }
 
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
+    }
     const { email, ref } = body;
 
     // Validate email
@@ -22,28 +26,10 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+    const limited = await enforceSecurityRateLimit(req, 'waitlist', 8, 900);
+    if (limited) return limited;
 
-    // Check if email already exists
-    const { data: existing } = await supabase
-      .from('v2_waitlist')
-      .select('id, created_at')
-      .eq('email', normalizedEmail)
-      .single();
-
-    if (existing) {
-      // Already on waitlist - return success (don't send another email)
-      return NextResponse.json(
-        { 
-          success: true, 
-          alreadySubscribed: true,
-          message: "You're already on the list! We'll notify you when V3 launches." 
-        },
-        { status: 200 }
-      );
-    }
-
-    // Insert new signup
-    const { data, error } = await supabase
+    const { error } = await getAdminSupabase()
       .from('v2_waitlist')
       .insert([
         {
@@ -51,18 +37,12 @@ export async function POST(req: NextRequest) {
           referral_source: typeof ref === 'string' ? ref.slice(0, 128) : null,
           created_at: new Date().toISOString(),
         },
-      ])
-      .select();
+      ]);
 
     if (error) {
-      // Handle race condition duplicate
       if (error.code === '23505') {
         return NextResponse.json(
-          { 
-            success: true, 
-            alreadySubscribed: true,
-            message: "You're already on the list!" 
-          },
+          { success: true, message: "Thanks! We'll notify you about updates." },
           { status: 200 }
         );
       }
@@ -75,8 +55,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: true, newSignup: true, message: 'Successfully joined the waitlist' },
-      { status: 201 }
+      { success: true, message: "Thanks! We'll notify you about updates." },
+      { status: 200 }
     );
   } catch (error) {
     console.error('Waitlist API error:', error);

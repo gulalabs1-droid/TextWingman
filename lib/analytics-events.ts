@@ -47,6 +47,25 @@ const PRODUCT_SUCCESS_ACTIONS = new Set([
   'strategy_chat',
 ]);
 
+const CLIENT_EVENTS = new Set([
+  ...Object.keys(CLIENT_EVENT_ALIASES),
+  ...Object.values(CLIENT_EVENT_ALIASES),
+  'page_view', 'app_view', 'reply_displayed', 'reply_error', 'example_reply_copied',
+  'culture_example_loaded', 'culture_draft_ready', 'culture_link_clicked',
+  'court_vote_saved', 'context_selected', 'social_outbound_click',
+  'saved_thread_restored', 'thread_continued', 'deep_upsell_shown',
+  'deep_upsell_dismissed', 'deep_upsell_click', 'share_card_view',
+  'share_card_cta_click', 'sign_in_started', 'sign_in_completed',
+  'auth_code_sent', 'auth_code_failed', 'onboarding_started',
+  'onboarding_completed', 'first_run_start',
+]);
+
+const CLIENT_ONLY_OUTCOMES: Record<string, string> = {
+  reply_success: 'reply_displayed',
+  signup_complete: 'signup_client_reported',
+  checkout_complete: 'checkout_returned',
+};
+
 export function normalizeEventName(value: unknown): string {
   if (typeof value !== 'string') return 'custom_event';
   const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, '_').slice(0, 64);
@@ -55,7 +74,12 @@ export function normalizeEventName(value: unknown): string {
 }
 
 export function isAllowedEventName(value: unknown): boolean {
-  return typeof value === 'string' && /^[a-z0-9_]{1,64}$/.test(value.trim().toLowerCase());
+  return typeof value === 'string' && CLIENT_EVENTS.has(value.trim().toLowerCase());
+}
+
+export function normalizeClientEventName(value: string): string {
+  const normalized = normalizeEventName(value);
+  return CLIENT_ONLY_OUTCOMES[normalized] || normalized;
 }
 
 export function isProductRequestAction(action: unknown): boolean {

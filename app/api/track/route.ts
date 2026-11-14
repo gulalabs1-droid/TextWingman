@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { isAllowedEventName, normalizeEventName } from '@/lib/analytics-events';
+import { isAllowedEventName, normalizeClientEventName } from '@/lib/analytics-events';
 import { getRequestIdentity } from '@/lib/request-identity';
+import { enforceSecurityRateLimit } from '@/lib/security-rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +44,9 @@ export async function POST(request: NextRequest) {
     if (rawEvent && !isAllowedEventName(rawEvent)) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
-    const event = rawEvent ? normalizeEventName(rawEvent) : 'page_view';
+    const limited = await enforceSecurityRateLimit(request, 'analytics', 300, 60);
+    if (limited) return limited;
+    const event = rawEvent ? normalizeClientEventName(rawEvent) : 'page_view';
     const safePage = clamp(input.page, 512) || '/';
     const safeReferrer = clamp(input.referrer, 512);
     const safeScreen = clamp(input.screen, 32);
