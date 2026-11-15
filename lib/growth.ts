@@ -13,6 +13,7 @@ import {
 } from '@/lib/admin-funnel';
 import { isAdminEmail } from '@/lib/isAdmin';
 import { getStripeBillingSnapshot, monthlyEquivalent } from '@/lib/billing-health';
+import { readBatches } from '@/lib/read-batches';
 
 const DAY = 86_400_000;
 const TRACKING_ERROR_EVENTS = new Set([
@@ -426,11 +427,11 @@ export async function getGrowthCommandCenter(
       verifiedPaidSubscriptionIds,
     }),
     db.from('profiles').select('id, email, created_at').limit(50000),
-    db.from('usage_logs')
+    readBatches<FunnelUsageRow>(() => db.from('usage_logs')
       .select('id, user_id, ip_address, fingerprint, user_agent, action, created_at, metadata')
       .gte('created_at', querySince)
       .order('created_at', { ascending: false })
-      .limit(100000),
+      .order('id', { ascending: false }), 100000),
     db.from('subscriptions')
       .select('user_id, plan_type, status, stripe_subscription_id, created_at, updated_at, canceled_at')
       .limit(50000),
@@ -680,6 +681,7 @@ export async function getGrowthCommandCenter(
   const stages = buildBottleneckStages(socialTotalsWithAvailability, funnel);
   const bottleneck = detectBottleneck(stages);
   const measurement = buildMeasurementHealth(logs, since, until);
+  measurement.queryTruncated = logsResult.truncated;
   const missingTables = [creativesResult, metricsResult, leadsResult]
     .filter(result => result.error && isMissingRelation(result.error)).length;
 

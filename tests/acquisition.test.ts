@@ -28,6 +28,9 @@ function fakeDb(logs: FunnelUsageRow[]) {
         },
         order() { return query; },
         limit() { return query; },
+        range(from: number, to: number) {
+          return Promise.resolve({ data: data.slice(from, to + 1), error: null });
+        },
         then(resolve: (result: { data: unknown[]; error: null }) => unknown) {
           return Promise.resolve(resolve({ data, error: null }));
         },
@@ -104,4 +107,17 @@ test('source totals reconcile when a visitor changes campaigns and duplicate suc
   assert.equal(funnel.bySource.reduce((total, item) => total + item.replySuccesses, 0), funnel.period.uniqueReplyPeople);
   assert.deepEqual(funnel.bySource.map(item => item.source), ['youtube']);
   assert.equal(funnel.dataQuality.internalExcluded, 1);
+});
+
+test('funnel includes older activity beyond the first database response', async () => {
+  const success = row('older-success', 'generate_reply', 'reddit', 90);
+  success.metadata = { ...success.metadata, outcome: 'success' };
+  const filler = Array.from({ length: 1200 }, (_, index) =>
+    row(`filler-${index}`, 'page_view', 'youtube', 1),
+  );
+  const funnel = await getCanonicalFunnel(fakeDb([...filler, success]), { rangeDays: 30, verifiedPaidIds: new Set() });
+  assert.equal(funnel.dataQuality.queriedEvents, 1201);
+  assert.equal(funnel.period.uniqueReplyPeople, 1);
+  assert.equal(funnel.windows.d30.uniqueReplyPeople, 1);
+  assert.equal(funnel.dataQuality.queryTruncated, false);
 });

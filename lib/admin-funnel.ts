@@ -1,4 +1,5 @@
 import { isAdminEmail } from '@/lib/isAdmin';
+import { readBatches } from '@/lib/read-batches';
 import {
   isComposerAction,
   isLandingAction,
@@ -371,16 +372,16 @@ export async function getCanonicalFunnel(
 
   const [profilesResult, periodLogsResult, successLogsResult, subscriptionsResult] = await Promise.all([
     db.from('profiles').select('id, email, created_at').limit(50000),
-    db.from('usage_logs')
+    readBatches<FunnelUsageRow>(() => db.from('usage_logs')
       .select('id, user_id, ip_address, fingerprint, user_agent, action, created_at, metadata')
       .gte('created_at', querySince)
       .order('created_at', { ascending: false })
-      .limit(50000),
-    db.from('usage_logs')
+      .order('id', { ascending: false }), 50000),
+    readBatches<FunnelUsageRow>(() => db.from('usage_logs')
       .select('id, user_id, ip_address, fingerprint, user_agent, action, created_at, metadata')
       .in('action', SUCCESS_ACTIONS)
       .order('created_at', { ascending: false })
-      .limit(50000),
+      .order('id', { ascending: false }), 50000),
     db.from('subscriptions').select('user_id, status, stripe_subscription_id').in('status', ['active', 'trialing']).limit(50000),
   ]);
 
@@ -461,7 +462,7 @@ export async function getCanonicalFunnel(
     anonymousEventsWithVisitorId: logs.filter(log => !log.user_id && Boolean(metadataOf(log).visitor_id)).length,
     anonymousEventsWithoutVisitorId: logs.filter(log => !log.user_id && !metadataOf(log).visitor_id).length,
     legacyEvents: logs.filter(log => !metadataOf(log).event).length,
-    queryTruncated: rawLogs.length >= 50000 || rawSuccessLogs.length >= 50000,
+    queryTruncated: periodLogsResult.truncated || successLogsResult.truncated,
   };
 
   const recentActivity = externalPeriodLogs
