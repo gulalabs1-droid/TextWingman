@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowDownRight, ArrowRight, ArrowUpRight, Camera, Check, MessageCircle, Send, ShieldCheck, UserRound } from 'lucide-react';
 import QuickReplyComposer from '@/components/QuickReplyComposer';
 import HomeCourt from '@/components/HomeCourt';
+import { HomeAccountLink } from '@/components/HomeAccountLink';
 import { SITE_URL, SOCIAL_LINKS } from '@/lib/site';
 import { PLAN_PRICES } from '@/lib/pricing';
 import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits';
@@ -40,8 +41,8 @@ export default function HomePage() {
     <a className={styles.skip} href="#reply-composer">Skip to the reply tool</a>
     <header className={styles.header}><div className={`${styles.wrap} ${styles.nav}`}>
       <Brand /><nav className={styles.navLinks} aria-label="Main navigation">{nav}</nav>
-      <div className={styles.navActions}><Link className={styles.signIn} href="/login?mode=signin">Sign in</Link><a className={`${styles.button} ${styles.buttonLime} ${styles.navButton}`} href="#studio">Try it free <ArrowUpRight size={15} /></a></div>
-      <details className={styles.mobileNav}><summary aria-label="Open navigation">Menu <span>☰</span></summary><nav aria-label="Mobile navigation">{nav}<Link href="/login?mode=signin">Sign in</Link></nav></details>
+      <div className={styles.navActions}><HomeAccountLink className={styles.signIn} /><a className={`${styles.button} ${styles.buttonLime} ${styles.navButton}`} href="#studio">Try it free <ArrowUpRight size={15} /></a></div>
+      <details className={styles.mobileNav}><summary aria-label="Open navigation">Menu <span>☰</span></summary><nav aria-label="Mobile navigation">{nav}<HomeAccountLink /></nav></details>
     </div></header>
     <main>
       <section className={styles.hero}><div className={`${styles.wrap} ${styles.heroGrid}`}>

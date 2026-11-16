@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Home } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Home, Maximize2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
@@ -14,6 +14,8 @@ import ContextualHints from '@/components/ContextualHints';
 import AppNav from '@/components/AppNav';
 import { ARRIVAL_STORAGE_KEY, arrivalGreeting, parseArrival, parseStartIntent } from '@/lib/first-run';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
+import { compressImage } from '@/lib/compress-image';
+import { ScreenshotViewer } from '@/components/ScreenshotViewer';
 import { captureAttribution, getAnalyticsContext, track, type Props } from '@/lib/analytics';
 import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
 import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
@@ -664,8 +666,7 @@ function CoachOrchestrationResult({
                               className="flex items-center gap-1.5 min-h-10 px-2 text-[11px] text-white/50 hover:text-white/50 transition-colors"
                             >
                               {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                              {expanded ? 'Hide' : 'Show'} all {orch.candidates?.length || 0} candidates + scores
-                              <span className="text-white/40 ml-1">{orch.latency.total}ms</span>
+                              {expanded ? 'Hide' : 'See'} all {orch.candidates?.length || 0} options and scores
                             </button>
 
                             {/* Expanded trace */}
@@ -721,12 +722,6 @@ function CoachOrchestrationResult({
                                     {c.notes && <p className="text-[10px] text-white/45 mt-1.5">{c.notes}</p>}
                                   </button>
                                 ))}
-                                <div className="flex gap-3 px-2 text-[10px] text-white/40">
-                                  <span>Strategy: {orch.latency.strategy}ms</span>
-                                  <span>Gen: {orch.latency.generation}ms</span>
-                                  <span>Critic: {orch.latency.critic}ms</span>
-                                  <span className="text-white/50 font-bold">Total: {orch.latency.total}ms</span>
-                                </div>
                               </div>
                             )}
                           </div>
@@ -773,7 +768,7 @@ function CoachDraftCards({
                         {!isPro && (
                           <a href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand/[0.06] border border-brand/15 hover:bg-brand/[0.10] transition-all mt-1">
                             <Shield className="h-3 w-3 text-brand shrink-0" />
-                            <span className="text-[11px] text-brand/60 flex-1">Pro gets 6 scored candidates + strategy</span>
+                            <span className="text-[11px] text-brand/60 flex-1">Pro scores 6 options and picks the best one</span>
                             <span className="text-[11px] text-brand/40">→</span>
                           </a>
                         )}
@@ -827,6 +822,8 @@ export default function AppPage() {
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  // Full-screen screenshot viewer: which images are open and which one is showing.
+  const [shotViewer, setShotViewer] = useState<{ images: string[]; index: number } | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
   const [showFeatureSpotlight, setShowFeatureSpotlight] = useState(false);
@@ -871,6 +868,8 @@ export default function AppPage() {
   const [coachStreaming, setCoachStreaming] = useState(false);
   const [coachOutcome, setCoachOutcome] = useState<CoachOutcomePrompt | null>(null);
   const [showCoachThreads, setShowCoachThreads] = useState(false);
+  const [showContextSheet, setShowContextSheet] = useState(false);
+  const [coachDragActive, setCoachDragActive] = useState(false);
   const coachRunIds = useRef<Record<number, string>>({});
   const coachCopiedReplies = useRef<Record<string, string>>({});
   const [scanResult, setScanResult] = useState<ScanResult>(null);
@@ -2067,31 +2066,6 @@ export default function AppPage() {
     setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
   };
 
-  // Compress image client-side to avoid size issues with iPhone screenshots
-  const compressImage = (file: File, maxWidth = 1200, quality = 0.7): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(objectUrl);
-        const canvas = document.createElement('canvas');
-        let { width, height } = img;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { reject(new Error('Canvas not supported')); return; }
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Failed to load image')); };
-      img.src = objectUrl;
-    });
-  };
-
   // Screenshot upload & extraction
   const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2678,7 +2652,7 @@ export default function AppPage() {
         body: JSON.stringify({
           id: activeCoachSessionId || undefined,
           name: autoName,
-          messages: strategyChatHistory.map(m => ({ role: m.role, content: m.content, draft: m.draft || null })),
+          messages: strategyChatHistory.map(m => ({ role: m.role, content: m.content || (m.images?.length ? '📷 Screenshot' : ''), draft: m.draft || null })),
           type: 'coach',
         }),
       });
@@ -2971,21 +2945,19 @@ export default function AppPage() {
   };
 
 
-  const handleCoachScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+  const handleCoachScreenshotUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    void processCoachScreenshots(Array.from(e.target.files || []));
+  };
+
+  // Screenshots can arrive from the file picker, a paste, or a drop onto the Coach card.
+  const processCoachScreenshots = async (incoming: File[]) => {
+    const files = incoming.filter(file => file.type.startsWith('image/')).slice(0, 6);
+    if (!files.length || coachScreenshotExtracting || strategyChatLoading) return;
     setCoachScreenshotExtracting(true);
     try {
-      // Read all files as base64 for thumbnails AND extraction
-      const fileData = await Promise.all(files.map(async (file) => {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-        return base64;
-      }));
+      // Downsize each screenshot first: full-size phone screenshots are too big
+      // for the extraction request, and the same image feeds the thumbnail.
+      const fileData = await Promise.all(files.map(file => compressImage(file)));
 
       // Add a user message with image thumbnails immediately (no text — thumbnail is enough)
       const imageUrls = fileData.map(b64 => b64);
@@ -3130,6 +3102,13 @@ export default function AppPage() {
       return last;
     });
     handleStrategyChatSendWithMsg(lastUser.content);
+  };
+
+  const clearCoachChat = () => {
+    setStrategyChatHistory([]);
+    setStrategyChatInput('');
+    setCoachOutcome(null);
+    coachRunIds.current = {};
   };
 
   const handleStrategyChatSend = async () => {
@@ -3405,6 +3384,14 @@ export default function AppPage() {
 
   return (
     <>
+    {shotViewer && (
+      <ScreenshotViewer
+        images={shotViewer.images}
+        index={shotViewer.index}
+        onIndexChange={(index) => setShotViewer(viewer => viewer && { ...viewer, index })}
+        onClose={() => setShotViewer(null)}
+      />
+    )}
     {/* Post-result Deep Analysis upsell — non-Pro, Fast-mode, one-time */}
     {showDeepUpsell && (
       <div className="fixed bottom-safe-4 left-1/2 -translate-x-1/2 z-[9998] w-[calc(100%-2rem)] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
@@ -3460,7 +3447,7 @@ export default function AppPage() {
       <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] lg:pb-3 max-w-lg md:max-w-3xl lg:max-w-6xl xl:max-w-[88rem] ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-3 sm:mb-6">
-          <Link href={userId ? '/dashboard' : '/pricing'} aria-label={userId ? 'Home' : 'Plans'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+          <Link href={userId ? '/dashboard' : '/'} aria-label={userId ? 'Home' : 'Back to the homepage'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
             {userId ? <Home className="h-5 w-5 text-white/70" /> : <ArrowLeft className="h-5 w-5 text-white/70" />}
           </Link>
           <div className="flex items-center gap-3">
@@ -3511,7 +3498,7 @@ export default function AppPage() {
                       ? '1 day left on your free trial' 
                       : `${trialDaysLeft} days left on your free trial`}
                 </p>
-                <p className="text-white/50 text-xs">Unlimited V2 verified replies</p>
+                <p className="text-white/50 text-xs">Unlimited replies with Deep Analysis</p>
               </div>
             </div>
             {trialDaysLeft <= 3 && (
@@ -3658,7 +3645,24 @@ export default function AppPage() {
           </aside>
 
           {/* ── Coach card ── */}
-          <div className="flex-1 min-w-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden flex flex-col">
+          <div
+            className={`relative flex-1 min-w-0 h-full rounded-3xl bg-white/[0.04] border overflow-hidden flex flex-col transition-colors ${coachDragActive ? 'border-brand/60' : 'border-white/[0.08]'}`}
+            onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setCoachDragActive(true); } }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setCoachDragActive(false); }}
+            onDrop={(e) => {
+              if (!e.dataTransfer.types.includes('Files')) return;
+              e.preventDefault();
+              setCoachDragActive(false);
+              void processCoachScreenshots(Array.from(e.dataTransfer.files));
+            }}
+          >
+          {coachDragActive && (
+            <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-ink/85 text-center">
+              <Camera className="h-8 w-8 text-brand" />
+              <p className="text-base font-bold text-white">Drop your screenshot</p>
+              <p className="text-sm text-white/60">Coach will read the conversation for you</p>
+            </div>
+          )}
           {/* ─ Header — always visible, compact, personalized ─ */}
           <div className="shrink-0 pt-3 sm:pt-5 pb-3 px-4 sm:px-6 border-b border-white/[0.06]">
             <div className="flex items-center justify-between gap-2 mb-1">
@@ -3683,12 +3687,14 @@ export default function AppPage() {
               {isPro && (
                 <button
                   onClick={() => setUseV2(v => !v)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                  title={useV2 ? 'Deep Analysis is on. Tap for instant replies.' : 'Fast replies are on. Tap for Deep Analysis.'}
+                  aria-label={useV2 ? 'Deep Analysis is on. Switch to fast replies.' : 'Fast replies are on. Switch to Deep Analysis.'}
+                  className={`flex min-h-11 sm:min-h-0 items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
                     useV2 ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20' : 'bg-brand/10 border-brand/25 text-brand hover:bg-brand/20'
                   }`}
                 >
                   {useV2 ? <Shield className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
-                  {useV2 ? 'V2 On' : 'V1 On'}
+                  {useV2 ? 'Deep' : 'Fast'}
                 </button>
               )}
               </div>
@@ -3753,6 +3759,7 @@ export default function AppPage() {
               hasMessage={!!message.trim()}
               hasReplies={replies.length > 0}
               appMode={appMode}
+              screenshotUsed={strategyChatHistory.some(m => (m.images?.length ?? 0) > 0)}
               onAction={(hintId) => {
                 if (hintId === 'screenshot') coachFileInputRef.current?.click();
               }}
@@ -3771,7 +3778,7 @@ export default function AppPage() {
                     {useV2 ? 'Deep Analysis on' : 'Fast Mode on'}
                   </p>
                   <p className="text-[11px] text-white/55 leading-tight mt-0.5">
-                    {useV2 ? '6 scored candidates · strategy · takes ~8s' : 'Instant replies · no scoring overhead'}
+                    {useV2 ? '6 scored options and a full strategy, in about 8 seconds' : 'Instant replies, without the scoring'}
                   </p>
                 </div>
                 <button
@@ -3882,10 +3889,18 @@ export default function AppPage() {
                       {msg.images && msg.images.length > 0 && (
                         <div className={`flex gap-2 flex-wrap ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in zoom-in-95 duration-500`}>
                           {msg.images.map((img, imgIdx) => (
-                            <div key={imgIdx} className="relative rounded-2xl overflow-hidden border border-white/[0.10] shadow-xl shadow-black/40 max-w-[180px] hover:scale-[1.02] transition-transform">
-                              <img src={img} alt={`Screenshot ${imgIdx + 1}`} loading="lazy" decoding="async" className="w-full h-auto max-h-[240px] object-cover" />
-                              <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/[0.08]" />
-                            </div>
+                            <button
+                              key={imgIdx}
+                              type="button"
+                              onClick={() => setShotViewer({ images: msg.images!, index: imgIdx })}
+                              aria-label={`View screenshot ${imgIdx + 1} full size`}
+                              className="group relative block rounded-2xl overflow-hidden border border-white/[0.10] shadow-xl shadow-black/40 max-w-[180px] hover:border-brand/40 transition-all active:scale-[0.98]"
+                            >
+                              <img src={img} alt={`Screenshot ${imgIdx + 1}`} loading="lazy" decoding="async" className="w-full h-auto max-h-[240px] object-cover object-top" />
+                              <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-[11px] font-semibold text-white/90">
+                                <Maximize2 className="h-3 w-3" /> View
+                              </span>
+                            </button>
                           ))}
                         </div>
                       )}
@@ -3966,7 +3981,7 @@ export default function AppPage() {
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
                       <span className="text-[13px] text-white/40">
                         {coachPipelineStep === 'analyzing' ? 'Analyzing conversation...' :
-                         coachPipelineStep === 'generating' ? 'Generating 6 candidates...' :
+                         coachPipelineStep === 'generating' ? 'Writing 6 options...' :
                          coachPipelineStep === 'scoring' ? 'Scoring & picking winner...' :
                          'Thinking...'}
                       </span>
@@ -3996,8 +4011,25 @@ export default function AppPage() {
           )}
 
           {/* ─ Context selector row ─ */}
-          <div className="shrink-0 px-4 sm:px-6 pt-3 pb-1">
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+          <div className="shrink-0 px-4 sm:px-6 pt-2 sm:pt-3 pb-1">
+            {/* Phones: one button that opens a sheet, so the chat keeps the vertical room. */}
+            <div className="flex items-center justify-between gap-2 sm:hidden">
+              <button
+                onClick={() => setShowContextSheet(true)}
+                className={`flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-[13px] font-semibold transition-all active:scale-95 ${
+                  selectedContext ? 'border-brand/30 bg-brand/15 text-brand' : 'border-white/[0.10] bg-white/[0.05] text-white/70'
+                }`}
+              >
+                {selectedContext
+                  ? <>{CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.emoji} {CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label || 'Custom'}</>
+                  : <>Who is it?</>}
+                <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+              </button>
+              {strategyChatHistory.length > 0 && (
+                <button onClick={clearCoachChat} className="min-h-11 px-2 text-xs font-semibold text-white/50 hover:text-white/80">Clear chat</button>
+              )}
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
               <span className="text-[11px] text-white/50 font-bold uppercase tracking-wider shrink-0">Who?</span>
               {CONTEXT_OPTIONS.map((ctx) => (
                 <button
@@ -4029,8 +4061,9 @@ export default function AppPage() {
               <button
                 onClick={() => coachFileInputRef.current?.click()}
                 disabled={coachScreenshotExtracting}
-                className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/60 hover:text-white/70 hover:bg-white/[0.10] transition-all active:scale-90 shrink-0 disabled:opacity-40"
+                className="w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/60 hover:text-white/70 hover:bg-white/[0.10] transition-all active:scale-90 shrink-0 disabled:opacity-40"
                 title="Upload screenshot"
+                aria-label="Upload screenshot"
               >
                 {coachScreenshotExtracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
               </button>
@@ -4039,6 +4072,13 @@ export default function AppPage() {
                 value={strategyChatInput}
                 onChange={(e) => { updateCoachInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'; }}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
+                onPaste={(e) => {
+                  // A screenshot on the clipboard goes straight to Coach; pasted text behaves as usual.
+                  const images = Array.from(e.clipboardData.files).filter(file => file.type.startsWith('image/'));
+                  if (images.length === 0) return;
+                  e.preventDefault();
+                  void processCoachScreenshots(images);
+                }}
                 rows={1}
                 disabled={strategyChatLoading}
                 enterKeyHint="send"
@@ -4047,7 +4087,7 @@ export default function AppPage() {
                 spellCheck
                 inputMode="text"
                 className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/40 text-[16px] md:text-[15px] focus:outline-none focus:border-brand/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
-                style={{ minHeight: '42px' }}
+                style={{ minHeight: '44px' }}
                 placeholder={selectedContext ? (
                   getContextCategory(selectedContext) === 'professional'
                     ? `Ask about your ${CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label.toLowerCase()}...`
@@ -4059,10 +4099,11 @@ export default function AppPage() {
               <button
                 onClick={handleStrategyChatSend}
                 disabled={!strategyChatInput.trim() || strategyChatLoading}
+                aria-label="Send to Coach"
                 className={`rounded-xl flex items-center justify-center text-brand-ink transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed shrink-0 ${
                   strategyChatInput.trim()
-                    ? 'px-4 h-10 gap-1.5 bg-brand shadow-md shadow-brand/25 hover:shadow-brand/40'
-                    : 'w-10 h-10 bg-brand shadow-md shadow-brand/20 hover:shadow-brand/35 disabled:shadow-none'
+                    ? 'px-4 h-11 sm:h-10 gap-1.5 bg-brand shadow-md shadow-brand/25 hover:shadow-brand/40'
+                    : 'w-11 h-11 sm:w-10 sm:h-10 bg-brand shadow-md shadow-brand/20 hover:shadow-brand/35 disabled:shadow-none'
                 }`}
               >
                 {strategyChatInput.trim() ? (
@@ -4076,8 +4117,8 @@ export default function AppPage() {
               </button>
             </div>
             {strategyChatHistory.length > 0 && (
-              <div className="flex justify-end mt-2">
-                <button onClick={() => { setStrategyChatHistory([]); setStrategyChatInput(''); setCoachOutcome(null); coachRunIds.current = {}; }} className="text-[11px] text-white/45 hover:text-white/50 transition-colors">Clear chat</button>
+              <div className="hidden sm:flex justify-end mt-2">
+                <button onClick={clearCoachChat} className="text-[11px] text-white/45 hover:text-white/70 transition-colors">Clear chat</button>
               </div>
             )}
           </div>
@@ -4092,12 +4133,49 @@ export default function AppPage() {
               <CoachReadPanel strategy={strategyData} />
             </div>
             <div className="shrink-0 border-t border-white/[0.06] px-5 py-3 text-[11px] text-white/40">
-              <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-white/60">Enter</kbd> to send · <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-white/60">Shift + Enter</kbd> for a new line
+              <p><kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-white/60">Enter</kbd> to send · <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-white/60">Shift + Enter</kbd> for a new line</p>
+              <p className="mt-1.5">Paste or drop a screenshot anywhere in the chat.</p>
             </div>
           </aside>
         </div>
         )}
         {/* End of Coach split view */}
+
+        {showContextSheet && (
+          <div className="fixed inset-0 z-[90] sm:hidden" role="dialog" aria-modal="true" aria-label="Who are you texting?">
+            <button aria-label="Close" className="absolute inset-0 bg-black/70" onClick={() => setShowContextSheet(false)} />
+            <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-white/[0.10] bg-panel px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 animate-in slide-in-from-bottom-4 duration-200">
+              <div className="mb-1 flex items-center justify-between">
+                <h2 className="text-base font-bold text-white">Who are you texting?</h2>
+                <button onClick={() => setShowContextSheet(false)} aria-label="Close" className="flex h-11 w-11 items-center justify-center rounded-xl text-white/60 hover:text-white">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="mb-3 text-xs text-white/55">Coach adjusts the tone and the advice to fit.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {CONTEXT_OPTIONS.map((ctx) => {
+                  const active = selectedContext === ctx.value;
+                  return (
+                    <button
+                      key={ctx.value}
+                      onClick={() => { setSelectedContext(active ? null : ctx.value as ContextType); setShowContextSheet(false); }}
+                      aria-pressed={active}
+                      className={`flex min-h-[60px] items-center gap-3 rounded-2xl border px-3 text-left transition-all active:scale-[0.98] ${
+                        active ? 'border-brand/40 bg-brand/15' : 'border-white/[0.08] bg-white/[0.04]'
+                      }`}
+                    >
+                      <span className="text-xl" aria-hidden>{ctx.emoji}</span>
+                      <span className="min-w-0">
+                        <span className={`block text-sm font-bold ${active ? 'text-brand' : 'text-white/90'}`}>{ctx.label}</span>
+                        <span className="block text-xs leading-snug text-white/50">{ctx.description}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {showCoachThreads && (
           <div className="fixed inset-0 z-[90] lg:hidden" role="dialog" aria-modal="true" aria-label="Your conversations">
@@ -4407,12 +4485,14 @@ export default function AppPage() {
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
-                  <img 
-                    src={screenshotPreview} 
-                    alt="Screenshot preview" 
-                    decoding="async"
-                    className="w-full max-h-48 object-cover opacity-90"
-                  />
+                  <button type="button" onClick={() => setShotViewer({ images: [screenshotPreview], index: 0 })} aria-label="View screenshot full size" className="block w-full">
+                    <img src={screenshotPreview} alt="Screenshot preview" decoding="async" className="w-full max-h-48 object-cover object-top opacity-90" />
+                  </button>
+                  {!extracting && (
+                    <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white/90">
+                      <Maximize2 className="h-3 w-3" /> View full
+                    </span>
+                  )}
                   {extracting && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <div className="flex items-center gap-3">
@@ -4742,7 +4822,14 @@ export default function AppPage() {
             {screenshotPreview && (
               <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
-                  <img src={screenshotPreview} alt="Screenshot preview" decoding="async" className="w-full max-h-48 object-cover opacity-90" />
+                  <button type="button" onClick={() => setShotViewer({ images: [screenshotPreview], index: 0 })} aria-label="View screenshot full size" className="block w-full">
+                    <img src={screenshotPreview} alt="Screenshot preview" decoding="async" className="w-full max-h-48 object-cover object-top opacity-90" />
+                  </button>
+                  {!extracting && (
+                    <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white/90">
+                      <Maximize2 className="h-3 w-3" /> View full
+                    </span>
+                  )}
                   {extracting && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <div className="flex items-center gap-3">
@@ -4934,7 +5021,14 @@ export default function AppPage() {
             {/* Screenshot preview */}
             {screenshotPreview && (
               <div className="relative rounded-2xl overflow-hidden border border-cyan-500/20">
-                <img src={screenshotPreview} alt="Screenshot" decoding="async" className="w-full max-h-40 object-cover opacity-70" />
+                <button type="button" onClick={() => setShotViewer({ images: [screenshotPreview], index: 0 })} aria-label="View screenshot full size" className="block w-full">
+                    <img src={screenshotPreview} alt="Screenshot" decoding="async" className="w-full max-h-40 object-cover object-top opacity-70" />
+                  </button>
+                  {!extracting && (
+                    <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white/90">
+                      <Maximize2 className="h-3 w-3" /> View full
+                    </span>
+                  )}
                 <button
                   onClick={clearScreenshot}
                   className="absolute top-2 right-2 hit-area w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-all"

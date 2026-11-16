@@ -9,10 +9,12 @@ type ContextualHintsProps = {
   hasMessage: boolean;
   hasReplies: boolean;
   appMode: string;
+  /** True once the person has uploaded a screenshot, so the tip is no longer news. */
+  screenshotUsed?: boolean;
   onAction?: (hintId: string) => void;
 };
 
-export default function ContextualHints({ appMode, onAction }: ContextualHintsProps) {
+export default function ContextualHints({ appMode, screenshotUsed = false, onAction }: ContextualHintsProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -27,26 +29,26 @@ export default function ContextualHints({ appMode, onAction }: ContextualHintsPr
     localStorage.setItem(STORAGE_KEY, 'true');
   };
 
-  if (!visible) return null;
+  if (!visible || screenshotUsed) return null;
 
   return (
     <div className="mb-3 animate-in fade-in slide-in-from-top-2 duration-400">
       <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20">
-          <Camera className="h-4 w-4 text-white" />
+        <div className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center shrink-0">
+          <Camera className="h-4 w-4 text-brand-ink" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-semibold text-white/75">Skip the copy-paste</p>
-          <p className="text-[11px] text-white/35 mt-0.5">Upload a screenshot — Coach reads the whole thread automatically.</p>
+          <p className="text-[11px] text-white/55 mt-0.5">Upload a screenshot — Coach reads the whole thread automatically.</p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center shrink-0">
           <button
             onClick={() => { onAction?.('screenshot'); dismiss(); }}
-            className="text-[11px] font-bold text-blue-400 hover:text-blue-300 transition-colors"
+            className="min-h-11 px-2 text-xs font-bold text-brand hover:text-brand-soft transition-colors"
           >
             Try it
           </button>
-          <button onClick={dismiss} className="text-white/20 hover:text-white/50 transition-colors">
+          <button onClick={dismiss} aria-label="Dismiss tip" className="flex h-11 w-8 items-center justify-center text-white/45 hover:text-white/80 transition-colors">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>

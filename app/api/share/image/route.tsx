@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'linear-gradient(135deg, #581C87 0%, #7C3AED 50%, #A855F7 100%)',
+            background: '#0b0f0c',
             padding: '40px',
           }}
         >
@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              background: 'white',
+              background: '#141c16',
+              border: '1px solid #344036',
               borderRadius: '32px',
               padding: '40px',
               width: '90%',
@@ -47,17 +48,17 @@ export async function GET(request: NextRequest) {
           >
             {/* Their message */}
             <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: '#6B7280', fontSize: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: '#abb7aa', fontSize: '14px' }}>
                 💬 They said:
               </div>
               <div
                 style={{
-                  background: '#F3F4F6',
+                  background: '#0b0f0c',
                   borderRadius: '16px',
                   padding: '20px',
                   fontSize: '18px',
-                  color: '#374151',
-                  borderLeft: '4px solid #D1D5DB',
+                  color: '#f5f7ec',
+                  borderLeft: '4px solid #344036',
                 }}
               >
                 {`"${theirMessage.substring(0, 100)}"`}
@@ -66,24 +67,24 @@ export async function GET(request: NextRequest) {
 
             {/* Divider */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '16px 0' }}>
-              <div style={{ height: '1px', flex: 1, background: 'linear-gradient(to right, transparent, #E5E7EB, transparent)' }} />
+              <div style={{ height: '1px', flex: 1, background: 'linear-gradient(to right, transparent, #344036, transparent)' }} />
               <span style={{ margin: '0 16px', fontSize: '20px' }}>✨</span>
-              <div style={{ height: '1px', flex: 1, background: 'linear-gradient(to right, transparent, #E5E7EB, transparent)' }} />
+              <div style={{ height: '1px', flex: 1, background: 'linear-gradient(to right, transparent, #344036, transparent)' }} />
             </div>
 
             {/* My reply */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: '#6B7280', fontSize: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', color: '#abb7aa', fontSize: '14px' }}>
                 <span style={{ marginRight: '8px' }}>{config.emoji}</span>
                 My reply ({config.label}):
               </div>
               <div
                 style={{
-                  background: config.color,
+                  background: '#d3ff68',
                   borderRadius: '16px',
                   padding: '24px',
                   fontSize: '20px',
-                  color: 'white',
+                  color: '#10180e',
                   fontWeight: 600,
                 }}
               >
@@ -99,13 +100,13 @@ export async function GET(request: NextRequest) {
                 justifyContent: 'center',
                 marginTop: '24px',
                 paddingTop: '20px',
-                borderTop: '1px solid #E5E7EB',
+                borderTop: '1px solid #344036',
               }}
             >
-              <span style={{ fontSize: '16px', color: '#9333EA', fontWeight: 700 }}>
-                ✨ Text Wingman
+              <span style={{ fontSize: '16px', color: '#d3ff68', fontWeight: 700 }}>
+                Text Wingman
               </span>
-              <span style={{ fontSize: '14px', color: '#9CA3AF', marginLeft: '8px' }}>
+              <span style={{ fontSize: '14px', color: '#abb7aa', marginLeft: '8px' }}>
                 • AI-powered replies
               </span>
             </div>
@@ -143,7 +144,7 @@ export async function GET(request: NextRequest) {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#7C3AED',
+            background: '#0b0f0c',
             color: 'white',
             fontSize: '24px',
             fontWeight: 'bold',

@@ -22,6 +22,24 @@ export function validateScreenshot(file: { type: string; size: number }): string
   return null;
 }
 
+// The original file is downsized in the browser before upload, so it may be far
+// larger than the request limit. This only screens out wrong types and absurd sizes.
+export const MAX_SCREENSHOT_SOURCE_BYTES = 25 * 1024 * 1024;
+
+export function validateScreenshotSource(file: { type: string; size: number }): string | null {
+  if (!IMAGE_TYPES.has(file.type)) return 'Choose a PNG, JPG or WebP image, or paste the message instead.';
+  if (!file.size) return 'That image is empty. Choose another screenshot or paste the message.';
+  if (file.size > MAX_SCREENSHOT_SOURCE_BYTES) return 'That image is too large. Crop it to the conversation, or paste the message.';
+  return null;
+}
+
+/** Decoded size of a base64 data URL, to check a downsized screenshot against the request limit. */
+export function dataUrlBytes(dataUrl: string): number {
+  const base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+}
+
 export function validateQuickReplies(value: unknown): Array<{ tone: (typeof TONES)[number]; text: string }> {
   if (!Array.isArray(value)) throw new Error('No replies came back. Your text is still here; try again.');
   return TONES.map(tone => {

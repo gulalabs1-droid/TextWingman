@@ -234,7 +234,7 @@ export default function SharePage() {
         {/* Footer */}
         <div className="text-center pt-8 border-t border-white/10">
           <p className="text-sage/70 text-xs">
-            &copy; 2024 Text Wingman. All rights reserved.
+            &copy; {new Date().getFullYear()} Text Wingman. All rights reserved.
           </p>
         </div>
       </div>

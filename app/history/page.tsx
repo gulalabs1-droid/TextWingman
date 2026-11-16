@@ -35,6 +35,7 @@ export default function HistoryPage() {
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -46,10 +47,14 @@ export default function HistoryPage() {
     setLoading(true);
     setError(false);
     try {
-      const [threadsRes, userRes] = await Promise.all([
-        fetch('/api/threads'),
-        supabase.auth.getUser(),
-      ]);
+      // History belongs to an account, so check for one before asking for it.
+      const userRes = await supabase.auth.getUser();
+      if (!userRes.data.user) {
+        setSignedOut(true);
+        setLoading(false);
+        return;
+      }
+      const threadsRes = await fetch('/api/threads');
 
       if (threadsRes.ok) {
         const data = await threadsRes.json();
@@ -130,10 +135,11 @@ export default function HistoryPage() {
           </Link>
           <div className="flex-1">
             <h1 className="text-lg font-bold text-white">History</h1>
-            <p className="text-[11px] text-white/55">{totalCount} session{totalCount !== 1 ? 's' : ''}</p>
+            {!signedOut && <p className="text-[11px] text-white/55">{totalCount} session{totalCount !== 1 ? 's' : ''}</p>}
           </div>
         </div>
 
+        {!signedOut && (<>
         {/* Search */}
         <div className="relative mb-4">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/50" />
@@ -168,14 +174,29 @@ export default function HistoryPage() {
             </button>
           ))}
         </div>
+        </>)}
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-brand/50" />
           </div>
+        ) : signedOut ? (
+          <div className="text-center py-16 space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center">
+              <Clock className="h-7 w-7 text-white/40" />
+            </div>
+            <div>
+              <p className="text-white/90 text-base font-bold">Sign in to see your history</p>
+              <p className="text-white/55 text-sm mt-1">A free account saves every conversation so you can pick it up when they answer.</p>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/history')}`} className="inline-flex min-h-11 items-center px-5 rounded-xl bg-brand text-brand-ink text-sm font-bold hover:bg-brand-soft transition-colors">Create a free account</Link>
+              <Link href={`/login?mode=signin&redirect=${encodeURIComponent('/history')}`} className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-white/60 hover:text-white">I already have one</Link>
+            </div>
+          </div>
         ) : error ? (
           <div className="text-center py-16 space-y-4">
-            <p className="text-white/50 text-sm font-semibold">Failed to load history</p>
+            <p className="text-white/50 text-sm font-semibold">We couldn&apos;t load your history</p>
             <button onClick={fetchAll} className="px-5 py-2.5 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white/60 text-sm font-bold hover:bg-white/[0.14] transition-all">
               Retry
             </button>

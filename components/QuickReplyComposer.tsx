@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, ArrowRight, Loader2, Zap, Copy, Check, BookmarkPlus } from 'lucide-react';
+import { Camera, ArrowRight, Loader2, Zap, Copy, Check, BookmarkPlus, Maximize2, X } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { captureAttribution, getAnalyticsContext, track } from '@/lib/analytics';
 import {
@@ -21,7 +21,9 @@ import {
 } from '@/lib/reply-learning';
 import { SOCIAL_LINKS } from '@/lib/site';
 import { useToast } from '@/components/ui/use-toast';
-import { validateMessage, validateScreenshot, validateQuickReplies } from '@/lib/quick-reply';
+import { MAX_SCREENSHOT_BYTES, dataUrlBytes, validateMessage, validateScreenshot, validateScreenshotSource, validateQuickReplies } from '@/lib/quick-reply';
+import { compressImage } from '@/lib/compress-image';
+import { ScreenshotViewer } from '@/components/ScreenshotViewer';
 import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits';
 import homeStyles from '@/app/homepage.module.css';
 
@@ -77,6 +79,9 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
   const [msg, setMsg] = useState('');
   const [source, setSource] = useState(embedded ? 'web' : 'shorts');
   const [uploading, setUploading] = useState(false);
+  // The screenshot the current text was read from, kept so the person can check it.
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [viewingScreenshot, setViewingScreenshot] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [replies, setReplies] = useState<QuickReply[]>([]);
   const [lastMessage, setLastMessage] = useState('');
@@ -317,6 +322,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     track('example_clicked', { source, label: example.label, mode, static: true });
     const generationId = `example_${example.label.slice(0, 24).replace(/\W+/g, '_').toLowerCase()}`;
     setMsg('');
+    setScreenshot(null);
     setReplyError('');
     setLimitReached(false);
     setCopiedReply(null);
@@ -337,6 +343,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
   };
 
   const tryOwnText = () => {
+    setScreenshot(null);
     setReplies([]);
     setIsExample(false);
     requestAnimationFrame(() => {
@@ -349,7 +356,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    const validationError = validateScreenshot(file);
+    const validationError = validateScreenshotSource(file);
     if (validationError) {
       setReplyError(validationError);
       return;
@@ -358,12 +365,24 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     setUploading(true);
     track('screenshot_upload_clicked', { source, size: file.size });
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
+      // Phone screenshots are often larger than the request limit, so downsize
+      // first. If the browser cannot do that, send the original when it fits.
+      const dataUrl = await compressImage(file).catch(() => {
+        if (validateScreenshot(file)) return '';
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
       });
+      if (!dataUrl || dataUrlBytes(dataUrl) > MAX_SCREENSHOT_BYTES) {
+        track('screenshot_upload_failed', { source, reason: 'too_large' });
+        setUploading(false);
+        setReplyError('That screenshot is too large to read. Crop it to the conversation, or paste the message.');
+        return;
+      }
+      setScreenshot(dataUrl);
       const res = await fetch('/api/extract-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -377,6 +396,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
           reason: !res.ok ? `http_${res.status}` : 'no_text_found',
         });
         setUploading(false);
+        setScreenshot(null);
         toast({
           title: 'Could not read that screenshot',
           description: data?.error || 'Try a clearer crop or paste the text instead.',
@@ -391,6 +411,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
     } catch {
       track('screenshot_upload_failed', { source, reason: 'network_or_reader_error' });
       setUploading(false);
+      setScreenshot(null);
       toast({
         title: 'Upload failed',
         description: 'Try again or paste the text instead.',
@@ -405,6 +426,9 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
 
   return (
     <div className={embedded ? 'text-white' : 'min-h-screen bg-ink text-white'}>
+      {viewingScreenshot && screenshot && (
+        <ScreenshotViewer images={[screenshot]} index={0} onIndexChange={() => {}} onClose={() => setViewingScreenshot(false)} />
+      )}
       {/* Minimal top bar */}
       {!embedded && <header className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Logo size="sm" showText={true} className="cursor-pointer opacity-70" />
@@ -491,6 +515,34 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             disabled={generating || uploading}
             className={`w-full min-h-[88px] max-h-[200px] p-3.5 rounded-2xl bg-black/40 border border-white/[0.08] text-white placeholder-white/40 resize-none focus:outline-none focus:border-brand/60 focus:ring-4 focus:ring-brand/10 transition-colors text-base leading-relaxed disabled:opacity-70 ${embedded ? homeStyles.composerTextarea : ''}`}
           />
+          {screenshot && (
+            <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/[0.10] bg-black/30 p-2">
+              <button
+                type="button"
+                onClick={() => { setViewingScreenshot(true); track('screenshot_preview_opened', { source }); }}
+                aria-label="View your screenshot full size"
+                className="group relative h-16 w-12 shrink-0 overflow-hidden rounded-lg border border-white/[0.12]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- local data URL */}
+                <img src={screenshot} alt="" className="h-full w-full object-cover object-top" />
+                <span className="absolute inset-0 flex items-center justify-center bg-black/35 text-white">
+                  <Maximize2 className="h-4 w-4" />
+                </span>
+              </button>
+              <button type="button" onClick={() => { setViewingScreenshot(true); track('screenshot_preview_opened', { source }); }} className="min-h-11 flex-1 text-left">
+                <span className="block text-sm font-semibold text-white/90">{uploading ? 'Reading your screenshot…' : 'Read from your screenshot'}</span>
+                <span className="block text-xs text-white/55">Tap to view it full size</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setScreenshot(null)}
+                aria-label="Remove screenshot preview"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white/55 hover:bg-white/[0.08] hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <p id="message-privacy" className="mt-2 text-xs text-white/50">Remove names and numbers. We never connect to your inbox or send messages for you.</p>
 
           <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">

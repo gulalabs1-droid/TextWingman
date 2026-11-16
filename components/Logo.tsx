@@ -1,4 +1,5 @@
 import React from 'react';
+import { Send } from 'lucide-react';
 
 interface LogoProps {
   className?: string;
@@ -6,135 +7,27 @@ interface LogoProps {
   showText?: boolean;
 }
 
+const MARK = {
+  sm: { tile: 'h-8 w-8 rounded-[10px]', icon: 17, text: 'text-lg' },
+  md: { tile: 'h-10 w-10 rounded-xl', icon: 21, text: 'text-2xl' },
+  lg: { tile: 'h-14 w-14 rounded-2xl', icon: 29, text: 'text-3xl' },
+  xl: { tile: 'h-20 w-20 rounded-3xl', icon: 42, text: 'text-5xl' },
+} as const;
+
+/** The Text Wingman mark: the same tilted lime tile and wordmark as the homepage header. */
 export function Logo({ className = '', size = 'md', showText = true }: LogoProps) {
-  const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
-    xl: 'w-24 h-24',
-  };
-
-  const textSizeClasses = {
-    sm: 'text-lg',
-    md: 'text-2xl',
-    lg: 'text-3xl',
-    xl: 'text-5xl',
-  };
-
+  const mark = MARK[size];
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      {/* Logo Icon - Message bubble with wing */}
-      <div className={`${sizeClasses[size]} relative`}>
-        <svg
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full"
-        >
-          <defs>
-            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#E4FFAD" />
-              <stop offset="50%" stopColor="#D3FF68" />
-              <stop offset="100%" stopColor="#B4FE57" />
-            </linearGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-          
-          {/* Left Angel Wing - Classic angelic design */}
-          <g opacity="0.9" filter="url(#glow)">
-            {/* Main wing shape */}
-            <path
-              d="M18 42 Q 8 40, 2 45 Q 1 38, 8 32 Q 2 35, 1 40 L 18 42 Z"
-              fill="white"
-              opacity="0.95"
-            />
-            {/* Secondary feathers */}
-            <path
-              d="M18 48 Q 10 48, 4 52 Q 3 46, 10 43 Q 6 47, 4 50 L 18 48 Z"
-              fill="white"
-              opacity="0.9"
-            />
-            <path
-              d="M18 54 Q 12 55, 7 58 Q 6 53, 12 51 Q 9 54, 7 56 L 18 54 Z"
-              fill="white"
-              opacity="0.85"
-            />
-            {/* Upper feathers */}
-            <path
-              d="M20 36 Q 11 33, 5 36 Q 4 30, 11 27 Q 7 31, 5 34 L 20 36 Z"
-              fill="white"
-              opacity="0.95"
-            />
-            <path
-              d="M22 30 Q 14 26, 8 28 Q 7 23, 13 20 Q 10 24, 8 26 L 22 30 Z"
-              fill="white"
-              opacity="0.9"
-            />
-          </g>
-
-          {/* Message Bubble */}
-          <path
-            d="M20 30 C20 20, 30 15, 45 15 L70 15 C80 15, 85 20, 85 30 L85 55 C85 65, 80 70, 70 70 L50 70 L35 85 L35 70 L30 70 C20 70, 20 65, 20 55 Z"
-            fill="url(#logoGradient)"
-            filter="url(#glow)"
-          />
-          
-          {/* Right Angel Wing - Classic angelic design */}
-          <g opacity="0.9" filter="url(#glow)">
-            {/* Main wing shape */}
-            <path
-              d="M87 42 Q 92 40, 98 45 Q 99 38, 92 32 Q 98 35, 99 40 L 87 42 Z"
-              fill="white"
-              opacity="0.95"
-            />
-            {/* Secondary feathers */}
-            <path
-              d="M87 48 Q 90 48, 96 52 Q 97 46, 90 43 Q 94 47, 96 50 L 87 48 Z"
-              fill="white"
-              opacity="0.9"
-            />
-            <path
-              d="M87 54 Q 88 55, 93 58 Q 94 53, 88 51 Q 91 54, 93 56 L 87 54 Z"
-              fill="white"
-              opacity="0.85"
-            />
-            {/* Upper feathers */}
-            <path
-              d="M85 36 Q 89 33, 95 36 Q 96 30, 89 27 Q 93 31, 95 34 L 85 36 Z"
-              fill="white"
-              opacity="0.95"
-            />
-            <path
-              d="M83 30 Q 86 26, 92 28 Q 93 23, 87 20 Q 90 24, 92 26 L 83 30 Z"
-              fill="white"
-              opacity="0.9"
-            />
-          </g>
-          
-          {/* Sparkle dots inside bubble */}
-          <circle cx="40" cy="38" r="3" fill="#14200E" opacity="0.9" />
-          <circle cx="52" cy="38" r="3" fill="#14200E" opacity="0.9" />
-          <circle cx="64" cy="38" r="3" fill="#14200E" opacity="0.9" />
-          
-          {/* Small sparkle accents */}
-          <circle cx="25" cy="25" r="2" fill="#D3FF68" opacity="0.6" />
-          <circle cx="78" cy="22" r="2" fill="#D3FF68" opacity="0.6" />
-        </svg>
-      </div>
-
-      {/* Logo Text */}
-      {showText && (
-        <div className="flex flex-col">
-          <span className={`${textSizeClasses[size]} font-bold tracking-tight text-cream`}>
-            Text Wingman
-          </span>
-        </div>
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      <span className={`${mark.tile} grid shrink-0 -rotate-[11deg] place-items-center bg-brand text-brand-ink`} aria-hidden={showText}>
+        <Send size={mark.icon} strokeWidth={2.4} className="rotate-[11deg]" />
+      </span>
+      {showText ? (
+        <span className={`${mark.text} whitespace-nowrap font-medium tracking-[-0.06em] text-cream`}>
+          text<strong className="font-black text-brand">wingman</strong>
+        </span>
+      ) : (
+        <span className="sr-only">Text Wingman</span>
       )}
     </div>
   );

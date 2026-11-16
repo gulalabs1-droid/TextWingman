@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, Send } from 'lucide-react';
 import { SOCIAL_LINKS } from '@/lib/site';
+import { HomeAccountLink } from '@/components/HomeAccountLink';
 import styles from '@/app/info.module.css';
 
 function Brand() {
@@ -12,7 +13,7 @@ const navigation = <><Link href="/features">Features</Link><Link href="/guides">
 export default function MarketingShell({ children, hasMobileCta = false }: { children: React.ReactNode; hasMobileCta?: boolean }) {
   return <div className={styles.site}>
     <a className={styles.skip} href="#page-content">Skip to content</a>
-    <header className={styles.header}><div className={`${styles.wrap} ${styles.nav}`}><Brand /><nav className={styles.navLinks} aria-label="Main navigation">{navigation}</nav><div className={styles.actions}><Link href="/login?mode=signin" className={styles.signIn}>Sign in</Link><Link href="/#studio" className={styles.navButton}>Try it free <ArrowUpRight size={15} /></Link></div><details className={styles.mobileNav}><summary aria-label="Open navigation">Menu <span>☰</span></summary><nav aria-label="Mobile navigation">{navigation}<Link href="/login?mode=signin">Sign in</Link></nav></details></div></header>
+    <header className={styles.header}><div className={`${styles.wrap} ${styles.nav}`}><Brand /><nav className={styles.navLinks} aria-label="Main navigation">{navigation}</nav><div className={styles.actions}><HomeAccountLink className={styles.signIn} /><Link href="/#studio" className={styles.navButton}>Try it free <ArrowUpRight size={15} /></Link></div><details className={styles.mobileNav}><summary aria-label="Open navigation">Menu <span>☰</span></summary><nav aria-label="Mobile navigation">{navigation}<HomeAccountLink /></nav></details></div></header>
     {children}
     <footer className={`${styles.footer} ${hasMobileCta ? styles.footerWithCta : ''}`}><div className={`${styles.wrap} ${styles.footerInner}`}><Brand /><nav aria-label="Footer navigation"><Link href="/features">Features</Link><Link href="/guides">Guides</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/contact">Contact</Link><Link href="/changelog">What&apos;s new</Link>{Object.entries(SOCIAL_LINKS).map(([name, href]) => <a key={name} href={href} target="_blank" rel="noopener noreferrer">{name}</a>)}</nav><small>© {new Date().getFullYear()} Text Wingman by Gula Labs.</small></div></footer>
   </div>;

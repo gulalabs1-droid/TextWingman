@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
+import { BRAND, BrandIcon } from '@/lib/brand-icon';
 
-export const alt = 'Text Wingman — What should I say next? Three replies. Your call.';
+export const alt = 'Text Wingman. Say less. Text better. Three replies, your call.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -9,125 +10,57 @@ export default async function OGImage() {
     (
       <div
         style={{
-          background: 'linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 40%, #0a0a0f 100%)',
+          background: BRAND.ink,
           width: '100%',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '60px',
+          justifyContent: 'space-between',
+          padding: '64px 72px',
           fontFamily: 'Inter, sans-serif',
         }}
       >
-        {/* Logo area */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            marginBottom: '40px',
-          }}
-        >
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '16px',
-              background: 'linear-gradient(135deg, #7c3aed, #c026d3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '28px',
-            }}
-          >
-            ✨
+        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+          <BrandIcon size={64} radius={18} />
+          <div style={{ display: 'flex', fontSize: '38px', letterSpacing: '-0.04em' }}>
+            <span style={{ color: BRAND.cream }}>text</span>
+            <span style={{ fontWeight: 900, color: BRAND.lime }}>wingman</span>
           </div>
-          <span style={{ fontSize: '36px', fontWeight: 800, color: 'white' }}>
-            Text Wingman
-          </span>
         </div>
 
-        {/* Headline */}
-        <div
-          style={{
-            fontSize: '60px',
-            fontWeight: 800,
-            color: 'white',
-            textAlign: 'center',
-            lineHeight: 1.1,
-            marginBottom: '20px',
-            maxWidth: '900px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          What should I say next?
-          <span
-            style={{
-              background: 'linear-gradient(90deg, #6ee7b7, #67e8f9)',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
-            Three replies. Your call.
-          </span>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', fontSize: '132px', fontWeight: 900, lineHeight: 0.95, letterSpacing: '-0.07em', color: BRAND.cream }}>
+            SAY LESS.
+          </div>
+          <div style={{ display: 'flex', fontSize: '132px', fontWeight: 900, lineHeight: 0.95, letterSpacing: '-0.07em', color: BRAND.lime }}>
+            TEXT BETTER.
+          </div>
+          <div style={{ display: 'flex', marginTop: '28px', fontSize: '30px', lineHeight: 1.35, color: BRAND.sage, maxWidth: '860px' }}>
+            Paste their text or drop a screenshot. Get three replies that sound like you.
+          </div>
         </div>
 
-        {/* Subheadline */}
-        <div
-          style={{
-            fontSize: '24px',
-            color: 'rgba(255,255,255,0.5)',
-            textAlign: 'center',
-            maxWidth: '700px',
-            marginBottom: '40px',
-          }}
-        >
-          AI reads your conversation, coaches the move, writes the reply, and checks your vibe before you send.
-        </div>
-
-        {/* Feature pills */}
-        <div style={{ display: 'flex', gap: '12px' }}>
-          {[
-            { label: '🟢 Vibe Check', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)', color: '#6ee7b7' },
-            { label: '🎭 Tone Translator', bg: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.3)', color: '#c4b5fd' },
-            { label: '🎯 Strategy Coach', bg: 'rgba(6,182,212,0.15)', border: 'rgba(6,182,212,0.3)', color: '#67e8f9' },
-            { label: '📸 Screenshot AI', bg: 'rgba(236,72,153,0.15)', border: 'rgba(236,72,153,0.3)', color: '#f9a8d4' },
-          ].map((pill) => (
-            <div
-              key={pill.label}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '999px',
-                background: pill.bg,
-                border: `1px solid ${pill.border}`,
-                color: pill.color,
-                fontSize: '16px',
-                fontWeight: 700,
-              }}
-            >
-              {pill.label}
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom bar */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '30px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: 'rgba(255,255,255,0.25)',
-            fontSize: '16px',
-            fontWeight: 600,
-          }}
-        >
-          Free · No card required · textwingman.app
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {['Free to try', 'No signup', 'You press send'].map(label => (
+              <div
+                key={label}
+                style={{
+                  display: 'flex',
+                  padding: '10px 20px',
+                  borderRadius: '999px',
+                  border: `1px solid ${BRAND.line}`,
+                  background: BRAND.panel,
+                  color: BRAND.cream,
+                  fontSize: '20px',
+                  fontWeight: 700,
+                }}
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', fontSize: '22px', fontWeight: 700, color: BRAND.sage }}>textwingman.app</div>
         </div>
       </div>
     ),
