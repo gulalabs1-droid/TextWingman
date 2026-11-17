@@ -1,37 +1,17 @@
-// This file configures the initialization of Sentry on the client.
-// The config you add here will be used whenever a users loads a page in their browser.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+// Client-side instrumentation. Runs before the app becomes interactive, so it
+// stays tiny: Sentry itself is loaded later by lib/sentry-client.
+// https://nextjs.org/docs/app/api-reference/file-conventions/instrumentation-client
 
-import * as Sentry from '@sentry/nextjs';
+import { loadSentry, loadedSentry } from '@/lib/sentry-client';
 
-const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
-
-if (SENTRY_DSN) {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    // Capture 10% of transactions for performance monitoring
-    tracesSampleRate: 0.1,
-    // Session replays only on errors (saves quota)
-    replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: 1.0,
-    // Filter out noisy/expected errors
-    ignoreErrors: [
-      'ResizeObserver loop limit exceeded',
-      'ResizeObserver loop completed with undelivered notifications',
-      'Non-Error promise rejection captured',
-      'Network request failed',
-      'Failed to fetch',
-      'Load failed',
-    ],
-    integrations: [
-      Sentry.replayIntegration({
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
-    environment: process.env.NODE_ENV,
-  });
+if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  const start = () => { void loadSentry(); };
+  // Errors before this point are still caught: error boundaries load the SDK on demand.
+  if ('requestIdleCallback' in window) window.requestIdleCallback(start, { timeout: 4000 });
+  else setTimeout(start, 2000);
 }
 
-// Lets Sentry trace client-side navigations in the App Router.
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+// Lets Sentry trace client-side navigations once it has loaded.
+export function onRouterTransitionStart(url: string, navigationType: 'push' | 'replace' | 'traverse') {
+  loadedSentry()?.captureRouterTransitionStart(url, navigationType);
+}

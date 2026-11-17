@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Home, Maximize2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
-import { CURRENT_VERSION, CHANGELOG } from '@/lib/changelog';
 import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
 import AppNav from '@/components/AppNav';
@@ -1222,11 +1221,18 @@ export default function AppPage() {
   };
 
   // Changelog unread badge
+  // The changelog is ~11 KB gzipped of copy, so it loads after the page instead of with it.
   const [hasUnread, setHasUnread] = useState(false);
+  const [latestRelease, setLatestRelease] = useState<{ version: string; date: string } | null>(null);
   useEffect(() => {
-    const lastSeen = localStorage.getItem('tw_changelog_seen');
-    const latest = CHANGELOG[0]?.date;
-    if (latest && (!lastSeen || lastSeen < latest)) setHasUnread(true);
+    let active = true;
+    import('@/lib/changelog').then(({ LATEST_UPDATE }) => {
+      if (!active || !LATEST_UPDATE) return;
+      setLatestRelease({ version: LATEST_UPDATE.version, date: LATEST_UPDATE.date });
+      const lastSeen = localStorage.getItem('tw_changelog_seen');
+      if (!lastSeen || lastSeen < LATEST_UPDATE.date) setHasUnread(true);
+    }).catch(() => {});
+    return () => { active = false; };
   }, []);
 
   // Persist selected context across sessions
@@ -3456,10 +3462,10 @@ export default function AppPage() {
             </Link>
             <Link
               href="/changelog"
-              onClick={() => { localStorage.setItem('tw_changelog_seen', CHANGELOG[0]?.date || ''); setHasUnread(false); }}
+              onClick={() => { if (latestRelease) localStorage.setItem('tw_changelog_seen', latestRelease.date); setHasUnread(false); }}
               className="relative hidden sm:block px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[11px] font-bold text-white/50 hover:text-white/80 transition-colors"
             >
-              v{CURRENT_VERSION}
+              {latestRelease ? `v${latestRelease.version}` : "What's new"}
               {hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand animate-pulse" />}
             </Link>
           </div>
