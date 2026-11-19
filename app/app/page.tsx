@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, createContext, useContext } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Home, Maximize2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Home, Maximize2, Share2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
@@ -14,12 +14,15 @@ import AppNav from '@/components/AppNav';
 import { ARRIVAL_STORAGE_KEY, arrivalGreeting, parseArrival, parseStartIntent } from '@/lib/first-run';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
 import { compressImage } from '@/lib/compress-image';
+import { restoreCoachSession, serializeCoachMessage } from '@/lib/coach-session';
 import { ScreenshotViewer } from '@/components/ScreenshotViewer';
+import { UpgradeSheet } from '@/components/UpgradeSheet';
 import { captureAttribution, getAnalyticsContext, track, type Props } from '@/lib/analytics';
 import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
 import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
 import {
   clearPendingOutcome,
+  coachProfileInput,
   createReplyGenerationId,
   deriveStyleSignals,
   isOutcomeDue,
@@ -212,7 +215,19 @@ type StrategyChatMessage = {
   orchestration?: OrchestrateResult | null;
   images?: string[];
   generationId?: string;
+  // The conversation read from this message's screenshot(s), so a saved chat keeps it.
+  threadText?: string;
 };
+
+/** Restores a saved chat, replacing everything from the chat that was open before. */
+function loadCoachSession(type: string, saved: unknown) {
+  const restored = restoreCoachSession<OrchestrateResult>(type, saved);
+  const read = restored.read;
+  const strategy = read?.move
+    ? { momentum: read.momentum, balance: read.balance, move: read.move, latencyMs: 0 } as StrategyData
+    : null;
+  return { history: restored.history as StrategyChatMessage[], threadText: restored.threadText, strategy };
+}
 
 type CoachOutcomePrompt = {
   generationId: string;
@@ -402,16 +417,22 @@ function CoachReadPanel({ strategy }: { strategy: StrategyData }) {
  * One reply the person can send. On phones the cards sit in a swipeable row
  * (see ReplyOptionRail) and the whole-width Copy button is the main action.
  */
-function ReplyOptionCard({ label, text, note, copied, onCopy, onCoach, featured = false, solo = false }: {
+// Lets any reply card offer Share without threading a handler through every result component.
+const ShareReplyContext = createContext<((text: string, tone: string) => void) | null>(null);
+
+function ReplyOptionCard({ label, text, note, copied, onCopy, onCoach, shareTone, featured = false, solo = false }: {
   label: React.ReactNode;
   text: string;
   note?: string | null;
   copied: boolean;
   onCopy: () => void;
   onCoach?: () => void;
+  /** Style name for the share card; the Share button shows when set. */
+  shareTone?: string;
   featured?: boolean;
   solo?: boolean;
 }) {
+  const share = useContext(ShareReplyContext);
   return (
     <div className={`flex shrink-0 snap-center flex-col rounded-2xl border p-4 sm:w-full ${solo ? 'w-full' : 'w-[86%]'} ${
       featured ? 'border-brand/30 bg-brand/[0.07]' : 'border-white/[0.10] bg-white/[0.05]'
@@ -435,6 +456,11 @@ function ReplyOptionCard({ label, text, note, copied, onCopy, onCoach, featured 
         {onCoach && (
           <button onClick={onCoach} className="flex min-h-11 items-center rounded-xl border border-white/[0.10] px-3 text-xs font-semibold text-white/60 transition-colors hover:border-brand/30 hover:text-brand active:scale-[0.98]">
             Coach this
+          </button>
+        )}
+        {share && shareTone && (
+          <button onClick={() => share(text, shareTone)} aria-label="Share this reply" title="Share this reply" className="flex min-h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.10] text-white/60 transition-colors hover:border-brand/30 hover:text-brand active:scale-[0.98]">
+            <Share2 className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -622,6 +648,7 @@ function CoachOrchestrationResult({
                                   note={orch.winner_reason}
                                   copied={copiedId === `w-${index}`}
                                   onCopy={() => { onCopy(orch.winner!.text, `w-${index}`, { msg, index, slot: 'winner', tone: orch.winner!.style }); onQuickCopyDone(); }}
+                                  shareTone="best"
                                 />
                                 {orch.backup && orch.backup.text !== orch.winner.text && (
                                   <ReplyOptionCard
@@ -634,6 +661,7 @@ function CoachOrchestrationResult({
                                     text={orch.backup.text}
                                     copied={copiedId === `b-${index}`}
                                     onCopy={() => onCopy(orch.backup!.text, `b-${index}`, { msg, index, slot: 'backup', tone: orch.backup!.style })}
+                                    shareTone="best"
                                   />
                                 )}
                               </ReplyOptionRail>
@@ -761,6 +789,7 @@ function CoachDraftCards({
                                 copied={copiedId === `d-${index}-${option.key}`}
                                 onCopy={() => onCopy(option.text, `d-${index}-${option.key}`, { msg, index, slot: option.key, tone: option.key })}
                                 onCoach={() => onCoachThis(option.text)}
+                                shareTone={option.key}
                               />
                             ))}
                           </ReplyOptionRail>
@@ -786,12 +815,14 @@ export default function AppPage() {
   const [showExamples, setShowExamples] = useState(true);
   const [currentTagline, setCurrentTagline] = useState(0);
   const [showCraftedMessage, setShowCraftedMessage] = useState(false);
-  const [selectedContext, setSelectedContext] = useState<ContextType>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('tw_context') as ContextType) || null;
-    }
-    return null;
-  });
+  // Read after the first render: the server cannot see localStorage, and reading
+  // it during render made React throw away the server HTML for returning users.
+  const [selectedContext, setSelectedContext] = useState<ContextType>(null);
+  const contextPersistReady = useRef(false);
+  useEffect(() => {
+    const saved = localStorage.getItem('tw_context') as ContextType;
+    if (saved) setSelectedContext(current => current ?? saved);
+  }, []);
   const [customContext, setCustomContext] = useState('');
   const [userIntent, setUserIntent] = useState('');
   const [sharing, setSharing] = useState<string | null>(null);
@@ -800,6 +831,18 @@ export default function AppPage() {
   const [usageCount, setUsageCount] = useState(0);
   const [remainingReplies, setRemainingReplies] = useState(FREE_REPLY_LIMIT);
   const [showPaywall, setShowPaywall] = useState(false);
+  // When the next free use comes back, so the upgrade sheet can say so.
+  const [nextFreeAt, setNextFreeAt] = useState<string | null>(null);
+  useEffect(() => {
+    // The limit is usually hit mid-session, after usage was first loaded: refresh the reset time.
+    if (!showPaywall) return;
+    let active = true;
+    fetch('/api/usage')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => { if (active && data) setNextFreeAt(typeof data.nextFreeAt === 'string' ? data.nextFreeAt : null); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [showPaywall]);
   const [usageLimit, setUsageLimit] = useState(FREE_REPLY_LIMIT);
   const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
   const [decodeUsed, setDecodeUsed] = useState(0);
@@ -1237,6 +1280,8 @@ export default function AppPage() {
 
   // Persist selected context across sessions
   useEffect(() => {
+    // Skip the mount pass, which runs before the saved choice has been restored.
+    if (!contextPersistReady.current) { contextPersistReady.current = true; return; }
     if (selectedContext) localStorage.setItem('tw_context', selectedContext);
     else localStorage.removeItem('tw_context');
   }, [selectedContext]);
@@ -1271,6 +1316,7 @@ export default function AppPage() {
           setUsageCount(data.usageCount);
           setRemainingReplies(data.remaining);
           if (data.limit) setUsageLimit(data.limit);
+          setNextFreeAt(typeof data.nextFreeAt === 'string' ? data.nextFreeAt : null);
           // Store user info for checkout
           if (data.userId) setUserId(data.userId);
           if (data.userEmail) setUserEmail(data.userEmail);
@@ -1343,20 +1389,10 @@ export default function AppPage() {
         const msgs = ft.messages || [];
 
         // Restore into Coach chat UI
-        if (type === 'coach') {
-          const coachMsgs: StrategyChatMessage[] = msgs.map((m: any) => ({
-            role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
-            content: m.content || '',
-            draft: m.draft || null,
-          }));
-          setStrategyChatHistory(coachMsgs);
-        } else {
-          const coachMsgs: StrategyChatMessage[] = msgs.map((m: any) => ({
-            role: m.role === 'them' ? 'user' as const : 'assistant' as const,
-            content: m.text || m.content || '',
-          }));
-          setStrategyChatHistory(coachMsgs);
-        }
+        const restored = loadCoachSession(type, msgs);
+        setStrategyChatHistory(restored.history);
+        setExtractedThread(restored.threadText);
+        setStrategyData(restored.strategy);
 
         setActiveCoachSessionId(ft.id);
         setActiveThreadId(null);
@@ -1995,6 +2031,44 @@ export default function AppPage() {
         description: "Please try again",
         variant: "destructive",
       });
+    }
+  };
+
+  // Share a Coach reply as a card (their message + the reply) that links back to Text Wingman.
+  const shareCoachReply = async (text: string, tone: string) => {
+    const lastThem = extractedThread
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => /^them:/i.test(line))
+      .pop()
+      ?.replace(/^them:\s*/i, '')
+      .replace(/\s*\([^)]*\)\s*$/, '');
+    const lastAsked = [...strategyChatHistory].reverse()
+      .find(m => m.role === 'user' && m.content.trim() && !m.images?.length)?.content;
+    const theirMessage = (lastThem || lastAsked || '…').slice(0, 100);
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theirMessage, myReply: text, tone }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.shareUrl) throw new Error('share failed');
+      const url = `${window.location.origin}${data.shareUrl}`;
+      if (typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ title: 'My reply, via Text Wingman', url });
+          track('reply_shared', { tone, method: 'native' });
+          return;
+        } catch (error) {
+          if ((error as Error)?.name === 'AbortError') return;
+        }
+      }
+      await navigator.clipboard.writeText(url);
+      track('reply_shared', { tone, method: 'link' });
+      toast({ title: 'Share link copied', description: 'The card shows their message and your reply.' });
+    } catch {
+      toast({ title: "Couldn't create a share link", variant: 'destructive' });
     }
   };
 
@@ -2658,7 +2732,10 @@ export default function AppPage() {
         body: JSON.stringify({
           id: activeCoachSessionId || undefined,
           name: autoName,
-          messages: strategyChatHistory.map(m => ({ role: m.role, content: m.content || (m.images?.length ? '📷 Screenshot' : ''), draft: m.draft || null })),
+          // Keep what Coach needs to pick the chat back up: the conversation it read
+          // from screenshots and the full Deep Analysis, not just the visible text.
+          messages: strategyChatHistory.map(serializeCoachMessage),
+          context: selectedContext,
           type: 'coach',
         }),
       });
@@ -2684,26 +2761,10 @@ export default function AppPage() {
       const msgs = fullThread?.messages || [];
 
       // Convert ALL sessions into Coach chat history so they display in Coach UI
-      if (type === 'coach') {
-        // Coach session — messages are already in {role, content, draft} format
-        const coachMsgs: StrategyChatMessage[] = (msgs as any[]).map((m: any) => ({
-          role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
-          content: m.content || '',
-          draft: m.draft || null,
-        }));
-        setStrategyChatHistory(coachMsgs);
-      } else {
-        // Thread session — convert {role: 'you'|'them', text} into coach chat format
-        // "them" messages become user messages (they sent it), "you" messages become assistant suggestions
-        const coachMsgs: StrategyChatMessage[] = (msgs as any[]).map((m: any) => {
-          if (m.role === 'them') {
-            return { role: 'user' as const, content: m.text || '' };
-          } else {
-            return { role: 'assistant' as const, content: m.text || '' };
-          }
-        });
-        setStrategyChatHistory(coachMsgs);
-      }
+      const restored = loadCoachSession(type, msgs);
+      setStrategyChatHistory(restored.history);
+      setExtractedThread(restored.threadText);
+      setStrategyData(restored.strategy);
 
       setActiveCoachSessionId(saved.id);
       setCoachOutcome(null);
@@ -2897,7 +2958,7 @@ export default function AppPage() {
     const res = await fetch('/api/strategy-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...body, stream: true, analytics: getAnalyticsContext() }),
+      body: JSON.stringify({ ...body, stream: true, analytics: getAnalyticsContext(), you: coachProfileInput() }),
       signal,
     });
     if (!res.ok) {
@@ -2989,6 +3050,14 @@ export default function AppPage() {
         setStrategyChatLoading(true);
         const threadText = extracted.join('\n\n');
         setExtractedThread(threadText);
+        // Attach the conversation to the screenshot message so a saved chat keeps it.
+        setStrategyChatHistory(prev => {
+          const index = prev.map(m => Boolean(m.images?.length && !m.threadText)).lastIndexOf(true);
+          if (index < 0) return prev;
+          const next = [...prev];
+          next[index] = { ...next[index], threadText };
+          return next;
+        });
 
         // Build rich history for context
         const richHistory = strategyChatHistory.map((m) => {
@@ -3029,6 +3098,8 @@ export default function AppPage() {
                 goal: 'general',
                 relationshipContext: selectedContext || 'not specified',
                 mode: 'orchestrate',
+                analytics: getAnalyticsContext(),
+                you: coachProfileInput(),
               }),
             });
             clearTimeout(stepTimer);
@@ -3175,6 +3246,7 @@ export default function AppPage() {
             relationshipContext: selectedContext || 'not specified',
             mode: 'chat',
             analytics: getAnalyticsContext(),
+            you: coachProfileInput(),
           }),
           signal: controller.signal,
         });
@@ -3348,48 +3420,16 @@ export default function AppPage() {
     );
   }
 
-  // Paywall Modal
-  if (showPaywall) {
-    return (
-      <div className="min-h-screen bg-ink flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-panel border border-line rounded-3xl overflow-hidden">
-          <CardContent className="p-8 text-center space-y-6">
-            <div className="w-16 h-16 bg-brand rounded-2xl flex items-center justify-center mx-auto">
-              <Crown className="h-8 w-8 text-brand-ink" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-cream mb-2">You&apos;ve used all {usageLimit} free uses</h2>
-              <p className="text-sage">Unlock unlimited replies + full style control</p>
-              <p className="text-sm text-sage/70 mt-2">Each free use becomes available again 24 hours after it was used.</p>
-            </div>
-            <div className="space-y-3">
-              <Button 
-                onClick={() => handleCheckout('monthly')}
-                className="w-full h-14 bg-brand text-brand-ink font-bold text-lg rounded-2xl relative"
-              >
-                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">Most flexible</span>
-                Unlock Pro - {PLAN_PRICES.monthly.displayAmount}/month
-              </Button>
-              <Button 
-                onClick={() => handleCheckout('annual')}
-                variant="outline"
-                className="w-full h-12 rounded-2xl font-semibold border border-line bg-transparent text-cream hover:bg-white/5 hover:text-cream"
-              >
-                Save {ANNUAL_SAVINGS_PERCENT}% with Annual - {PLAN_PRICES.annual.displayAmount}/year
-              </Button>
-              <p className="text-xs text-sage/80">Cancel anytime</p>
-            </div>
-            <button onClick={() => setShowPaywall(false)} className="text-sm text-sage/70 hover:text-sage">
-              Wait for reset
-            </button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <>
+    <ShareReplyContext.Provider value={shareCoachReply}>
+    <UpgradeSheet
+      open={showPaywall}
+      usageLimit={usageLimit}
+      nextFreeAt={nextFreeAt}
+      signedIn={Boolean(userId)}
+      onCheckout={handleCheckout}
+      onClose={() => setShowPaywall(false)}
+    />
     {shotViewer && (
       <ScreenshotViewer
         images={shotViewer.images}
@@ -5954,6 +5994,6 @@ export default function AppPage() {
       </div>
       {userId && <AppNav />}
     </div>
-  </>
+  </ShareReplyContext.Provider>
   );
 }

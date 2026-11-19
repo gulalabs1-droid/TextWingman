@@ -14,6 +14,7 @@ import { clipText, rateLimit, sanitizeChatHistory, tooManyRequests } from '@/lib
 import { getClientIp } from '@/lib/request-identity';
 import { parseCoachReply, visibleCoachText, type CoachStreamEvent } from '@/lib/coach-stream';
 import { FREE_REPLY_LIMIT, freeLimitReached, replyUsageCutoff } from '@/lib/usage-limits';
+import { buildProfileBlock, loadCoachProfile } from '@/lib/coach-profile';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -154,6 +155,7 @@ Hard Rules (fail if broken):
 7. Must match strategy energy (pull_back = not eager, escalate = not withdrawn, keep_short = shorter should be 2-4 words)
 8. Must sound like a real person, not a chatbot
 9. If the other person shared something specific, at least one draft must reference it
+10. Keep the user's own voice: don't change casing, length range or punctuation habits unless a rule above requires it
 
 Return ONLY valid JSON:
 {"shorter": "verified or fixed text", "spicier": "verified or fixed text", "softer": "verified or fixed text"}
@@ -207,6 +209,10 @@ export async function POST(req: Request) {
   if (!userMessage) {
     return NextResponse.json({ error: "Message required" }, { status: 400 });
   }
+
+  // Who Coach is talking to: name, local time, texting style, what has worked.
+  // Loads alongside the usage check; it never blocks or fails a reply.
+  const profilePromise = loadCoachProfile(user?.id || null, body?.you).catch(() => null);
 
   const requestAnalytics = buildRequestAnalytics(req, analytics, 'pending', {
     mode: 'strategy_chat',
@@ -263,6 +269,8 @@ export async function POST(req: Request) {
 
   // Await context extraction (started above, runs while we build the prompt)
   contextData = await contextPromise;
+  const coachProfile = await profilePromise;
+  const profileBlock = coachProfile ? buildProfileBlock(coachProfile) : '';
 
   const contextBlock = contextData
     ? `\nCONTEXT EXTRACTION (from dedicated analyzer):
@@ -287,7 +295,7 @@ PERSONALITY:
 - NEVER give generic advice like "keep it engaging" or "ask a follow-up question" — be SPECIFIC
 
 RELATIONSHIP CONTEXT: ${context || "crush/dating"}
-${threadBlock}${strategyBlock}${contextBlock}
+${threadBlock}${strategyBlock}${contextBlock}${profileBlock}
 ${COACHING_PHILOSOPHY[getContextCategory(context)]}
 
 WHAT YOU CAN DO:

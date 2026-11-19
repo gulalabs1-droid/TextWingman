@@ -253,7 +253,7 @@ export default async function DashboardPage() {
               {(recentThreads || []).map((t) => {
                 const msgs = Array.isArray(t.messages) ? t.messages : []
                 const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null
-                const preview = lastMsg?.content || lastMsg?.text || null
+                const preview = lastMsg?.content || lastMsg?.text || lastMsg?.orchestration?.winner?.text || null
                 const diffMs = Date.now() - new Date(t.updated_at).getTime()
                 const mins = Math.floor(diffMs / 60000)
                 const timeAgo = mins < 1 ? 'Just now' : mins < 60 ? `${mins}m` : Math.floor(mins / 60) < 24 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`

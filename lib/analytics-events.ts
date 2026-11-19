@@ -55,6 +55,7 @@ const CLIENT_EVENTS = new Set([
   'court_vote_saved', 'context_selected', 'social_outbound_click',
   'saved_thread_restored', 'thread_continued', 'deep_upsell_shown',
   'deep_upsell_dismissed', 'deep_upsell_click', 'share_card_view',
+  'paywall_viewed', 'paywall_dismissed', 'screenshot_preview_opened', 'reply_shared',
   'share_card_cta_click', 'sign_in_started', 'sign_in_completed',
   'auth_code_sent', 'auth_code_failed', 'onboarding_started',
   'onboarding_completed', 'first_run_start',

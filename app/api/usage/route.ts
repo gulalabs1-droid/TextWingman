@@ -3,7 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getUserTier, ensureAdminAccess, hasPro } from '@/lib/entitlements';
 import { getRequestIdentity } from '@/lib/request-identity';
-import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS, freeLimitReached, remainingFreeUses, replyUsageCutoff } from '@/lib/usage-limits';
+import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS, freeLimitReached, nextFreeUseAt, remainingFreeUses, replyUsageCutoff } from '@/lib/usage-limits';
 
 let supabase: SupabaseClient | null = null;
 
@@ -127,10 +127,19 @@ export async function GET(request: NextRequest) {
     };
 
     // Count replies, decodes, and openers in parallel
-    const [replyRes, decodeRes, openerRes] = await Promise.all([
+    // The oldest reply use in the window tells people when their next free use returns.
+    let oldestQuery = getSupabase()
+      .from('usage_logs')
+      .select('created_at')
+      .eq('action', 'generate_reply')
+      .gte('created_at', cutoffTime);
+    oldestQuery = userId ? oldestQuery.eq('user_id', userId) : oldestQuery.or(`ip_address.eq.${ip},fingerprint.eq.${fp}`);
+
+    const [replyRes, decodeRes, openerRes, oldestRes] = await Promise.all([
       buildQuery('generate_reply'),
       buildQuery('decode'),
       buildQuery('generate_opener'),
+      oldestQuery.order('created_at', { ascending: true }).limit(1).maybeSingle(),
     ]);
 
     if (replyRes.error || decodeRes.error || openerRes.error) {
@@ -154,6 +163,7 @@ export async function GET(request: NextRequest) {
       openerUsed,
       openerLimit: FREE_OPENER_LIMIT,
       resetHours: REPLY_USAGE_WINDOW_HOURS,
+      nextFreeAt: canGenerate ? null : nextFreeUseAt(oldestRes.data?.created_at),
       isPro: false,
       isBetaTester,
       userId: userId,

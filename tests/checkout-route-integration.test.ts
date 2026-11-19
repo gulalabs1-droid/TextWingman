@@ -96,7 +96,7 @@ test('checkout route prevents duplicate sessions and pauses new trials', { timeo
     await new Promise<void>((resolveClose, reject) => probe.close(error => error ? reject(error) : resolveClose()));
     app = spawn('./node_modules/.bin/next', ['dev', '--hostname', '127.0.0.1', '--port', String(appPort)], {
       cwd: process.cwd(),
-      env: { ...process.env, NODE_OPTIONS: `--require ${resolve('tests/fixtures/stripe-local-only.cjs')}`, CHECKOUT_TEST_PORT: String(address.port), NODE_ENV: 'development', NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${address.port}`, NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon', SUPABASE_SERVICE_ROLE_KEY: 'test-service', STRIPE_SECRET_KEY: 'sk_test_local_only', STRIPE_PRICE_ID_MONTHLY: 'price_monthly', STRIPE_PRICE_ID_ANNUAL: 'price_annual', NEXT_PUBLIC_APP_URL: 'https://example.invalid', OPENAI_API_KEY: 'test-openai' },
+      env: { ...process.env, NODE_OPTIONS: `--require ${JSON.stringify(resolve('tests/fixtures/stripe-local-only.cjs'))}`, CHECKOUT_TEST_PORT: String(address.port), NODE_ENV: 'development', NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${address.port}`, NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon', SUPABASE_SERVICE_ROLE_KEY: 'test-service', STRIPE_SECRET_KEY: 'sk_test_local_only', STRIPE_PRICE_ID_MONTHLY: 'price_monthly', STRIPE_PRICE_ID_ANNUAL: 'price_annual', NEXT_PUBLIC_APP_URL: 'https://example.invalid', OPENAI_API_KEY: 'test-openai' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     app.stdout?.on('data', chunk => { output = (output + chunk.toString()).slice(-8000); });

@@ -8,6 +8,19 @@ const adminSupabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+type StoredMessage = { role?: string; content?: string; text?: string; orchestration?: { winner?: { text?: string } | null } | null };
+
+// The list only needs a one-line preview, not saved analyses or screenshot text.
+// A Deep Analysis has no text of its own, so its winning reply stands in.
+function previewMessage(message: StoredMessage | null) {
+  if (!message || typeof message !== 'object') return null;
+  return {
+    role: message.role,
+    content: message.content || message.orchestration?.winner?.text || undefined,
+    text: message.text,
+  };
+}
+
 async function getUser() {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -60,8 +73,8 @@ export async function GET(request: NextRequest) {
       type: t.type || 'thread',
       updated_at: t.updated_at,
       message_count: Array.isArray(t.messages) ? t.messages.length : 0,
-      last_message: Array.isArray(t.messages) && t.messages.length > 0 
-        ? t.messages[t.messages.length - 1] 
+      last_message: Array.isArray(t.messages) && t.messages.length > 0
+        ? previewMessage(t.messages[t.messages.length - 1])
         : null,
     }));
 

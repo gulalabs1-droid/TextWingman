@@ -72,8 +72,9 @@ export default function SharePage() {
         while (base64.length % 4) {
           base64 += '=';
         }
-        const decoded = atob(base64);
-        const data = JSON.parse(decoded);
+        // Decode as UTF-8 so emoji and accented letters survive (atob alone yields raw bytes).
+        const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+        const data = JSON.parse(new TextDecoder().decode(bytes));
         setShareData(data);
         track('share_card_view', {
           source: 'shared_reply',
@@ -112,7 +113,8 @@ export default function SharePage() {
   }
 
   const styleKey = shareData.type || shareData.tone || 'best';
-  const config = TONE_CONFIG[styleKey as keyof typeof TONE_CONFIG];
+  // Unknown styles (Deep Analysis styles, edited links) fall back instead of crashing the page.
+  const config = TONE_CONFIG[styleKey as keyof typeof TONE_CONFIG] || TONE_CONFIG.best;
 
   const handleTryThis = () => {
     try {

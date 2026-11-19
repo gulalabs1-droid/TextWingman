@@ -172,6 +172,29 @@ export function readLocalStyleDNA(): LocalStyleDNA {
   }
 }
 
+/**
+ * Sent with each Coach request so replies fit the person: their time zone and
+ * this browser's style summary (numbers only, no message text). Signed-in
+ * people's server-side history takes precedence over the local summary.
+ */
+export function coachProfileInput() {
+  let timeZone: string | undefined;
+  try {
+    timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {}
+  const dna = readLocalStyleDNA();
+  return {
+    timeZone,
+    style: dna.sample_count > 0 ? {
+      sample_count: dna.sample_count,
+      average_word_count: dna.average_word_count,
+      lowercase_rate: dna.lowercase_rate,
+      question_rate: dna.question_rate,
+      exclamation_rate: dna.exclamation_rate,
+    } : undefined,
+  };
+}
+
 export function recordLocalStyleSignal(
   signals: StyleSignals,
   tone: string,

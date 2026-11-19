@@ -24,6 +24,7 @@ import {
 } from "@/lib/context-category";
 import { buildRequestAnalytics, type RequestAnalytics } from "@/lib/analytics-server";
 import { chatParams } from '@/lib/models';
+import { buildProfileBlock, loadCoachProfile } from '@/lib/coach-profile';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -155,7 +156,8 @@ async function generateCandidates(
   metrics: ThreadMetrics | undefined,
   goal: Goal,
   relationshipContext: string,
-  chatHistory: { role: string; content: string }[]
+  chatHistory: { role: string; content: string }[],
+  profileBlock = ""
 ): Promise<{ text: string; style: string }[]> {
   const strategyHint = formatStrategyForDraft(strategy, metrics);
 
@@ -203,7 +205,7 @@ CONTEXT EXTRACTION:
 - Must acknowledge: ${context.must_acknowledge.join(", ") || "none"}
 - Goal: ${goal}
 - Relationship: ${relationshipContext}
-
+${profileBlock}
 Return ONLY valid JSON object with a "candidates" key:
 {"candidates": [${styleNames}]}`;
         })(),
@@ -239,7 +241,8 @@ async function criticAndSelect(
   threadText: string,
   context: ContextExtraction,
   strategy: StrategyResult,
-  goal: Goal
+  goal: Goal,
+  profileBlock = ""
 ): Promise<CriticResult> {
   const res = await openai.chat.completions.create(chatParams('deep', {
     messages: [
@@ -262,6 +265,7 @@ SELECTION CRITERIA (ranked):
 5. Addresses must_acknowledge items
 6. Follows strategy constraints
 7. Sounds like a real text message, not a crafted sentence. One thought only.
+8. When a profile of the user is given below, prefer candidates that sound like them and lean toward what has worked for them.
 
 FACT-RISK CHECK:
 - If any candidate claims a specific fact (weather, schedules, legal info, scores), flag it.
@@ -273,7 +277,7 @@ CONTEXT:
 - Strategy energy: ${strategy.move.energy}
 - Strategy one-liner: "${strategy.move.one_liner}"
 - Goal: ${goal}
-
+${profileBlock}
 Return ONLY valid JSON:
 {
   "candidates": [
@@ -336,7 +340,8 @@ async function coachResponse(
   chatHistory: { role: string; content: string }[],
   goal: Goal,
   relationshipContext: string,
-  threadText?: string
+  threadText?: string,
+  profileBlock = ""
 ): Promise<{ reply: string; draft: any }> {
   const threadBlock = threadText
     ? `\nTHEIR CONVERSATION THREAD (from screenshot — this is the conversation the user is asking about):\n${threadText}\n`
@@ -358,7 +363,7 @@ PERSONALITY:
 
 RELATIONSHIP CONTEXT: ${relationshipContext || "crush/dating"}
 GOAL: ${goal}
-${threadBlock}
+${threadBlock}${profileBlock}
 ${COACHING_PHILOSOPHY[getContextCategory(relationshipContext)]}
 
 MEMORY & CONTEXT RULES:
@@ -450,6 +455,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Message or thread required" }, { status: 400 });
   }
 
+  // Who Coach is talking to; loads during moderation and never fails the request.
+  const profilePromise = loadCoachProfile(user.id, body.you)
+    .then(buildProfileBlock)
+    .catch(() => "");
+
   const effectiveText = threadText?.trim() || userMessage?.trim() || "";
   const requestAnalytics = buildRequestAnalytics(req, analytics, 'success', {
     mode: 'x2_orchestrate',
@@ -480,7 +490,8 @@ export async function POST(req: Request) {
       chatHistory,
       goal,
       relationshipContext,
-      threadText?.trim() || undefined
+      threadText?.trim() || undefined,
+      await profilePromise
     );
     await recordReplySuccess(user.id, requestAnalytics);
     return NextResponse.json({
@@ -495,9 +506,10 @@ export async function POST(req: Request) {
   try {
     // Steps 1+2: Context Extraction & Strategy Analysis (parallelized — they're independent)
     const parallelStart = Date.now();
-    const [contextExtraction, strategyResult] = await Promise.all([
+    const [contextExtraction, strategyResult, profileBlock] = await Promise.all([
       extractContext(effectiveText, goal, relationshipContext),
       analyzeStrategy(effectiveText, relationshipContext),
+      profilePromise,
     ]);
     const { strategy, metrics } = strategyResult;
     const strategyLatency = Date.now() - parallelStart;
@@ -511,7 +523,8 @@ export async function POST(req: Request) {
       metrics,
       goal,
       relationshipContext,
-      chatHistory
+      chatHistory,
+      profileBlock
     );
 
     // Retry once if empty
@@ -524,7 +537,8 @@ export async function POST(req: Request) {
         metrics,
         goal,
         relationshipContext,
-        chatHistory
+        chatHistory,
+        profileBlock
       );
     }
     const generationLatency = Date.now() - genStart;
@@ -537,7 +551,8 @@ export async function POST(req: Request) {
         chatHistory,
         goal,
         relationshipContext,
-        effectiveText
+        effectiveText,
+        profileBlock
       );
       await recordReplySuccess(user.id, requestAnalytics);
       return NextResponse.json({
@@ -556,7 +571,8 @@ export async function POST(req: Request) {
       effectiveText,
       contextExtraction,
       strategy,
-      goal
+      goal,
+      profileBlock
     );
     const criticLatency = Date.now() - criticStart;
 
