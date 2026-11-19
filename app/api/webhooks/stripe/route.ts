@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { planForStripePriceId, stripe } from '@/lib/stripe';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { subscriptionPeriodEnd } from '@/lib/stripe-subscription';
 
 let supabase: SupabaseClient | null = null;
 
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
           // Get subscription details
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
           const priceId = subscription.items.data[0]?.price?.id;
+          const periodEnd = subscriptionPeriodEnd(subscription);
           
           // Never guess a plan when Stripe sends an unknown or legacy price.
           const planType = planForStripePriceId(priceId) || 'unknown';
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
                 plan_type: planType,
                 price_id: priceId,
                 status: subscription.status,
-                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                ...(periodEnd ? { current_period_end: periodEnd } : {}),
                 cancel_at_period_end: subscription.cancel_at_period_end,
                 canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
                 is_beta_tester: subscription.discount?.coupon?.name === 'FAMTEST7',
@@ -99,10 +101,12 @@ export async function POST(request: NextRequest) {
       }
 
       case 'customer.subscription.created': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const snapshot = event.data.object as Stripe.Subscription;
+        const subscription = await stripe.subscriptions.retrieve(snapshot.id);
         console.log('Subscription created:', subscription.id);
         
         const priceId = subscription.items.data[0]?.price?.id;
+        const periodEnd = subscriptionPeriodEnd(subscription);
         const planType = planForStripePriceId(priceId) || 'unknown';
         if (planType === 'unknown') {
           console.error('Unsupported Stripe price on subscription create:', { subscriptionId: subscription.id, priceId });
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
               plan_type: planType,
               price_id: priceId,
               status: subscription.status,
-              current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+              ...(periodEnd ? { current_period_end: periodEnd } : {}),
               cancel_at_period_end: subscription.cancel_at_period_end,
               canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
               is_beta_tester: subscription.discount?.coupon?.name === 'FAMTEST7',
@@ -139,33 +143,41 @@ export async function POST(request: NextRequest) {
         break;
       }
 
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
+      case 'customer.subscription.updated':
+      case 'customer.subscription.paused':
+      case 'customer.subscription.resumed': {
+        const snapshot = event.data.object as Stripe.Subscription;
+        const subscription = await stripe.subscriptions.retrieve(snapshot.id);
         console.log('Subscription updated:', subscription.id, 'status:', subscription.status);
         
         const priceId = subscription.items.data[0]?.price?.id;
+        const periodEnd = subscriptionPeriodEnd(subscription);
         const planType = planForStripePriceId(priceId) || 'unknown';
         if (planType === 'unknown') {
           console.error('Unsupported Stripe price on subscription update:', { subscriptionId: subscription.id, priceId });
         }
         
         // Update subscription - Stripe is the ONLY writer
-        const { error } = await getSupabase()
+        const { data: updated, error } = await getSupabase()
           .from('subscriptions')
           .update({
             status: subscription.status,
             plan_type: planType,
             price_id: priceId,
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            ...(periodEnd ? { current_period_end: periodEnd } : {}),
             cancel_at_period_end: subscription.cancel_at_period_end,
             canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
             updated_at: new Date().toISOString(),
           })
-          .eq('stripe_subscription_id', subscription.id);
+          .eq('stripe_subscription_id', subscription.id)
+          .select('id');
 
         if (error) {
           console.error('Failed to update subscription:', error);
           throw error;
+        }
+        if (subscription.metadata?.user_id && !updated?.length) {
+          throw new Error('Subscription record not yet available; Stripe should retry');
         }
         break;
       }

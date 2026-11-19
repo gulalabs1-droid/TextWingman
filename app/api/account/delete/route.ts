@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
+import { hasUnfinishedBilling } from '@/lib/account-deletion';
 import { stripe } from '@/lib/stripe';
-
-// Statuses where Stripe can still bill (or resume billing for) the customer.
-const BILLABLE_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid', 'incomplete', 'paused']);
 
 export async function DELETE() {
   try {
@@ -30,12 +28,13 @@ export async function DELETE() {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    // Stop billing before anything is deleted. If we can't confirm the Stripe
-    // subscription is canceled, keep the account so the user can still reach
-    // the billing portal — deleting it would leave them charged with no login.
+    if (!user.email) {
+      return NextResponse.json({ error: 'We could not verify billing. Please contact support before deleting your account.' }, { status: 503 });
+    }
+
     const { data: subscriptions, error: subLookupError } = await admin
       .from('subscriptions')
-      .select('stripe_subscription_id, status')
+      .select('*')
       .eq('user_id', userId);
 
     if (subLookupError) {
@@ -43,22 +42,13 @@ export async function DELETE() {
       return NextResponse.json({ error: 'Could not verify your subscription. Please try again.' }, { status: 503 });
     }
 
-    for (const sub of subscriptions || []) {
-      if (!sub.stripe_subscription_id) continue;
-      try {
-        const live = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
-        if (BILLABLE_STATUSES.has(live.status)) {
-          await stripe.subscriptions.cancel(sub.stripe_subscription_id);
-        }
-      } catch (error) {
-        const code = (error as { code?: string }).code;
-        if (code === 'resource_missing') continue; // already gone in Stripe
-        console.error('Account deletion: Stripe cancel failed:', error);
-        return NextResponse.json(
-          { error: 'We could not cancel your subscription. Please cancel it from billing first, then try again.' },
-          { status: 502 },
-        );
+    try {
+      if (await hasUnfinishedBilling(stripe, userId, user.email, subscriptions || [])) {
+        return NextResponse.json({ error: 'Cancel your subscription and close any open checkout before deleting your account. Visit Billing or contact support for help.' }, { status: 409 });
       }
+    } catch (error) {
+      console.error('Account deletion: Stripe verification failed:', error);
+      return NextResponse.json({ error: 'We could not verify billing. Please try again or contact support.' }, { status: 503 });
     }
 
     // Delete personal data. Most tables cascade from auth.users, but several
@@ -71,6 +61,7 @@ export async function DELETE() {
       'strategy_logs',
       'saved_threads',
       'v2_runs',
+      'x2_runs',
       'suggestions',
       'entitlements',
       'subscriptions',
@@ -80,11 +71,9 @@ export async function DELETE() {
       const { error } = await admin.from(table).delete().eq('user_id', userId);
       if (error) {
         console.error(`Error deleting from ${table}:`, error.message);
+        return NextResponse.json({ error: 'We could not finish deleting your data. Please try again or contact support.' }, { status: 503 });
       }
     }
-
-    const { error: profileError } = await admin.from('profiles').delete().eq('id', userId);
-    if (profileError) console.error('Error deleting profile:', profileError.message);
 
     // Delete the auth user
     const { error: authError } = await admin.auth.admin.deleteUser(userId);

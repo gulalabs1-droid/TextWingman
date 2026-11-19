@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, ArrowUpRight, Eye, EyeOff, Loader2, Mail, Send } from 'lucide-react'
 import { track } from '@/lib/analytics'
-import { PLAN_PRICES } from '@/lib/pricing'
 import { FREE_REPLY_LIMIT, REPLY_USAGE_WINDOW_HOURS } from '@/lib/usage-limits'
 import { isSavedThreadReturn, safeReturnPath } from '@/lib/navigation'
 import { ARRIVAL_STORAGE_KEY } from '@/lib/first-run'
@@ -225,7 +224,7 @@ export default function LoginPage() {
       <main className="relative w-full max-w-md space-y-5 rounded-3xl border border-[#c7f75c]/15 bg-[#151c16] p-6 shadow-2xl sm:p-8">
         {(step === 'email' || step === 'password') && redirectUrl && selectedPlan && (
           <p className="rounded-xl border border-[#c7f75c]/20 bg-[#c7f75c]/[0.07] p-3 text-center text-sm text-[#e0f4be]">
-            {isTrial ? <>Sign in to continue to your 7-day free trial. No card is needed to start; after seven days, access pauses unless you add a payment method. Monthly Pro is {PLAN_PRICES.monthly.displayAmount}/month.</> : <>Sign in to review your <span className="font-bold capitalize">{selectedPlan}</span> Pro plan.</>}
+            {isTrial ? <>New Pro trials are temporarily unavailable. Sign in to use the free plan or review paid plans; no payment starts automatically.</> : <>Sign in to review your <span className="font-bold capitalize">{selectedPlan}</span> Pro plan.</>}
           </p>
         )}
 
