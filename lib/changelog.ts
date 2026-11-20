@@ -10,6 +10,23 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '4.11.0',
+    date: '2026-11-20',
+    title: 'A More Personal Coach',
+    description: 'A simpler place to work through your conversations, with easier ways to bring your context along and make replies sound like you.',
+    type: 'feature',
+    highlights: [
+      'Coach brings reply help, message reads, openers, and follow-ups together in one conversation.',
+      'Continue a homepage reply in Coach without retyping it. When you choose a plan before signing up, your chat and selection can be restored in the same browser.',
+      'Try Shorter, Warmer, Bolder, or More casual on the latest drafts. Each Coach message uses one of your free uses unless you have Pro.',
+      'Dictate a Coach message in supported browsers after granting microphone permission, then review the text before sending it.',
+      'Preview uploaded screenshots full size. Images are sent to our AI provider for reading and are not saved in your chats; saved chats can retain extracted text.',
+      'Coach can use texting-style signals and feedback you provide to personalize suggestions. Your Account page can show a weekly recap when there is enough activity.',
+      'Manage or delete saved chats from your account. Starting a new chat no longer carries over the previous screenshot context.',
+      'The free-use counter refreshes after a Coach reply. The free plan remains three uses per rolling 24 hours; new Pro trials remain temporarily unavailable.',
+    ],
+  },
+  {
     version: '4.10.0',
     date: '2026-11-11',
     title: 'The Culture Has Entered the Chat',
@@ -83,7 +100,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Did-they-reply check — after you send a Coach reply, a one-tap prompt asks if it worked. Wins and misses both feed the learning loop',
       'Learns from what you send, not what Coach drafts — only your picks, edits, and confirmed sends shape your Style DNA',
       'See it on your Profile — samples, average words, question rate, and favorite tone all visible on the new Style DNA card',
-      'Privacy-first — only behavioral signals are stored, never your raw conversation or reply text',
+      'Style DNA stores behavioral signals rather than raw conversation or reply text; separate saved chats can contain conversation text',
     ],
   },
   {
