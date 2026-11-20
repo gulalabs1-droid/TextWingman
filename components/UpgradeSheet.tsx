@@ -21,8 +21,10 @@ const BENEFITS = [
  * it: the person keeps their conversation and their unsent message in view,
  * which is the moment they most want the answer.
  */
-export function UpgradeSheet({ open, trigger = 'free_limit', usageLimit, nextFreeAt, signedIn, onCheckout, onClose }: {
+export function UpgradeSheet({ open, trigger = 'free_limit', initialPlan = 'annual', usageLimit, nextFreeAt, signedIn, onCheckout, onClose }: {
   open: boolean;
+  /** Preselected plan, e.g. the one they chose before signing up. */
+  initialPlan?: UpgradePlan;
   trigger?: UpgradeTrigger;
   usageLimit: number;
   nextFreeAt: string | null;
@@ -37,6 +39,7 @@ export function UpgradeSheet({ open, trigger = 'free_limit', usageLimit, nextFre
 
   useEffect(() => {
     if (!open) return;
+    setPlan(initialPlan);
     track('paywall_viewed', { trigger, signed_in: signedIn, has_reset_time: Boolean(nextFreeAt) });
     const previousFocus = document.activeElement as HTMLElement | null;
     primaryRef.current?.focus();

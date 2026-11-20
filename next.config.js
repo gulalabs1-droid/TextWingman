@@ -40,9 +40,10 @@ const nextConfig = {
             value: 'max-age=63072000; includeSubDomains; preload'
           },
           {
-            // Lock down powerful browser features we don't use
+            // Lock down powerful browser features. The microphone is allowed on our own
+            // pages only, for dictation in Coach.
             key: 'Permissions-Policy',
-            value: 'camera=(self), microphone=(), geolocation=(), interest-cohort=()'
+            value: 'camera=(self), microphone=(self), geolocation=(), interest-cohort=()'
           }
         ]
       }

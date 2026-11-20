@@ -1,3 +1,4 @@
+import { recapSince, summarizeWeek } from '@/lib/weekly-recap';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
@@ -40,7 +41,7 @@ export async function GET() {
     }
 
     // Get tone preferences from copy_logs
-    const [{ data: copyLogs }, { data: outcomes }] = await Promise.all([
+    const [{ data: copyLogs }, { data: outcomes }, { data: weekRows }] = await Promise.all([
       supabase
         .from('copy_logs')
         .select('tone')
@@ -52,6 +53,13 @@ export async function GET() {
         .in('event_type', ['copied', 'edited', 'sent_confirmed'])
         .order('created_at', { ascending: false })
         .limit(200),
+      supabase
+        .from('reply_outcomes')
+        .select('event_type, tone, outcome, created_at')
+        .eq('user_id', user.id)
+        .in('event_type', ['copied', 'sent_confirmed', 'outcome_reported'])
+        .gte('created_at', recapSince())
+        .limit(500),
     ]);
 
     const learningRows = (outcomes || []) as OutcomeRow[];
@@ -104,6 +112,7 @@ export async function GET() {
       avgWordCount: average('word_count'),
       totalCopies,
       hasData: totalCopies >= 3,
+      week: summarizeWeek(weekRows || []),
       styleDna: {
         sampleCount: signalCount,
         confidence: Math.min(100, signalCount * 20),

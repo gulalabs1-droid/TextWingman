@@ -14,8 +14,10 @@ import { ARRIVAL_STORAGE_KEY, arrivalGreeting, parseArrival, parseStartIntent } 
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
 import { compressImage } from '@/lib/compress-image';
 import { coachSessionFromPending, receivedMessagePrompt, restoreCoachSession, serializeCoachMessage } from '@/lib/coach-session';
+import { resumePath, savePendingCoach, takePendingCoach, type UpgradePlanChoice } from '@/lib/pending-coach';
 import { ScreenshotViewer } from '@/components/ScreenshotViewer';
 import { UpgradeSheet } from '@/components/UpgradeSheet';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { captureAttribution, getAnalyticsContext, track } from '@/lib/analytics';
 import { PLAN_PRICES } from '@/lib/pricing';
 import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
@@ -438,6 +440,9 @@ function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread, highlightUp
                       </button>
                     )}
                   </div>
+                  <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-sage/70">
+                    <Shield className="h-3 w-3" aria-hidden /> Screenshots are read, never stored.
+                  </p>
                 </div>
   );
 }
@@ -609,8 +614,16 @@ function CoachOrchestrationResult({
   );
 }
 
+// One tap asks Coach to rework the drafts it just wrote.
+const DRAFT_TWEAKS = [
+  { key: 'shorter', label: 'Shorter', prompt: 'Make those replies shorter. Keep what they answer.' },
+  { key: 'warmer', label: 'Warmer', prompt: 'Make those replies warmer and more genuine.' },
+  { key: 'bolder', label: 'Bolder', prompt: 'Make those replies bolder and more confident.' },
+  { key: 'casual', label: 'More casual', prompt: 'Make those replies more casual, like a quick text.' },
+] as const;
+
 function CoachDraftCards({
-  msg, index, context, copiedId, onCopy, onCoachThis, isPro,
+  msg, index, context, copiedId, onCopy, onCoachThis, onTweak, onUpgrade, isPro,
 }: {
   msg: StrategyChatMessage;
   index: number;
@@ -618,6 +631,9 @@ function CoachDraftCards({
   copiedId: string | null;
   onCopy: CoachCopyFn;
   onCoachThis: (text: string) => void;
+  /** Shown on the latest drafts only. */
+  onTweak?: (prompt: string, key: string) => void;
+  onUpgrade: () => void;
   isPro: boolean;
 }) {
   if (!msg.draft) return null;
@@ -647,12 +663,25 @@ function CoachDraftCards({
                               />
                             ))}
                           </ReplyOptionRail>
+                        {onTweak && (
+                          <div className="flex flex-wrap gap-2 px-1 pt-1" role="group" aria-label="Adjust these replies">
+                            {DRAFT_TWEAKS.map(tweak => (
+                              <button
+                                key={tweak.key}
+                                onClick={() => onTweak(tweak.prompt, tweak.key)}
+                                className="min-h-9 rounded-full border border-white/[0.10] px-3.5 text-xs font-semibold text-sage transition-colors hover:border-brand/30 hover:text-brand active:scale-95"
+                              >
+                                {tweak.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         {!isPro && (
-                          <a href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand/[0.06] border border-brand/15 hover:bg-brand/[0.10] transition-all mt-1">
+                          <button onClick={onUpgrade} className="flex w-full items-center gap-2 px-3 py-2 rounded-xl bg-brand/[0.06] border border-brand/15 hover:bg-brand/[0.10] transition-all mt-1 text-left">
                             <Shield className="h-3 w-3 text-brand shrink-0" />
                             <span className="text-xs text-brand/60 flex-1">Pro scores 6 options and picks the best one</span>
                             <span className="text-xs text-brand/40">→</span>
-                          </a>
+                          </button>
                         )}
                         </div>
   );
@@ -674,6 +703,8 @@ export default function AppPage() {
   const [showPaywall, setShowPaywall] = useState(false);
   // When the next free use comes back, so the upgrade sheet can say so.
   const [nextFreeAt, setNextFreeAt] = useState<string | null>(null);
+  const [upgradePlan, setUpgradePlan] = useState<UpgradePlanChoice>('annual');
+  const [upgradeTrigger, setUpgradeTrigger] = useState<'free_limit' | 'deep_analysis'>('free_limit');
   useEffect(() => {
     // The limit is usually hit mid-session, after usage was first loaded: refresh the reset time.
     if (!showPaywall) return;
@@ -928,6 +959,27 @@ export default function AppPage() {
     } finally {
       window.history.replaceState({}, '', window.location.pathname + window.location.hash);
     }
+  }, [searchParams]);
+
+  // Back from sign-up after choosing a plan: restore the chat and pick up where they left off.
+  useEffect(() => {
+    if (typeof window === 'undefined' || searchParams.get('resume') !== '1') return;
+    const pending = takePendingCoach();
+    if (pending) {
+      const restored = loadCoachSession('coach', pending.messages);
+      setStrategyChatHistory(restored.history);
+      setExtractedThread(pending.threadText || restored.threadText);
+      setStrategyData(restored.strategy);
+      if (pending.context) {
+        setSelectedContext(pending.context as ContextType);
+        contextPickedInChat.current = true;
+      }
+      if (pending.input) setStrategyChatInput(pending.input);
+      setUpgradePlan(pending.plan);
+      setShowPaywall(true);
+      track('saved_thread_restored', { source: 'upgrade_signup' });
+    }
+    window.history.replaceState({}, '', window.location.pathname + window.location.hash);
   }, [searchParams]);
 
   // Track when the coach reply is displayed; the server owns success counting.
@@ -1742,14 +1794,19 @@ export default function AppPage() {
     track('upgrade_clicked', { plan, source, from: 'app_paywall' });
     // Require login before checkout
     if (!userId) {
-      toast({
-        title: 'Account Required',
-        description: 'Please sign up or log in first to subscribe',
-      });
       track('signup_started', { from: 'paywall', plan, source });
+      // Carry the chat through sign-up so they come straight back to it, on the plan they picked.
+      const choice = plan === 'monthly' ? 'monthly' : 'annual';
+      savePendingCoach({
+        messages: strategyChatHistory.map(serializeCoachMessage),
+        threadText: extractedThread,
+        context: selectedContext,
+        input: strategyChatInput,
+        plan: choice,
+      });
       const loginParams = new URLSearchParams({
         mode: 'signup',
-        redirect: '/pricing',
+        redirect: resumePath(choice),
         plan,
       });
       try {
@@ -1831,11 +1888,13 @@ export default function AppPage() {
     <ShareReplyContext.Provider value={shareCoachReply}>
     <UpgradeSheet
       open={showPaywall}
+      trigger={upgradeTrigger}
+      initialPlan={upgradePlan}
       usageLimit={usageLimit}
       nextFreeAt={nextFreeAt}
       signedIn={Boolean(userId)}
       onCheckout={handleCheckout}
-      onClose={() => setShowPaywall(false)}
+      onClose={() => { setShowPaywall(false); setUpgradeTrigger('free_limit'); }}
     />
     {shotViewer && (
       <ScreenshotViewer
@@ -2287,6 +2346,11 @@ export default function AppPage() {
                           msg={msg} index={i} context={selectedContext}
                           copiedId={coachCopiedId} onCopy={copyCoachText}
                           onCoachThis={coachThisDraft} isPro={isPro}
+                          onTweak={i === strategyChatHistory.length - 1 && !strategyChatLoading ? (prompt, key) => {
+                            track('draft_tweaked', { tweak: key });
+                            void handleStrategyChatSendWithMsg(prompt);
+                          } : undefined}
+                          onUpgrade={() => { setUpgradeTrigger('deep_analysis'); setShowPaywall(true); }}
                         />
                       )}
                     </div>
@@ -2407,6 +2471,16 @@ export default function AppPage() {
                     ? `Ask about your ${CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label.toLowerCase()}...`
                     : `Ask about your ${CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label.toLowerCase()}...`
                 ) : SMART_PLACEHOLDERS[placeholderIdx]}
+              />
+              <VoiceInputButton
+                disabled={strategyChatLoading}
+                hideWhenIdle={Boolean(strategyChatInput.trim())}
+                className="w-11 h-11 sm:w-10 sm:h-10"
+                onText={(text) => {
+                  updateCoachInput(text);
+                  const input = coachTextareaRef.current;
+                  if (input) window.requestAnimationFrame(() => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px'; });
+                }}
               />
               <button
                 onClick={handleStrategyChatSend}
