@@ -121,7 +121,7 @@ export default function PricingPage() {
       {/* Header */}
       <nav className="relative z-10 container mx-auto px-4 py-3 sm:py-6">
         <div className="flex items-center justify-between">
-          <Link href={user ? '/dashboard' : '/'} aria-label={user ? 'Back to dashboard' : 'Back to home'} className="-m-2 flex min-h-11 min-w-11 items-center justify-center gap-2 p-2 text-white/60 hover:text-white transition-all">
+          <Link href={user ? '/app' : '/'} aria-label={user ? 'Back to Coach' : 'Back to home'} className="-m-2 flex min-h-11 min-w-11 items-center justify-center gap-2 p-2 text-white/60 hover:text-white transition-all">
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden text-sm font-medium sm:inline">{user ? 'Dashboard' : 'Home'}</span>
           </Link>

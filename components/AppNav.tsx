@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clock, Home, MessageCircle, User } from 'lucide-react';
+import { Clock, MessageCircle, User } from 'lucide-react';
 
+// Three places, nothing else: talk to Coach, find a past chat, manage your account.
 const items = [
   { href: '/app', label: 'Coach', icon: MessageCircle },
-  { href: '/history', label: 'History', icon: Clock },
-  { href: '/dashboard', label: 'Home', icon: Home },
+  { href: '/history', label: 'Chats', icon: Clock },
   { href: '/profile', label: 'Account', icon: User },
 ];
 
@@ -17,7 +17,7 @@ export default function AppNav() {
   const pathname = usePathname();
   return (
     <nav data-app-nav aria-label="App navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.08] bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden [html[data-keyboard='open']_&]:hidden">
-      <ul className="mx-auto grid max-w-lg grid-cols-4">
+      <ul className="mx-auto grid max-w-lg grid-cols-3">
         {items.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (

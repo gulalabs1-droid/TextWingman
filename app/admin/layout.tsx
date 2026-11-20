@@ -6,7 +6,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { isAdmin } = await requireAdmin();
 
   if (!isAdmin) {
-    redirect('/dashboard');
+    redirect('/app');
   }
 
   return (

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get return URL
-    const returnUrl = `${SITE_URL}/dashboard`;
+    const returnUrl = `${SITE_URL}/billing`;
 
     // Create Stripe Billing Portal session
     const portalSession = await stripe.billingPortal.sessions.create({

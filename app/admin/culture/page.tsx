@@ -16,7 +16,7 @@ function cultureOrigin(metadata: unknown): string | null {
 
 export default async function CultureAdminPage() {
   const { isAdmin } = await requireAdmin();
-  if (!isAdmin) redirect('/dashboard');
+  if (!isAdmin) redirect('/app');
   const db = getAdminSupabase();
   const cases = publishedCourtCases();
   const since = cultureReportStart();

@@ -15,5 +15,5 @@ test('session redirect keeps safe query parameters and refreshed cookies', () =>
 
 test('session redirect rejects external return paths', () => {
   const response = sessionRedirect('https://wingman.example/login', '//attacker.example/', NextResponse.next());
-  assert.equal(response.headers.get('location'), 'https://wingman.example/dashboard');
+  assert.equal(response.headers.get('location'), 'https://wingman.example/app');
 });

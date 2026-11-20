@@ -1,4 +1,4 @@
-export function safeReturnPath(value: string | null | undefined, fallback = '/dashboard'): string {
+export function safeReturnPath(value: string | null | undefined, fallback = '/app'): string {
   if (!value || !value.startsWith('/') || value.startsWith('//') || /[\\\u0000-\u001f\u007f]/.test(value)) return fallback;
   try {
     const base = 'https://text-wingman.invalid';

@@ -57,7 +57,7 @@ export function AdminSidebar() {
       </nav>
       <div className="p-2 border-t border-white/[0.08]">
         <Link
-          href="/dashboard"
+          href="/app"
           className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-white/40 hover:bg-white/[0.06] hover:text-white/70 transition-colors"
         >
           <LogOut className="h-4 w-4" />

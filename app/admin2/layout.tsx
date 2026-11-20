@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default async function Admin2Layout({ children }: { children: React.ReactNode }) {
   const { isAdmin } = await requireAdmin();
-  if (!isAdmin) redirect('/dashboard');
+  if (!isAdmin) redirect('/app');
 
   return (
     <div className="min-h-screen bg-[#06060a] text-white">

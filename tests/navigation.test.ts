@@ -13,7 +13,7 @@ test('return destinations preserve saved threads and selected plans', () => {
 
 test('return destinations reject external and disguised external navigation', () => {
   for (const path of ['https://example.com', '//example.com', '/\\example.com', '/\n/example.com', 'javascript:alert(1)', null, '']) {
-    assert.equal(safeReturnPath(path), '/dashboard');
+    assert.equal(safeReturnPath(path), '/app');
   }
   assert.equal(safeReturnPath(null, '/onboarding'), '/onboarding');
 });

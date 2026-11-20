@@ -196,7 +196,7 @@ export default function ProfilePage() {
           <Link href="/app" aria-label="Back to Coach" className="w-11 h-11 rounded-2xl border border-white/[0.08] bg-white/[0.04] flex items-center justify-center text-white/60 hover:text-white/80 transition-all active:scale-90">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <Link href="/dashboard" className="transition-transform hover:scale-105">
+          <Link href="/app" className="transition-transform hover:scale-105">
             <Logo size="sm" showText={true} />
           </Link>
           <div className="w-11" />
@@ -306,8 +306,8 @@ export default function ProfilePage() {
 
             {/* Quick links */}
             <div className="rounded-2xl border border-white/[0.08] overflow-hidden divide-y divide-white/[0.06]" style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <Link href="/app" className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.04] transition-all group">
-                <div className="flex items-center gap-3"><Sparkles className="h-4 w-4 text-brand" /><span className="text-white/70 text-sm font-medium">Open App</span></div>
+              <Link href="/changelog" className="flex items-center justify-between px-5 py-4 hover:bg-white/[0.04] transition-all group">
+                <div className="flex items-center gap-3"><Sparkles className="h-4 w-4 text-brand" /><span className="text-white/70 text-sm font-medium">What&apos;s new</span></div>
                 <ChevronRight className="h-4 w-4 text-white/45 group-hover:text-white/40 transition-colors" />
               </Link>
               {isPro && (

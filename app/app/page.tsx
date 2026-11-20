@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, createContext, useContext } from 'react';
+import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, CheckCircle, Check, Lock, Camera, X, ImageIcon, Search, Brain, Flag, BookmarkPlus, BookmarkCheck, Trash2, Send, AlertTriangle, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Home, Maximize2, Share2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, Check, Lock, Camera, X, BookmarkPlus, Trash2, Send, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Maximize2, Share2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
-import FeatureTour from '@/components/FeatureTour';
 import ContextualHints from '@/components/ContextualHints';
 import AppNav from '@/components/AppNav';
 import { ARRIVAL_STORAGE_KEY, arrivalGreeting, parseArrival, parseStartIntent } from '@/lib/first-run';
@@ -18,7 +17,7 @@ import { restoreCoachSession, serializeCoachMessage } from '@/lib/coach-session'
 import { ScreenshotViewer } from '@/components/ScreenshotViewer';
 import { UpgradeSheet } from '@/components/UpgradeSheet';
 import { captureAttribution, getAnalyticsContext, track, type Props } from '@/lib/analytics';
-import { ANNUAL_SAVINGS_PERCENT, PLAN_PRICES } from '@/lib/pricing';
+import { PLAN_PRICES } from '@/lib/pricing';
 import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
 import {
   clearPendingOutcome,
@@ -95,20 +94,6 @@ const TAGLINES = [
   "Never fumble a reply again 💯",
   "Text like a pro, every time 🌟"
 ];
-
-type DecodeResult = {
-  intent: string;
-  subtext: string;
-  energy: string;
-  flags: { type: 'green' | 'red' | 'yellow'; text: string }[];
-  coach_tip: string;
-} | null;
-
-type Opener = {
-  tone: string;
-  text: string;
-  why: string;
-};
 
 type SavedThread = {
   id: string;
@@ -248,46 +233,7 @@ type ScanResult = {
   replies: Reply[];
 } | null;
 
-type AppMode = 'reply' | 'decode' | 'opener' | 'revive' | 'coach';
-
-type ReviveMessage = {
-  tone: string;
-  text: string;
-  why: string;
-};
-
-const OPENER_CONTEXTS = [
-  { value: 'dating-app', label: 'Dating App', emoji: '💘', description: 'Tinder, Hinge, Bumble' },
-  { value: 'instagram-dm', label: 'Instagram DM', emoji: '📸', description: 'Slide into DMs' },
-  { value: 'cold-text', label: 'Cold Text', emoji: '📱', description: 'Got their number' },
-  { value: 'reconnect', label: 'Reconnect', emoji: '👋', description: 'Haven\'t talked in a while' },
-  { value: 'networking', label: 'Networking', emoji: '💼', description: 'Professional intro' },
-] as const;
-
-const OPENER_TONE_CONFIG: Record<string, { label: string; emoji: string; gradient: string; lightBg: string }> = {
-  bold: { label: 'Bold', emoji: '🎯', gradient: 'from-red-500 to-orange-500', lightBg: 'bg-red-50' },
-  witty: { label: 'Witty', emoji: '⚡', gradient: 'from-lime-400 to-emerald-500', lightBg: 'bg-lime-50' },
-  warm: { label: 'Warm', emoji: '💚', gradient: 'from-green-500 to-emerald-500', lightBg: 'bg-green-50' },
-};
-
-const REVIVE_TONE_CONFIG: Record<string, { label: string; emoji: string; gradient: string }> = {
-  smooth: { label: 'Smooth', emoji: '🎯', gradient: 'from-cyan-500 to-blue-500' },
-  bold: { label: 'Bold', emoji: '🔥', gradient: 'from-orange-500 to-red-500' },
-  warm: { label: 'Warm', emoji: '💚', gradient: 'from-green-500 to-emerald-500' },
-};
-
-const ENERGY_CONFIG: Record<string, { emoji: string; color: string; bg: string }> = {
-  interested: { emoji: '💚', color: 'text-green-400', bg: 'bg-green-500/20' },
-  testing: { emoji: '🧪', color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
-  neutral: { emoji: '😐', color: 'text-gray-400', bg: 'bg-gray-500/20' },
-  'pulling-away': { emoji: '🚪', color: 'text-red-400', bg: 'bg-red-500/20' },
-  flirty: { emoji: '😏', color: 'text-pink-400', bg: 'bg-pink-500/20' },
-  confrontational: { emoji: '⚡', color: 'text-orange-400', bg: 'bg-orange-500/20' },
-  anxious: { emoji: '😰', color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
-  playful: { emoji: '😜', color: 'text-brand', bg: 'bg-brand/20' },
-  cold: { emoji: '🥶', color: 'text-blue-400', bg: 'bg-blue-500/20' },
-  warm: { emoji: '🤗', color: 'text-green-400', bg: 'bg-green-500/20' },
-};
+type AppMode = 'reply' | 'coach';
 
 type ContextType = 'crush' | 'friend' | 'colleague' | 'family' | 'ex' | 'new_match' | null;
 
@@ -806,13 +752,11 @@ function CoachDraftCards({
 
 export default function AppPage() {
   const searchParams = useSearchParams();
-  const lightMode = searchParams.get('lm') === '1';
   const [message, setMessage] = useState('');
   const [replies, setReplies] = useState<Reply[]>([]);
   const [lastGeneratedMessage, setLastGeneratedMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [showExamples, setShowExamples] = useState(true);
   const [currentTagline, setCurrentTagline] = useState(0);
   const [showCraftedMessage, setShowCraftedMessage] = useState(false);
   // Read after the first render: the server cannot see localStorage, and reading
@@ -845,22 +789,10 @@ export default function AppPage() {
   }, [showPaywall]);
   const [usageLimit, setUsageLimit] = useState(FREE_REPLY_LIMIT);
   const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
-  const [decodeUsed, setDecodeUsed] = useState(0);
-  const [decodeLimit, setDecodeLimit] = useState(1);
-  const [openerUsed, setOpenerUsed] = useState(0);
-  const [openerLimit, setOpenerLimit] = useState(1);
   const [isPro, setIsPro] = useState(false);
-  const [useV2, setUseV2] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('tw_use_v2');
-      return saved !== null ? saved === 'true' : true;
-    }
-    return true;
-  }); // Pro users default to V2, can toggle to V1 for speed
   const [v2Meta, setV2Meta] = useState<V2Meta>(null);
   const [v2Step, setV2Step] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
@@ -868,31 +800,17 @@ export default function AppPage() {
   const [shotViewer, setShotViewer] = useState<{ images: string[]; index: number } | null>(null);
   const [extracting, setExtracting] = useState(false);
   const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
-  const [showFeatureSpotlight, setShowFeatureSpotlight] = useState(false);
   // Set when onboarding hands off with ?start=screenshot: points at the upload card.
   const [highlightUpload, setHighlightUpload] = useState(false);
   const [appMode, setAppMode] = useState<AppMode>('coach');
-  const [decodeResult, setDecodeResult] = useState<DecodeResult>(null);
-  const [decoding, setDecoding] = useState(false);
-  const [openers, setOpeners] = useState<Opener[]>([]);
-  const [openerContext, setOpenerContext] = useState<string>('dating-app');
-  const [openerDescription, setOpenerDescription] = useState('');
-  const [loadingOpeners, setLoadingOpeners] = useState(false);
-  const [reviveMessages, setReviveMessages] = useState<ReviveMessage[]>([]);
-  const [reviveAnalysis, setReviveAnalysis] = useState('');
-  const [loadingRevive, setLoadingRevive] = useState(false);
-  const [reviveUsed, setReviveUsed] = useState(0);
-  const [reviveLimit, setReviveLimit] = useState(1);
   const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
   const [showThreads, setShowThreads] = useState(false);
-  const [savingThread, setSavingThread] = useState(false);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [activeThreadName, setActiveThreadName] = useState<string | null>(null);
   const [editingThreadName, setEditingThreadName] = useState(false);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [showThread, setShowThread] = useState(true);
   const [selectedThreadMsg, setSelectedThreadMsg] = useState<number | null>(null);
-  const [pendingSent, setPendingSent] = useState<Reply | null>(null);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const [outcomePrompt, setOutcomePrompt] = useState<{ reply: Reply; generationId: string } | null>(null);
   const [customSent, setCustomSent] = useState('');
@@ -916,7 +834,6 @@ export default function AppPage() {
   const coachCopiedReplies = useRef<Record<string, string>>({});
   const [scanResult, setScanResult] = useState<ScanResult>(null);
   const [saving, setSaving] = useState(false);
-  const [savingCoach, setSavingCoach] = useState(false);
   const [loadingSession, setLoadingSession] = useState(false);
   const [editingReply, setEditingReply] = useState<string | null>(null); // tone being edited
   const [editText, setEditText] = useState('');
@@ -939,7 +856,6 @@ export default function AppPage() {
   const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const coachSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const [activeCoachSessionId, setActiveCoachSessionId] = useState<string | null>(null);
-  const [smartPreviewDismissed, setSmartPreviewDismissed] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const isSocialTraffic = useRef(false);
   const isCultureDraft = useRef(false);
@@ -994,35 +910,13 @@ export default function AppPage() {
       styleSignals,
       props: {
         source: isSocialTraffic.current ? 'social' : 'organic',
-        engine: isPro && useV2 ? 'verified' : 'fast',
+        engine: isPro ? 'verified' : 'fast',
         ...options.props,
       },
     });
   };
 
-  // ── Smart Preview helpers ──────────────────────────────
-  const getTimeGreeting = () => {
-    const h = new Date().getHours();
-    const day = new Date().getDay();
-    if (day === 5 && h >= 18) return { emoji: '🌙', text: 'Friday night dead chat?', sub: 'Let\'s revive it before the weekend ends' };
-    if (day === 0 && h < 12) return { emoji: '☀️', text: 'Sunday morning catch-up?', sub: 'Perfect time to send something warm' };
-    if (day === 1 && h < 12) return { emoji: '📱', text: 'Monday morning reply?', sub: 'Start the week with the right energy' };
-    if (h >= 22 || h < 5) return { emoji: '🌙', text: 'Late night text?', sub: 'Keep it short, keep it smooth' };
-    if (h >= 18) return { emoji: '✨', text: 'Evening text incoming?', sub: 'Prime time to make your move' };
-    if (h >= 12) return { emoji: '☀️', text: 'Afternoon reply?', sub: 'Drop something casual and confident' };
-    return { emoji: '🌅', text: 'Morning message?', sub: 'Start fresh, keep it light' };
-  };
 
-  const getSmartPreview = () => {
-    if (smartPreviewDismissed) return null;
-    const recentThread = savedThreads.length > 0 ? savedThreads.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0] : null;
-    if (recentThread) {
-      const name = recentThread.name?.slice(0, 30) || 'Last convo';
-      const ctx = recentThread.context ? ` (${recentThread.context})` : '';
-      return { type: 'thread' as const, thread: recentThread, emoji: '🔥', text: `${name}${ctx}`, sub: 'Tap to pick up where you left off' };
-    }
-    return null;
-  };
 
   // ── Dynamic placeholder rotation ──────────────────────
   const SMART_PLACEHOLDERS = [
@@ -1095,11 +989,6 @@ export default function AppPage() {
     return () => clearInterval(timer);
   }, [strategyChatInput, appMode, SMART_PLACEHOLDERS.length]);
 
-  // Persist useV2 preference
-  useEffect(() => {
-    localStorage.setItem('tw_use_v2', String(useV2));
-  }, [useV2]);
-
   // ── Short-form / paid-traffic entry: capture attribution, force Fast mode, prefill message ──
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1136,7 +1025,6 @@ export default function AppPage() {
       const socialSources = ['tiktok', 'youtube', 'instagram', 'ig', 'shorts', 'reels'];
       const isFastEntry = mode === 'fast' || via === 'share' || Boolean(src && socialSources.includes(src.toLowerCase()));
       if (isFastEntry) {
-        setUseV2(false);
         isSocialTraffic.current = true;
       }
       if (intent === 'rewrite' && prefill !== '1') {
@@ -1205,7 +1093,6 @@ export default function AppPage() {
       }
       setAppMode('reply');
       setShowThread(true);
-      setShowExamples(false);
       removePending();
       track('saved_thread_restored', { source: isSocialTraffic.current ? 'social' : 'organic' });
     } catch {
@@ -1214,30 +1101,6 @@ export default function AppPage() {
       window.history.replaceState({}, '', window.location.pathname + window.location.hash);
     }
   }, [searchParams]);
-
-  // One-time "Unlock Deep Analysis" upsell — fires after first Fast-mode response for non-Pro users
-  // Social traffic: delay until 2nd reply so they get value first
-  const [showDeepUpsell, setShowDeepUpsell] = useState(false);
-  const deepUpsellShown = useRef(false);
-  useEffect(() => {
-    if (deepUpsellShown.current) return;
-    if (isPro) return;
-    if (useV2) return; // only nudge Fast-mode users
-    const assistantReplies = strategyChatHistory.filter(m => m.role === 'assistant').length;
-    const minReplies = isSocialTraffic.current ? 2 : 1;
-    if (assistantReplies < minReplies) return;
-    try {
-      if (localStorage.getItem('tw_deep_upsell_dismissed') === '1') return;
-    } catch {}
-    deepUpsellShown.current = true;
-    setShowDeepUpsell(true);
-    try { track('deep_upsell_shown'); } catch {}
-  }, [strategyChatHistory, isPro, useV2]);
-  const dismissDeepUpsell = () => {
-    setShowDeepUpsell(false);
-    try { localStorage.setItem('tw_deep_upsell_dismissed', '1'); } catch {}
-    try { track('deep_upsell_dismissed'); } catch {}
-  };
 
   // Track when the coach reply is displayed; the server owns success counting.
   const prevCoachLen = useRef(0);
@@ -1249,35 +1112,6 @@ export default function AppPage() {
     prevCoachLen.current = assistantMsgs.length;
   }, [strategyChatHistory]);
 
-  // Once-per-day V1/V2 mode reminder
-  const [showModeReminder, setShowModeReminder] = useState(false);
-  useEffect(() => {
-    if (!isPro) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const seen = localStorage.getItem('tw_mode_reminder_date');
-    if (seen !== today) setShowModeReminder(true);
-  }, [isPro]);
-  const dismissModeReminder = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    localStorage.setItem('tw_mode_reminder_date', today);
-    setShowModeReminder(false);
-  };
-
-  // Changelog unread badge
-  // The changelog is ~11 KB gzipped of copy, so it loads after the page instead of with it.
-  const [hasUnread, setHasUnread] = useState(false);
-  const [latestRelease, setLatestRelease] = useState<{ version: string; date: string } | null>(null);
-  useEffect(() => {
-    let active = true;
-    import('@/lib/changelog').then(({ LATEST_UPDATE }) => {
-      if (!active || !LATEST_UPDATE) return;
-      setLatestRelease({ version: LATEST_UPDATE.version, date: LATEST_UPDATE.date });
-      const lastSeen = localStorage.getItem('tw_changelog_seen');
-      if (!lastSeen || lastSeen < LATEST_UPDATE.date) setHasUnread(true);
-    }).catch(() => {});
-    return () => { active = false; };
-  }, []);
-
   // Persist selected context across sessions
   useEffect(() => {
     // Skip the mount pass, which runs before the saved choice has been restored.
@@ -1285,26 +1119,6 @@ export default function AppPage() {
     if (selectedContext) localStorage.setItem('tw_context', selectedContext);
     else localStorage.removeItem('tw_context');
   }, [selectedContext]);
-
-  // Show one-time feature spotlight for screenshot upload
-  useEffect(() => {
-    // Direct social/prefill traffic should see the reply flow, not a product
-    // tour layered over the first action.
-    if (appMode !== 'coach' || isSocialTraffic.current) return;
-    const dismissed = localStorage.getItem('tw_spotlight_screenshot_v1');
-    if (!dismissed) {
-      // Small delay so the page renders first
-      const timer = setTimeout(() => {
-        if (appMode === 'coach' && !isSocialTraffic.current) setShowFeatureSpotlight(true);
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [appMode]);
-
-  const dismissSpotlight = () => {
-    setShowFeatureSpotlight(false);
-    localStorage.setItem('tw_spotlight_screenshot_v1', 'true');
-  };
 
   // Load usage and Pro status from server on mount
   useEffect(() => {
@@ -1319,15 +1133,10 @@ export default function AppPage() {
           setNextFreeAt(typeof data.nextFreeAt === 'string' ? data.nextFreeAt : null);
           // Store user info for checkout
           if (data.userId) setUserId(data.userId);
-          if (data.userEmail) setUserEmail(data.userEmail);
           // Check if user is Pro (unlimited or has active subscription)
           if (data.isPro) {
             setIsPro(true);
           }
-          if (data.decodeUsed !== undefined) setDecodeUsed(data.decodeUsed);
-          if (data.decodeLimit !== undefined) setDecodeLimit(data.decodeLimit);
-          if (data.openerUsed !== undefined) setOpenerUsed(data.openerUsed);
-          if (data.openerLimit !== undefined) setOpenerLimit(data.openerLimit);
           if (data.trialDaysLeft !== undefined && data.trialDaysLeft !== null) {
             setTrialDaysLeft(data.trialDaysLeft);
           }
@@ -1400,9 +1209,7 @@ export default function AppPage() {
         setThread([]);
         setReplies([]);
         setShowThreads(false);
-        setShowExamples(false);
         if (ft.context) setSelectedContext(ft.context as ContextType);
-        toast({ title: 'Session loaded', description: ft.name || 'Untitled' });
         window.history.replaceState({}, '', '/app');
       } catch {
         toast({ title: 'Failed to load session', variant: 'destructive' });
@@ -1483,24 +1290,6 @@ export default function AppPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strategyChatHistory]);
 
-  // Log usage to server
-  const incrementUsage = async () => {
-    try {
-      const res = await fetch('/api/usage', { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setUsageCount(data.usageCount);
-        setRemainingReplies(data.remaining);
-        return true;
-      } else if (res.status === 429) {
-        setShowPaywall(true);
-        return false;
-      }
-    } catch (error) {
-      console.error('Failed to log usage:', error);
-    }
-    return true;
-  };
 
   const handleGenerate = async () => {
     // Check if user has reached free limit
@@ -1531,19 +1320,18 @@ export default function AppPage() {
     setReplies([]); // Clear previous replies
     setV2Meta(null); // Clear previous V2 meta
     setV2Step(null);
-    setPendingSent(null);
     
     try {
       // Use V2 API if enabled (Pro-only)
-      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
+      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
       
       // Build full conversation context for smarter replies
       const fullContext = buildThreadContext(effectiveMessage);
       
       // Show V2 progress indicator (no fake delays — step updates happen instantly)
-      if (isPro && useV2) setV2Step('drafting');
+      if (isPro) setV2Step('drafting');
       
-      const requestTimeout = isPro && useV2 ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
+      const requestTimeout = isPro ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
       const response = await fetchWithTimeout(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1576,7 +1364,7 @@ export default function AppPage() {
       setGenerationId(nextGenerationId);
       
       // Handle V2 response format
-      if (isPro && useV2 && data.shorter && data.spicier && data.softer) {
+      if (isPro && data.shorter && data.spicier && data.softer) {
         const v2Replies = tagReplies([
           { tone: 'shorter', text: data.shorter },
           { tone: 'spicier', text: data.spicier },
@@ -1604,7 +1392,7 @@ export default function AppPage() {
         throw new Error('No replies received from server');
       }
 
-      const generatedCount = (isPro && useV2 && data.shorter && data.spicier && data.softer)
+      const generatedCount = (isPro && data.shorter && data.spicier && data.softer)
         ? 3
         : Array.isArray(data.replies)
           ? data.replies.filter((r: any) => r && r.tone && r.text).length
@@ -1617,7 +1405,7 @@ export default function AppPage() {
         props: {
           source: isSocialTraffic.current ? 'social' : 'organic',
           mode: 'reply',
-          engine: isPro && useV2 ? 'verified' : 'fast',
+          engine: isPro ? 'verified' : 'fast',
           reply_count: generatedCount,
         },
       });
@@ -1634,14 +1422,13 @@ export default function AppPage() {
       setLastGeneratedMessage(effectiveMessage);
       // Clear input (it's now in the thread)
       setMessage('');
-      setShowExamples(false);
 
       // Show "crafted with care" message
       setShowCraftedMessage(true);
       setTimeout(() => setShowCraftedMessage(false), 3000);
 
       toast({
-        title: (isPro && useV2) ? "✅ Verified replies ready!" : "✨ Replies generated!",
+        title: isPro ? "✅ Verified replies ready!" : "✨ Replies generated!",
         description: "Copy one and tap 'I sent this' to keep the thread going",
       });
     } catch (error) {
@@ -1701,15 +1488,14 @@ export default function AppPage() {
     setV2Meta(null);
     setV2Step(null);
     setStrategyData(null);
-    setPendingSent(null);
 
     try {
-      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
+      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
       const fullContext = buildThreadContext(lastThem.text);
 
-      if (isPro && useV2) setV2Step('drafting');
+      if (isPro) setV2Step('drafting');
 
-      const requestTimeout = isPro && useV2 ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
+      const requestTimeout = isPro ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
       const response = await fetchWithTimeout(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1728,7 +1514,7 @@ export default function AppPage() {
       setGenerationId(nextGenerationId);
       let regeneratedReplies: Reply[] = [];
 
-      if (isPro && useV2 && data.shorter && data.spicier && data.softer) {
+      if (isPro && data.shorter && data.spicier && data.softer) {
         regeneratedReplies = tagReplies([
           { tone: 'shorter', text: data.shorter },
           { tone: 'spicier', text: data.spicier },
@@ -1754,7 +1540,7 @@ export default function AppPage() {
           props: {
             source: isSocialTraffic.current ? 'social' : 'organic',
             mode: 'reply',
-            engine: isPro && useV2 ? 'verified' : 'fast',
+            engine: isPro ? 'verified' : 'fast',
             reply_count: regeneratedReplies.length,
             regenerated: true,
           },
@@ -1762,7 +1548,7 @@ export default function AppPage() {
       }
 
       setLastGeneratedMessage(lastThem.text);
-      toast({ title: '🔄 Fresh replies generated', description: 'New options for the same message' });
+      toast({ title: 'Fresh replies generated', description: 'New options for the same message' });
     } catch (error) {
       toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
     } finally {
@@ -1778,7 +1564,7 @@ export default function AppPage() {
     setLoading(true);
 
     try {
-      const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
+      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
       const genRes = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1798,7 +1584,7 @@ export default function AppPage() {
       const nextGenerationId = createReplyGenerationId();
       setGenerationId(nextGenerationId);
 
-      if (isPro && useV2 && genData.shorter && genData.spicier && genData.softer) {
+      if (isPro && genData.shorter && genData.spicier && genData.softer) {
         newReplies = tagReplies([
           { tone: 'shorter', text: genData.shorter },
           { tone: 'spicier', text: genData.spicier },
@@ -1826,12 +1612,12 @@ export default function AppPage() {
           props: {
             source: isSocialTraffic.current ? 'social' : 'organic',
             mode: 'screenshot_scan',
-            engine: isPro && useV2 ? 'verified' : 'fast',
+            engine: isPro ? 'verified' : 'fast',
             reply_count: newReplies.length,
             regenerated: true,
           },
         });
-        toast({ title: '🔄 Fresh replies generated', description: 'New options for the same conversation' });
+        toast({ title: 'Fresh replies generated', description: 'New options for the same conversation' });
       }
     } catch (error) {
       toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
@@ -1894,7 +1680,7 @@ export default function AppPage() {
             r.tone === tone ? { ...r, text: data.refined } : r
           ));
         }
-        toast({ title: '✨ Reply polished', description: 'Your edit has been refined' });
+        toast({ title: 'Reply polished', description: 'Your edit has been refined' });
       }
     } catch (error) {
       toast({ title: 'Refine failed', description: 'Try again', variant: 'destructive' });
@@ -1962,7 +1748,7 @@ export default function AppPage() {
   // Debounced vibe check on typing
   const handleMessageChange = (value: string) => {
     setMessage(value);
-    if (value.trim()) setShowExamples(false);
+    if (value.trim()) 
     setVibeCheck(null);
 
     if (vibeTimer.current) clearTimeout(vibeTimer.current);
@@ -1990,7 +1776,7 @@ export default function AppPage() {
       if (res.ok && data.translated) {
         setMessage(data.translated);
         setVibeCheck(null);
-        toast({ title: `🎭 Rewritten as ${tone}`, description: data.translated });
+        toast({ title: `Rewritten as ${tone}`, description: data.translated });
       } else {
         toast({ title: 'Translation failed', description: data.error || 'Try again', variant: 'destructive' });
       }
@@ -2009,11 +1795,10 @@ export default function AppPage() {
         || scanResult?.replies.find(reply => reply.tone === tone)
         || { tone: tone as Reply['tone'], text };
       const copiedReply = { ...sourceReply, text };
-      setPendingSent(copiedReply);
       recordReplyEvent('selected', copiedReply, { props: { selection: 'copy' } });
       recordReplyEvent('copied', copiedReply);
       toast({
-        title: (isPro && useV2) ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
+        title: isPro ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
         description: "Tap 'I sent this' to continue the thread",
       });
       
@@ -2090,12 +1875,12 @@ export default function AppPage() {
       if (data.slug) {
         const shareUrl = `${window.location.origin}/share/${data.slug}`;
         await navigator.clipboard.writeText(shareUrl);
-        toast({ title: "🔗 Share link copied!", description: "Paste on TikTok, Instagram, or Twitter" });
+        toast({ title: "Share link copied", description: "Paste on TikTok, Instagram, or Twitter" });
       }
     } catch (err) {
       const encoded = btoa(JSON.stringify({ theirMessage: sourceMessage, myReply: reply.text, tone: reply.tone }));
       await navigator.clipboard.writeText(`${window.location.origin}/share/${encoded}`);
-      toast({ title: "🔗 Share link copied!" });
+      toast({ title: "Share link copied" });
     }
     setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
   };
@@ -2119,7 +1904,7 @@ export default function AppPage() {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 100);
-      toast({ title: "📥 Image downloaded!", description: "Share it anywhere" });
+      toast({ title: "Image downloaded", description: "Share it anywhere" });
     } catch (err) {
       console.error('Download error:', err);
       toast({ title: "Failed to download", description: "Please try again", variant: "destructive" });
@@ -2138,7 +1923,7 @@ export default function AppPage() {
       const blob = await res.blob();
       if (blob.size === 0) throw new Error('Empty image');
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      toast({ title: "📋 Image copied!", description: "Paste it in any app" });
+      toast({ title: "Image copied", description: "Paste it in any app" });
     } catch (err) {
       console.error('Copy image error:', err);
       toast({ title: "Failed to copy image", description: "Try downloading instead", variant: "destructive" });
@@ -2202,22 +1987,6 @@ export default function AppPage() {
         setExtractedPlatform(data.platform);
         const msgCount = data.message_count || 1;
 
-        // For Decode, Opener, and Revive modes: just extract text into textarea, don't auto-generate replies
-        if (appMode === 'decode' || appMode === 'opener' || appMode === 'revive') {
-          setMessage(appMode === 'revive' ? (data.full_conversation || data.extracted_text) : (data.last_received || data.extracted_text));
-          setShowExamples(false);
-          setScreenshotPreview(null);
-          toast({
-            title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'}`,
-            description: appMode === 'decode'
-              ? 'Now hit Decode to analyze it'
-              : appMode === 'revive'
-              ? 'Conversation loaded — hit Revive to generate re-engagement messages'
-              : 'Text extracted — use it for your opener',
-          });
-          return;
-        }
-
         // Smart Thread Update: if a thread already exists, compare and add only new messages
         if (thread.length > 0 && data.full_conversation) {
           const extractedLines = data.full_conversation.split('\n').filter((l: string) => l.trim());
@@ -2274,7 +2043,6 @@ export default function AppPage() {
 
             setThread(prev => [...prev, ...newThreadMsgs]);
             setScreenshotPreview(null);
-            setShowExamples(false);
 
             const youCount = newMessages.filter((m: { role: string }) => m.role === 'you').length;
             const themCount = newMessages.filter((m: { role: string }) => m.role === 'them').length;
@@ -2312,8 +2080,8 @@ export default function AppPage() {
         });
 
         // Step 2: Auto-generate replies using the extracted conversation
-        const endpoint = (isPro && useV2) ? '/api/generate-v2' : '/api/generate';
-        const requestTimeout = isPro && useV2 ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
+        const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
+        const requestTimeout = isPro ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
         const genRes = await fetchWithTimeout(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2335,7 +2103,7 @@ export default function AppPage() {
         let scanReplies: Reply[] = [];
         let scanStrategy: StrategyData = null;
 
-        if (isPro && useV2 && genData.shorter && genData.spicier && genData.softer) {
+        if (isPro && genData.shorter && genData.spicier && genData.softer) {
           scanReplies = [
             { tone: 'shorter', text: genData.shorter },
             { tone: 'spicier', text: genData.spicier },
@@ -2364,7 +2132,6 @@ export default function AppPage() {
           setStrategyData(scanStrategy);
           setExtractedPlatform(data.platform || null);
           setShowThread(true);
-          setShowExamples(false);
 
           // Track usage
           const usageRes = await fetch('/api/usage');
@@ -2426,140 +2193,14 @@ export default function AppPage() {
     setScanResult(null);
     setScreenshotPreview(null);
     setShowThread(true);
-    setShowExamples(false);
     track('thread_continued', {
       source: isSocialTraffic.current ? 'social' : 'organic',
       via: 'screenshot_scan',
       messages: newThread.length,
     });
-    toast({ title: '✓ Loaded into thread', description: 'Pick a reply or keep the conversation going' });
+    toast({ title: 'Loaded into thread', description: 'Pick a reply or keep the conversation going' });
   };
 
-  // Decode message — "What Do They Mean?"
-  const handleDecode = async () => {
-    if (!message.trim()) {
-      toast({ title: 'No message to decode', description: 'Paste or type a message first', variant: 'destructive' });
-      return;
-    }
-    if (!isPro && decodeUsed >= decodeLimit) {
-      setShowPaywall(true);
-      toast({ title: '🔒 Daily decode used', description: 'Upgrade to Pro for unlimited decodes', variant: 'destructive' });
-      return;
-    }
-    setDecoding(true);
-    setDecodeResult(null);
-    try {
-      const res = await fetch('/api/decode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message.trim(), context: selectedContext || 'crush', customContext: customContext.trim() || undefined, analytics: getAnalyticsContext() }),
-      });
-      const data = await res.json();
-      if (res.status === 429) {
-        setShowPaywall(true);
-        toast({ title: '🔒 Daily decode used', description: 'Upgrade to Pro for unlimited decodes', variant: 'destructive' });
-        setDecodeUsed(decodeLimit);
-        return;
-      }
-      if (data.error && !data.intent) {
-        toast({ title: 'Decode failed', description: data.error, variant: 'destructive' });
-        return;
-      }
-      setDecodeResult(data);
-      setDecodeUsed(prev => prev + 1);
-    } catch {
-      toast({ title: 'Decode failed', description: 'Please try again', variant: 'destructive' });
-    } finally {
-      setDecoding(false);
-    }
-  };
-
-  // Generate opening lines
-  const handleGenerateOpeners = async () => {
-    if (!isPro && openerUsed >= openerLimit) {
-      setShowPaywall(true);
-      toast({ title: '🔒 Daily opener used', description: 'Upgrade to Pro for unlimited openers', variant: 'destructive' });
-      return;
-    }
-    setLoadingOpeners(true);
-    setOpeners([]);
-    try {
-      const res = await fetch('/api/generate-opener', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          context: openerContext,
-          description: openerDescription.trim() || undefined,
-          analytics: getAnalyticsContext(),
-        }),
-      });
-      const data = await res.json();
-      if (res.status === 429) {
-        setShowPaywall(true);
-        toast({ title: '🔒 Daily opener used', description: 'Upgrade to Pro for unlimited openers', variant: 'destructive' });
-        setOpenerUsed(openerLimit);
-        return;
-      }
-      if (data.error) {
-        toast({ title: 'Failed to generate openers', description: data.error, variant: 'destructive' });
-        return;
-      }
-      setOpeners(data.openers || []);
-      setOpenerUsed(prev => prev + 1);
-      toast({ title: '✨ Openers ready!', description: 'Pick your favorite and send it' });
-    } catch {
-      toast({ title: 'Failed to generate openers', description: 'Please try again', variant: 'destructive' });
-    } finally {
-      setLoadingOpeners(false);
-    }
-  };
-
-  // Revive a dead conversation
-  const handleGenerateRevive = async () => {
-    if (!message.trim()) {
-      toast({ title: 'No conversation to revive', description: 'Paste the conversation or upload a screenshot first', variant: 'destructive' });
-      return;
-    }
-    if (!isPro && reviveUsed >= reviveLimit) {
-      setShowPaywall(true);
-      toast({ title: '🔒 Daily revive used', description: 'Upgrade to Pro for unlimited revives', variant: 'destructive' });
-      return;
-    }
-    setLoadingRevive(true);
-    setReviveMessages([]);
-    setReviveAnalysis('');
-    try {
-      const res = await fetch('/api/generate-revive', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: message.trim(),
-          context: selectedContext || 'crush',
-          customContext: customContext.trim() || undefined,
-          analytics: getAnalyticsContext(),
-        }),
-      });
-      const data = await res.json();
-      if (res.status === 429) {
-        setShowPaywall(true);
-        toast({ title: '🔒 Daily revive used', description: 'Upgrade to Pro for unlimited revives', variant: 'destructive' });
-        setReviveUsed(reviveLimit);
-        return;
-      }
-      if (data.error && !data.revives) {
-        toast({ title: 'Revive failed', description: data.error, variant: 'destructive' });
-        return;
-      }
-      setReviveMessages(data.revives || []);
-      setReviveAnalysis(data.analysis || '');
-      setReviveUsed(prev => prev + 1);
-      toast({ title: '✨ Revive messages ready!', description: 'Pick the one that feels right' });
-    } catch {
-      toast({ title: 'Revive failed', description: 'Please try again', variant: 'destructive' });
-    } finally {
-      setLoadingRevive(false);
-    }
-  };
 
   // ── Thread helpers ──────────────────────────────────────
   const buildThreadContext = (extraMessage?: string) => {
@@ -2578,16 +2219,13 @@ export default function AppPage() {
     recordReplyEvent('selected', sentReply, { props: { selection: 'sent' } });
     recordReplyEvent('sent_confirmed', sentReply);
     setOutcomePrompt({ reply: sentReply, generationId: sentReply.generationId || 'legacy' });
-    setPendingSent(null);
     setCustomSent('');
     setShowCustomSent(false);
     setReplies([]);
-    setDecodeResult(null);
     setStrategyData(null);
     setMessage('');
-    setShowExamples(false);
     setShowThread(true);
-    toast({ title: '✓ Added to thread', description: 'Now paste what they said back' });
+    toast({ title: 'Added to thread', description: 'Now paste what they said back' });
     setTimeout(() => {
       inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 150);
@@ -2614,16 +2252,13 @@ export default function AppPage() {
       props: { source: isSocialTraffic.current ? 'social' : 'organic', custom: true },
     });
     setOutcomePrompt({ reply: customReply, generationId: customRunId });
-    setPendingSent(null);
     setCustomSent('');
     setShowCustomSent(false);
     setReplies([]);
-    setDecodeResult(null);
     setStrategyData(null);
     setMessage('');
-    setShowExamples(false);
     setShowThread(true);
-    toast({ title: '✓ Added to thread', description: 'Now paste what they said back' });
+    toast({ title: 'Added to thread', description: 'Now paste what they said back' });
     setTimeout(() => {
       inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 150);
@@ -2648,7 +2283,7 @@ export default function AppPage() {
     addToThread('them', message.trim());
     setMessage('');
     setShowThread(true);
-    toast({ title: '✓ Added to thread', description: 'Add more or hit Generate when ready' });
+    toast({ title: 'Added to thread', description: 'Add more or hit Generate when ready' });
   };
 
   // Add "you" message to thread directly (for when you sent something not from suggestions)
@@ -2657,13 +2292,13 @@ export default function AppPage() {
     addToThread('you', message.trim());
     setMessage('');
     setShowThread(true);
-    toast({ title: '✓ Your message added', description: 'Now paste what they said back' });
+    toast({ title: 'Your message added', description: 'Now paste what they said back' });
   };
 
   const handleDeleteThreadMessage = (index: number) => {
     setThread(prev => prev.filter((_, i) => i !== index));
     setSelectedThreadMsg(null);
-    toast({ title: '✓ Message removed', description: 'You can re-add it with the correct sender' });
+    toast({ title: 'Message removed', description: 'You can re-add it with the correct sender' });
   };
 
   // ── Saved threads ─────────────────────────────────────
@@ -2710,7 +2345,6 @@ export default function AppPage() {
 
   const autoSaveCoachSession = async () => {
     if (strategyChatHistory.length < 2) return;
-    setSavingCoach(true);
     try {
       const firstUserMsg = strategyChatHistory.find(m => m.role === 'user');
       const lastOrch = [...strategyChatHistory].reverse().find(m => m.orchestration);
@@ -2747,7 +2381,6 @@ export default function AppPage() {
         fetchThreads();
       }
     } catch {} finally {
-      setSavingCoach(false);
     }
   };
 
@@ -2774,13 +2407,9 @@ export default function AppPage() {
       setActiveThreadName(null);
       setThread([]);
       setReplies([]);
-      setDecodeResult(null);
-      setPendingSent(null);
       setMessage('');
       setShowThreads(false);
-      setShowExamples(false);
       if (saved.context) setSelectedContext(saved.context as ContextType);
-      toast({ title: 'Session loaded', description: saved.name });
     } catch {
       toast({ title: 'Failed to load', variant: 'destructive' });
     }
@@ -2801,7 +2430,7 @@ export default function AppPage() {
         setStrategyChatHistory([]);
         setStrategyChatInput('');
       }
-      toast({ title: '✓ Deleted' });
+      toast({ title: 'Deleted' });
     } catch {
       toast({ title: 'Failed to delete thread', variant: 'destructive' });
     }
@@ -2828,7 +2457,7 @@ export default function AppPage() {
         }),
       });
       fetchThreads();
-      toast({ title: '✓ Thread renamed' });
+      toast({ title: 'Thread renamed' });
     } catch {
       toast({ title: 'Rename failed', variant: 'destructive' });
     }
@@ -2841,14 +2470,9 @@ export default function AppPage() {
     setStrategyData(null);
     setScanResult(null);
     setMessage('');
-    setDecodeResult(null);
-    setPendingSent(null);
     setActiveThreadId(null);
     setActiveThreadName(null);
     setShowThreads(false);
-    setShowExamples(true);
-    setReviveMessages([]);
-    setReviveAnalysis('');
     setUserIntent('');
     setStrategyChatHistory([]);
     setStrategyChatInput('');
@@ -2885,7 +2509,6 @@ export default function AppPage() {
     navigator.clipboard.writeText(text);
     if (navigator.vibrate) navigator.vibrate(30);
     setCoachCopiedId(id);
-    toast({ title: '✓ Copied' });
     setTimeout(() => setCoachCopiedId(null), 2000);
     if (!learn) {
       track('reply_copied', { from: 'coach', id });
@@ -3303,18 +2926,12 @@ export default function AppPage() {
     setMessage('');
     setReplies([]);
     setCopied(null);
-    setShowExamples(true);
     setScreenshotPreview(null);
     setExtractedPlatform(null);
-    setDecodeResult(null);
-    setOpeners([]);
-    setReviveMessages([]);
-    setReviveAnalysis('');
   };
 
   const handleExampleClick = (example: string) => {
     setMessage(example);
-    setShowExamples(false);
   };
 
   // Handle Stripe checkout
@@ -3356,7 +2973,7 @@ export default function AppPage() {
         window.location.href = data.url;
       } else if (data.alreadySubscribed) {
         // Already subscribed: plan changes happen in the billing portal.
-        window.location.href = '/dashboard';
+        window.location.href = '/billing';
       } else {
         track('checkout_failed', { plan, source, from: 'app_paywall', reason: data.error || 'missing_url' });
         toast({
@@ -3375,18 +2992,6 @@ export default function AppPage() {
     }
   };
 
-
-  // Apply light-mode filter to <html> so position:fixed children aren't broken
-  useEffect(() => {
-    if (!lightMode) return;
-    const el = document.documentElement;
-    el.style.filter = 'invert(1) hue-rotate(180deg) brightness(1.06) saturate(0.88) contrast(0.95)';
-    el.style.background = '#fff';
-    return () => {
-      el.style.filter = '';
-      el.style.background = '';
-    };
-  }, [lightMode]);
 
   // VPN Abuse Block Modal
   if (vpnBlocked) {
@@ -3438,46 +3043,6 @@ export default function AppPage() {
         onClose={() => setShotViewer(null)}
       />
     )}
-    {/* Post-result Deep Analysis upsell — non-Pro, Fast-mode, one-time */}
-    {showDeepUpsell && (
-      <div className="fixed bottom-safe-4 left-1/2 -translate-x-1/2 z-[9998] w-[calc(100%-2rem)] max-w-sm animate-in slide-in-from-bottom-4 fade-in duration-500">
-        <div className="rounded-2xl bg-brand border border-brand shadow-2xl shadow-black/50 backdrop-blur-sm p-4 flex items-center gap-3">
-          <div className="text-2xl shrink-0" aria-hidden>🎯</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-brand-ink font-black text-sm leading-tight">
-              Want 6 scored options + the backup reply?
-            </p>
-            <p className="text-brand-ink/80 text-[11px] leading-tight mt-0.5">
-              Unlock Deep Analysis — every candidate scored, winner badge, full strategy.
-            </p>
-          </div>
-          <div className="flex flex-col gap-1 shrink-0">
-            <Link
-              href="/pricing?src=deep_upsell"
-              onClick={() => { try { track('deep_upsell_click'); } catch {} }}
-              className="px-3 py-1.5 rounded-xl bg-brand-ink text-brand text-[11px] font-black hover:bg-ink transition-colors"
-            >
-              Unlock
-            </Link>
-            <button
-              onClick={dismissDeepUpsell}
-              className="text-brand-ink/70 hover:text-brand-ink text-[11px] font-semibold transition-colors"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-    {lightMode && (
-      <div
-        style={{ filter: 'invert(1) hue-rotate(180deg) brightness(1.06) saturate(0.88) contrast(0.95)' }}
-        className="fixed bottom-safe-4 right-4 z-[9999] flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/90 border border-gray-200 shadow-lg backdrop-blur"
-      >
-        <span className="text-[11px] font-semibold text-gray-700">☀️ Light preview</span>
-        <a href="/app" className="text-[11px] font-bold text-gray-400 hover:text-gray-700 transition-colors">Exit →</a>
-      </div>
-    )}
     <div className="min-h-screen bg-ink relative overflow-hidden">
       {/* Ambient background mesh */}
       <div className="fixed inset-0 pointer-events-none hidden md:block">
@@ -3493,31 +3058,26 @@ export default function AppPage() {
       <div className={`relative z-10 mx-auto px-5 pt-safe-6 py-6 pb-[max(3.5rem,env(safe-area-inset-bottom,3.5rem))] lg:pb-3 max-w-lg md:max-w-3xl lg:max-w-6xl xl:max-w-[88rem] ${usageCount > 0 && !isPro ? 'pt-20' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-3 sm:mb-6">
-          <Link href={userId ? '/dashboard' : '/'} aria-label={userId ? 'Home' : 'Back to the homepage'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
-            {userId ? <Home className="h-5 w-5 text-white/70" /> : <ArrowLeft className="h-5 w-5 text-white/70" />}
+          {/* Coach is home: signed-in people get no back button, visitors can return to the homepage. */}
+          {userId ? <div className="w-10 h-10" aria-hidden="true" /> : (
+            <Link href="/" aria-label="Back to the homepage" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+              <ArrowLeft className="h-5 w-5 text-white/70" />
+            </Link>
+          )}
+          <Link href="/" className="transition-transform hover:scale-105">
+            <Logo size="sm" showText={true} />
           </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/" className="transition-transform hover:scale-105">
-              <Logo size="sm" showText={true} />
-            </Link>
-            <Link
-              href="/changelog"
-              onClick={() => { if (latestRelease) localStorage.setItem('tw_changelog_seen', latestRelease.date); setHasUnread(false); }}
-              className="relative hidden sm:block px-2.5 py-1 rounded-xl bg-white/[0.08] border border-white/[0.12] text-[11px] font-bold text-white/50 hover:text-white/80 transition-colors"
-            >
-              {latestRelease ? `v${latestRelease.version}` : "What's new"}
-              {hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-brand animate-pulse" />}
-            </Link>
-          </div>
+          {/* On phones the tab bar carries Chats and Account; the header repeats them only on wider screens. */}
           <div className="flex items-center gap-2">
             {userId && (
               <Link href="/history" className="hidden md:flex h-10 items-center gap-2 px-3.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-sm font-semibold text-white/70 hover:bg-white/15 hover:text-white transition-all active:scale-95">
-                <Clock className="h-4 w-4" /> History
+                <Clock className="h-4 w-4" /> Chats
               </Link>
             )}
-            <Link href={userId ? '/profile' : '/login'} aria-label={userId ? 'Account' : 'Sign in'} className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
+            <Link href={userId ? '/profile' : '/login'} aria-label={userId ? 'Account' : 'Sign in'} className={`w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] items-center justify-center hover:bg-white/15 transition-all active:scale-90 ${userId ? 'hidden md:flex' : 'flex'}`}>
               <User className="h-5 w-5 text-white/70" />
             </Link>
+            {userId && <div className="w-10 h-10 md:hidden" aria-hidden="true" />}
           </div>
         </div>
 
@@ -3605,9 +3165,6 @@ export default function AppPage() {
           </div>
         )}
 
-        {/* Feature Tour — shows once on first visit */}
-        <FeatureTour />
-
         {outcomePrompt && (
           <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] p-4 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-start gap-3">
@@ -3681,9 +3238,8 @@ export default function AppPage() {
                 </Link>
               )}
               {userId && (
-                <div className="grid grid-cols-3 gap-1">
-                  <Link href="/dashboard" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><Home className="h-4 w-4" />Home</Link>
-                  <Link href="/history" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><Clock className="h-4 w-4" />History</Link>
+                <div className="grid grid-cols-2 gap-1">
+                  <Link href="/history" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><Clock className="h-4 w-4" />Chats</Link>
                   <Link href="/profile" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><User className="h-4 w-4" />Account</Link>
                 </div>
               )}
@@ -3718,7 +3274,7 @@ export default function AppPage() {
                     {userName.charAt(0).toUpperCase()}
                   </div>
                 ) : (
-                  <Sparkles className="h-5 w-5 text-brand animate-pulse" />
+                  <Sparkles className="h-5 w-5 text-brand" />
                 )}
                 Coach
               </h2>
@@ -3730,19 +3286,6 @@ export default function AppPage() {
                 <MessageCircle className="h-3.5 w-3.5" />
                 Chats{savedThreads.length > 0 ? ` (${savedThreads.length})` : ''}
               </button>
-              {isPro && (
-                <button
-                  onClick={() => setUseV2(v => !v)}
-                  title={useV2 ? 'Deep Analysis is on. Tap for instant replies.' : 'Fast replies are on. Tap for Deep Analysis.'}
-                  aria-label={useV2 ? 'Deep Analysis is on. Switch to fast replies.' : 'Fast replies are on. Switch to Deep Analysis.'}
-                  className={`flex min-h-11 sm:min-h-0 items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                    useV2 ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20' : 'bg-brand/10 border-brand/25 text-brand hover:bg-brand/20'
-                  }`}
-                >
-                  {useV2 ? <Shield className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
-                  {useV2 ? 'Deep' : 'Fast'}
-                </button>
-              )}
               </div>
             </div>
             <p className={`text-sm text-white/40 ${strategyChatHistory.length > 0 ? 'hidden sm:block' : ''}`}>
@@ -3810,42 +3353,6 @@ export default function AppPage() {
                 if (hintId === 'screenshot') coachFileInputRef.current?.click();
               }}
             />
-
-            {/* ── Once-per-day V1/V2 mode reminder ── */}
-            {isPro && showModeReminder && strategyChatHistory.length === 0 && !loadingSession && (
-              <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-3 border animate-in fade-in slide-in-from-top-2 duration-300 ${
-                useV2
-                  ? 'bg-emerald-500/[0.07] border-emerald-500/20'
-                  : 'bg-brand/[0.07] border-brand/20'
-              }`}>
-                <span className={`text-lg shrink-0`}>{useV2 ? '🛡️' : '⚡'}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[11px] font-bold leading-tight ${useV2 ? 'text-emerald-300' : 'text-brand'}`}>
-                    {useV2 ? 'Deep Analysis on' : 'Fast Mode on'}
-                  </p>
-                  <p className="text-[11px] text-white/55 leading-tight mt-0.5">
-                    {useV2 ? '6 scored options and a full strategy, in about 8 seconds' : 'Instant replies, without the scoring'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => { setUseV2(v => !v); dismissModeReminder(); }}
-                  className={`relative hit-area shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
-                    useV2
-                      ? 'bg-brand/15 border-brand/25 text-brand hover:bg-brand/25'
-                      : 'bg-emerald-500/15 border-emerald-500/25 text-emerald-300 hover:bg-emerald-500/25'
-                  }`}
-                >
-                  {useV2 ? 'Switch to Fast ⚡' : 'Switch to Deep 🛡️'}
-                </button>
-                <button
-                  onClick={dismissModeReminder}
-                  className="relative hit-area shrink-0 p-1 text-white/60 hover:text-white/50 transition-colors"
-                  aria-label="Dismiss"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
 
             {/* ── Start here — entry-point cards (empty state) ── */}
             {!loadingSession && strategyChatHistory.length === 0 && (
@@ -4566,41 +4073,10 @@ export default function AppPage() {
 
             {/* Upload Screenshot / Paste Divider */}
             <div className="relative flex items-center gap-3">
-              {/* Feature Spotlight — shows once per device */}
-              {showFeatureSpotlight && (
-                <div className="absolute -top-[88px] left-0 right-0 z-50 animate-in fade-in slide-in-from-bottom-3 duration-500">
-                  <div className="relative bg-brand text-brand-ink rounded-2xl p-4 shadow-2xl shadow-brand/30">
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 bg-brand-ink/10 rounded-xl flex items-center justify-center shrink-0">
-                        <Camera className="h-5 w-5 text-brand-ink" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm">New: Screenshot Upload</p>
-                        <p className="text-xs text-brand-ink/80 mt-0.5">Take a screenshot of any convo and we&apos;ll read it for you. No more copy-pasting!</p>
-                      </div>
-                      <button 
-                        onClick={dismissSpotlight}
-                        className="text-brand-ink/60 hover:text-brand-ink text-lg leading-none shrink-0 -mt-1"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    {/* Arrow pointing down */}
-                    <div className="absolute -bottom-2 left-12 w-4 h-4 bg-brand rotate-45" />
-                  </div>
-                </div>
-              )}
               <button
-                onClick={() => {
-                  dismissSpotlight();
-                  fileInputRef.current?.click();
-                }}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={extracting}
-                className={`flex-1 p-3 rounded-xl transition-all text-white/60 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 ${
-                  showFeatureSpotlight 
-                    ? 'bg-brand/20 border border-brand/30 text-brand' 
-                    : 'bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/80'
-                }`}
+                className="flex-1 p-3 rounded-xl transition-all font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 bg-white/[0.06] border border-white/[0.12] text-white/60 hover:bg-white/[0.12] hover:text-white/80"
               >
                 {extracting ? (
                   <>
@@ -4655,56 +4131,6 @@ export default function AppPage() {
               </div>
             )}
 
-            {/* V2/V1 Toggle — Pro users can switch between verified (V2) and fast (V1) */}
-            {isPro ? (
-              <button
-                onClick={() => setUseV2(!useV2)}
-                className={`flex items-center gap-2.5 p-3.5 rounded-2xl w-full text-left transition-all ${
-                  useV2
-                    ? 'bg-emerald-500/10 border border-emerald-500/20'
-                    : 'bg-brand/10 border border-brand/20'
-                }`}
-              >
-                {useV2 ? (
-                  <Shield className="h-5 w-5 text-emerald-400" />
-                ) : (
-                  <Zap className="h-5 w-5 text-brand" />
-                )}
-                <div className="flex-1">
-                  <p className={`text-sm font-bold ${useV2 ? 'text-emerald-300' : 'text-brand'}`}>
-                    {useV2 ? 'V2 Verified' : 'V1 Fast Mode'}
-                  </p>
-                  <p className={`text-xs ${useV2 ? 'text-emerald-400/60' : 'text-brand/60'}`}>
-                    {useV2 ? 'Strategy + 3-agent pipeline • Tap for V1' : 'Quick replies, no strategy • Tap for V2'}
-                  </p>
-                </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                  useV2
-                    ? 'text-emerald-400 bg-emerald-500/15'
-                    : 'text-brand bg-brand/15'
-                }`}>
-                  {useV2 ? 'V2' : 'V1'}
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setShowPaywall(true);
-                  toast({ title: "🔒 V2 is Pro-only", description: "Upgrade to unlock 3-agent verified replies" });
-                }}
-                className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-brand/10 border border-brand/20 w-full text-left hover:border-brand/30 transition-colors"
-              >
-                <Shield className="h-5 w-5 text-brand" />
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-white/80">V2 Verified Mode <span className="text-xs font-normal text-white/40">(Pro)</span></p>
-                  <p className="text-xs text-white/40">3-agent pipeline • ≤18 words • Tone-verified</p>
-                </div>
-                <span className="text-xs font-bold text-brand bg-brand/15 px-2.5 py-1 rounded-full flex items-center gap-1">
-                  <Lock className="h-3 w-3" /> Upgrade
-                </span>
-              </button>
-            )}
-
             <div className="space-y-3">
               <Button
                 onClick={handleGenerate}
@@ -4755,7 +4181,7 @@ export default function AppPage() {
                 </button>
                 {activeThreadName && (
                   <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand/10 border border-brand/20 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-brand animate-pulse shrink-0" />
+                    <div className="w-2 h-2 rounded-full bg-brand shrink-0" />
                     {editingThreadName ? (
                       <input
                         autoFocus
@@ -4846,456 +4272,8 @@ export default function AppPage() {
             )}
             </>)}
 
-            {/* ===== DECODE MODE ===== */}
-            {appMode === 'decode' && (<>
-            <div className="relative">
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Paste their message here — what did they really mean?"
-                className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-amber-500/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
-                maxLength={2000}
-                aria-label="Message to decode"
-              />
-              <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
-                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/55'
-              }`}>
-                {charCount}/2000
-              </div>
-            </div>
-
-            {/* Screenshot Preview for Decode */}
-            {screenshotPreview && (
-              <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
-                  <button type="button" onClick={() => setShotViewer({ images: [screenshotPreview], index: 0 })} aria-label="View screenshot full size" className="block w-full">
-                    <img src={screenshotPreview} alt="Screenshot preview" decoding="async" className="w-full max-h-48 object-cover object-top opacity-90" />
-                  </button>
-                  {!extracting && (
-                    <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white/90">
-                      <Maximize2 className="h-3 w-3" /> View full
-                    </span>
-                  )}
-                  {extracting && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="h-5 w-5 animate-spin text-amber-400" />
-                        <span className="text-sm font-bold text-white/80">Reading screenshot...</span>
-                      </div>
-                    </div>
-                  )}
-                  {!extracting && (
-                    <button onClick={clearScreenshot} className="absolute top-2 right-2 hit-area w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors">
-                      <X className="h-4 w-4 text-white" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={extracting}
-                className="flex-1 p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] transition-all text-white/60 hover:text-white/80 font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
-              >
-                <Camera className="h-4 w-4" />
-                Upload Screenshot
-              </button>
-            </div>
-
-            <Button
-              onClick={handleDecode}
-              disabled={decoding || !message.trim() || (!isPro && decodeUsed >= decodeLimit)}
-              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
-                !isPro && decodeUsed >= decodeLimit
-                  ? 'bg-white/[0.08] text-white/55'
-                  : 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
-              }`}
-              size="lg"
-            >
-              {decoding ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Decoding...</>
-              ) : !isPro && decodeUsed >= decodeLimit ? (
-                <><Lock className="mr-2 h-5 w-5" /> Decode Used — Upgrade</>
-              ) : (
-                <><Brain className="mr-2 h-5 w-5" /> Decode Message</>
-              )}
-            </Button>
-            {!isPro && (
-              <p className="text-center text-xs text-white/55 font-medium">
-                {decodeUsed >= decodeLimit ? '0' : `${decodeLimit - decodeUsed}`}/{decodeLimit} free decode{decodeLimit === 1 ? '' : 's'} remaining today
-              </p>
-            )}
-            </>)}
-
-            {/* ===== OPENER MODE ===== */}
-            {appMode === 'opener' && (<>
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                What kind of opener?
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {OPENER_CONTEXTS.map((ctx) => (
-                  <button
-                    key={ctx.value}
-                    onClick={() => setOpenerContext(ctx.value)}
-                    className={`p-3 rounded-2xl border transition-all duration-200 text-left ${
-                      openerContext === ctx.value
-                        ? 'bg-pink-500/15 border-pink-500/30 text-pink-300'
-                        : 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12]'
-                    }`}
-                  >
-                    <div className="text-lg mb-1">{ctx.emoji}</div>
-                    <div className="text-xs font-bold text-white/80">{ctx.label}</div>
-                    <div className="text-[11px] text-white/55">{ctx.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="relative">
-              <textarea
-                value={openerDescription}
-                onChange={(e) => setOpenerDescription(e.target.value)}
-                placeholder="Optional: describe them (e.g., 'loves hiking, has a golden retriever, funny bio about pizza')"
-                className="w-full min-h-[80px] p-4 pb-6 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-pink-500/30 transition-all text-sm"
-                maxLength={300}
-              />
-              <div className={`absolute bottom-2 right-3 text-xs ${openerDescription.length > 250 ? 'text-red-400' : 'text-white/55'}`}>
-                {openerDescription.length}/300
-              </div>
-            </div>
-            {/* Screenshot upload for opener */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white/50 hover:bg-white/[0.08] hover:text-white/70 transition-all text-sm font-semibold"
-            >
-              <Camera className="h-4 w-4" />
-              {extracting ? 'Reading screenshot...' : 'Upload screenshot for context'}
-            </button>
-            <Button
-              onClick={handleGenerateOpeners}
-              disabled={loadingOpeners || (!isPro && openerUsed >= openerLimit)}
-              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
-                !isPro && openerUsed >= openerLimit
-                  ? 'bg-white/[0.08] text-white/55'
-                  : 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
-              }`}
-              size="lg"
-            >
-              {loadingOpeners ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Crafting openers...</>
-              ) : !isPro && openerUsed >= openerLimit ? (
-                <><Lock className="mr-2 h-5 w-5" /> Opener Used — Upgrade</>
-              ) : (
-                <><Send className="mr-2 h-5 w-5" /> Generate Openers</>
-              )}
-            </Button>
-            {!isPro && (
-              <p className="text-center text-xs text-white/55 font-medium">
-                {openerUsed >= openerLimit ? '0' : `${openerLimit - openerUsed}`}/{openerLimit} free opener{openerLimit === 1 ? '' : 's'} remaining today
-              </p>
-            )}
-            </>)}
-
-            {/* ===== REVIVE MODE ===== */}
-            {appMode === 'revive' && (<>
-            {/* Context Selector */}
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                Who is this?
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {CONTEXT_OPTIONS.map((context) => (
-                  <button
-                    key={context.value}
-                    onClick={() => setSelectedContext(selectedContext === context.value ? null : context.value as ContextType)}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-95 ${
-                      selectedContext === context.value
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-lg shadow-cyan-500/10'
-                        : 'bg-white/[0.06] text-white/55 border border-white/[0.10] hover:bg-white/[0.10] hover:text-white/70'
-                    }`}
-                  >
-                    <span>{context.emoji}</span>
-                    <span>{context.label}</span>
-                  </button>
-                ))}
-              </div>
-              {/* Custom context input */}
-              <div className="relative">
-                <input
-                  type="text"
-                  value={customContext}
-                  onChange={(e) => setCustomContext(e.target.value)}
-                  placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
-                  maxLength={200}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-cyan-500/30 transition-all"
-                />
-                {customContext && (
-                  <button
-                    onClick={() => setCustomContext('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 hit-area p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-            {/* Conversation input */}
-            <div className="relative">
-              <textarea
-                ref={inputAreaRef as any}
-                value={message}
-                onChange={(e) => { setMessage(e.target.value); setShowExamples(false); }}
-                placeholder="Paste the conversation thread here (or upload a screenshot below)..."
-                className="w-full min-h-[120px] p-4 pb-12 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-cyan-500/30 transition-all text-sm leading-relaxed"
-                maxLength={3000}
-              />
-              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.14] transition-all text-xs font-bold"
-                >
-                  <Camera className="h-3.5 w-3.5" />
-                  {extracting ? 'Reading...' : 'Screenshot'}
-                </button>
-                <span className={`text-xs ${message.length > 2500 ? 'text-red-400' : 'text-white/55'}`}>
-                  {message.length}/3000
-                </span>
-              </div>
-            </div>
-            {/* Screenshot preview */}
-            {screenshotPreview && (
-              <div className="relative rounded-2xl overflow-hidden border border-cyan-500/20">
-                <button type="button" onClick={() => setShotViewer({ images: [screenshotPreview], index: 0 })} aria-label="View screenshot full size" className="block w-full">
-                    <img src={screenshotPreview} alt="Screenshot" decoding="async" className="w-full max-h-40 object-cover object-top opacity-70" />
-                  </button>
-                  {!extracting && (
-                    <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white/90">
-                      <Maximize2 className="h-3 w-3" /> View full
-                    </span>
-                  )}
-                <button
-                  onClick={clearScreenshot}
-                  className="absolute top-2 right-2 hit-area w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-all"
-                >
-                  <X className="h-3.5 w-3.5 text-white" />
-                </button>
-                {extracting && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
-                  </div>
-                )}
-              </div>
-            )}
-            <Button
-              onClick={handleGenerateRevive}
-              disabled={loadingRevive || !message.trim() || (!isPro && reviveUsed >= reviveLimit)}
-              className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 ${
-                !isPro && reviveUsed >= reviveLimit
-                  ? 'bg-white/[0.08] text-white/55'
-                  : 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
-              }`}
-              size="lg"
-            >
-              {loadingRevive ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Crafting revive messages...</>
-              ) : !isPro && reviveUsed >= reviveLimit ? (
-                <><Lock className="mr-2 h-5 w-5" /> Revive Used — Upgrade</>
-              ) : (
-                <><RefreshCw className="mr-2 h-5 w-5" /> Revive This Convo</>
-              )}
-            </Button>
-            {!isPro && (
-              <p className="text-center text-xs text-white/55 font-medium">
-                {reviveUsed >= reviveLimit ? '0' : `${reviveLimit - reviveUsed}`}/{reviveLimit} free revive{reviveLimit === 1 ? '' : 's'} remaining today
-              </p>
-            )}
-            </>)}
           </div>
 
-        {/* Decode Results Panel */}
-        {decodeResult && (
-          <div className="mb-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="rounded-3xl bg-white/[0.04] border border-amber-500/15 p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-amber-500/15 flex items-center justify-center">
-                    <Brain className="h-3.5 w-3.5 text-amber-400" />
-                  </div>
-                  <span className="text-white/60 text-[11px] font-bold uppercase tracking-widest">decoded</span>
-                </div>
-                <button onClick={() => setDecodeResult(null)} className="relative hit-area w-7 h-7 rounded-xl bg-white/[0.05] flex items-center justify-center hover:bg-white/10 transition-all">
-                  <X className="h-3 w-3 text-white/55" />
-                </button>
-              </div>
-              {/* Energy Badge */}
-              <div className="inline-flex">
-                <span className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border border-white/[0.06] ${
-                  decodeResult.energy === 'positive' ? 'bg-emerald-500/15 text-emerald-400' :
-                  decodeResult.energy === 'negative' ? 'bg-red-500/15 text-red-400' :
-                  decodeResult.energy === 'mixed' ? 'bg-yellow-500/15 text-yellow-400' :
-                  'bg-white/[0.06] text-white/50'
-                }`}>
-                  {(ENERGY_CONFIG[decodeResult.energy] || ENERGY_CONFIG.neutral).emoji} {decodeResult.energy.replace('-', ' ')}
-                </span>
-              </div>
-              {/* Intent */}
-              <div className="rounded-2xl bg-amber-500/5 border border-amber-500/10 p-4">
-                <p className="text-amber-400/60 text-[11px] font-bold uppercase tracking-widest mb-1.5">what they mean</p>
-                <p className="text-white/80 text-sm font-medium leading-relaxed">{decodeResult.intent}</p>
-              </div>
-              {/* Subtext */}
-              <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
-                <p className="text-white/55 text-[11px] font-bold uppercase tracking-widest mb-1.5">between the lines</p>
-                <p className="text-white/60 text-xs leading-relaxed">{decodeResult.subtext}</p>
-              </div>
-              {/* Flags */}
-              {decodeResult.flags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {decodeResult.flags.map((flag, i) => (
-                    <span key={i} className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border ${
-                      flag.type === 'green' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                      flag.type === 'red' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
-                      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                    }`}>
-                      {flag.text}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {/* Coach Tip */}
-              <div className="rounded-2xl bg-brand/5 border border-brand/10 p-4">
-                <p className="text-brand/60 text-[11px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" /> coach tip
-                </p>
-                <p className="text-white/70 text-xs font-medium leading-relaxed">{decodeResult.coach_tip}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Opener Results */}
-        {openers.length > 0 && (
-          <div className="animate-in fade-in duration-400 mb-8">
-            <p className="text-white/60 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your opening lines</p>
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
-              {openers.map((opener, idx) => {
-                const config = OPENER_TONE_CONFIG[opener.tone] || OPENER_TONE_CONFIG.bold;
-                const label = ['A', 'B', 'C'][idx];
-                const isCopied = copied === opener.tone;
-                return (
-                  <div
-                    key={idx}
-                    style={{ animationDelay: `${idx * 60}ms` }}
-                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
-                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <div className="flex gap-4 px-5 py-5">
-                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
-                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
-                      } transition-opacity`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 mb-2.5">
-                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
-                        </div>
-                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-2">{opener.text}</p>
-                        <p className="text-white/55 text-xs italic mb-3">{opener.why}</p>
-                        <button
-                          onClick={async () => {
-                            await navigator.clipboard.writeText(opener.text);
-                            setCopied(opener.tone);
-                            toast({ title: '✓ Copied!', description: 'Paste it and send' });
-                            setTimeout(() => setCopied(null), 2000);
-                          }}
-                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                            isCopied
-                              ? 'bg-emerald-500/20 text-emerald-400'
-                              : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
-                          }`}
-                        >
-                          {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="text-center pt-5">
-              <button onClick={() => setOpeners([])} className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95">
-                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" /> Try Again
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Revive Results */}
-        {reviveMessages.length > 0 && (
-          <div className="animate-in fade-in duration-400 mb-8">
-            {/* Analysis */}
-            {reviveAnalysis && (
-              <div className="mb-4 rounded-2xl bg-cyan-500/[0.08] border border-cyan-500/20 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />
-                  <span className="text-cyan-400/80 text-[11px] font-bold uppercase tracking-widest">convo analysis</span>
-                </div>
-                <p className="text-white/70 text-sm leading-relaxed">{reviveAnalysis}</p>
-              </div>
-            )}
-            <p className="text-white/60 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your revive messages</p>
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
-              {reviveMessages.map((msg, idx) => {
-                const config = REVIVE_TONE_CONFIG[msg.tone] || REVIVE_TONE_CONFIG.smooth;
-                const label = ['A', 'B', 'C'][idx];
-                const isCopied = copied === msg.tone;
-                return (
-                  <div
-                    key={idx}
-                    style={{ animationDelay: `${idx * 60}ms` }}
-                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
-                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <div className="flex gap-4 px-5 py-5">
-                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
-                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
-                      } transition-opacity`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 mb-2.5">
-                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
-                        </div>
-                        <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-2">{msg.text}</p>
-                        <p className="text-white/55 text-xs italic mb-3">{msg.why}</p>
-                        <button
-                          onClick={async () => {
-                            await navigator.clipboard.writeText(msg.text);
-                            setCopied(msg.tone);
-                            toast({ title: '✓ Copied!', description: 'Send it and see what happens' });
-                            setTimeout(() => setCopied(null), 2000);
-                          }}
-                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                            isCopied
-                              ? 'bg-emerald-500/20 text-emerald-400'
-                              : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
-                          }`}
-                        >
-                          {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="text-center pt-5">
-              <button onClick={() => { setReviveMessages([]); setReviveAnalysis(''); }} className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95">
-                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" /> Try Again
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* ══════════ SCREENSHOT BRIEFING CARD ══════════ */}
         {scanResult && (
@@ -5576,7 +4554,7 @@ export default function AppPage() {
                               <p className="text-[11px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach draft</p>
                               {msg.draft.shorter && (
                                 <button
-                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: '✓ Copied' }); }}
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: 'Copied' }); }}
                                   className="w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-white/80 text-[13px] font-medium hover:bg-emerald-500/[0.14] transition-all active:scale-[0.98] group"
                                 >
                                   <span className="text-[11px] text-emerald-400/60 font-bold block mb-0.5">Shorter</span>
@@ -5586,7 +4564,7 @@ export default function AppPage() {
                               )}
                               {msg.draft.spicier && (
                                 <button
-                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: '✓ Copied' }); }}
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: 'Copied' }); }}
                                   className="w-full text-left px-3.5 py-2.5 rounded-xl bg-orange-500/[0.08] border border-orange-500/20 text-white/80 text-[13px] font-medium hover:bg-orange-500/[0.14] transition-all active:scale-[0.98] group"
                                 >
                                   <span className="text-[11px] text-orange-400/60 font-bold block mb-0.5">Spicier</span>
@@ -5596,7 +4574,7 @@ export default function AppPage() {
                               )}
                               {msg.draft.softer && (
                                 <button
-                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: '✓ Copied' }); }}
+                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: 'Copied' }); }}
                                   className="w-full text-left px-3.5 py-2.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-white/80 text-[13px] font-medium hover:bg-blue-500/[0.14] transition-all active:scale-[0.98] group"
                                 >
                                   <span className="text-[11px] text-blue-400/60 font-bold block mb-0.5">Softer</span>
@@ -5773,13 +4751,6 @@ export default function AppPage() {
                         <div className="flex items-center gap-2.5 mb-2.5">
                           <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
                           <span className="text-white/50 text-[11px]">{reply.text ? reply.text.split(' ').length : 0}w</span>
-                          {isPro && (
-                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                              useV2 ? 'text-emerald-500/60 bg-emerald-500/10' : 'text-brand/60 bg-brand/10'
-                            }`}>
-                              {useV2 ? 'v2' : 'v1'}
-                            </span>
-                          )}
                           {v2Meta && v2Meta.toneChecks[reply.tone] && (
                             <span className="text-[11px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded">
                               tone ✓

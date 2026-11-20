@@ -21,8 +21,6 @@ function getSupabase() {
   return supabase;
 }
 
-const FREE_DECODE_LIMIT = 1; // 1 free decode per day
-const FREE_OPENER_LIMIT = 1; // 1 free opener per day
 
 // VPN/Abuse Detection - Moderate tolerance
 const VPN_ABUSE_THRESHOLD = 5; // Max different IPs per fingerprint in 1 hour
@@ -95,10 +93,6 @@ export async function GET(request: NextRequest) {
         remaining: 999,
         limit: FREE_REPLY_LIMIT,
         canGenerate: true,
-        decodeUsed: 0,
-        decodeLimit: 999,
-        openerUsed: 0,
-        openerLimit: 999,
         resetHours: REPLY_USAGE_WINDOW_HOURS,
         isPro: true,
         isAdmin,
@@ -126,7 +120,7 @@ export async function GET(request: NextRequest) {
       return q;
     };
 
-    // Count replies, decodes, and openers in parallel
+    // Count reply uses and find the oldest, in parallel
     // The oldest reply use in the window tells people when their next free use returns.
     let oldestQuery = getSupabase()
       .from('usage_logs')
@@ -135,33 +129,25 @@ export async function GET(request: NextRequest) {
       .gte('created_at', cutoffTime);
     oldestQuery = userId ? oldestQuery.eq('user_id', userId) : oldestQuery.or(`ip_address.eq.${ip},fingerprint.eq.${fp}`);
 
-    const [replyRes, decodeRes, openerRes, oldestRes] = await Promise.all([
+    const [replyRes, oldestRes] = await Promise.all([
       buildQuery('generate_reply'),
-      buildQuery('decode'),
-      buildQuery('generate_opener'),
       oldestQuery.order('created_at', { ascending: true }).limit(1).maybeSingle(),
     ]);
 
-    if (replyRes.error || decodeRes.error || openerRes.error) {
-      console.error('Usage check error:', replyRes.error || decodeRes.error || openerRes.error);
+    if (replyRes.error) {
+      console.error('Usage check error:', replyRes.error);
       return NextResponse.json({ error: 'Failed to check usage' }, { status: 500 });
     }
 
     const usageCount = replyRes.count || 0;
     const remaining = remainingFreeUses(usageCount);
     const canGenerate = !freeLimitReached(usageCount);
-    const decodeUsed = decodeRes.count || 0;
-    const openerUsed = openerRes.count || 0;
 
     return NextResponse.json({
       usageCount,
       remaining,
       limit: userLimit,
       canGenerate,
-      decodeUsed,
-      decodeLimit: FREE_DECODE_LIMIT,
-      openerUsed,
-      openerLimit: FREE_OPENER_LIMIT,
       resetHours: REPLY_USAGE_WINDOW_HOURS,
       nextFreeAt: canGenerate ? null : nextFreeUseAt(oldestRes.data?.created_at),
       isPro: false,
