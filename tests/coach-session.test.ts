@@ -64,3 +64,22 @@ test('malformed saved data does not throw', () => {
   assert.deepEqual(restoreCoachSession('coach', null).history, []);
   assert.deepEqual(restoreCoachSession('coach', [null, 3, 'x']).history, []);
 });
+
+test('the homepage handoff becomes a Coach chat with its replies', async () => {
+  const { coachSessionFromPending } = await import('../lib/coach-session');
+  const session = coachSessionFromPending({
+    thread: [{ role: 'them', text: 'are we still on for friday?' }],
+    replies: [{ tone: 'shorter', text: 'yep, 8?' }, { tone: 'softer', text: 'wouldn’t miss it' }, { tone: 'weird', text: 'x' }],
+    lastGeneratedMessage: 'are we still on for friday?',
+  });
+  assert.equal(session?.history[0].content, 'They sent me: "are we still on for friday?"\nWhat should I reply?');
+  assert.deepEqual(session?.history[1].draft, { shorter: 'yep, 8?', spicier: undefined, softer: 'wouldn’t miss it' });
+  assert.equal(session?.threadText, 'Them: are we still on for friday?');
+});
+
+test('a handoff without replies still opens Coach on the message', async () => {
+  const { coachSessionFromPending } = await import('../lib/coach-session');
+  const session = coachSessionFromPending({ thread: [{ role: 'them', text: 'wyd' }] });
+  assert.equal(session?.history.length, 1);
+  assert.equal(coachSessionFromPending({ thread: [] }), null);
+});

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { chatParams } from '@/lib/models';
+import { cleanContactName, cleanRelationship } from '@/lib/conversation-meta';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 import { getClientIp } from '@/lib/request-identity';
 import { rateLimit, tooManyRequests } from '@/lib/api-guards';
@@ -73,6 +74,8 @@ PLATFORM-SPECIFIC SENDER IDENTIFICATION:
 
 3. Identify the LAST message that was RECEIVED (the one the user needs to reply to).
 4. If the image is not a conversation screenshot, say so.
+5. Read the other person's name from the chat header if one is shown (contact name, profile name or username). Use null if no name is visible. Never guess a name.
+6. Judge the relationship from the conversation itself: "crush" (flirting or dating), "new_match" (dating app, first messages), "friend", "colleague" (work, school, clients), "family", or "ex". Give "relationship_confidence" as "high", "medium" or "low"; use "low" whenever the conversation doesn't make it clear.
 
 CRITICAL — SENDER ACCURACY:
 - Look at the HORIZONTAL POSITION and COLOR of each bubble individually.
@@ -101,6 +104,9 @@ Return ONLY a JSON object:
   "message_count": 5,
   "confidence": "high" | "medium" | "low",
   "platform": "imessage" | "whatsapp" | "instagram" | "tinder" | "snapchat" | "twitter" | "facebook-dating" | "messenger" | "other" | "unknown",
+  "contact_name": "Name from the chat header" | null,
+  "relationship": "crush" | "new_match" | "friend" | "colleague" | "family" | "ex",
+  "relationship_confidence": "high" | "medium" | "low",
   "error": null
 }
 
@@ -168,6 +174,8 @@ If you cannot extract messages:
       message_count: parsed.message_count || 1,
       confidence: parsed.confidence || 'medium',
       platform: parsed.platform || 'unknown',
+      contact_name: cleanContactName(parsed.contact_name),
+      relationship: cleanRelationship(parsed.relationship, parsed.relationship_confidence),
       error: null,
     });
 

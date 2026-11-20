@@ -80,3 +80,42 @@ export function serializeCoachMessage<O extends Analysis>(m: RestoredCoachMessag
     ...(m.threadText ? { thread: m.threadText } : {}),
   };
 }
+
+type PendingReply = { tone?: unknown; text?: unknown };
+type PendingThread = {
+  thread?: { role?: unknown; text?: unknown }[];
+  replies?: PendingReply[];
+  lastGeneratedMessage?: unknown;
+};
+
+/** How a message someone received is put to Coach when they arrive with it. */
+export function receivedMessagePrompt(message: string): string {
+  return `They sent me: "${message.trim()}"\nWhat should I reply?`;
+}
+
+/**
+ * Turns the homepage composer's handoff (their message plus the replies it
+ * already wrote) into a Coach chat, so people land in the same place as
+ * everyone else and can keep going from there.
+ */
+export function coachSessionFromPending(pending: PendingThread): { history: RestoredCoachMessage[]; threadText: string } | null {
+  const lines = (Array.isArray(pending.thread) ? pending.thread : [])
+    .filter(m => m && typeof m.text === 'string' && m.text.trim())
+    .map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${(m.text as string).trim()}`);
+  const last = typeof pending.lastGeneratedMessage === 'string' && pending.lastGeneratedMessage.trim()
+    ? pending.lastGeneratedMessage.trim()
+    : [...(Array.isArray(pending.thread) ? pending.thread : [])].reverse()
+      .find(m => m && m.role !== 'you' && typeof m.text === 'string' && m.text.trim())?.text as string | undefined;
+  if (!last) return null;
+
+  const draft: Record<'shorter' | 'spicier' | 'softer', string | undefined> = { shorter: undefined, spicier: undefined, softer: undefined };
+  for (const reply of Array.isArray(pending.replies) ? pending.replies : []) {
+    if ((reply.tone === 'shorter' || reply.tone === 'spicier' || reply.tone === 'softer') && typeof reply.text === 'string' && reply.text.trim()) {
+      draft[reply.tone] ??= reply.text.trim();
+    }
+  }
+  const hasDraft = Boolean(draft.shorter || draft.spicier || draft.softer);
+  const history: RestoredCoachMessage[] = [{ role: 'user', content: receivedMessagePrompt(last) }];
+  if (hasDraft) history.push({ role: 'assistant', content: 'Here are the replies from before. Pick one, or tell me what to change.', draft });
+  return { history, threadText: lines.length ? lines.join('\n') : `Them: ${last}` };
+}

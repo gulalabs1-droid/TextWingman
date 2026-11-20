@@ -6,17 +6,17 @@ import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, ArrowRight, Copy, Sparkles, Loader2, Lightbulb, Zap, Heart, MessageCircle, Crown, Shield, Check, Lock, Camera, X, BookmarkPlus, Trash2, Send, ChevronUp, ChevronDown, Plus, Clock, Target, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Maximize2, Share2 } from 'lucide-react';
+import { ArrowLeft, Copy, Sparkles, Loader2, MessageCircle, Crown, Shield, Check, Camera, X, Trash2, Send, ChevronUp, ChevronDown, Plus, Clock, TrendingUp, TrendingDown, Minus, RefreshCw, Trophy, User, Maximize2, Share2 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import ContextualHints from '@/components/ContextualHints';
 import AppNav from '@/components/AppNav';
 import { ARRIVAL_STORAGE_KEY, arrivalGreeting, parseArrival, parseStartIntent } from '@/lib/first-run';
 import { getContextCategory, DRAFT_LABELS } from '@/lib/context-category';
 import { compressImage } from '@/lib/compress-image';
-import { restoreCoachSession, serializeCoachMessage } from '@/lib/coach-session';
+import { coachSessionFromPending, receivedMessagePrompt, restoreCoachSession, serializeCoachMessage } from '@/lib/coach-session';
 import { ScreenshotViewer } from '@/components/ScreenshotViewer';
 import { UpgradeSheet } from '@/components/UpgradeSheet';
-import { captureAttribution, getAnalyticsContext, track, type Props } from '@/lib/analytics';
+import { captureAttribution, getAnalyticsContext, track } from '@/lib/analytics';
 import { PLAN_PRICES } from '@/lib/pricing';
 import { FREE_REPLY_LIMIT } from '@/lib/usage-limits';
 import {
@@ -30,70 +30,14 @@ import {
   replyIdFor,
   savePendingOutcome,
   sendReplyLearningEvent,
-  type ReplyLearningEvent,
   type ReplyOutcome,
 } from '@/lib/reply-learning';
 import { readCoachStream, type CoachDraft } from '@/lib/coach-stream';
 
-type Reply = {
-  tone: 'shorter' | 'spicier' | 'softer';
-  text: string;
-  generationId?: string;
-  replyId?: string;
-};
 
-type V2Meta = {
-  ruleChecks: Record<string, boolean>;
-  toneChecks: Record<string, boolean>;
-  confidence: Record<string, number>;
-  notes?: string;
-} | null;
 
-const TONE_CONFIG = {
-  shorter: {
-    label: 'Shorter',
-    description: 'Brief & casual',
-    color: 'bg-blue-500',
-    gradient: 'from-blue-500 to-cyan-500',
-    lightBg: 'bg-blue-50',
-    icon: Zap,
-    emoji: '⚡',
-  },
-  spicier: {
-    label: 'Spicier',
-    description: 'Playful & flirty',
-    color: 'bg-red-500',
-    gradient: 'from-rose-500 to-pink-500',
-    lightBg: 'bg-rose-50',
-    icon: Sparkles,
-    emoji: '🔥',
-  },
-  softer: {
-    label: 'Softer',
-    description: 'Warm & genuine',
-    color: 'bg-green-500',
-    gradient: 'from-green-500 to-emerald-500',
-    lightBg: 'bg-green-50',
-    icon: Heart,
-    emoji: '💚',
-  },
-};
 
-const EXAMPLE_MESSAGES = [
-  "Hey, what are you doing this weekend?",
-  "Want to grab coffee sometime?",
-  "Sorry I missed your call earlier",
-  "That's actually pretty funny lol"
-];
 
-const TAGLINES = [
-  "Flirt smarter, not harder 💘",
-  "Replies smoother than silk 🎯",
-  "Built for game, not games 🔥",
-  "Your secret weapon for perfect texts ⚡",
-  "Never fumble a reply again 💯",
-  "Text like a pro, every time 🌟"
-];
 
 type SavedThread = {
   id: string;
@@ -108,11 +52,6 @@ type SavedThread = {
   last_message: any;
 };
 
-type ThreadMessage = {
-  role: 'them' | 'you';
-  text: string;
-  timestamp: number;
-};
 
 type StrategyData = {
   momentum: string;
@@ -184,13 +123,13 @@ type OrchestrateResult = {
   };
 };
 
-const STYLE_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
-  hood_charisma: { label: 'Hood Charisma', emoji: '👑', color: 'text-amber-400 bg-amber-500/15' },
-  clean_direct: { label: 'Clean Direct', emoji: '🎯', color: 'text-blue-400 bg-blue-500/15' },
-  playful_tease: { label: 'Playful Tease', emoji: '😏', color: 'text-pink-400 bg-pink-500/15' },
-  bold_closer: { label: 'Bold Closer', emoji: '⚡', color: 'text-orange-400 bg-orange-500/15' },
-  warm_genuine: { label: 'Warm Genuine', emoji: '💚', color: 'text-emerald-400 bg-emerald-500/15' },
-  chill_unbothered: { label: 'Chill', emoji: '🧊', color: 'text-cyan-400 bg-cyan-500/15' },
+const STYLE_CONFIG: Record<string, { label: string; color: string }> = {
+  hood_charisma: { label: 'Hood Charisma', color: 'text-amber-400 bg-amber-500/15' },
+  clean_direct: { label: 'Clean Direct', color: 'text-blue-400 bg-blue-500/15' },
+  playful_tease: { label: 'Playful Tease', color: 'text-pink-400 bg-pink-500/15' },
+  bold_closer: { label: 'Bold Closer', color: 'text-orange-400 bg-orange-500/15' },
+  warm_genuine: { label: 'Warm Genuine', color: 'text-emerald-400 bg-emerald-500/15' },
+  chill_unbothered: { label: 'Chill', color: 'text-cyan-400 bg-cyan-500/15' },
 };
 
 type StrategyChatMessage = {
@@ -223,52 +162,21 @@ type CoachOutcomePrompt = {
   preview?: string;
 };
 
-type ScanResult = {
-  platform: string;
-  messageCount: number;
-  confidence: string;
-  fullConversation: string;
-  lastReceived: string;
-  strategy: StrategyData;
-  replies: Reply[];
-} | null;
 
-type AppMode = 'reply' | 'coach';
 
 type ContextType = 'crush' | 'friend' | 'colleague' | 'family' | 'ex' | 'new_match' | null;
 
-const REPLY_TIMEOUT_MS = 20000;
-const VERIFIED_REPLY_TIMEOUT_MS = 45000;
 const PENDING_THREAD_STORAGE_KEY = 'tw_pending_thread';
 const PENDING_THREAD_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-async function fetchWithTimeout(
-  input: RequestInfo | URL,
-  init: RequestInit,
-  timeoutMs: number,
-) {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    return await fetch(input, { ...init, signal: controller.signal });
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Reply timed out. Your message is still here - try again.');
-    }
-    throw error;
-  } finally {
-    window.clearTimeout(timer);
-  }
-}
 
 const CONTEXT_OPTIONS = [
-  { value: 'crush', label: 'Crush', emoji: '💘', description: 'Someone you\'re into' },
-  { value: 'friend', label: 'Friend', emoji: '🤝', description: 'Close friend' },
-  { value: 'colleague', label: 'Work', emoji: '💼', description: 'Professional' },
-  { value: 'family', label: 'Family', emoji: '👪', description: 'Family member' },
-  { value: 'ex', label: 'Ex', emoji: '💔', description: 'Complicated' },
-  { value: 'new_match', label: 'New Match', emoji: '✨', description: 'First messages' },
+  { value: 'crush', label: 'Crush', description: 'Someone you\'re into' },
+  { value: 'friend', label: 'Friend', description: 'Close friend' },
+  { value: 'colleague', label: 'Work', description: 'Professional' },
+  { value: 'family', label: 'Family', description: 'Family member' },
+  { value: 'ex', label: 'Ex', description: 'Complicated' },
+  { value: 'new_match', label: 'New Match', description: 'First messages' },
 ] as const;
 const CULTURE_REWRITE_PROMPT = 'Help me rewrite my draft: ';
 
@@ -282,11 +190,11 @@ function CoachScoreBar({ label, value, inverted = false }: { label: string; valu
     displayValue >= 80 ? 'bg-emerald-500' : displayValue >= 60 ? 'bg-amber-500' : 'bg-red-500';
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[11px] text-white/40 w-20 shrink-0">{label}</span>
+      <span className="text-xs text-sage/70 w-20 shrink-0">{label}</span>
       <div className="flex-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
         <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${displayValue}%` }} />
       </div>
-      <span className="text-[11px] text-white/50 w-8 text-right">{value}</span>
+      <span className="text-xs text-sage w-8 text-right">{value}</span>
     </div>
   );
 }
@@ -295,7 +203,7 @@ const READ_TONES = {
   good: { dot: 'bg-emerald-400', text: 'text-emerald-300' },
   caution: { dot: 'bg-amber-400', text: 'text-amber-300' },
   risk: { dot: 'bg-red-400', text: 'text-red-300' },
-  neutral: { dot: 'bg-white/25', text: 'text-white/80' },
+  neutral: { dot: 'bg-white/25', text: 'text-cream' },
 } as const;
 
 /** Desktop side panel: Coach's latest read of the conversation, in full. */
@@ -304,10 +212,10 @@ function CoachReadPanel({ strategy }: { strategy: StrategyData }) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center">
         <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05]">
-          <TrendingUp className="h-5 w-5 text-white/45" />
+          <TrendingUp className="h-5 w-5 text-sage/70" />
         </div>
-        <p className="text-sm font-bold text-white/80">No read yet</p>
-        <p className="mt-1.5 max-w-[15rem] text-xs leading-relaxed text-white/50">
+        <p className="text-sm font-bold text-cream">No read yet</p>
+        <p className="mt-1.5 max-w-[15rem] text-xs leading-relaxed text-sage">
           Share a conversation and Coach shows who is leading, where it is heading, and the move to make next.
         </p>
       </div>
@@ -330,14 +238,14 @@ function CoachReadPanel({ strategy }: { strategy: StrategyData }) {
     <div className="space-y-5 animate-in fade-in duration-300">
       {move.one_liner && (
         <div className="rounded-2xl border border-brand/25 bg-brand/10 p-4">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-brand">Your move</p>
-          <p className="mt-1.5 text-sm font-semibold leading-relaxed text-white/90">{move.one_liner}</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-brand">Your move</p>
+          <p className="mt-1.5 text-sm font-semibold leading-relaxed text-cream">{move.one_liner}</p>
         </div>
       )}
       <dl className="divide-y divide-white/[0.06] rounded-2xl border border-white/[0.08] bg-white/[0.03]">
         {signals.map(signal => (
           <div key={signal.label} className="flex items-center justify-between gap-3 px-4 py-3">
-            <dt className="text-xs text-white/50">{signal.label}</dt>
+            <dt className="text-xs text-sage">{signal.label}</dt>
             <dd className={`flex items-center gap-2 text-xs font-bold capitalize ${READ_TONES[signal.tone].text}`}>
               <span className={`h-2 w-2 rounded-full ${READ_TONES[signal.tone].dot}`} />
               {signal.value}
@@ -347,10 +255,10 @@ function CoachReadPanel({ strategy }: { strategy: StrategyData }) {
       </dl>
       {guardrails.length > 0 && (
         <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-white/50">For this reply</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-sage">For this reply</p>
           <div className="flex flex-wrap gap-1.5">
             {guardrails.map(item => (
-              <span key={item} className="rounded-full border border-white/[0.10] bg-white/[0.05] px-2.5 py-1 text-[11px] font-semibold text-white/75">{item}</span>
+              <span key={item} className="rounded-full border border-white/[0.10] bg-white/[0.05] px-2.5 py-1 text-xs font-semibold text-cream">{item}</span>
             ))}
           </div>
         </div>
@@ -383,9 +291,9 @@ function ReplyOptionCard({ label, text, note, copied, onCopy, onCoach, shareTone
     <div className={`flex shrink-0 snap-center flex-col rounded-2xl border p-4 sm:w-full ${solo ? 'w-full' : 'w-[86%]'} ${
       featured ? 'border-brand/30 bg-brand/[0.07]' : 'border-white/[0.10] bg-white/[0.05]'
     }`}>
-      <div className="mb-2 flex min-h-5 items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-white/55">{label}</div>
-      <p className="flex-1 select-text whitespace-pre-wrap text-[15px] leading-relaxed text-white/90">{text}</p>
-      {note && <p className="mt-2 text-xs leading-relaxed text-white/50">{note}</p>}
+      <div className="mb-2 flex min-h-5 items-center gap-2 text-xs font-bold uppercase tracking-wider text-sage">{label}</div>
+      <p className="flex-1 select-text whitespace-pre-wrap text-[15px] leading-relaxed text-cream">{text}</p>
+      {note && <p className="mt-2 text-xs leading-relaxed text-sage">{note}</p>}
       <div className="mt-3 flex items-stretch gap-2">
         <button
           onClick={onCopy}
@@ -394,18 +302,18 @@ function ReplyOptionCard({ label, text, note, copied, onCopy, onCoach, shareTone
               ? 'border border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
               : featured
                 ? 'bg-brand text-brand-ink hover:bg-brand-soft'
-                : 'border border-white/[0.14] bg-white/[0.07] text-white/90 hover:bg-white/[0.12]'
+                : 'border border-white/[0.14] bg-white/[0.07] text-cream hover:bg-white/[0.12]'
           }`}
         >
           {copied ? <><Check className="h-4 w-4" /> Copied</> : <><Copy className="h-4 w-4" /> Copy</>}
         </button>
         {onCoach && (
-          <button onClick={onCoach} className="flex min-h-11 items-center rounded-xl border border-white/[0.10] px-3 text-xs font-semibold text-white/60 transition-colors hover:border-brand/30 hover:text-brand active:scale-[0.98]">
+          <button onClick={onCoach} className="flex min-h-11 items-center rounded-xl border border-white/[0.10] px-3 text-xs font-semibold text-sage transition-colors hover:border-brand/30 hover:text-brand active:scale-[0.98]">
             Coach this
           </button>
         )}
         {share && shareTone && (
-          <button onClick={() => share(text, shareTone)} aria-label="Share this reply" title="Share this reply" className="flex min-h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.10] text-white/60 transition-colors hover:border-brand/30 hover:text-brand active:scale-[0.98]">
+          <button onClick={() => share(text, shareTone)} aria-label="Share this reply" title="Share this reply" className="flex min-h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.10] text-sage transition-colors hover:border-brand/30 hover:text-brand active:scale-[0.98]">
             <Share2 className="h-4 w-4" />
           </button>
         )}
@@ -421,7 +329,7 @@ function ReplyOptionRail({ count, children }: { count: number; children: React.R
       <div className="-mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 scrollbar-hide sm:mx-0 sm:flex-col sm:overflow-visible sm:px-0">
         {children}
       </div>
-      {count > 1 && <p className="px-1 text-[11px] text-white/40 sm:hidden">Swipe to compare all {count}</p>}
+      {count > 1 && <p className="px-1 text-xs text-sage/70 sm:hidden">Swipe to compare all {count}</p>}
     </>
   );
 }
@@ -438,9 +346,9 @@ function ConversationList({ threads, userId, isThreadActive, onLoad, onDelete }:
     threads.length === 0 ? (
       <div className="text-center py-10 px-3">
         <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
-          <MessageCircle className="h-5 w-5 text-white/45" />
+          <MessageCircle className="h-5 w-5 text-sage/70" />
         </div>
-        <p className="text-white/50 text-xs leading-relaxed">{userId ? 'Your conversations save here automatically' : 'Create a free account to save your conversations'}</p>
+        <p className="text-sage text-xs leading-relaxed">{userId ? 'Your conversations save here automatically' : 'Create a free account to save your conversations'}</p>
       </div>
     ) : (
       <div className="space-y-1">
@@ -462,11 +370,11 @@ function ConversationList({ threads, userId, isThreadActive, onLoad, onDelete }:
                 }`}
               >
                 <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${active ? 'bg-brand/20' : 'bg-white/[0.05]'}`}>
-                  <Sparkles className={`h-3 w-3 ${active ? 'text-brand' : 'text-white/55'}`} />
+                  <Sparkles className={`h-3 w-3 ${active ? 'text-brand' : 'text-sage'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white/80 text-[13px] font-semibold truncate">{t.name}</p>
-                  <p className="text-white/50 text-[11px] mt-0.5">{t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}</p>
+                  <p className="text-cream text-[13px] font-semibold truncate">{t.name}</p>
+                  <p className="text-sage text-xs mt-0.5">{t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}</p>
                 </div>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(t.id); }}
@@ -497,7 +405,7 @@ function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread, highlightUp
   return (
 
                               <div className="mb-4 animate-in fade-in duration-500">
-                  <p className="text-[11px] text-white/45 font-bold uppercase tracking-wider mb-2 px-1">Start with</p>
+                  <p className="text-xs text-sage/70 font-bold uppercase tracking-wider mb-2 px-1">Start with</p>
                   <div className={`grid gap-2 ${recentThread ? 'grid-cols-3' : 'grid-cols-2'}`}>
                     <button
                       onClick={() => onUpload()}
@@ -507,26 +415,26 @@ function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread, highlightUp
                           : 'bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] hover:border-brand/20'
                       }`}
                     >
-                      <span className="text-xl">📸</span>
-                      <span className={`text-[11px] font-semibold ${highlightUpload ? 'text-white' : 'text-white/55'}`}>Screenshot</span>
-                      <span className={`text-[10px] ${highlightUpload ? 'text-brand-soft' : 'text-white/50'}`}>{highlightUpload ? 'Tap to upload yours' : 'Upload a convo'}</span>
+                      <Camera className="h-5 w-5 text-brand" aria-hidden />
+                      <span className={`text-xs font-semibold ${highlightUpload ? 'text-cream' : 'text-sage'}`}>Screenshot</span>
+                      <span className={`text-xs ${highlightUpload ? 'text-brand-soft' : 'text-sage'}`}>{highlightUpload ? 'Tap to upload yours' : 'Upload a convo'}</span>
                     </button>
                     <button
                       onClick={() => { onPaste() }}
                       className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-brand/20 transition-all active:scale-95 text-center"
                     >
-                      <span className="text-xl">💬</span>
-                      <span className="text-[11px] font-semibold text-white/55">Paste message</span>
-                      <span className="text-[10px] text-white/50">Get a reply</span>
+                      <MessageCircle className="h-5 w-5 text-brand" aria-hidden />
+                      <span className="text-xs font-semibold text-sage">Paste message</span>
+                      <span className="text-xs text-sage">Get a reply</span>
                     </button>
                     {recentThread && (
                       <button
                         onClick={() => onLoadThread(recentThread)}
                         className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-brand/[0.07] border border-brand/15 hover:bg-brand/[0.12] hover:border-brand/25 transition-all active:scale-95 text-center"
                       >
-                        <span className="text-xl">🔥</span>
-                        <span className="text-[11px] font-semibold text-brand/70 truncate w-full">{recentThread.name?.split(' ').slice(0, 2).join(' ') || 'Last convo'}</span>
-                        <span className="text-[10px] text-white/50">Pick up here</span>
+                        <Clock className="h-5 w-5 text-brand" aria-hidden />
+                        <span className="text-xs font-semibold text-brand/70 truncate w-full">{recentThread.name?.split(' ').slice(0, 2).join(' ') || 'Last convo'}</span>
+                        <span className="text-xs text-sage">Pick up here</span>
                       </button>
                     )}
                   </div>
@@ -558,25 +466,25 @@ function CoachOrchestrationResult({
                                                   <div className="w-full space-y-2">
                             {/* Strategy pills */}
                             <div className="flex flex-wrap gap-1.5 px-1">
-                              <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                              <span className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
                                 orch.strategy.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
                                 orch.strategy.momentum === 'Declining' || orch.strategy.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
-                                'bg-white/[0.08] text-white/50'
+                                'bg-white/[0.08] text-sage'
                               }`}>
                                 {orch.strategy.momentum === 'Rising' ? <TrendingUp className="h-2.5 w-2.5" /> : orch.strategy.momentum === 'Declining' || orch.strategy.momentum === 'Stalling' ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
                                 {orch.strategy.momentum}
                               </span>
-                              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{orch.strategy.balance}</span>
-                              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-sage">{orch.strategy.balance}</span>
+                              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                                 orch.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
                                 orch.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
                                 'bg-brand/15 text-brand'
                               }`}>{orch.strategy.move.energy.replace('_', ' ')}</span>
                               {orch.strategy.move.risk === 'high' && (
-                                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-500/15 text-red-400">⚠ high risk</span>
+                                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-500/15 text-red-400">High risk</span>
                               )}
                             </div>
-                            <p className="text-[12px] text-white/50 italic px-1">&ldquo;{orch.strategy.move.one_liner}&rdquo;</p>
+                            <p className="text-xs text-sage italic px-1">&ldquo;{orch.strategy.move.one_liner}&rdquo;</p>
 
                             {/* Winner and backup — swipeable on phones, one Copy button each */}
                             {orch.winner && (
@@ -586,8 +494,8 @@ function CoachOrchestrationResult({
                                   solo={!orch.backup || orch.backup.text === orch.winner.text}
                                   label={<>
                                     <span className="flex items-center gap-1 text-amber-400"><Trophy className="h-3 w-3" /> Top pick</span>
-                                    <span className={`rounded-full px-2 py-0.5 normal-case tracking-normal ${STYLE_CONFIG[orch.winner.style]?.color || 'bg-white/10 text-white/50'}`}>
-                                      {STYLE_CONFIG[orch.winner.style]?.emoji} {STYLE_CONFIG[orch.winner.style]?.label || orch.winner.style}
+                                    <span className={`rounded-full px-2 py-0.5 normal-case tracking-normal ${STYLE_CONFIG[orch.winner.style]?.color || 'bg-white/10 text-sage'}`}>
+                                      {STYLE_CONFIG[orch.winner.style]?.label || orch.winner.style}
                                     </span>
                                   </>}
                                   text={orch.winner.text}
@@ -600,8 +508,8 @@ function CoachOrchestrationResult({
                                   <ReplyOptionCard
                                     label={<>
                                       <span>Backup</span>
-                                      <span className={`rounded-full px-2 py-0.5 normal-case tracking-normal ${STYLE_CONFIG[orch.backup.style]?.color || 'bg-white/10 text-white/50'}`}>
-                                        {STYLE_CONFIG[orch.backup.style]?.emoji} {STYLE_CONFIG[orch.backup.style]?.label || orch.backup.style}
+                                      <span className={`rounded-full px-2 py-0.5 normal-case tracking-normal ${STYLE_CONFIG[orch.backup.style]?.color || 'bg-white/10 text-sage'}`}>
+                                        {STYLE_CONFIG[orch.backup.style]?.label || orch.backup.style}
                                       </span>
                                     </>}
                                     text={orch.backup.text}
@@ -623,20 +531,20 @@ function CoachOrchestrationResult({
                                     if (e.key === 'Escape') onTheyRepliedClose();
                                   }}
                                   placeholder="They replied: paste it here..."
-                                  className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-[12px] focus:outline-none focus:border-amber-500/30 transition-all"
+                                  className="flex-1 min-h-11 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.10] text-cream placeholder-white/40 text-xs focus:outline-none focus:border-amber-500/30 transition-all"
                                 />
                                 <button
                                   onClick={() => { if (theyRepliedInput.trim()) onTheyRepliedSubmit(theyRepliedInput.trim()); else onTheyRepliedClose(); }}
-                                  aria-label="Add their reply" className="min-h-11 px-4 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 text-[11px] font-bold hover:bg-amber-500/25 transition-all active:scale-95"
+                                  aria-label="Add their reply" className="min-h-11 px-4 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-400 text-xs font-bold hover:bg-amber-500/25 transition-all active:scale-95"
                                 >→</button>
-                                <button onClick={onTheyRepliedClose} aria-label="Dismiss" className="flex h-11 w-9 items-center justify-center text-white/45 hover:text-white/70 transition-colors"><X className="h-3.5 w-3.5" /></button>
+                                <button onClick={onTheyRepliedClose} aria-label="Dismiss" className="flex h-11 w-9 items-center justify-center text-sage/70 hover:text-sage transition-colors"><X className="h-3.5 w-3.5" /></button>
                               </div>
                             )}
 
                             {/* Expand/collapse all candidates */}
                             <button
                               onClick={() => onToggleExpand()}
-                              className="flex items-center gap-1.5 min-h-10 px-2 text-[11px] text-white/50 hover:text-white/50 transition-colors"
+                              className="flex items-center gap-1.5 min-h-10 px-2 text-xs text-sage hover:text-sage transition-colors"
                             >
                               {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                               {expanded ? 'Hide' : 'See'} all {orch.candidates?.length || 0} options and scores
@@ -647,17 +555,17 @@ function CoachOrchestrationResult({
                               <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                                 {/* Context extraction */}
                                 <div className="px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                                  <p className="text-[10px] font-bold text-white/50 uppercase tracking-wider mb-2">Context Extraction</p>
+                                  <p className="text-xs font-bold text-sage uppercase tracking-wider mb-2">Context Extraction</p>
                                   <div className="flex flex-wrap gap-1.5">
-                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">tone: {orch.context_extraction.her_tone}</span>
-                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">topic: {orch.context_extraction.topic}</span>
-                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/40">goal: {orch.context_extraction.goal_detected}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-sage/70">tone: {orch.context_extraction.her_tone}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-sage/70">topic: {orch.context_extraction.topic}</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] text-sage/70">goal: {orch.context_extraction.goal_detected}</span>
                                   </div>
                                   {orch.context_extraction.must_acknowledge.length > 0 && (
                                     <div className="mt-1.5">
-                                      <p className="text-[10px] text-red-400/50 font-bold">Must acknowledge:</p>
+                                      <p className="text-xs text-red-400/50 font-bold">Must acknowledge:</p>
                                       {orch.context_extraction.must_acknowledge.map((a, idx) => (
-                                        <p key={idx} className="text-[11px] text-white/60 ml-2">• {a}</p>
+                                        <p key={idx} className="text-xs text-sage ml-2">• {a}</p>
                                       ))}
                                     </div>
                                   )}
@@ -676,23 +584,23 @@ function CoachOrchestrationResult({
                                     <div className="flex items-center justify-between mb-1.5">
                                       <div className="flex items-center gap-1.5">
                                         {cIdx === orch.winner_id && <Trophy className="h-3 w-3 text-amber-400" />}
-                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[c.style]?.color || 'bg-white/10 text-white/50'}`}>
-                                          {STYLE_CONFIG[c.style]?.emoji} {STYLE_CONFIG[c.style]?.label || c.style}
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STYLE_CONFIG[c.style]?.color || 'bg-white/10 text-sage'}`}>
+                                          {STYLE_CONFIG[c.style]?.label || c.style}
                                         </span>
-                                        <span className="text-[10px] text-white/45">{c.word_count}w</span>
+                                        <span className="text-xs text-sage/70">{c.word_count}w</span>
                                       </div>
-                                      <span className="text-[11px] text-white/45 group-hover:text-white/50 transition-colors">
+                                      <span className="text-xs text-sage/70 group-hover:text-sage transition-colors">
                                         {copiedId === `c-${index}-${cIdx}` ? <Check className="h-3 w-3 text-emerald-400" /> : 'Copy'}
                                       </span>
                                     </div>
-                                    <p className="text-[13px] text-white/75 mb-2">{c.text}</p>
+                                    <p className="text-[13px] text-cream mb-2">{c.text}</p>
                                     <div className="space-y-1">
                                       <CoachScoreBar label="Neediness" value={c.scores.neediness_risk} inverted />
                                       <CoachScoreBar label="Clarity" value={c.scores.clarity} />
                                       <CoachScoreBar label="Forward" value={c.scores.forward_motion} />
                                       <CoachScoreBar label="Tone match" value={c.scores.tone_match} />
                                     </div>
-                                    {c.notes && <p className="text-[10px] text-white/45 mt-1.5">{c.notes}</p>}
+                                    {c.notes && <p className="text-xs text-sage/70 mt-1.5">{c.notes}</p>}
                                   </button>
                                 ))}
                               </div>
@@ -717,13 +625,13 @@ function CoachDraftCards({
   const cat = getContextCategory(context);
   const headerColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-emerald-400/70';
   const options = [
-    { key: 'shorter', label: `⚡ ${draftLabels.a}`, text: msg.draft.shorter },
-    { key: 'spicier', label: `✦ ${draftLabels.b}`, text: msg.draft.spicier },
-    { key: 'softer', label: `💚 ${draftLabels.c}`, text: msg.draft.softer },
+    { key: 'shorter', label: draftLabels.a, text: msg.draft.shorter },
+    { key: 'spicier', label: draftLabels.b, text: msg.draft.spicier },
+    { key: 'softer', label: draftLabels.c, text: msg.draft.softer },
   ].filter((option): option is { key: string; label: string; text: string } => Boolean(option.text));
   return (
                         <div className="w-full space-y-2">
-                          <p className={`text-[11px] font-bold uppercase tracking-wider px-1 ${headerColor}`}>Coach drafts</p>
+                          <p className={`text-xs font-bold uppercase tracking-wider px-1 ${headerColor}`}>Coach drafts</p>
                           <ReplyOptionRail count={options.length}>
                             {options.map((option, optionIndex) => (
                               <ReplyOptionCard
@@ -742,8 +650,8 @@ function CoachDraftCards({
                         {!isPro && (
                           <a href="/pricing" className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand/[0.06] border border-brand/15 hover:bg-brand/[0.10] transition-all mt-1">
                             <Shield className="h-3 w-3 text-brand shrink-0" />
-                            <span className="text-[11px] text-brand/60 flex-1">Pro scores 6 options and picks the best one</span>
-                            <span className="text-[11px] text-brand/40">→</span>
+                            <span className="text-xs text-brand/60 flex-1">Pro scores 6 options and picks the best one</span>
+                            <span className="text-xs text-brand/40">→</span>
                           </a>
                         )}
                         </div>
@@ -752,13 +660,6 @@ function CoachDraftCards({
 
 export default function AppPage() {
   const searchParams = useSearchParams();
-  const [message, setMessage] = useState('');
-  const [replies, setReplies] = useState<Reply[]>([]);
-  const [lastGeneratedMessage, setLastGeneratedMessage] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
-  const [currentTagline, setCurrentTagline] = useState(0);
-  const [showCraftedMessage, setShowCraftedMessage] = useState(false);
   // Read after the first render: the server cannot see localStorage, and reading
   // it during render made React throw away the server HTML for returning users.
   const [selectedContext, setSelectedContext] = useState<ContextType>(null);
@@ -767,10 +668,6 @@ export default function AppPage() {
     const saved = localStorage.getItem('tw_context') as ContextType;
     if (saved) setSelectedContext(current => current ?? saved);
   }, []);
-  const [customContext, setCustomContext] = useState('');
-  const [userIntent, setUserIntent] = useState('');
-  const [sharing, setSharing] = useState<string | null>(null);
-  const [shareMenuOpen, setShareMenuOpen] = useState<string | null>(null);
   const [vpnBlocked, setVpnBlocked] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
   const [remainingReplies, setRemainingReplies] = useState(FREE_REPLY_LIMIT);
@@ -788,36 +685,24 @@ export default function AppPage() {
     return () => { active = false; };
   }, [showPaywall]);
   const [usageLimit, setUsageLimit] = useState(FREE_REPLY_LIMIT);
-  const [showExamplesDrawer, setShowExamplesDrawer] = useState(false);
   const [isPro, setIsPro] = useState(false);
-  const [v2Meta, setV2Meta] = useState<V2Meta>(null);
-  const [v2Step, setV2Step] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   // Full-screen screenshot viewer: which images are open and which one is showing.
   const [shotViewer, setShotViewer] = useState<{ images: string[]; index: number } | null>(null);
-  const [extracting, setExtracting] = useState(false);
-  const [extractedPlatform, setExtractedPlatform] = useState<string | null>(null);
   // Set when onboarding hands off with ?start=screenshot: points at the upload card.
   const [highlightUpload, setHighlightUpload] = useState(false);
-  const [appMode, setAppMode] = useState<AppMode>('coach');
   const [savedThreads, setSavedThreads] = useState<SavedThread[]>([]);
-  const [showThreads, setShowThreads] = useState(false);
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [activeThreadName, setActiveThreadName] = useState<string | null>(null);
-  const [editingThreadName, setEditingThreadName] = useState(false);
-  const [thread, setThread] = useState<ThreadMessage[]>([]);
-  const [showThread, setShowThread] = useState(true);
-  const [selectedThreadMsg, setSelectedThreadMsg] = useState<number | null>(null);
-  const [generationId, setGenerationId] = useState<string | null>(null);
-  const [outcomePrompt, setOutcomePrompt] = useState<{ reply: Reply; generationId: string } | null>(null);
-  const [customSent, setCustomSent] = useState('');
-  const [showCustomSent, setShowCustomSent] = useState(false);
   const [strategyData, setStrategyData] = useState<StrategyData>(null);
   const [strategyChatHistory, setStrategyChatHistory] = useState<StrategyChatMessage[]>([]);
   const [strategyChatInput, setStrategyChatInput] = useState('');
+  // A message to send to Coach as soon as the page is ready (arrivals from share links and the homepage).
+  const [coachAutoSend, setCoachAutoSend] = useState<string | null>(null);
+  // Who the current chat is with, read from the screenshot header; names the saved chat.
+  const [coachContactName, setCoachContactName] = useState<string | null>(null);
+  // Once someone picks "who is it" themselves in a chat, detection stops overriding it.
+  const contextPickedInChat = useRef(false);
   const [strategyChatLoading, setStrategyChatLoading] = useState(false);
   const [extractedThread, setExtractedThread] = useState('');
   const [expandedCoachTrace, setExpandedCoachTrace] = useState<number | null>(null);
@@ -832,38 +717,20 @@ export default function AppPage() {
   const [coachDragActive, setCoachDragActive] = useState(false);
   const coachRunIds = useRef<Record<number, string>>({});
   const coachCopiedReplies = useRef<Record<string, string>>({});
-  const [scanResult, setScanResult] = useState<ScanResult>(null);
-  const [saving, setSaving] = useState(false);
   const [loadingSession, setLoadingSession] = useState(false);
-  const [editingReply, setEditingReply] = useState<string | null>(null); // tone being edited
-  const [editText, setEditText] = useState('');
-  const [refining, setRefining] = useState(false);
-  const [vibeCheck, setVibeCheck] = useState<{ energy: string; vibe: string; tip: string; score: number } | null>(null);
-  const [vibeLoading, setVibeLoading] = useState(false);
-  const vibeTimer = useRef<NodeJS.Timeout | null>(null);
-  const [translating, setTranslating] = useState(false);
-  const [showToneBar, setShowToneBar] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const coachFileInputRef = useRef<HTMLInputElement>(null);
   const coachTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [coachScreenshotExtracting, setCoachScreenshotExtracting] = useState(false);
-  const threadEndRef = useRef<HTMLDivElement>(null);
-  const threadScrollRef = useRef<HTMLDivElement>(null);
-  const replyResultsRef = useRef<HTMLDivElement>(null);
   const coachEndRef = useRef<HTMLDivElement>(null);
-  const inputAreaRef = useRef<HTMLDivElement>(null);
   const coachCardRef = useRef<HTMLDivElement>(null);
-  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const coachSaveTimer = useRef<NodeJS.Timeout | null>(null);
   const [activeCoachSessionId, setActiveCoachSessionId] = useState<string | null>(null);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const isSocialTraffic = useRef(false);
   const isCultureDraft = useRef(false);
   const cultureDraftTracked = useRef(false);
-  const [prefillAutoRun, setPrefillAutoRun] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const charCount = message.length;
 
   const updateCoachInput = (value: string) => {
     setStrategyChatInput(value);
@@ -874,47 +741,8 @@ export default function AppPage() {
     }
   };
 
-  const tagReplies = (items: Reply[], runId: string): Reply[] => items.map(reply => ({
-    ...reply,
-    generationId: runId,
-    replyId: reply.replyId || replyIdFor(runId, reply.tone),
-  }));
 
-  const trackedReply = (reply: Reply): Reply => {
-    const runId = reply.generationId || generationId || 'legacy';
-    return {
-      ...reply,
-      generationId: runId,
-      replyId: reply.replyId || replyIdFor(runId, reply.tone),
-    };
-  };
 
-  const recordReplyEvent = (
-    event: ReplyLearningEvent,
-    reply: Reply,
-    options: { outcome?: 'got_reply' | 'no_reply' | 'not_reported'; text?: string; props?: Props } = {},
-  ) => {
-    const item = trackedReply(reply);
-    const text = options.text || item.text;
-    const styleSignals = deriveStyleSignals(text);
-    if (event === 'copied' || event === 'edited' || event === 'sent_confirmed') {
-      recordLocalStyleSignal(styleSignals, item.tone, event);
-    }
-    sendReplyLearningEvent({
-      event,
-      generationId: item.generationId || 'legacy',
-      replyId: item.replyId,
-      tone: item.tone,
-      context: selectedContext,
-      outcome: options.outcome,
-      styleSignals,
-      props: {
-        source: isSocialTraffic.current ? 'social' : 'organic',
-        engine: isPro ? 'verified' : 'fast',
-        ...options.props,
-      },
-    });
-  };
 
 
 
@@ -978,16 +806,16 @@ export default function AppPage() {
       window.removeEventListener('resize', recompute);
       window.removeEventListener('orientationchange', recompute);
     };
-  }, [appMode, usageCount, isPro, trialDaysLeft, strategyChatHistory.length, userId]);
+  }, [usageCount, isPro, trialDaysLeft, strategyChatHistory.length, userId]);
 
   // Rotate placeholder text every 4s when input is empty
   useEffect(() => {
-    if (strategyChatInput.trim() || appMode !== 'coach') return;
+    if (strategyChatInput.trim()) return;
     const timer = setInterval(() => {
       setPlaceholderIdx(prev => (prev + 1) % SMART_PLACEHOLDERS.length);
     }, 4000);
     return () => clearInterval(timer);
-  }, [strategyChatInput, appMode, SMART_PLACEHOLDERS.length]);
+  }, [strategyChatInput, SMART_PLACEHOLDERS.length]);
 
   // ── Short-form / paid-traffic entry: capture attribution, force Fast mode, prefill message ──
   useEffect(() => {
@@ -1004,7 +832,6 @@ export default function AppPage() {
 
       // Onboarding hands off with the first action the person picked.
       if (start) {
-        setAppMode('coach');
         if (start === 'paste') {
           setStrategyChatInput(previous => previous || 'Help me reply to this: ');
           window.setTimeout(() => {
@@ -1029,7 +856,6 @@ export default function AppPage() {
       }
       if (intent === 'rewrite' && prefill !== '1') {
         isCultureDraft.current = true;
-        setAppMode('coach');
         setStrategyChatInput(previous => previous || CULTURE_REWRITE_PROMPT);
         track('culture_draft_ready', { from: 'dont_send_that' });
       }
@@ -1040,9 +866,8 @@ export default function AppPage() {
           // to hunt through the workspace for the right mode.
           const shouldAutoRun = isFastEntry || via === 'paste' || via === 'upload';
           if (shouldAutoRun) {
-            setAppMode('reply');
-            setMessage(msg);
-            setPrefillAutoRun(msg);
+            // Arriving with a message to answer: Coach answers it straight away.
+            setCoachAutoSend(receivedMessagePrompt(msg));
           } else {
             setStrategyChatInput(msg);
           }
@@ -1085,14 +910,17 @@ export default function AppPage() {
         return;
       }
 
-      if (Array.isArray(pending.thread)) setThread(pending.thread as ThreadMessage[]);
-      if (Array.isArray(pending.replies)) setReplies(pending.replies as Reply[]);
-      if (pending.selectedContext) setSelectedContext(pending.selectedContext as ContextType);
-      if (typeof pending.lastGeneratedMessage === 'string') {
-        setLastGeneratedMessage(pending.lastGeneratedMessage);
+      // The homepage hands over their message and the replies it wrote; pick up in Coach.
+      const session = coachSessionFromPending(pending);
+      if (session) {
+        setStrategyChatHistory(session.history as StrategyChatMessage[]);
+        setExtractedThread(session.threadText);
       }
-      setAppMode('reply');
-      setShowThread(true);
+      if (pending.selectedContext) {
+        // Chosen on the homepage, so screenshot detection shouldn't override it.
+        setSelectedContext(pending.selectedContext as ContextType);
+        contextPickedInChat.current = true;
+      }
       removePending();
       track('saved_thread_restored', { source: isSocialTraffic.current ? 'social' : 'organic' });
     } catch {
@@ -1201,18 +1029,17 @@ export default function AppPage() {
         const restored = loadCoachSession(type, msgs);
         setStrategyChatHistory(restored.history);
         setExtractedThread(restored.threadText);
+        setCoachContactName(null);
+        contextPickedInChat.current = true;
+      setCoachContactName(null);
+      contextPickedInChat.current = true;
         setStrategyData(restored.strategy);
 
         setActiveCoachSessionId(ft.id);
-        setActiveThreadId(null);
-        setActiveThreadName(null);
-        setThread([]);
-        setReplies([]);
-        setShowThreads(false);
         if (ft.context) setSelectedContext(ft.context as ContextType);
         window.history.replaceState({}, '', '/app');
       } catch {
-        toast({ title: 'Failed to load session', variant: 'destructive' });
+        toast({ title: "Couldn't open that chat", variant: 'destructive' });
       } finally {
         setLoadingSession(false);
       }
@@ -1223,29 +1050,9 @@ export default function AppPage() {
   // Rotate taglines every 3 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTagline((prev) => (prev + 1) % TAGLINES.length);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
-
-  // Keep conversation history scrolling inside its own panel. Calling
-  // scrollIntoView here also scrolls the document, which can pull the user
-  // away from the Generate button on a phone.
-  useEffect(() => {
-    const container = threadScrollRef.current;
-    if (!container || thread.length === 0) return;
-    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-  }, [thread]);
-
-  // Reveal fresh replies without forcing a full-page jump. `nearest` keeps
-  // the current context when the result is already visible.
-  useEffect(() => {
-    if (replies.length === 0) return;
-    const timer = window.setTimeout(() => {
-      replyResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [replies.length]);
 
   // Auto-scroll coach chat. Scroll the inner container directly instead of
   // scrollIntoView — the latter bubbles up to the document (which has global
@@ -1268,17 +1075,6 @@ export default function AppPage() {
     return () => clearTimeout(t);
   }, []);
 
-  // Auto-save thread after 2+ messages (1.5s debounce)
-  useEffect(() => {
-    if (thread.length < 2) return;
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(() => {
-      autoSaveThread();
-    }, 1500);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [thread]);
-
   // Auto-save coach session after 2+ messages (2s debounce)
   useEffect(() => {
     if (strategyChatHistory.length < 2) return;
@@ -1291,533 +1087,17 @@ export default function AppPage() {
   }, [strategyChatHistory]);
 
 
-  const handleGenerate = async () => {
-    // Check if user has reached free limit
-    if (!isPro && usageCount >= usageLimit) {
-      setShowPaywall(true);
-      return;
-    }
 
-    // If textarea is empty but last thread message is from 'them', use that
-    const lastThemInThread = [...thread].reverse().find(m => m.role === 'them');
-    const effectiveMessage = message.trim() || (lastThemInThread ? lastThemInThread.text : '');
 
-    if (!effectiveMessage) {
-      toast({
-        title: "Empty message",
-        description: "Please paste a message first",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    // Only add to thread if user typed a new message in the textarea
-    if (message.trim()) {
-      addToThread('them', message.trim());
-    }
 
-    setLoading(true);
-    setReplies([]); // Clear previous replies
-    setV2Meta(null); // Clear previous V2 meta
-    setV2Step(null);
-    
-    try {
-      // Use V2 API if enabled (Pro-only)
-      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
-      
-      // Build full conversation context for smarter replies
-      const fullContext = buildThreadContext(effectiveMessage);
-      
-      // Show V2 progress indicator (no fake delays — step updates happen instantly)
-      if (isPro) setV2Step('drafting');
-      
-      const requestTimeout = isPro ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
-      const response = await fetchWithTimeout(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: fullContext,
-          context: selectedContext || 'crush',
-          customContext: customContext.trim() || undefined,
-          userIntent: userIntent.trim() || undefined,
-          analytics: getAnalyticsContext(),
-        }),
-      }, requestTimeout);
 
-      const data = await response.json();
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          // Check if VPN abuse detected
-          if (data.error === 'vpn_abuse_detected') {
-            setVpnBlocked(true);
-          } else {
-            setShowPaywall(true);
-          }
-        } else {
-          throw new Error(data.error || 'Failed to generate replies');
-        }
-        return;
-      }
 
-      const nextGenerationId = createReplyGenerationId();
-      setGenerationId(nextGenerationId);
-      
-      // Handle V2 response format
-      if (isPro && data.shorter && data.spicier && data.softer) {
-        const v2Replies = tagReplies([
-          { tone: 'shorter', text: data.shorter },
-          { tone: 'spicier', text: data.spicier },
-          { tone: 'softer', text: data.softer },
-        ], nextGenerationId);
-        setReplies(v2Replies);
-        if (data.meta) {
-          setV2Meta(data.meta);
-        }
-        if (data.strategy) {
-          setStrategyData(data.strategy);
-        }
-      }
-      // Handle V1 response format
-      else if (Array.isArray(data.replies) && data.replies.length > 0) {
-        // Ensure all replies have required properties
-        const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
-        
-        if (validReplies.length > 0) {
-          setReplies(tagReplies(validReplies, nextGenerationId));
-        } else {
-          throw new Error('Invalid reply format received');
-        }
-      } else {
-        throw new Error('No replies received from server');
-      }
 
-      const generatedCount = (isPro && data.shorter && data.spicier && data.softer)
-        ? 3
-        : Array.isArray(data.replies)
-          ? data.replies.filter((r: any) => r && r.tone && r.text).length
-          : 0;
-      sendReplyLearningEvent({
-        event: 'generated',
-        generationId: nextGenerationId,
-        replyId: nextGenerationId,
-        context: selectedContext,
-        props: {
-          source: isSocialTraffic.current ? 'social' : 'organic',
-          mode: 'reply',
-          engine: isPro ? 'verified' : 'fast',
-          reply_count: generatedCount,
-        },
-      });
-      
-      // Refresh usage count from server
-      const usageRes = await fetch('/api/usage');
-      if (usageRes.ok) {
-        const usageData = await usageRes.json();
-        setUsageCount(usageData.usageCount);
-        setRemainingReplies(usageData.remaining);
-      }
 
-      // Keep the source message available for sharing after the input clears.
-      setLastGeneratedMessage(effectiveMessage);
-      // Clear input (it's now in the thread)
-      setMessage('');
 
-      // Show "crafted with care" message
-      setShowCraftedMessage(true);
-      setTimeout(() => setShowCraftedMessage(false), 3000);
 
-      toast({
-        title: isPro ? "✅ Verified replies ready!" : "✨ Replies generated!",
-        description: "Copy one and tap 'I sent this' to keep the thread going",
-      });
-    } catch (error) {
-      console.error('Generation error:', error);
-      track('reply_generation_failed', {
-        source: isSocialTraffic.current ? 'social' : 'organic',
-        mode: 'reply',
-        reason: error instanceof Error ? error.message.slice(0, 120) : 'unknown',
-      });
-      toast({
-        title: "Oops! Something went wrong",
-        description: error instanceof Error ? error.message : "Failed to generate replies. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-      setV2Step(null);
-    }
-  };
-
-  // Social and landing-page prefill links should deliver the promised first
-  // result without making a new visitor find and press a second button.
-  useEffect(() => {
-    const pending = prefillAutoRun;
-    if (!pending) return;
-    if (message.trim() !== pending.trim()) {
-      setPrefillAutoRun(null);
-      return;
-    }
-    if (appMode !== 'reply' || loading) return;
-
-    const timer = window.setTimeout(() => {
-      // Clear only when the timer fires. Clearing before returning the
-      // cleanup function would cancel this timer on the next render.
-      setPrefillAutoRun(null);
-      track('prefill_autorun_started', {
-        source: isSocialTraffic.current ? 'social' : 'organic',
-        mode: 'reply',
-      });
-      void handleGenerate();
-    }, 160);
-    return () => window.clearTimeout(timer);
-    // The dependency set intentionally tracks the state gate, not the inline handler.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appMode, loading, message, prefillAutoRun]);
-
-  // Regenerate replies (regular flow) — re-calls API with same thread context, no re-add
-  const handleRegenerate = async () => {
-    if (loading) return;
-    
-    // Get last "them" message from thread to rebuild context
-    const lastThem = [...thread].reverse().find(m => m.role === 'them');
-    if (!lastThem) return;
-
-    setLoading(true);
-    setReplies([]);
-    setV2Meta(null);
-    setV2Step(null);
-    setStrategyData(null);
-
-    try {
-      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
-      const fullContext = buildThreadContext(lastThem.text);
-
-      if (isPro) setV2Step('drafting');
-
-      const requestTimeout = isPro ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
-      const response = await fetchWithTimeout(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: fullContext,
-          context: selectedContext || 'crush',
-          customContext: customContext.trim() || undefined,
-          analytics: getAnalyticsContext(),
-        }),
-      }, requestTimeout);
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to regenerate');
-
-      const nextGenerationId = createReplyGenerationId();
-      setGenerationId(nextGenerationId);
-      let regeneratedReplies: Reply[] = [];
-
-      if (isPro && data.shorter && data.spicier && data.softer) {
-        regeneratedReplies = tagReplies([
-          { tone: 'shorter', text: data.shorter },
-          { tone: 'spicier', text: data.spicier },
-          { tone: 'softer', text: data.softer },
-        ], nextGenerationId);
-        setReplies(regeneratedReplies);
-        if (data.meta) setV2Meta(data.meta);
-        if (data.strategy) setStrategyData(data.strategy);
-      } else if (Array.isArray(data.replies) && data.replies.length > 0) {
-        const validReplies = data.replies.filter((r: any) => r && r.tone && r.text);
-        if (validReplies.length > 0) {
-          regeneratedReplies = tagReplies(validReplies, nextGenerationId);
-          setReplies(regeneratedReplies);
-        }
-      }
-
-      if (regeneratedReplies.length > 0) {
-        sendReplyLearningEvent({
-          event: 'generated',
-          generationId: nextGenerationId,
-          replyId: nextGenerationId,
-          context: selectedContext,
-          props: {
-            source: isSocialTraffic.current ? 'social' : 'organic',
-            mode: 'reply',
-            engine: isPro ? 'verified' : 'fast',
-            reply_count: regeneratedReplies.length,
-            regenerated: true,
-          },
-        });
-      }
-
-      setLastGeneratedMessage(lastThem.text);
-      toast({ title: 'Fresh replies generated', description: 'New options for the same message' });
-    } catch (error) {
-      toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-      setV2Step(null);
-    }
-  };
-
-  // Regenerate replies for screenshot briefing — re-calls API with same extracted conversation
-  const handleRegenerateScan = async () => {
-    if (loading || !scanResult) return;
-
-    setLoading(true);
-
-    try {
-      const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
-      const genRes = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: scanResult.fullConversation,
-          context: selectedContext || 'crush',
-          customContext: customContext.trim() || undefined,
-          analytics: getAnalyticsContext(),
-        }),
-      });
-
-      const genData = await genRes.json();
-      if (!genRes.ok) throw new Error(genData.error || 'Regeneration failed');
-
-      let newReplies: Reply[] = [];
-      let newStrategy: StrategyData = null;
-      const nextGenerationId = createReplyGenerationId();
-      setGenerationId(nextGenerationId);
-
-      if (isPro && genData.shorter && genData.spicier && genData.softer) {
-        newReplies = tagReplies([
-          { tone: 'shorter', text: genData.shorter },
-          { tone: 'spicier', text: genData.spicier },
-          { tone: 'softer', text: genData.softer },
-        ], nextGenerationId);
-        if (genData.strategy) newStrategy = genData.strategy;
-      } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
-        newReplies = tagReplies(
-          genData.replies.filter((r: any) => r && r.tone && r.text),
-          nextGenerationId,
-        );
-      }
-
-      if (newReplies.length > 0) {
-        setScanResult({
-          ...scanResult,
-          replies: newReplies,
-          strategy: newStrategy,
-        });
-        sendReplyLearningEvent({
-          event: 'generated',
-          generationId: nextGenerationId,
-          replyId: nextGenerationId,
-          context: selectedContext,
-          props: {
-            source: isSocialTraffic.current ? 'social' : 'organic',
-            mode: 'screenshot_scan',
-            engine: isPro ? 'verified' : 'fast',
-            reply_count: newReplies.length,
-            regenerated: true,
-          },
-        });
-        toast({ title: 'Fresh replies generated', description: 'New options for the same conversation' });
-      }
-    } catch (error) {
-      toast({ title: 'Regeneration failed', description: 'Try again', variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Edit + Refine reply inline
-  const handleStartEdit = (tone: string, currentText: string) => {
-    setEditingReply(tone);
-    setEditText(currentText);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingReply(null);
-    setEditText('');
-  };
-
-  const handleRefine = async (tone: string, originalText: string, isScan = false) => {
-    if (!editText.trim() || refining) return;
-    setRefining(true);
-
-    try {
-      const res = await fetch('/api/refine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          original: originalText,
-          edited: editText.trim(),
-          tone,
-          context: selectedContext || 'crush',
-          customContext: customContext.trim() || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Refine failed');
-
-      if (data.refined) {
-        const baseTone = tone.replace(/^scan-/, '') as Reply['tone'];
-        const existingReply = (isScan ? scanResult?.replies : replies)?.find(reply => reply.tone === baseTone);
-        recordReplyEvent('edited', {
-          tone: baseTone,
-          text: data.refined,
-          generationId: existingReply?.generationId,
-          replyId: existingReply?.replyId,
-        }, { text: data.refined });
-        if (isScan && scanResult) {
-          // Update the scanResult replies
-          setScanResult({
-            ...scanResult,
-            replies: scanResult.replies.map(r =>
-              r.tone === tone ? { ...r, text: data.refined } : r
-            ),
-          });
-        } else {
-          // Update the regular replies
-          setReplies(prev => prev.map(r =>
-            r.tone === tone ? { ...r, text: data.refined } : r
-          ));
-        }
-        toast({ title: 'Reply polished', description: 'Your edit has been refined' });
-      }
-    } catch (error) {
-      toast({ title: 'Refine failed', description: 'Try again', variant: 'destructive' });
-    } finally {
-      setRefining(false);
-      setEditingReply(null);
-      setEditText('');
-    }
-  };
-
-  // Use raw edit without AI polish
-  const handleUseRawEdit = (tone: string, isScan = false) => {
-    if (!editText.trim()) return;
-    const baseTone = tone.replace(/^scan-/, '') as Reply['tone'];
-    const existingReply = (isScan ? scanResult?.replies : replies)?.find(reply => reply.tone === baseTone);
-    recordReplyEvent('edited', {
-      tone: baseTone,
-      text: editText.trim(),
-      generationId: existingReply?.generationId,
-      replyId: existingReply?.replyId,
-    }, { text: editText.trim() });
-    if (isScan && scanResult) {
-      setScanResult({
-        ...scanResult,
-        replies: scanResult.replies.map(r =>
-          r.tone === tone ? { ...r, text: editText.trim() } : r
-        ),
-      });
-    } else {
-      setReplies(prev => prev.map(r =>
-        r.tone === tone ? { ...r, text: editText.trim() } : r
-      ));
-    }
-    setEditingReply(null);
-    setEditText('');
-  };
-
-  // ── Vibe Check — real-time feedback on user's draft ──
-  const runVibeCheck = async (draft: string) => {
-    if (draft.trim().length < 8 || vibeLoading) return;
-    setVibeLoading(true);
-    try {
-      const lastThem = [...thread].reverse().find(m => m.role === 'them');
-      const res = await fetch('/api/vibe-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          draft: draft.trim(),
-          context: selectedContext || 'crush',
-          customContext: customContext.trim() || undefined,
-          lastReceived: lastThem?.text || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setVibeCheck(data);
-      }
-    } catch {
-      // Silent fail — don't interrupt typing
-    } finally {
-      setVibeLoading(false);
-    }
-  };
-
-  // Debounced vibe check on typing
-  const handleMessageChange = (value: string) => {
-    setMessage(value);
-    if (value.trim()) 
-    setVibeCheck(null);
-
-    if (vibeTimer.current) clearTimeout(vibeTimer.current);
-    if (value.trim().length >= 8 && appMode === 'reply') {
-      vibeTimer.current = setTimeout(() => runVibeCheck(value), 1500);
-    }
-  };
-
-  // ── Tone Translator — rewrite draft in a different energy ──
-  const handleTranslateTone = async (tone: string) => {
-    if (!message.trim() || translating) return;
-    setTranslating(true);
-    try {
-      const res = await fetch('/api/translate-tone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          draft: message.trim(),
-          tone,
-          context: selectedContext || 'crush',
-          customContext: customContext.trim() || undefined,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.translated) {
-        setMessage(data.translated);
-        setVibeCheck(null);
-        toast({ title: `Rewritten as ${tone}`, description: data.translated });
-      } else {
-        toast({ title: 'Translation failed', description: data.error || 'Try again', variant: 'destructive' });
-      }
-    } catch {
-      toast({ title: 'Translation failed', description: 'Try again', variant: 'destructive' });
-    } finally {
-      setTranslating(false);
-    }
-  };
-
-  const handleCopy = async (text: string, tone: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(tone);
-      const sourceReply = replies.find(reply => reply.tone === tone)
-        || scanResult?.replies.find(reply => reply.tone === tone)
-        || { tone: tone as Reply['tone'], text };
-      const copiedReply = { ...sourceReply, text };
-      recordReplyEvent('selected', copiedReply, { props: { selection: 'copy' } });
-      recordReplyEvent('copied', copiedReply);
-      toast({
-        title: isPro ? "✅ Verified reply copied!" : "✓ Copied to clipboard!",
-        description: "Tap 'I sent this' to continue the thread",
-      });
-      
-      // Log which tone was copied (for personalization data)
-      fetch('/api/log-copy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tone, isV2: isPro }),
-      }).catch(() => {}); // Fire and forget
-      
-      setTimeout(() => setCopied(null), 2000);
-    } catch (err) {
-      toast({
-        title: "Failed to copy",
-        description: "Please try again",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Share a Coach reply as a card (their message + the reply) that links back to Text Wingman.
   const shareCoachReply = async (text: string, tone: string) => {
@@ -1857,449 +1137,20 @@ export default function AppPage() {
     }
   };
 
-  // Share: Copy link
-  const handleShareLink = async (reply: Reply) => {
-    setSharing(reply.tone);
-    const sourceMessage = (lastGeneratedMessage || message).substring(0, 100);
-    try {
-      const response = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          theirMessage: sourceMessage,
-          myReply: reply.text,
-          tone: reply.tone,
-        }),
-      });
-      const data = await response.json();
-      if (data.slug) {
-        const shareUrl = `${window.location.origin}/share/${data.slug}`;
-        await navigator.clipboard.writeText(shareUrl);
-        toast({ title: "Share link copied", description: "Paste on TikTok, Instagram, or Twitter" });
-      }
-    } catch (err) {
-      const encoded = btoa(JSON.stringify({ theirMessage: sourceMessage, myReply: reply.text, tone: reply.tone }));
-      await navigator.clipboard.writeText(`${window.location.origin}/share/${encoded}`);
-      toast({ title: "Share link copied" });
-    }
-    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
-  };
-
-  // Share: Download image
-  const handleDownloadImage = async (reply: Reply) => {
-    setSharing(reply.tone);
-    const sourceMessage = (lastGeneratedMessage || message).substring(0, 100);
-    try {
-      const imageUrl = `/api/share/image?their=${encodeURIComponent(sourceMessage)}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
-      const res = await fetch(imageUrl);
-      if (!res.ok) throw new Error('Failed to generate image');
-      const blob = await res.blob();
-      if (blob.size === 0) throw new Error('Empty image');
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `textwingman-${reply.tone}.png`;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-      toast({ title: "Image downloaded", description: "Share it anywhere" });
-    } catch (err) {
-      console.error('Download error:', err);
-      toast({ title: "Failed to download", description: "Please try again", variant: "destructive" });
-    }
-    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
-  };
-
-  // Share: Copy image to clipboard
-  const handleCopyImage = async (reply: Reply) => {
-    setSharing(reply.tone);
-    const sourceMessage = (lastGeneratedMessage || message).substring(0, 100);
-    try {
-      const imageUrl = `/api/share/image?their=${encodeURIComponent(sourceMessage)}&reply=${encodeURIComponent(reply.text)}&tone=${reply.tone}`;
-      const res = await fetch(imageUrl);
-      if (!res.ok) throw new Error('Failed to generate image');
-      const blob = await res.blob();
-      if (blob.size === 0) throw new Error('Empty image');
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      toast({ title: "Image copied", description: "Paste it in any app" });
-    } catch (err) {
-      console.error('Copy image error:', err);
-      toast({ title: "Failed to copy image", description: "Try downloading instead", variant: "destructive" });
-    }
-    setTimeout(() => { setSharing(null); setShareMenuOpen(null); }, 2000);
-  };
-
-  // Screenshot upload & extraction
-  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || extracting) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Invalid file',
-        description: 'Please upload an image file (PNG, JPEG, WebP)',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Compress image client-side (handles large iPhone screenshots)
-    let base64: string;
-    try {
-      base64 = await compressImage(file);
-    } catch {
-      toast({
-        title: 'Could not process image',
-        description: 'Try a different screenshot',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setScreenshotPreview(base64);
-    setExtracting(true);
-    setExtractedPlatform(null);
-
-    try {
-      // Step 1: Extract conversation from screenshot
-      const res = await fetch('/api/extract-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64 }),
-      });
-
-      const data = await res.json();
-
-      if (data.error && !data.extracted_text) {
-        toast({
-          title: '📷 Could not read screenshot',
-          description: data.error || 'Try a clearer screenshot of the conversation',
-          variant: 'destructive',
-        });
-        setScreenshotPreview(null);
-        return;
-      }
-
-      if (data.extracted_text) {
-        setExtractedPlatform(data.platform);
-        const msgCount = data.message_count || 1;
-
-        // Smart Thread Update: if a thread already exists, compare and add only new messages
-        if (thread.length > 0 && data.full_conversation) {
-          const extractedLines = data.full_conversation.split('\n').filter((l: string) => l.trim());
-          const extractedMsgs = extractedLines.map((line: string) => ({
-            role: line.startsWith('You:') ? 'you' as const : 'them' as const,
-            text: line.replace(/^(Them|You):\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim(),
-          }));
-
-          // Normalize text for comparison (lowercase, strip punctuation/whitespace)
-          const normalize = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const existingNormalized = thread.map(m => normalize(m.text));
-
-          // Find messages in the extracted list that aren't in the existing thread
-          // Walk from the end of the extracted messages backward to find where our thread ends
-          let matchEnd = -1;
-          for (let i = extractedMsgs.length - 1; i >= 0; i--) {
-            const idx = existingNormalized.lastIndexOf(normalize(extractedMsgs[i].text));
-            if (idx !== -1 && idx === thread.length - 1) {
-              matchEnd = i;
-              break;
-            }
-          }
-
-          // If we couldn't find an exact tail match, try matching the last few thread messages sequentially
-          if (matchEnd === -1) {
-            for (let start = extractedMsgs.length - 1; start >= 0; start--) {
-              let threadIdx = thread.length - 1;
-              let extIdx = start;
-              let matched = false;
-              while (extIdx >= 0 && threadIdx >= 0) {
-                if (normalize(extractedMsgs[extIdx].text) === existingNormalized[threadIdx]) {
-                  if (threadIdx === thread.length - 1) {
-                    matchEnd = extIdx;
-                    matched = true;
-                  }
-                  threadIdx--;
-                }
-                extIdx--;
-              }
-              if (matched) break;
-            }
-          }
-
-          const newMessages = matchEnd !== -1
-            ? extractedMsgs.slice(matchEnd + 1)
-            : [];
-
-          if (newMessages.length > 0) {
-            const newThreadMsgs: ThreadMessage[] = newMessages.map((m: { role: 'you' | 'them'; text: string }) => ({
-              role: m.role,
-              text: m.text,
-              timestamp: Date.now(),
-            }));
-
-            setThread(prev => [...prev, ...newThreadMsgs]);
-            setScreenshotPreview(null);
-
-            const youCount = newMessages.filter((m: { role: string }) => m.role === 'you').length;
-            const themCount = newMessages.filter((m: { role: string }) => m.role === 'them').length;
-            const parts = [];
-            if (youCount > 0) parts.push(`${youCount} from you`);
-            if (themCount > 0) parts.push(`${themCount} from them`);
-
-            toast({
-              title: `📷 Thread updated — ${newMessages.length} new message${newMessages.length !== 1 ? 's' : ''}`,
-              description: parts.join(' and ') + ' added. Delete any that are wrong.',
-            });
-
-            // If the last new message is from them, set it in the textarea for easy generation
-            const lastNew = newMessages[newMessages.length - 1];
-            if (lastNew.role === 'them') {
-              setMessage(lastNew.text);
-            }
-
-            return;
-          } else {
-            // No new messages found — tell the user
-            setScreenshotPreview(null);
-            toast({
-              title: '📷 No new messages detected',
-              description: 'This screenshot looks the same as your current thread. Send a new screenshot with more messages.',
-            });
-            return;
-          }
-        }
-
-        // Reply mode: auto-generate replies via Screenshot Briefing
-        toast({
-          title: `📷 ${msgCount > 1 ? `${msgCount} messages read` : 'Message read'} — generating replies...`,
-          description: data.platform !== 'unknown' ? `From ${data.platform}` : 'Reading your conversation',
-        });
-
-        // Step 2: Auto-generate replies using the extracted conversation
-        const endpoint = isPro ? '/api/generate-v2' : '/api/generate';
-        const requestTimeout = isPro ? VERIFIED_REPLY_TIMEOUT_MS : REPLY_TIMEOUT_MS;
-        const genRes = await fetchWithTimeout(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: data.extracted_text,
-            context: selectedContext || 'crush',
-            customContext: customContext.trim() || undefined,
-            analytics: getAnalyticsContext(),
-          }),
-        }, requestTimeout);
-
-        const genData = await genRes.json();
-
-        if (!genRes.ok) {
-          throw new Error(genData.error || 'Generation failed');
-        }
-
-        // Parse replies from response
-        let scanReplies: Reply[] = [];
-        let scanStrategy: StrategyData = null;
-
-        if (isPro && genData.shorter && genData.spicier && genData.softer) {
-          scanReplies = [
-            { tone: 'shorter', text: genData.shorter },
-            { tone: 'spicier', text: genData.spicier },
-            { tone: 'softer', text: genData.softer },
-          ];
-          if (genData.strategy) {
-            scanStrategy = genData.strategy;
-          }
-        } else if (Array.isArray(genData.replies) && genData.replies.length > 0) {
-          scanReplies = genData.replies.filter((r: any) => r && r.tone && r.text);
-        }
-
-        if (scanReplies.length > 0) {
-          // Auto-populate thread with extracted messages so user sees the conversation immediately
-          const convoText = data.full_conversation || data.extracted_text;
-          const convoLines = convoText.split('\n').filter((l: string) => l.trim());
-          const threadMsgs: ThreadMessage[] = convoLines.map((line: string) => ({
-            role: line.startsWith('You:') ? 'you' as const : 'them' as const,
-            text: line.replace(/^(Them|You):\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').trim(),
-            timestamp: Date.now(),
-          }));
-
-          setThread(threadMsgs);
-          setReplies(scanReplies);
-          setLastGeneratedMessage(data.extracted_text);
-          setStrategyData(scanStrategy);
-          setExtractedPlatform(data.platform || null);
-          setShowThread(true);
-
-          // Track usage
-          const usageRes = await fetch('/api/usage');
-          if (usageRes.ok) {
-            const usageData = await usageRes.json();
-            setUsageCount(usageData.usageCount);
-            setRemainingReplies(usageData.remaining);
-          }
-
-          setScreenshotPreview(null);
-          toast({
-            title: `📷 ${msgCount} messages loaded — replies ready`,
-            description: data.platform !== 'unknown' ? `From ${data.platform} · thread auto-saved` : 'Thread auto-saved',
-          });
-        } else {
-          // Fallback: put text in textarea like before
-          setMessage(data.extracted_text);
-          setScreenshotPreview(null);
-          toast({
-            title: `📷 ${msgCount > 1 ? `${msgCount} messages extracted` : 'Message extracted'}`,
-            description: 'Hit Generate to get replies',
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Screenshot extraction error:', error);
-      toast({
-        title: 'Scan failed',
-        description: 'Something went wrong. Try pasting the message instead.',
-        variant: 'destructive',
-      });
-      setScreenshotPreview(null);
-    } finally {
-      setExtracting(false);
-      // Reset file input so the same file can be re-selected
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const clearScreenshot = () => {
-    setScreenshotPreview(null);
-    setExtractedPlatform(null);
-  };
-
-  // Continue in Thread from a scan result — hydrate thread with extracted messages
-  const handleContinueInThread = () => {
-    if (!scanResult) return;
-    const lines = scanResult.fullConversation.split('\n').filter(l => l.trim());
-    const newThread: ThreadMessage[] = lines.map(line => ({
-      role: line.startsWith('You:') ? 'you' as const : 'them' as const,
-      text: line.replace(/^(Them|You):\s*/, ''),
-      timestamp: Date.now(),
-    }));
-    setThread(newThread);
-    setReplies(scanResult.replies);
-    setStrategyData(scanResult.strategy);
-    setScanResult(null);
-    setScreenshotPreview(null);
-    setShowThread(true);
-    track('thread_continued', {
-      source: isSocialTraffic.current ? 'social' : 'organic',
-      via: 'screenshot_scan',
-      messages: newThread.length,
-    });
-    toast({ title: 'Loaded into thread', description: 'Pick a reply or keep the conversation going' });
-  };
 
 
-  // ── Thread helpers ──────────────────────────────────────
-  const buildThreadContext = (extraMessage?: string) => {
-    const lines = thread.map(m => `${m.role === 'them' ? 'Them' : 'You'}: ${m.text}`);
-    if (extraMessage) lines.push(`Them: ${extraMessage}`);
-    return lines.join('\n');
-  };
 
-  const addToThread = (role: 'them' | 'you', text: string) => {
-    setThread(prev => [...prev, { role, text, timestamp: Date.now() }]);
-  };
 
-  const handleMarkSent = (reply: Reply) => {
-    const sentReply = trackedReply(reply);
-    addToThread('you', reply.text);
-    recordReplyEvent('selected', sentReply, { props: { selection: 'sent' } });
-    recordReplyEvent('sent_confirmed', sentReply);
-    setOutcomePrompt({ reply: sentReply, generationId: sentReply.generationId || 'legacy' });
-    setCustomSent('');
-    setShowCustomSent(false);
-    setReplies([]);
-    setStrategyData(null);
-    setMessage('');
-    setShowThread(true);
-    toast({ title: 'Added to thread', description: 'Now paste what they said back' });
-    setTimeout(() => {
-      inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 150);
-  };
 
-  const handleCustomSentSubmit = () => {
-    if (!customSent.trim()) return;
-    const customRunId = generationId || createReplyGenerationId();
-    const customReply: Reply = {
-      tone: 'shorter',
-      text: customSent.trim(),
-      generationId: customRunId,
-      replyId: replyIdFor(customRunId, 'custom'),
-    };
-    addToThread('you', customSent.trim());
-    recordLocalStyleSignal(deriveStyleSignals(customReply.text), 'custom', 'sent_confirmed');
-    sendReplyLearningEvent({
-      event: 'sent_confirmed',
-      generationId: customRunId,
-      replyId: customReply.replyId,
-      tone: 'custom',
-      context: selectedContext,
-      styleSignals: deriveStyleSignals(customReply.text),
-      props: { source: isSocialTraffic.current ? 'social' : 'organic', custom: true },
-    });
-    setOutcomePrompt({ reply: customReply, generationId: customRunId });
-    setCustomSent('');
-    setShowCustomSent(false);
-    setReplies([]);
-    setStrategyData(null);
-    setMessage('');
-    setShowThread(true);
-    toast({ title: 'Added to thread', description: 'Now paste what they said back' });
-    setTimeout(() => {
-      inputAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 150);
-  };
 
-  const handleReportOutcome = (outcome: 'got_reply' | 'no_reply' | 'not_reported') => {
-    if (!outcomePrompt) return;
-    recordReplyEvent('outcome_reported', outcomePrompt.reply, {
-      outcome,
-      props: { source: isSocialTraffic.current ? 'social' : 'organic' },
-    });
-    setOutcomePrompt(null);
-    toast({
-      title: outcome === 'got_reply' ? 'Nice — logged as a win' : outcome === 'no_reply' ? 'Logged — we can learn from it' : 'Skipped for now',
-      description: 'Your reply choices help Text Wingman match your voice better.',
-    });
-  };
 
-  // Add "them" message to thread WITHOUT generating (for double texts)
-  const handleAddTheirMessage = () => {
-    if (!message.trim()) return;
-    addToThread('them', message.trim());
-    setMessage('');
-    setShowThread(true);
-    toast({ title: 'Added to thread', description: 'Add more or hit Generate when ready' });
-  };
 
-  // Add "you" message to thread directly (for when you sent something not from suggestions)
-  const handleAddMyMessage = () => {
-    if (!message.trim()) return;
-    addToThread('you', message.trim());
-    setMessage('');
-    setShowThread(true);
-    toast({ title: 'Your message added', description: 'Now paste what they said back' });
-  };
 
-  const handleDeleteThreadMessage = (index: number) => {
-    setThread(prev => prev.filter((_, i) => i !== index));
-    setSelectedThreadMsg(null);
-    toast({ title: 'Message removed', description: 'You can re-add it with the correct sender' });
-  };
+
+
+
+
+
 
   // ── Saved threads ─────────────────────────────────────
   const fetchThreads = async () => {
@@ -2312,37 +1163,6 @@ export default function AppPage() {
     } catch {}
   };
 
-  const autoSaveThread = async () => {
-    if (thread.length < 2) return;
-    setSaving(true);
-    try {
-      const firstThem = thread.find(m => m.role === 'them');
-      const autoName = activeThreadName || (firstThem ? firstThem.text.slice(0, 40) + (firstThem.text.length > 40 ? '...' : '') : 'Conversation');
-
-      const res = await fetch('/api/threads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: activeThreadId || undefined,
-          name: autoName,
-          messages: thread.map(m => ({ role: m.role, text: m.text, timestamp: new Date(m.timestamp).toISOString() })),
-          context: selectedContext,
-          platform: extractedPlatform,
-        }),
-      });
-      const data = await res.json();
-      if (data.thread) {
-        if (!activeThreadId) {
-          setActiveThreadId(data.thread.id);
-          setActiveThreadName(autoName);
-        }
-        fetchThreads();
-      }
-    } catch {} finally {
-      setSaving(false);
-    }
-  };
-
   const autoSaveCoachSession = async () => {
     if (strategyChatHistory.length < 2) return;
     try {
@@ -2352,6 +1172,8 @@ export default function AppPage() {
       const orchTone = lastOrch?.orchestration?.context_extraction?.her_tone;
       const autoName = activeCoachSessionId
         ? undefined
+        : coachContactName
+          ? coachContactName
         : orchTopic && orchTone
           ? `${orchTopic} · ${orchTone}`
           : orchTopic
@@ -2397,21 +1219,17 @@ export default function AppPage() {
       const restored = loadCoachSession(type, msgs);
       setStrategyChatHistory(restored.history);
       setExtractedThread(restored.threadText);
+      setCoachContactName(null);
+      contextPickedInChat.current = true;
       setStrategyData(restored.strategy);
 
       setActiveCoachSessionId(saved.id);
       setCoachOutcome(null);
       setShowCoachThreads(false);
       coachRunIds.current = {};
-      setActiveThreadId(null);
-      setActiveThreadName(null);
-      setThread([]);
-      setReplies([]);
-      setMessage('');
-      setShowThreads(false);
       if (saved.context) setSelectedContext(saved.context as ContextType);
     } catch {
-      toast({ title: 'Failed to load', variant: 'destructive' });
+      toast({ title: "Couldn't open that chat", variant: 'destructive' });
     }
   };
 
@@ -2420,60 +1238,19 @@ export default function AppPage() {
       const res = await fetch(`/api/threads?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
       setSavedThreads(prev => prev.filter(t => t.id !== id));
-      if (activeThreadId === id) {
-        setActiveThreadId(null);
-        setActiveThreadName(null);
-        setThread([]);
-      }
       if (activeCoachSessionId === id) {
         setActiveCoachSessionId(null);
         setStrategyChatHistory([]);
         setStrategyChatInput('');
       }
-      toast({ title: 'Deleted' });
     } catch {
-      toast({ title: 'Failed to delete thread', variant: 'destructive' });
+      toast({ title: "Couldn't delete that chat", variant: 'destructive' });
     }
   };
 
-  const handleRenameThread = async (newName: string) => {
-    const trimmed = newName.trim();
-    if (!trimmed || !activeThreadId) {
-      setEditingThreadName(false);
-      return;
-    }
-    setActiveThreadName(trimmed);
-    setEditingThreadName(false);
-    try {
-      await fetch('/api/threads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: activeThreadId,
-          name: trimmed,
-          messages: thread.map(m => ({ role: m.role, text: m.text, timestamp: new Date(m.timestamp).toISOString() })),
-          context: selectedContext,
-          platform: extractedPlatform,
-        }),
-      });
-      fetchThreads();
-      toast({ title: 'Thread renamed' });
-    } catch {
-      toast({ title: 'Rename failed', variant: 'destructive' });
-    }
-  };
 
   const handleNewThread = () => {
-    setThread([]);
-    setReplies([]);
-    setLastGeneratedMessage('');
     setStrategyData(null);
-    setScanResult(null);
-    setMessage('');
-    setActiveThreadId(null);
-    setActiveThreadName(null);
-    setShowThreads(false);
-    setUserIntent('');
     setStrategyChatHistory([]);
     setStrategyChatInput('');
     setActiveCoachSessionId(null);
@@ -2482,6 +1259,8 @@ export default function AppPage() {
     setCoachCopiedId(null);
     setCoachPipelineStep(null);
     setCoachOutcome(null);
+    setCoachContactName(null);
+    contextPickedInChat.current = false;
     coachRunIds.current = {};
   };
 
@@ -2665,9 +1444,22 @@ export default function AppPage() {
           body: JSON.stringify({ image: base64 }),
         });
         const data = await res.json();
-        return data.full_conversation || null;
+        return {
+          text: (data.full_conversation as string | null) || null,
+          contact: typeof data.contact_name === 'string' ? data.contact_name : null,
+          relationship: typeof data.relationship === 'string' ? data.relationship as ContextType : null,
+        };
       }));
-      const extracted = results.filter(Boolean);
+      const extracted = results.map(r => r.text).filter((text): text is string => Boolean(text));
+
+      // Fill in who this is with, unless they already chose it in this chat.
+      const contact = results.find(r => r.contact)?.contact;
+      if (contact) setCoachContactName(contact);
+      const detected = results.find(r => r.relationship)?.relationship;
+      if (detected && !contextPickedInChat.current && detected !== selectedContext) {
+        setSelectedContext(detected);
+        track('context_selected', { context: detected, source: 'detected' });
+      }
 
       if (extracted.length > 0) {
         setStrategyChatLoading(true);
@@ -2752,9 +1544,9 @@ export default function AppPage() {
             const contextMsg = extracted.length === 1
               ? `Here's the conversation from the screenshot:\n${extracted[0]}`
               : `Here's the conversation from ${extracted.length} screenshots:\n${extracted.map((t: string, i: number) => `[Screenshot ${i + 1}]\n${t}`).join('\n\n')}`;
-            const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
+            // The conversation is in the message itself; follow-ups get it as context.
             const result = await requestCoachReply({
-              threadContext,
+              threadContext: '',
               strategy: strategyData,
               context: selectedContext || 'crush',
               chatHistory: richHistory,
@@ -2780,12 +1572,12 @@ export default function AppPage() {
           setCoachPipelineStep(null);
         }
       } else {
-        toast({ title: 'Could not read screenshots', description: 'Try clearer images', variant: 'destructive' });
+        toast({ title: "Couldn't read that screenshot", description: 'Try a clearer one, or paste the messages.', variant: 'destructive' });
         // Remove the image message since extraction failed
         setStrategyChatHistory(prev => prev.slice(0, -1));
       }
     } catch {
-      toast({ title: 'Upload failed', description: 'Try again', variant: 'destructive' });
+      toast({ title: "Couldn't upload that", description: 'Try again.', variant: 'destructive' });
     } finally {
       setCoachScreenshotExtracting(false);
       if (coachFileInputRef.current) coachFileInputRef.current.value = '';
@@ -2804,12 +1596,8 @@ export default function AppPage() {
     handleStrategyChatSendWithMsg(lastUser.content);
   };
 
-  const clearCoachChat = () => {
-    setStrategyChatHistory([]);
-    setStrategyChatInput('');
-    setCoachOutcome(null);
-    coachRunIds.current = {};
-  };
+  // Clearing starts a genuinely new chat: a new saved session, no leftover screenshot or read.
+  const clearCoachChat = () => handleNewThread();
 
   const handleStrategyChatSend = async () => {
     if (!strategyChatInput.trim() || strategyChatLoading) return;
@@ -2892,9 +1680,8 @@ export default function AppPage() {
         }
       } else {
         // Free users or no thread — use strategy-chat
-        const threadContext = thread.map(m => `${m.role === 'you' ? 'You' : 'Them'}: ${m.text}`).join('\n');
         const result = await requestCoachReply({
-          threadContext: extractedThread || threadContext,
+          threadContext: extractedThread,
           strategy: strategyData,
           context: selectedContext || 'crush',
           chatHistory: richHistory,
@@ -2922,17 +1709,15 @@ export default function AppPage() {
     }
   };
 
-  const handleTryAgain = () => {
-    setMessage('');
-    setReplies([]);
-    setCopied(null);
-    setScreenshotPreview(null);
-    setExtractedPlatform(null);
-  };
+  useEffect(() => {
+    if (!coachAutoSend) return;
+    setCoachAutoSend(null);
+    void handleStrategyChatSendWithMsg(coachAutoSend);
+    // Runs once per queued message; the handler reads current state when called.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coachAutoSend]);
 
-  const handleExampleClick = (example: string) => {
-    setMessage(example);
-  };
+
 
   // Handle Stripe checkout
   const handleCheckout = async (plan: 'monthly' | 'weekly' | 'annual') => {
@@ -3000,7 +1785,7 @@ export default function AppPage() {
         <Card className="max-w-md w-full bg-panel border border-line rounded-3xl overflow-hidden">
           <CardContent className="p-8 text-center space-y-6">
             <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto">
-              <span className="text-3xl">🛡️</span>
+              <Shield className="h-8 w-8 text-white" aria-hidden />
             </div>
             <div>
               <h2 className="text-2xl font-bold text-cream mb-2">Unusual Activity Detected</h2>
@@ -3061,7 +1846,7 @@ export default function AppPage() {
           {/* Coach is home: signed-in people get no back button, visitors can return to the homepage. */}
           {userId ? <div className="w-10 h-10" aria-hidden="true" /> : (
             <Link href="/" aria-label="Back to the homepage" className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] flex items-center justify-center hover:bg-white/15 transition-all active:scale-90">
-              <ArrowLeft className="h-5 w-5 text-white/70" />
+              <ArrowLeft className="h-5 w-5 text-sage" />
             </Link>
           )}
           <Link href="/" className="transition-transform hover:scale-105">
@@ -3070,12 +1855,12 @@ export default function AppPage() {
           {/* On phones the tab bar carries Chats and Account; the header repeats them only on wider screens. */}
           <div className="flex items-center gap-2">
             {userId && (
-              <Link href="/history" className="hidden md:flex h-10 items-center gap-2 px-3.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-sm font-semibold text-white/70 hover:bg-white/15 hover:text-white transition-all active:scale-95">
+              <Link href="/history" className="hidden md:flex h-10 items-center gap-2 px-3.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-sm font-semibold text-sage hover:bg-white/15 hover:text-cream transition-all active:scale-95">
                 <Clock className="h-4 w-4" /> Chats
               </Link>
             )}
             <Link href={userId ? '/profile' : '/login'} aria-label={userId ? 'Account' : 'Sign in'} className={`w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/[0.12] items-center justify-center hover:bg-white/15 transition-all active:scale-90 ${userId ? 'hidden md:flex' : 'flex'}`}>
-              <User className="h-5 w-5 text-white/70" />
+              <User className="h-5 w-5 text-sage" />
             </Link>
             {userId && <div className="w-10 h-10 md:hidden" aria-hidden="true" />}
           </div>
@@ -3094,21 +1879,21 @@ export default function AppPage() {
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
                 trialDaysLeft <= 1 ? 'bg-red-500' : trialDaysLeft <= 3 ? 'bg-orange-500' : 'bg-brand'
               }`}>
-                <Sparkles className={`h-4 w-4 ${trialDaysLeft > 3 ? 'text-brand-ink' : 'text-white'}`} />
+                <Sparkles className={`h-4 w-4 ${trialDaysLeft > 3 ? 'text-brand-ink' : 'text-cream'}`} />
               </div>
               <div>
-                <p className="text-white font-bold text-sm">
+                <p className="text-cream font-bold text-sm">
                   {trialDaysLeft <= 0 
                     ? 'Your free trial expires today!' 
                     : trialDaysLeft === 1 
                       ? '1 day left on your free trial' 
                       : `${trialDaysLeft} days left on your free trial`}
                 </p>
-                <p className="text-white/50 text-xs">Unlimited replies with Deep Analysis</p>
+                <p className="text-sage text-xs">Unlimited replies with Deep Analysis</p>
               </div>
             </div>
             {trialDaysLeft <= 3 && (
-              <Button asChild size="sm" className="bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl text-xs">
+              <Button asChild size="sm" className="bg-white/10 hover:bg-white/20 text-cream font-bold rounded-xl text-xs">
                 <Link href="/pricing">Keep Pro</Link>
               </Button>
             )}
@@ -3119,7 +1904,7 @@ export default function AppPage() {
 
         {/* Usage Bar - Hidden for Pro users */}
         {usageCount > 0 && !isPro && (
-          <div className={`fixed top-0 left-0 right-0 z-50 text-white animate-in slide-in-from-top duration-300 ${
+          <div className={`fixed top-0 left-0 right-0 z-50 text-cream animate-in slide-in-from-top duration-300 ${
             usageCount >= usageLimit 
               ? 'bg-[#1a0a0f] border-b border-red-500/30' 
               : 'bg-panel border-b border-brand/20'
@@ -3127,14 +1912,13 @@ export default function AppPage() {
             <div className="mx-auto px-5 py-2.5">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-lg">{usageCount >= usageLimit ? '🚫' : '⚡'}</span>
                   <div>
                     <p className="text-sm font-bold">
                       {usageCount >= usageLimit 
                         ? 'Free limit reached' 
                         : `${remainingReplies} free ${remainingReplies === 1 ? 'use' : 'uses'} left in your 24-hour window`}
                     </p>
-                    <p className="text-xs text-white/60">
+                    <p className="text-xs text-sage">
                       {Math.min(usageCount, usageLimit)}/{usageLimit} used
                     </p>
                   </div>
@@ -3143,7 +1927,7 @@ export default function AppPage() {
                   <Button 
                     asChild
                     size="sm" 
-                    className="bg-white/10 border border-white/20 text-white hover:bg-white/20 font-bold rounded-xl text-xs h-8"
+                    className="bg-white/10 border border-white/20 text-cream hover:bg-white/20 font-bold rounded-xl text-xs h-8"
                   >
                     <Link href="/#pricing">Upgrade</Link>
                   </Button>
@@ -3165,61 +1949,27 @@ export default function AppPage() {
           </div>
         )}
 
-        {outcomePrompt && (
-          <div className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] p-4 animate-in fade-in slide-in-from-top-2 duration-300">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-400/15 text-sm">↗</div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-white/85">Did they reply?</p>
-                <p className="mt-1 text-xs leading-relaxed text-white/45">One tap helps your Style DNA learn what actually works.</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    onClick={() => handleReportOutcome('got_reply')}
-                    className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-bold text-emerald-200 transition-all hover:bg-emerald-400/25 active:scale-95"
-                  >
-                    Yes, they replied
-                  </button>
-                  <button
-                    onClick={() => handleReportOutcome('no_reply')}
-                    className="rounded-xl border border-white/[0.10] bg-white/[0.05] px-3 py-2 text-xs font-bold text-white/55 transition-all hover:bg-white/[0.10] active:scale-95"
-                  >
-                    Not yet
-                  </button>
-                  <button
-                    onClick={() => handleReportOutcome('not_reported')}
-                    className="px-2 py-2 text-xs font-semibold text-white/55 transition-colors hover:text-white/55"
-                  >
-                    Skip
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Shared upload inputs stay mounted for Coach and the direct reply modes. */}
-        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleScreenshotUpload} className="hidden" aria-label="Upload screenshot" />
+        {/* Coach's screenshot picker. */}
         <input ref={coachFileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" multiple onChange={handleCoachScreenshotUpload} className="hidden" />
 
         {/* ── COACH SECTION — Apple iMessage pattern: header / scrollable content / pinned input ──
             On large screens this becomes a split view: a saved-conversations sidebar on the
             left and the Coach card on the right. The wrapper's height is measured at runtime
             (see coachCardRef effect); the calc() is the pre-hydration fallback. */}
-        {appMode === 'coach' && (
         <div ref={coachCardRef} className="flex gap-4" style={{ height: 'calc(100dvh - 14.5rem - var(--kb-inset, 0px))' }}>
           {/* ── Saved conversations sidebar — desktop only (mobile keeps the in-card flow) ── */}
           <aside className="hidden lg:flex lg:flex-col w-72 shrink-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
             <div className="shrink-0 flex items-center justify-between px-4 pt-5 pb-3 border-b border-white/[0.06]">
-              <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Conversations</span>
+              <span className="text-sage text-xs font-bold uppercase tracking-widest">Conversations</span>
               <button
                 onClick={handleNewThread}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.10] text-white/60 hover:bg-white/[0.12] hover:text-white/80 text-[11px] font-bold transition-all active:scale-95"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.10] text-sage hover:bg-white/[0.12] hover:text-cream text-xs font-bold transition-all active:scale-95"
               >
                 <Plus className="h-3 w-3" /> New
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-2 py-2 min-h-0">
-              <ConversationList threads={savedThreads} userId={userId} isThreadActive={(id) => activeCoachSessionId === id || activeThreadId === id} onLoad={handleLoadThread} onDelete={handleDeleteThread} />
+              <ConversationList threads={savedThreads} userId={userId} isThreadActive={(id) => activeCoachSessionId === id} onLoad={handleLoadThread} onDelete={handleDeleteThread} />
             </div>
             {/* Plan and shortcuts — the desktop stand-in for the phone tab bar */}
             <div className="shrink-0 border-t border-white/[0.06] p-3 space-y-2">
@@ -3229,18 +1979,18 @@ export default function AppPage() {
                 <div className="flex items-center gap-2 rounded-xl border border-brand/20 bg-brand/10 px-3 py-2.5">
                   <Crown className="h-4 w-4 text-brand" />
                   <span className="text-xs font-bold text-brand">Pro</span>
-                  <span className="text-xs text-white/50">Unlimited replies</span>
+                  <span className="text-xs text-sage">Unlimited replies</span>
                 </div>
               ) : (
                 <Link href="/pricing?src=coach_sidebar" className="group flex items-center justify-between gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 hover:border-brand/30 transition-colors">
-                  <span className="text-xs text-white/60"><span className="font-bold text-white/90">{Math.max(0, remainingReplies)} of {usageLimit}</span> free replies left</span>
+                  <span className="text-xs text-sage"><span className="font-bold text-cream">{Math.max(0, remainingReplies)} of {usageLimit}</span> free replies left</span>
                   <span className="text-xs font-bold text-brand group-hover:underline">Go unlimited</span>
                 </Link>
               )}
               {userId && (
                 <div className="grid grid-cols-2 gap-1">
-                  <Link href="/history" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><Clock className="h-4 w-4" />Chats</Link>
-                  <Link href="/profile" className="flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-semibold text-white/50 hover:bg-white/[0.06] hover:text-white/85 transition-colors"><User className="h-4 w-4" />Account</Link>
+                  <Link href="/history" className="flex flex-col items-center gap-1 rounded-xl py-2 text-xs font-semibold text-sage hover:bg-white/[0.06] hover:text-cream transition-colors"><Clock className="h-4 w-4" />Chats</Link>
+                  <Link href="/profile" className="flex flex-col items-center gap-1 rounded-xl py-2 text-xs font-semibold text-sage hover:bg-white/[0.06] hover:text-cream transition-colors"><User className="h-4 w-4" />Account</Link>
                 </div>
               )}
             </div>
@@ -3261,14 +2011,14 @@ export default function AppPage() {
           {coachDragActive && (
             <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-ink/85 text-center">
               <Camera className="h-8 w-8 text-brand" />
-              <p className="text-base font-bold text-white">Drop your screenshot</p>
-              <p className="text-sm text-white/60">Coach will read the conversation for you</p>
+              <p className="text-base font-bold text-cream">Drop your screenshot</p>
+              <p className="text-sm text-sage">Coach will read the conversation for you</p>
             </div>
           )}
           {/* ─ Header — always visible, compact, personalized ─ */}
           <div className="shrink-0 pt-3 sm:pt-5 pb-3 px-4 sm:px-6 border-b border-white/[0.06]">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <h2 className="text-xl font-bold text-cream flex items-center gap-2">
                 {userName ? (
                   <div className="w-7 h-7 rounded-lg bg-brand flex items-center justify-center text-[13px] font-black text-brand-ink shadow-sm shadow-brand/30">
                     {userName.charAt(0).toUpperCase()}
@@ -3281,14 +2031,14 @@ export default function AppPage() {
               <div className="flex items-center gap-2">
               <button
                 onClick={() => { fetchThreads(); setShowCoachThreads(true); }}
-                className="lg:hidden flex min-h-11 items-center gap-1.5 px-3.5 rounded-xl text-[13px] font-bold border bg-white/[0.06] border-white/[0.12] text-white/70 hover:bg-white/[0.12] transition-all active:scale-95"
+                className="lg:hidden flex min-h-11 items-center gap-1.5 px-3.5 rounded-xl text-[13px] font-bold border bg-white/[0.06] border-white/[0.12] text-sage hover:bg-white/[0.12] transition-all active:scale-95"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 Chats{savedThreads.length > 0 ? ` (${savedThreads.length})` : ''}
               </button>
               </div>
             </div>
-            <p className={`text-sm text-white/40 ${strategyChatHistory.length > 0 ? 'hidden sm:block' : ''}`}>
+            <p className={`text-sm text-sage/70 ${strategyChatHistory.length > 0 ? 'hidden sm:block' : ''}`}>
               {userName ? `What's up ${userName.split(' ')[0]}? ` : ''}Drop a screenshot, paste, or pick a scenario
             </p>
 
@@ -3314,22 +2064,22 @@ export default function AppPage() {
                     <>
                       <div className="flex items-center gap-1.5">
                         <div className={`w-2 h-2 rounded-full transition-all duration-500 ${momentumColor}`} />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-white/50">{sd.momentum}</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-sage">{sd.momentum}</span>
                       </div>
                       <div className="w-px h-3 bg-white/[0.08]" />
                       <div className="flex items-center gap-1.5">
                         <div className={`w-2 h-2 rounded-full transition-all duration-500 ${balanceColor}`} />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-white/50">{sd.balance}</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-sage">{sd.balance}</span>
                       </div>
                       <div className="w-px h-3 bg-white/[0.08]" />
                       <div className="flex items-center gap-1.5">
                         <div className={`w-2 h-2 rounded-full transition-all duration-500 ${energyColor}`} />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-white/50">{sd.move.energy.replace('_', ' ')}</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-sage">{sd.move.energy.replace('_', ' ')}</span>
                       </div>
                       {sd.move.risk && sd.move.risk !== 'low' && (
                         <>
                           <div className="w-px h-3 bg-white/[0.08]" />
-                          <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                          <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
                             sd.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-amber-500/15 text-amber-400'
                           }`}>{sd.move.risk} risk</span>
                         </>
@@ -3345,9 +2095,6 @@ export default function AppPage() {
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 min-h-0">
             {/* Contextual hint — inside card so it doesn't push card below safe area */}
             <ContextualHints
-              hasMessage={!!message.trim()}
-              hasReplies={replies.length > 0}
-              appMode={appMode}
               screenshotUsed={strategyChatHistory.some(m => (m.images?.length ?? 0) > 0)}
               onAction={(hintId) => {
                 if (hintId === 'screenshot') coachFileInputRef.current?.click();
@@ -3370,7 +2117,7 @@ export default function AppPage() {
               <div className="flex items-center justify-center py-16">
                 <div className="flex items-center gap-3">
                   <Loader2 className="h-5 w-5 animate-spin text-brand" />
-                  <span className="text-sm text-white/40 font-medium">Loading session...</span>
+                  <span className="text-sm text-sage/70 font-medium">Loading session...</span>
                 </div>
               </div>
             )}
@@ -3384,30 +2131,30 @@ export default function AppPage() {
               const threadName = hasThread ? savedThreads[0]?.name?.split(' ').slice(0, 2).join(' ') : '';
               const cat = getContextCategory(selectedContext);
               const chips = cat === 'professional' ? [
-                { emoji: '💼', label: 'Draft the message', sub: 'Clear ask, right tone', prompt: 'Help me write a professional message', glow: true },
-                { emoji: '📋', label: 'Follow up', sub: 'Without being pushy', prompt: 'How do I follow up on this without looking desperate?', glow: false },
-                { emoji: '🤝', label: 'Push back', sub: 'Professionally', prompt: 'Help me disagree or push back on this professionally', glow: false },
-                { emoji: '🔍', label: 'Decode this', sub: 'What do they actually mean?', prompt: 'Decode this work message for me — what are they really saying?', glow: false },
-                { emoji: '⚡', label: 'Make it shorter', sub: 'Cut the fluff', prompt: 'Make this message shorter and more direct', glow: false },
-                { emoji: '🎯', label: 'Nail the tone', sub: 'Calibrate for your audience', prompt: 'Is this the right tone for my boss / coworker?', glow: false },
+                { label: 'Draft the message', sub: 'Clear ask, right tone', prompt: 'Help me write a professional message', glow: true },
+                { label: 'Follow up', sub: 'Without being pushy', prompt: 'How do I follow up on this without looking desperate?', glow: false },
+                { label: 'Push back', sub: 'Professionally', prompt: 'Help me disagree or push back on this professionally', glow: false },
+                { label: 'Decode this', sub: 'What do they actually mean?', prompt: 'Decode this work message for me — what are they really saying?', glow: false },
+                { label: 'Make it shorter', sub: 'Cut the fluff', prompt: 'Make this message shorter and more direct', glow: false },
+                { label: 'Nail the tone', sub: 'Calibrate for your audience', prompt: 'Is this the right tone for my boss / coworker?', glow: false },
               ] : cat === 'platonic' ? [
-                { emoji: '🤝', label: 'Reach back out', sub: hasThread ? `Reconnect with ${threadName}` : 'Without making it weird', prompt: "Help me reach back out to a friend I haven't talked to in a while", glow: hasThread },
-                { emoji: '💬', label: "What'd they say?", sub: 'Craft the right reply', prompt: 'Help me reply to this message', glow: false },
-                { emoji: '🔍', label: 'Decode this', sub: 'Read between the lines', prompt: 'Decode their message for me — what does it really mean?', glow: false },
-                { emoji: '😬', label: 'Fix the awkward', sub: 'Address it and move on', prompt: 'Help me address an awkward situation with my friend', glow: false },
-                { emoji: '💚', label: 'Check in', sub: 'Warm but not intense', prompt: 'Write me a genuine check-in message — warm but no pressure', glow: isWeekend },
-                { emoji: '📊', label: 'Read the situation', sub: 'Where do things stand?', prompt: 'Read this conversation and tell me where things stand with my friend', glow: false },
+                { label: 'Reach back out', sub: hasThread ? `Reconnect with ${threadName}` : 'Without making it weird', prompt: "Help me reach back out to a friend I haven't talked to in a while", glow: hasThread },
+                { label: "What'd they say?", sub: 'Craft the right reply', prompt: 'Help me reply to this message', glow: false },
+                { label: 'Decode this', sub: 'Read between the lines', prompt: 'Decode their message for me — what does it really mean?', glow: false },
+                { label: 'Fix the awkward', sub: 'Address it and move on', prompt: 'Help me address an awkward situation with my friend', glow: false },
+                { label: 'Check in', sub: 'Warm but not intense', prompt: 'Write me a genuine check-in message — warm but no pressure', glow: isWeekend },
+                { label: 'Read the situation', sub: 'Where do things stand?', prompt: 'Read this conversation and tell me where things stand with my friend', glow: false },
               ] : [
-                { emoji: '💬', label: "What'd they say?", sub: hasThread ? `Reply to ${threadName}` : 'Craft the perfect reply', prompt: 'Help me reply to this message', glow: hasThread },
-                { emoji: '🔍', label: 'Decode this', sub: hasThread ? `Decode ${threadName}'s message` : 'Read between the lines', prompt: 'Decode their message for me', glow: false },
-                { emoji: '✨', label: isEvening ? 'Flirty opener 🔥' : 'Start the convo', sub: isEvening ? 'Prime time to move' : 'Break the ice', prompt: isEvening ? 'Write me a flirty opener for tonight' : 'Write me a great opener', glow: isEvening },
-                { emoji: '🔥', label: 'Revive dead chat', sub: isWeekend ? 'Weekend = perfect timing' : 'Bring it back', prompt: 'Help me revive a dead conversation', glow: isWeekend },
-                { emoji: '🎯', label: 'Am I being played?', sub: 'Get an honest read', prompt: 'Am I being played or are they genuinely interested?', glow: false },
-                { emoji: '📊', label: 'Read the situation', sub: 'Full vibe analysis', prompt: 'Read this convo and tell me where I stand', glow: false },
+                { label: "What'd they say?", sub: hasThread ? `Reply to ${threadName}` : 'Craft the perfect reply', prompt: 'Help me reply to this message', glow: hasThread },
+                { label: 'Decode this', sub: hasThread ? `Decode ${threadName}'s message` : 'Read between the lines', prompt: 'Decode their message for me', glow: false },
+                { label: isEvening ? 'Flirty opener' : 'Start the convo', sub: isEvening ? 'Prime time to move' : 'Break the ice', prompt: isEvening ? 'Write me a flirty opener for tonight' : 'Write me a great opener', glow: isEvening },
+                { label: 'Revive dead chat', sub: isWeekend ? 'Weekend = perfect timing' : 'Bring it back', prompt: 'Help me revive a dead conversation', glow: isWeekend },
+                { label: 'Am I being played?', sub: 'Get an honest read', prompt: 'Am I being played or are they genuinely interested?', glow: false },
+                { label: 'Read the situation', sub: 'Full vibe analysis', prompt: 'Read this convo and tell me where I stand', glow: false },
               ];
               return (
                 <>
-                <p className="text-[10px] text-white/45 font-bold uppercase tracking-wider mb-2 px-1">
+                <p className="text-xs text-sage/70 font-bold uppercase tracking-wider mb-2 px-1">
                   Or ask Coach
                 </p>
                 <div className="grid grid-cols-2 gap-2">
@@ -3421,10 +2168,10 @@ export default function AppPage() {
                           : 'bg-white/[0.07] border-white/[0.12] hover:bg-white/[0.12]'
                       }`}
                     >
-                      <p className="text-[12px] font-semibold text-white/70 leading-snug">
-                        <span className="mr-1">{chip.emoji}</span>{chip.label}
+                      <p className="text-xs font-semibold text-sage leading-snug">
+                        {chip.label}
                       </p>
-                      <p className="text-[11px] text-white/55 mt-0.5 leading-tight">{chip.sub}</p>
+                      <p className="text-xs text-sage mt-0.5 leading-tight">{chip.sub}</p>
                     </button>
                   ))}
                 </div>
@@ -3450,7 +2197,7 @@ export default function AppPage() {
                               className="group relative block rounded-2xl overflow-hidden border border-white/[0.10] shadow-xl shadow-black/40 max-w-[180px] hover:border-brand/40 transition-all active:scale-[0.98]"
                             >
                               <img src={img} alt={`Screenshot ${imgIdx + 1}`} loading="lazy" decoding="async" className="w-full h-auto max-h-[240px] object-cover object-top" />
-                              <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-[11px] font-semibold text-white/90">
+                              <span className="absolute bottom-1.5 right-1.5 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-cream">
                                 <Maximize2 className="h-3 w-3" /> View
                               </span>
                             </button>
@@ -3462,7 +2209,7 @@ export default function AppPage() {
                         <div className={`px-4 py-3 rounded-2xl text-[14px] lg:text-[15px] leading-relaxed ${
                           msg.role === 'user'
                             ? 'bg-brand text-brand-ink rounded-br-md shadow-md shadow-brand/20'
-                            : 'bg-white/[0.07] text-white/90 border border-white/[0.08] rounded-bl-md'
+                            : 'bg-white/[0.07] text-cream border border-white/[0.08] rounded-bl-md'
                         }`}>
                           <p className="whitespace-pre-wrap">{msg.content}</p>
                         </div>
@@ -3490,7 +2237,7 @@ export default function AppPage() {
                         <button
                           onClick={handleCoachRegenerate}
                           disabled={strategyChatLoading}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] text-white/50 hover:text-white/60 hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08] transition-all disabled:opacity-30"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-sage hover:text-sage hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08] transition-all disabled:opacity-30"
                         >
                           <RefreshCw className="h-3 w-3" />
                           Re-generate
@@ -3500,16 +2247,16 @@ export default function AppPage() {
                       {/* Strategy badges — only for non-orchestration coach responses */}
                       {msg.role === 'assistant' && !msg.orchestration && strategyData && i === strategyChatHistory.length - 1 && (
                         <div className="flex xl:hidden flex-wrap gap-1.5 px-1">
-                          <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                          <span className={`flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
                             strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
                             strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
-                            'bg-white/[0.08] text-white/50'
+                            'bg-white/[0.08] text-sage'
                           }`}>
                             {strategyData.momentum === 'Rising' ? <TrendingUp className="h-2.5 w-2.5" /> : strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? <TrendingDown className="h-2.5 w-2.5" /> : <Minus className="h-2.5 w-2.5" />}
                             {strategyData.momentum}
                           </span>
-                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">{strategyData.balance}</span>
-                          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-sage">{strategyData.balance}</span>
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                             strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
                             strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
                             'bg-brand/15 text-brand'
@@ -3532,7 +2279,7 @@ export default function AppPage() {
                   <div className="flex justify-start">
                     <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.08] flex items-center gap-2">
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
-                      <span className="text-[13px] text-white/40">
+                      <span className="text-[13px] text-sage/70">
                         {coachPipelineStep === 'analyzing' ? 'Analyzing conversation...' :
                          coachPipelineStep === 'generating' ? 'Writing 6 options...' :
                          coachPipelineStep === 'scoring' ? 'Scoring & picking winner...' :
@@ -3548,16 +2295,16 @@ export default function AppPage() {
 
           {coachOutcome && (
             <div className="shrink-0 mx-4 sm:mx-6 mt-2 rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2.5" aria-live="polite">
-              <p className="text-[13px] font-bold text-white/90">
+              <p className="text-[13px] font-bold text-cream">
                 Did they reply{coachOutcome.preview ? <> to &ldquo;{coachOutcome.preview}&rdquo;</> : null}?
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button onClick={() => reportCoachOutcome('got_reply')} className="min-h-10 rounded-xl border border-emerald-300/30 bg-emerald-400/15 px-3 text-xs font-bold text-emerald-100 hover:bg-emerald-400/25 active:scale-95">Yes, they replied</button>
-                <button onClick={() => reportCoachOutcome('no_reply')} className="min-h-10 rounded-xl border border-white/10 bg-white/[0.05] px-3 text-xs font-bold text-white/70 hover:bg-white/10 active:scale-95">No reply</button>
+                <button onClick={() => reportCoachOutcome('no_reply')} className="min-h-10 rounded-xl border border-white/10 bg-white/[0.05] px-3 text-xs font-bold text-sage hover:bg-white/10 active:scale-95">No reply</button>
                 {coachOutcome.asked === 'after_copy' ? (
-                  <button onClick={() => setCoachOutcome(null)} className="min-h-10 px-2 text-xs font-semibold text-white/50 hover:text-white/80">Not sent yet</button>
+                  <button onClick={() => setCoachOutcome(null)} className="min-h-10 px-2 text-xs font-semibold text-sage hover:text-cream">Not sent yet</button>
                 ) : (
-                  <button onClick={() => reportCoachOutcome('not_reported')} className="min-h-10 px-2 text-xs font-semibold text-white/50 hover:text-white/80">Skip</button>
+                  <button onClick={() => reportCoachOutcome('not_reported')} className="min-h-10 px-2 text-xs font-semibold text-sage hover:text-cream">Skip</button>
                 )}
               </div>
             </div>
@@ -3570,40 +2317,35 @@ export default function AppPage() {
               <button
                 onClick={() => setShowContextSheet(true)}
                 className={`flex min-h-11 items-center gap-1.5 rounded-xl border px-3 text-[13px] font-semibold transition-all active:scale-95 ${
-                  selectedContext ? 'border-brand/30 bg-brand/15 text-brand' : 'border-white/[0.10] bg-white/[0.05] text-white/70'
+                  selectedContext ? 'border-brand/30 bg-brand/15 text-brand' : 'border-white/[0.10] bg-white/[0.05] text-sage'
                 }`}
               >
                 {selectedContext
-                  ? <>{CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.emoji} {CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label || 'Custom'}</>
+                  ? <>{CONTEXT_OPTIONS.find(c => c.value === selectedContext)?.label || 'Custom'}</>
                   : <>Who is it?</>}
                 <ChevronDown className="h-3.5 w-3.5 opacity-70" />
               </button>
               {strategyChatHistory.length > 0 && (
-                <button onClick={clearCoachChat} className="min-h-11 px-2 text-xs font-semibold text-white/50 hover:text-white/80">Clear chat</button>
+                <button onClick={clearCoachChat} className="min-h-11 px-2 text-xs font-semibold text-sage hover:text-cream">Clear chat</button>
               )}
             </div>
             <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-              <span className="text-[11px] text-white/50 font-bold uppercase tracking-wider shrink-0">Who?</span>
+              <span className="text-xs text-sage font-bold uppercase tracking-wider shrink-0">Who?</span>
               {CONTEXT_OPTIONS.map((ctx) => (
                 <button
                   key={ctx.value}
-                  onClick={() => setSelectedContext(selectedContext === ctx.value ? null : ctx.value as ContextType)}
-                  className={`shrink-0 px-3 py-2.5 rounded-lg text-[12px] font-semibold transition-all active:scale-95 ${
+                  onClick={() => { contextPickedInChat.current = true; setSelectedContext(selectedContext === ctx.value ? null : ctx.value as ContextType); }}
+                  className={`shrink-0 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
                     selectedContext === ctx.value
                       ? 'bg-brand/20 text-brand border border-brand/30'
-                      : 'bg-white/[0.05] text-white/60 border border-white/[0.08] hover:bg-white/[0.10] hover:text-white/60'
+                      : 'bg-white/[0.05] text-sage border border-white/[0.08] hover:bg-white/[0.10] hover:text-sage'
                   }`}
                 >
-                  {ctx.emoji} {ctx.label}
+                  {ctx.label}
                 </button>
               ))}
-              {selectedContext ? (() => {
-                const cat = getContextCategory(selectedContext);
-                const catColor = cat === 'professional' ? 'text-amber-400/70' : cat === 'platonic' ? 'text-blue-400/70' : 'text-pink-400/70';
-                const catIcon = cat === 'professional' ? '💼' : cat === 'platonic' ? '🤝' : '💘';
-                return <span className={`text-[11px] font-bold ml-1 shrink-0 ${catColor}`}>{catIcon} {cat}</span>;
-              })() : (
-                <span className="text-[11px] text-white/40 shrink-0 ml-1 italic">← set for smarter results</span>
+              {!selectedContext && (
+                <span className="text-xs text-sage/70 shrink-0 ml-1 italic">← set for smarter results</span>
               )}
             </div>
           </div>
@@ -3614,7 +2356,7 @@ export default function AppPage() {
               <button
                 onClick={() => coachFileInputRef.current?.click()}
                 disabled={coachScreenshotExtracting}
-                className="w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/60 hover:text-white/70 hover:bg-white/[0.10] transition-all active:scale-90 shrink-0 disabled:opacity-40"
+                className="w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-sage hover:text-sage hover:bg-white/[0.10] transition-all active:scale-90 shrink-0 disabled:opacity-40"
                 title="Upload screenshot"
                 aria-label="Upload screenshot"
               >
@@ -3639,7 +2381,7 @@ export default function AppPage() {
                 autoCorrect="on"
                 spellCheck
                 inputMode="text"
-                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/85 placeholder-white/40 text-[16px] md:text-[15px] focus:outline-none focus:border-brand/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-cream placeholder-white/40 text-[16px] md:text-[15px] focus:outline-none focus:border-brand/40 transition-all disabled:opacity-50 resize-none overflow-hidden leading-relaxed"
                 style={{ minHeight: '44px' }}
                 placeholder={selectedContext ? (
                   getContextCategory(selectedContext) === 'professional'
@@ -3662,7 +2404,7 @@ export default function AppPage() {
                 {strategyChatInput.trim() ? (
                   <>
                     <Sparkles className="h-3.5 w-3.5" />
-                    <span className="text-[12px] font-bold">Go</span>
+                    <span className="text-xs font-bold">Go</span>
                   </>
                 ) : (
                   <Send className="h-4 w-4" />
@@ -3671,7 +2413,7 @@ export default function AppPage() {
             </div>
             {strategyChatHistory.length > 0 && (
               <div className="hidden sm:flex justify-end mt-2">
-                <button onClick={clearCoachChat} className="text-[11px] text-white/45 hover:text-white/70 transition-colors">Clear chat</button>
+                <button onClick={clearCoachChat} className="text-xs text-sage/70 hover:text-sage transition-colors">Clear chat</button>
               </div>
             )}
           </div>
@@ -3680,47 +2422,44 @@ export default function AppPage() {
           {/* ── The read — desktop-only panel; phones show the same signals inside the card ── */}
           <aside className="hidden xl:flex xl:flex-col w-80 shrink-0 h-full rounded-3xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
             <div className="shrink-0 px-5 pt-5 pb-3 border-b border-white/[0.06]">
-              <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">The read</span>
+              <span className="text-sage text-xs font-bold uppercase tracking-widest">The read</span>
             </div>
             <div className="flex-1 overflow-y-auto min-h-0 p-5">
               <CoachReadPanel strategy={strategyData} />
             </div>
-            <div className="shrink-0 border-t border-white/[0.06] px-5 py-3 text-[11px] text-white/40">
-              <p><kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-white/60">Enter</kbd> to send · <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-white/60">Shift + Enter</kbd> for a new line</p>
+            <div className="shrink-0 border-t border-white/[0.06] px-5 py-3 text-xs text-sage/70">
+              <p><kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-sage">Enter</kbd> to send · <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-sans text-sage">Shift + Enter</kbd> for a new line</p>
               <p className="mt-1.5">Paste or drop a screenshot anywhere in the chat.</p>
             </div>
           </aside>
         </div>
-        )}
-        {/* End of Coach split view */}
 
         {showContextSheet && (
           <div className="fixed inset-0 z-[90] sm:hidden" role="dialog" aria-modal="true" aria-label="Who are you texting?">
             <button aria-label="Close" className="absolute inset-0 bg-black/70" onClick={() => setShowContextSheet(false)} />
             <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-white/[0.10] bg-panel px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 animate-in slide-in-from-bottom-4 duration-200">
               <div className="mb-1 flex items-center justify-between">
-                <h2 className="text-base font-bold text-white">Who are you texting?</h2>
-                <button onClick={() => setShowContextSheet(false)} aria-label="Close" className="flex h-11 w-11 items-center justify-center rounded-xl text-white/60 hover:text-white">
+                <h2 className="text-base font-bold text-cream">Who are you texting?</h2>
+                <button onClick={() => setShowContextSheet(false)} aria-label="Close" className="flex h-11 w-11 items-center justify-center rounded-xl text-sage hover:text-cream">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-              <p className="mb-3 text-xs text-white/55">Coach adjusts the tone and the advice to fit.</p>
+              <p className="mb-3 text-xs text-sage">Coach adjusts the tone and the advice to fit.</p>
               <div className="grid grid-cols-2 gap-2">
                 {CONTEXT_OPTIONS.map((ctx) => {
                   const active = selectedContext === ctx.value;
                   return (
                     <button
                       key={ctx.value}
-                      onClick={() => { setSelectedContext(active ? null : ctx.value as ContextType); setShowContextSheet(false); }}
+                      onClick={() => { contextPickedInChat.current = true; setSelectedContext(active ? null : ctx.value as ContextType); setShowContextSheet(false); }}
                       aria-pressed={active}
                       className={`flex min-h-[60px] items-center gap-3 rounded-2xl border px-3 text-left transition-all active:scale-[0.98] ${
                         active ? 'border-brand/40 bg-brand/15' : 'border-white/[0.08] bg-white/[0.04]'
                       }`}
                     >
-                      <span className="text-xl" aria-hidden>{ctx.emoji}</span>
                       <span className="min-w-0">
-                        <span className={`block text-sm font-bold ${active ? 'text-brand' : 'text-white/90'}`}>{ctx.label}</span>
-                        <span className="block text-xs leading-snug text-white/50">{ctx.description}</span>
+                        <span className={`block text-sm font-bold ${active ? 'text-brand' : 'text-cream'}`}>{ctx.label}</span>
+                        <span className="block text-xs leading-snug text-sage">{ctx.description}</span>
                       </span>
                     </button>
                   );
@@ -3735,19 +2474,19 @@ export default function AppPage() {
             <button aria-label="Close conversations" className="absolute inset-0 bg-black/70" onClick={() => setShowCoachThreads(false)} />
             <div className="absolute inset-x-0 bottom-0 flex max-h-[80dvh] flex-col rounded-t-3xl border-t border-white/[0.10] bg-panel pb-[max(1rem,env(safe-area-inset-bottom))] animate-in slide-in-from-bottom-4 duration-200">
               <div className="flex shrink-0 items-center justify-between px-5 pb-3 pt-4">
-                <h2 className="text-base font-bold text-white">Conversations</h2>
+                <h2 className="text-base font-bold text-cream">Conversations</h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => { handleNewThread(); setShowCoachThreads(false); }} className="flex min-h-10 items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.06] px-3 text-xs font-bold text-white/80 active:scale-95">
+                  <button onClick={() => { handleNewThread(); setShowCoachThreads(false); }} className="flex min-h-10 items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.06] px-3 text-xs font-bold text-cream active:scale-95">
                     <Plus className="h-3.5 w-3.5" /> New
                   </button>
-                  <button onClick={() => setShowCoachThreads(false)} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-xl text-white/60 hover:text-white">
+                  <button onClick={() => setShowCoachThreads(false)} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-xl text-sage hover:text-cream">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2"><ConversationList threads={savedThreads} userId={userId} isThreadActive={(id) => activeCoachSessionId === id || activeThreadId === id} onLoad={handleLoadThread} onDelete={handleDeleteThread} /></div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2"><ConversationList threads={savedThreads} userId={userId} isThreadActive={(id) => activeCoachSessionId === id} onLoad={handleLoadThread} onDelete={handleDeleteThread} /></div>
               {userId ? (
-                <Link href="/history" className="mx-5 mt-1 flex min-h-11 items-center justify-center rounded-xl border border-white/[0.10] text-xs font-semibold text-white/70 hover:bg-white/[0.06]">Search all history</Link>
+                <Link href="/history" className="mx-5 mt-1 flex min-h-11 items-center justify-center rounded-xl border border-white/[0.10] text-xs font-semibold text-sage hover:bg-white/[0.06]">Search all history</Link>
               ) : (
                 <Link href={`/login?mode=signup&redirect=${encodeURIComponent('/app')}`} className="mx-5 mt-1 flex min-h-11 items-center justify-center rounded-xl bg-brand text-xs font-bold text-brand-ink hover:bg-brand-soft">Create a free account</Link>
               )}
@@ -3755,1213 +2494,6 @@ export default function AppPage() {
           </div>
         )}
 
-        <div className="space-y-4">
-            {/* ===== REPLY MODE (hidden, logic preserved) ===== */}
-            {appMode === 'reply' && (<>
-            {/* Context Selector */}
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
-                Who is this?
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {CONTEXT_OPTIONS.map((context) => (
-                  <button
-                    key={context.value}
-                    onClick={() => setSelectedContext(selectedContext === context.value ? null : context.value as ContextType)}
-                    className={`px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all active:scale-95 ${
-                      selectedContext === context.value
-                        ? 'bg-white/[0.16] text-white border border-white/[0.22] shadow-lg shadow-white/5'
-                        : 'bg-white/[0.07] text-white/60 border border-white/[0.12] hover:bg-white/[0.12] hover:text-white/80'
-                    }`}
-                  >
-                    <span className="mr-1.5">{context.emoji}</span>{context.label}
-                  </button>
-                ))}
-              </div>
-              {selectedContext && (() => {
-                const cat = getContextCategory(selectedContext);
-                const catLabel = cat === 'professional' ? '💼 Professional mode — clarity, tone, power dynamics' : cat === 'platonic' ? '🤝 Friend & Family mode — warmth, honesty, genuine connection' : '💘 Dating mode — attraction, energy, forward motion';
-                const catColor = cat === 'professional' ? 'text-amber-400/80' : cat === 'platonic' ? 'text-blue-400/80' : 'text-pink-400/80';
-                return <p className={`text-xs font-medium animate-in fade-in duration-200 ${catColor}`}>{catLabel}</p>;
-              })()}
-              {/* Custom context input */}
-              <div className="relative animate-in fade-in duration-200">
-                <input
-                  type="text"
-                  value={customContext}
-                  onChange={(e) => setCustomContext(e.target.value)}
-                  placeholder="Add details: 'talking 2 weeks, she's a nurse, went on one date'"
-                  maxLength={200}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-brand/30 transition-all"
-                />
-                {customContext && (
-                  <button
-                    onClick={() => setCustomContext('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 hit-area p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Scroll target for after "I sent this" */}
-            <div ref={inputAreaRef} />
-
-            {/* ══════════ THREAD VIEW ══════════ */}
-            {thread.length > 0 && (
-              <div className="mb-1">
-                <button
-                  onClick={() => setShowThread(!showThread)}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-t-3xl bg-white/[0.04] border border-white/[0.08] border-b-0 transition-colors hover:bg-white/[0.06]"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-brand/20 flex items-center justify-center">
-                      <MessageCircle className="h-3 w-3 text-brand" />
-                    </div>
-                    <span className="text-white/60 text-xs font-bold">
-                      {thread.length} message{thread.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  {showThread ? <ChevronUp className="h-3.5 w-3.5 text-white/50" /> : <ChevronDown className="h-3.5 w-3.5 text-white/50" />}
-                </button>
-
-                {showThread && (
-                  <div ref={threadScrollRef} className="rounded-b-3xl bg-white/[0.03] border border-white/[0.08] border-t-0 p-4 max-h-72 overflow-y-auto" onClick={() => setSelectedThreadMsg(null)}>
-                    <div className="space-y-1">
-                      {thread.map((msg, i) => {
-                        const prevRole = i > 0 ? thread[i - 1].role : null;
-                        const nextRole = i < thread.length - 1 ? thread[i + 1].role : null;
-                        const isGroupStart = prevRole !== msg.role;
-                        const isGroupEnd = nextRole !== msg.role;
-                        const isSelected = selectedThreadMsg === i;
-                        return (
-                          <div key={i} className={`flex ${msg.role === 'you' ? 'justify-end' : 'justify-start'} ${isGroupStart && i > 0 ? 'mt-3' : ''}`}>
-                            <div className="relative max-w-[80%]">
-                              <div
-                                onClick={(e) => { e.stopPropagation(); setSelectedThreadMsg(isSelected ? null : i); }}
-                                className={`px-4 py-2 text-[13px] leading-relaxed cursor-pointer transition-all ${
-                                  isSelected ? 'ring-1 ring-red-400/40 ' : ''
-                                }${
-                                  msg.role === 'them'
-                                    ? `bg-white/[0.07] text-white/80 border border-white/[0.06] ${
-                                        isGroupStart && isGroupEnd ? 'rounded-2xl rounded-bl-lg' :
-                                        isGroupStart ? 'rounded-2xl rounded-bl-md' :
-                                        isGroupEnd ? 'rounded-2xl rounded-tl-md rounded-bl-lg' :
-                                        'rounded-xl rounded-l-md'
-                                      }`
-                                    : `bg-brand text-brand-ink shadow-lg shadow-brand/10 ${
-                                        isGroupStart && isGroupEnd ? 'rounded-2xl rounded-br-lg' :
-                                        isGroupStart ? 'rounded-2xl rounded-br-md' :
-                                        isGroupEnd ? 'rounded-2xl rounded-tr-md rounded-br-lg' :
-                                        'rounded-xl rounded-r-md'
-                                      }`
-                                }`}>
-                                <p className="font-medium">{msg.text}</p>
-                              </div>
-                              {/* Generate reply chip on last 'them' message when textarea is empty */}
-                              {msg.role === 'them' && i === thread.length - 1 && !message.trim() && replies.length === 0 && !loading && (
-                                <div className="mt-1.5 animate-in fade-in duration-300">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleGenerate(); }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/25 transition-all active:scale-95"
-                                  >
-                                    <Sparkles className="h-3 w-3" /> Generate reply
-                                  </button>
-                                </div>
-                              )}
-                              {isSelected && (
-                                <div className={`absolute top-full mt-1 z-10 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-1 duration-150 ${msg.role === 'you' ? 'right-0' : 'left-0'}`}>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteThreadMessage(i); }}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[11px] font-bold hover:bg-red-500/30 transition-all active:scale-95"
-                                  >
-                                    <X className="h-3 w-3" /> Delete
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <div ref={threadEndRef} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="relative">
-              <textarea
-                value={message}
-                onChange={(e) => handleMessageChange(e.target.value)}
-                placeholder={
-                  thread.length === 0
-                    ? "What did they send you?"
-                    : thread[thread.length - 1]?.role === 'you'
-                      ? "What did they say back?"
-                      : "Add the next message, or generate a reply"
-                }
-                className={`w-full p-5 pb-8 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/40 resize-none focus:outline-none focus:border-brand/30 transition-all ${message.length > 300 ? 'min-h-[200px]' : 'min-h-[130px]'}`}
-                maxLength={2000}
-                aria-label="Message input"
-              />
-              <div className={`absolute bottom-3 right-3 text-xs transition-colors ${
-                charCount > 1800 ? 'text-red-400 font-semibold' : 'text-white/55'
-              }`}>
-                {charCount}/2000
-              </div>
-            </div>
-
-            {/* ══════════ VIBE CHECK — real-time draft feedback ══════════ */}
-            {appMode === 'reply' && message.trim().length >= 8 && (vibeCheck || vibeLoading) && (
-              <div className="animate-in fade-in slide-in-from-top-1 duration-300">
-                {vibeLoading ? (
-                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-                    <Loader2 className="h-3 w-3 animate-spin text-brand" />
-                    <span className="text-[11px] text-white/55 font-medium">Checking vibe...</span>
-                  </div>
-                ) : vibeCheck && (
-                  <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all ${
-                    vibeCheck.score >= 8 ? 'bg-emerald-500/[0.06] border-emerald-500/20' :
-                    vibeCheck.score >= 5 ? 'bg-amber-500/[0.06] border-amber-500/20' :
-                    'bg-red-500/[0.06] border-red-500/20'
-                  }`}>
-                    <div className={`text-lg leading-none ${
-                      vibeCheck.score >= 8 ? 'grayscale-0' : vibeCheck.score >= 5 ? 'grayscale-0' : 'grayscale-0'
-                    }`}>
-                      {vibeCheck.score >= 8 ? '🟢' : vibeCheck.score >= 5 ? '🟡' : '🔴'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[11px] font-bold ${
-                          vibeCheck.score >= 8 ? 'text-emerald-400' :
-                          vibeCheck.score >= 5 ? 'text-amber-400' :
-                          'text-red-400'
-                        }`}>
-                          {vibeCheck.vibe}
-                        </span>
-                        <span className="text-[11px] text-white/45">·</span>
-                        <span className="text-[11px] text-white/55 font-medium">{vibeCheck.score}/10</span>
-                      </div>
-                      <p className="text-[11px] text-white/50 truncate">{vibeCheck.tip}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ══════════ TONE TRANSLATOR — rewrite draft in different energy ══════════ */}
-            {appMode === 'reply' && message.trim().length >= 3 && (
-              <div className="animate-in fade-in duration-200">
-                {!showToneBar ? (
-                  <button
-                    onClick={() => setShowToneBar(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white/50 hover:text-white/50 text-[11px] font-medium transition-colors"
-                  >
-                    <Sparkles className="h-3 w-3" /> Rewrite in a different tone
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] text-white/55 font-bold uppercase tracking-wider mr-1">Rewrite as:</span>
-                    {[
-                      { key: 'flirty', label: '😏 Flirty', color: 'hover:bg-pink-500/15 hover:border-pink-500/30 hover:text-pink-300' },
-                      { key: 'chill', label: '😎 Chill', color: 'hover:bg-blue-500/15 hover:border-blue-500/30 hover:text-blue-300' },
-                      { key: 'bold', label: '🔥 Bold', color: 'hover:bg-orange-500/15 hover:border-orange-500/30 hover:text-orange-300' },
-                      { key: 'witty', label: '⚡ Witty', color: 'hover:bg-brand/15 hover:border-brand/30 hover:text-brand' },
-                      { key: 'warm', label: '💚 Warm', color: 'hover:bg-green-500/15 hover:border-green-500/30 hover:text-green-300' },
-                      { key: 'pro', label: '💼 Pro', color: 'hover:bg-slate-500/15 hover:border-slate-500/30 hover:text-slate-300' },
-                    ].map(t => (
-                      <button
-                        key={t.key}
-                        onClick={() => handleTranslateTone(t.key)}
-                        disabled={translating}
-                        className={`px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/40 text-[11px] font-bold transition-all active:scale-95 disabled:opacity-30 ${t.color}`}
-                      >
-                        {translating ? '...' : t.label}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setShowToneBar(false)}
-                      className="relative hit-area p-1.5 rounded-lg text-white/45 hover:text-white/50 transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ══════════ USER INTENT — optional direction for replies ══════════ */}
-            <div className="animate-in fade-in duration-200">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={userIntent}
-                  onChange={(e) => setUserIntent(e.target.value)}
-                  placeholder="What do you want to say? (optional) — e.g. ask what happened subtly"
-                  maxLength={120}
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white/80 placeholder-white/40 text-xs focus:outline-none focus:border-brand/30 transition-all"
-                />
-                {userIntent && (
-                  <button
-                    onClick={() => setUserIntent('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 hit-area p-1 rounded-lg text-white/45 hover:text-white/50 transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Quick add to thread buttons (for double texts / non-generated messages) */}
-            {thread.length > 0 && (
-              <div className="flex gap-2 animate-in fade-in duration-200">
-                <button
-                  onClick={handleAddTheirMessage}
-                  disabled={!message.trim()}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.10] text-white/40 hover:bg-white/[0.08] hover:text-white/60 text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-white/[0.04] disabled:hover:text-white/40"
-                >
-                  <Plus className="h-3 w-3" /> Add as their message
-                </button>
-                <button
-                  onClick={handleAddMyMessage}
-                  disabled={!message.trim()}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-brand/10 border border-brand/20 text-brand/60 hover:bg-brand/15 hover:text-brand text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-brand/10 disabled:hover:text-brand/60"
-                >
-                  <Plus className="h-3 w-3" /> Add as my message
-                </button>
-              </div>
-            )}
-
-            {/* Screenshot Preview */}
-            {screenshotPreview && (
-              <div className="relative animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="relative rounded-2xl overflow-hidden border border-white/[0.12]">
-                  <button type="button" onClick={() => setShotViewer({ images: [screenshotPreview], index: 0 })} aria-label="View screenshot full size" className="block w-full">
-                    <img src={screenshotPreview} alt="Screenshot preview" decoding="async" className="w-full max-h-48 object-cover object-top opacity-90" />
-                  </button>
-                  {!extracting && (
-                    <span className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white/90">
-                      <Maximize2 className="h-3 w-3" /> View full
-                    </span>
-                  )}
-                  {extracting && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="h-5 w-5 animate-spin text-brand" />
-                        <span className="text-sm font-bold text-white/80">Reading screenshot...</span>
-                      </div>
-                    </div>
-                  )}
-                  {!extracting && (
-                    <button
-                      onClick={clearScreenshot}
-                      className="absolute top-2 right-2 hit-area w-8 h-8 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      <X className="h-4 w-4 text-white" />
-                    </button>
-                  )}
-                  {!extracting && extractedPlatform && extractedPlatform !== 'unknown' && (
-                    <div className="absolute bottom-2 left-2 px-3 py-1 bg-black/60 rounded-full text-xs text-white font-medium capitalize">
-                      {extractedPlatform} detected
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Upload Screenshot / Paste Divider */}
-            <div className="relative flex items-center gap-3">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={extracting}
-                className="flex-1 p-3 rounded-xl transition-all font-medium text-sm flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 bg-white/[0.06] border border-white/[0.12] text-white/60 hover:bg-white/[0.12] hover:text-white/80"
-              >
-                {extracting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Reading...
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-4 w-4" />
-                    Upload Screenshot
-                  </>
-                )}
-              </button>
-              {!message && (
-                <button
-                  onClick={() => setShowExamplesDrawer(!showExamplesDrawer)}
-                  className="p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] hover:bg-white/[0.12] transition-all text-white/40 hover:text-white/70 font-medium text-sm flex items-center justify-center gap-2"
-                >
-                  <Lightbulb className="h-4 w-4" />
-                  Examples
-                </button>
-              )}
-            </div>
-
-            {/* Examples Drawer */}
-            {showExamplesDrawer && !message && (
-              <div className="space-y-2 animate-in slide-in-from-top duration-300 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white/60">
-                    <Sparkles className="h-4 w-4 text-brand" />
-                    <span>Try these examples:</span>
-                  </div>
-                  <button 
-                    onClick={() => setShowExamplesDrawer(false)}
-                    className="text-white/45 hover:text-white/50 transition-colors"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 gap-2">
-                  {EXAMPLE_MESSAGES.map((example, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleExampleClick(example)}
-                      className="text-left text-sm p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.07] transition-all text-white/70 font-medium"
-                    >
-                      <span className="text-brand font-bold mr-2">{idx + 1}.</span>
-                      &ldquo;{example}&rdquo;
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <Button
-                onClick={handleGenerate}
-                disabled={loading || !(message.trim() || (thread.length > 0 && thread[thread.length - 1]?.role === 'them'))}
-                className={`w-full h-14 text-base rounded-2xl font-extrabold transition-all active:scale-[0.97] disabled:opacity-25 disabled:cursor-not-allowed ${
-                  isPro
-                    ? 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
-                    : 'bg-brand text-brand-ink shadow-lg shadow-brand/20 hover:bg-brand-soft'
-                }`}
-                size="lg"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    {isPro ? (
-                      v2Step === 'drafting' ? 'Drafting...' :
-                      v2Step === 'rule-checking' ? 'Checking...' :
-                      v2Step === 'tone-verifying' ? 'Verifying...' :
-                      'Finalizing...'
-                    ) : 'Generating...'}
-                  </>
-                ) : (
-                  <>
-                    {isPro ? <Shield className="mr-2 h-5 w-5" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                    {isPro ? 'Generate Verified' : 'Generate'}
-                  </>
-                )}
-              </Button>
-
-              {/* Thread bar: Recent / New / Active indicator */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={() => { fetchThreads(); setShowThreads(!showThreads); }}
-                  className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all active:scale-95 ${
-                    showThreads
-                      ? 'bg-brand/25 text-brand border border-brand/30'
-                      : 'bg-white/[0.08] text-white/60 border border-white/[0.12] hover:bg-white/[0.14] hover:text-white/80'
-                  }`}
-                >
-                  <Clock className="h-3.5 w-3.5" />
-                  Recent{savedThreads.length > 0 ? ` (${savedThreads.length})` : ''}
-                </button>
-                <button
-                  onClick={handleNewThread}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white/[0.08] border border-white/[0.12] text-white/60 hover:bg-white/[0.14] hover:text-white/80 text-xs font-bold transition-all active:scale-95"
-                >
-                  <Plus className="h-3.5 w-3.5" /> New
-                </button>
-                {activeThreadName && (
-                  <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand/10 border border-brand/20 min-w-0">
-                    <div className="w-2 h-2 rounded-full bg-brand shrink-0" />
-                    {editingThreadName ? (
-                      <input
-                        autoFocus
-                        defaultValue={activeThreadName}
-                        className="bg-transparent text-brand text-xs font-semibold outline-none border-b border-brand/40 w-full"
-                        onBlur={(e) => handleRenameThread(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') handleRenameThread((e.target as HTMLInputElement).value); if (e.key === 'Escape') setEditingThreadName(false); }}
-                      />
-                    ) : (
-                      <span
-                        onClick={() => setEditingThreadName(true)}
-                        className="text-brand text-xs font-semibold truncate cursor-pointer hover:text-brand-soft transition-colors"
-                        title="Tap to rename"
-                      >{activeThreadName}</span>
-                    )}
-                    {saving && <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 ml-auto text-brand" />}
-                  </div>
-                )}
-                {!activeThreadName && saving && (
-                  <div className="flex items-center gap-1.5 px-3 py-2.5 text-brand text-[11px] font-medium">
-                    <div className="w-2 h-2 rounded-full bg-brand animate-pulse" /> syncing
-                  </div>
-                )}
-              </div>
-
-              {!loading && !replies.length && !thread.length && (
-                <p className="text-center text-xs text-white/55 font-medium animate-fade-in transition-opacity duration-500">
-                  {TAGLINES[currentTagline]}
-                </p>
-              )}
-            </div>
-
-            {/* Recent Threads Drawer */}
-            {showThreads && (
-              <div className="animate-in fade-in slide-in-from-top-3 duration-300">
-                <div className="rounded-3xl bg-white/[0.04] border border-white/[0.08] p-4 space-y-2">
-                  <div className="flex items-center justify-between px-1 mb-2">
-                    <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Conversations</span>
-                    <button onClick={() => setShowThreads(false)} className="text-white/45 hover:text-white/50 transition-colors">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  {savedThreads.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="w-10 h-10 mx-auto rounded-2xl bg-white/[0.05] flex items-center justify-center mb-3">
-                        <MessageCircle className="h-5 w-5 text-white/45" />
-                      </div>
-                      <p className="text-white/50 text-xs">Start a thread and it&apos;ll appear here</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1 max-h-60 overflow-y-auto">
-                      {savedThreads.map(t => {
-                        const isActive = activeCoachSessionId === t.id || activeThreadId === t.id;
-                        return (
-                        <button
-                          key={t.id}
-                          onClick={() => handleLoadThread(t)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all group text-left active:scale-[0.98] ${
-                            isActive
-                              ? 'bg-brand/15 border border-brand/20'
-                              : 'bg-white/[0.02] border border-transparent hover:bg-white/[0.05] hover:border-white/[0.06]'
-                          }`}
-                        >
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                            isActive ? 'bg-brand/20' : 'bg-white/[0.05]'
-                          }`}>
-                            <Sparkles className={`h-3.5 w-3.5 ${isActive ? 'text-brand' : 'text-white/55'}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white/80 text-sm font-semibold truncate">{t.name}</p>
-                            <p className="text-white/50 text-[11px] mt-0.5">
-                              {t.message_count} msgs · {new Date(t.updated_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteThread(t.id); }}
-                            className="relative hit-area opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/20 transition-all"
-                          >
-                            <Trash2 className="h-3 w-3 text-red-400" />
-                          </button>
-                        </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            </>)}
-
-          </div>
-
-
-        {/* ══════════ SCREENSHOT BRIEFING CARD ══════════ */}
-        {scanResult && (
-          <div className="animate-in fade-in slide-in-from-bottom-3 duration-400 mb-8">
-            {/* Context header */}
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center">
-                <Camera className="h-4 w-4 text-brand-ink" />
-              </div>
-              <div className="flex-1">
-                <p className="text-white/80 text-sm font-bold">Screenshot Briefing</p>
-                <p className="text-white/60 text-[11px]">
-                  {scanResult.messageCount} message{scanResult.messageCount !== 1 ? 's' : ''} from {scanResult.platform !== 'unknown' ? scanResult.platform : 'conversation'}
-                  {scanResult.confidence === 'high' && ' • high confidence'}
-                </p>
-              </div>
-              <button
-                onClick={() => { setScanResult(null); setScreenshotPreview(null); }}
-                className="p-2 rounded-xl bg-white/[0.06] border border-white/[0.10] text-white/55 hover:text-white/60 hover:bg-white/[0.10] transition-all"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            {/* Strategy card (Pro only) */}
-            {scanResult.strategy && (
-              <div className="mb-4 rounded-2xl bg-gradient-to-r from-emerald-500/[0.08] to-cyan-500/[0.08] border border-emerald-500/20 p-4">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <Target className="h-3.5 w-3.5 text-emerald-400" />
-                  <span className="text-emerald-300 text-[11px] font-bold uppercase tracking-widest">Your sharp friend says</span>
-                  {scanResult.strategy.move.risk !== 'low' && (
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                      scanResult.strategy.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
-                    }`}>
-                      {scanResult.strategy.move.risk} risk
-                    </span>
-                  )}
-                </div>
-                <p className="text-white/90 text-sm font-semibold leading-relaxed mb-3">
-                  {scanResult.strategy.move.one_liner}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                    scanResult.strategy.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
-                    scanResult.strategy.momentum === 'Declining' || scanResult.strategy.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
-                    'bg-white/[0.08] text-white/50'
-                  }`}>
-                    {scanResult.strategy.momentum === 'Rising' ? <TrendingUp className="h-3 w-3" /> :
-                     scanResult.strategy.momentum === 'Declining' || scanResult.strategy.momentum === 'Stalling' ? <TrendingDown className="h-3 w-3" /> :
-                     <Minus className="h-3 w-3" />}
-                    {scanResult.strategy.momentum}
-                  </span>
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">
-                    {scanResult.strategy.balance}
-                  </span>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                    scanResult.strategy.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
-                    scanResult.strategy.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
-                    'bg-brand/15 text-brand'
-                  }`}>
-                    {scanResult.strategy.move.energy.replace('_', ' ')}
-                  </span>
-                  {scanResult.strategy.move.constraints.keep_short && (
-                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">keep short</span>
-                  )}
-                  {scanResult.strategy.move.constraints.no_questions && (
-                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">no questions</span>
-                  )}
-                  {scanResult.strategy.move.constraints.add_tease && (
-                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">add tease</span>
-                  )}
-                  {scanResult.strategy.move.constraints.push_meetup && (
-                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">push meetup</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Reply options */}
-            <p className="text-white/60 text-xs font-bold uppercase tracking-[0.15em] mb-3">Your replies</p>
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden mb-4">
-              {scanResult.replies.map((reply, idx) => {
-                const config = TONE_CONFIG[reply.tone];
-                const isCopied = copied === reply.tone;
-                const label = ['A', 'B', 'C'][idx];
-                return (
-                  <div
-                    key={reply.tone}
-                    style={{ animationDelay: `${idx * 60}ms` }}
-                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
-                      isCopied ? 'bg-emerald-500/[0.08]' : 'hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <div className="flex gap-4 px-5 py-5">
-                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
-                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
-                      } transition-opacity`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 mb-2.5">
-                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
-                          <span className="text-white/50 text-[11px]">{reply.text.split(' ').length}w</span>
-                        </div>
-                        {editingReply === `scan-${reply.tone}` ? (
-                          <div className="space-y-2.5 mb-3">
-                            <textarea
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-brand/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-brand/50 transition-all min-h-[60px] text-sm leading-relaxed"
-                              placeholder="Edit this reply, add your ideas..."
-                              autoFocus
-                            />
-                            <div className="flex gap-1.5">
-                              <button
-                                onClick={() => handleRefine(reply.tone, reply.text, true)}
-                                disabled={refining || !editText.trim()}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-brand/20 border border-brand/30 text-brand hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30"
-                              >
-                                {refining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                {refining ? 'Polishing...' : 'Polish'}
-                              </button>
-                              <button
-                                onClick={() => handleUseRawEdit(reply.tone, true)}
-                                disabled={!editText.trim()}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30"
-                              >
-                                <Check className="h-3 w-3" /> Use as is
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/55 hover:text-white/50 transition-all"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
-                        )}
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleCopy(reply.text, reply.tone)}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                              isCopied
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
-                            }`}
-                          >
-                            {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
-                          </button>
-                          {editingReply !== `scan-${reply.tone}` && (
-                            <button
-                              onClick={() => handleStartEdit(`scan-${reply.tone}`, reply.text)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/55 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
-                            >
-                              <MessageCircle className="h-3 w-3" /> Edit
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={handleContinueInThread}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-brand/15 border border-brand/25 text-brand hover:bg-brand/25 text-xs font-bold transition-all active:scale-95"
-              >
-                <MessageCircle className="h-3.5 w-3.5" /> Continue in Thread
-              </button>
-              <button
-                onClick={handleRegenerateScan}
-                disabled={loading}
-                className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.10] text-xs font-bold transition-all active:scale-95 disabled:opacity-40"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Retry
-              </button>
-              <button
-                onClick={() => { setScanResult(null); setScreenshotPreview(null); }}
-                className="px-4 py-3 rounded-2xl bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.10] text-xs font-bold transition-all active:scale-95"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Replies Section */}
-        {replies.length > 0 && (
-          <div ref={replyResultsRef} className="animate-in fade-in duration-400">
-            {/* ══════════ STRATEGY COACH CARD ══════════ */}
-            {isPro && strategyData ? (
-              <div className="mb-4 rounded-2xl bg-gradient-to-r from-emerald-500/[0.08] to-cyan-500/[0.08] border border-emerald-500/20 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                    <Target className="h-3.5 w-3.5 text-emerald-400" />
-                  </div>
-                  <span className="text-emerald-300 text-[11px] font-bold uppercase tracking-widest">Strategy</span>
-                  {strategyData.move.risk !== 'low' && (
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                      strategyData.move.risk === 'high' ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-400'
-                    }`}>
-                      {strategyData.move.risk} risk
-                    </span>
-                  )}
-                </div>
-                <p className="text-white/90 text-sm font-semibold leading-relaxed mb-3">
-                  {strategyData.move.one_liner}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                    strategyData.momentum === 'Rising' ? 'bg-emerald-500/15 text-emerald-400' :
-                    strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? 'bg-red-500/15 text-red-400' :
-                    'bg-white/[0.08] text-white/50'
-                  }`}>
-                    {strategyData.momentum === 'Rising' ? <TrendingUp className="h-3 w-3" /> :
-                     strategyData.momentum === 'Declining' || strategyData.momentum === 'Stalling' ? <TrendingDown className="h-3 w-3" /> :
-                     <Minus className="h-3 w-3" />}
-                    {strategyData.momentum}
-                  </span>
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/[0.08] text-white/50">
-                    {strategyData.balance}
-                  </span>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                    strategyData.move.energy === 'pull_back' ? 'bg-orange-500/15 text-orange-400' :
-                    strategyData.move.energy === 'escalate' ? 'bg-emerald-500/15 text-emerald-400' :
-                    'bg-brand/15 text-brand'
-                  }`}>
-                    {strategyData.move.energy.replace('_', ' ')}
-                  </span>
-                  {strategyData.move.constraints.keep_short && (
-                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">keep short</span>
-                  )}
-                  {strategyData.move.constraints.no_questions && (
-                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">no questions</span>
-                  )}
-                  {strategyData.move.constraints.add_tease && (
-                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">add tease</span>
-                  )}
-                  {strategyData.move.constraints.push_meetup && (
-                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-white/[0.06] text-white/60">push meetup</span>
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-            {/* ══════════ STRATEGY CHAT ══════════ */}
-            {isPro && strategyData && (
-              <div className="mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
-                {/* Header */}
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-                  <div className="w-5 h-5 rounded-lg bg-brand/20 flex items-center justify-center">
-                    <MessageCircle className="h-3 w-3 text-brand" />
-                  </div>
-                  <span className="text-white/50 text-[11px] font-bold uppercase tracking-widest">Ask your coach</span>
-                  <span className="text-[11px] text-white/45 ml-auto">Thread context always in background</span>
-                </div>
-
-                {/* Chat history */}
-                {strategyChatHistory.length > 0 && (
-                  <div className="px-4 py-3 space-y-3 max-h-72 overflow-y-auto">
-                    {strategyChatHistory.map((msg, i) => (
-                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
-                          <div className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
-                            msg.role === 'user'
-                              ? 'bg-brand text-brand-ink rounded-br-md'
-                              : 'bg-white/[0.07] text-white/85 border border-white/[0.06] rounded-bl-md'
-                          }`}>
-                            <p className="font-medium whitespace-pre-wrap">{msg.content}</p>
-                          </div>
-                          {/* Draft replies from coach */}
-                          {msg.draft && (msg.draft.shorter || msg.draft.spicier || msg.draft.softer) && (
-                            <div className="w-full space-y-1.5 mt-1">
-                              <p className="text-[11px] text-emerald-400/70 font-bold uppercase tracking-wider px-1">Coach draft</p>
-                              {msg.draft.shorter && (
-                                <button
-                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.shorter!); toast({ title: 'Copied' }); }}
-                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-emerald-500/[0.08] border border-emerald-500/20 text-white/80 text-[13px] font-medium hover:bg-emerald-500/[0.14] transition-all active:scale-[0.98] group"
-                                >
-                                  <span className="text-[11px] text-emerald-400/60 font-bold block mb-0.5">Shorter</span>
-                                  {msg.draft.shorter}
-                                  <span className="text-[11px] text-white/45 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
-                                </button>
-                              )}
-                              {msg.draft.spicier && (
-                                <button
-                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.spicier!); toast({ title: 'Copied' }); }}
-                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-orange-500/[0.08] border border-orange-500/20 text-white/80 text-[13px] font-medium hover:bg-orange-500/[0.14] transition-all active:scale-[0.98] group"
-                                >
-                                  <span className="text-[11px] text-orange-400/60 font-bold block mb-0.5">Spicier</span>
-                                  {msg.draft.spicier}
-                                  <span className="text-[11px] text-white/45 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
-                                </button>
-                              )}
-                              {msg.draft.softer && (
-                                <button
-                                  onClick={() => { navigator.clipboard.writeText(msg.draft!.softer!); toast({ title: 'Copied' }); }}
-                                  className="w-full text-left px-3.5 py-2.5 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-white/80 text-[13px] font-medium hover:bg-blue-500/[0.14] transition-all active:scale-[0.98] group"
-                                >
-                                  <span className="text-[11px] text-blue-400/60 font-bold block mb-0.5">Softer</span>
-                                  {msg.draft.softer}
-                                  <span className="text-[11px] text-white/45 group-hover:text-white/40 ml-2 transition-colors">tap to copy</span>
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {strategyChatLoading && (
-                      <div className="flex justify-start">
-                        <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-md bg-white/[0.07] border border-white/[0.06] flex items-center gap-2">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
-                          <span className="text-[12px] text-white/40 font-medium">Thinking...</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Input row */}
-                <div className="px-3 py-3 flex items-center gap-2 border-t border-white/[0.06]">
-                  <button
-                    onClick={() => coachFileInputRef.current?.click()}
-                    disabled={coachScreenshotExtracting || strategyChatLoading}
-                    className="w-9 h-9 rounded-xl bg-white/[0.05] border border-white/[0.10] flex items-center justify-center text-white/55 hover:text-white/60 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30 shrink-0"
-                    title="Upload screenshot for context"
-                  >
-                    {coachScreenshotExtracting ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
-                    ) : (
-                      <Camera className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                  <input
-                    type="text"
-                    value={strategyChatInput}
-                    onChange={(e) => updateCoachInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleStrategyChatSend(); } }}
-                    placeholder="Ask anything or add context..."
-                    maxLength={300}
-                    disabled={strategyChatLoading || coachScreenshotExtracting}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.10] text-white/80 placeholder-white/40 text-[13px] focus:outline-none focus:border-brand/30 transition-all disabled:opacity-50"
-                  />
-                  <button
-                    onClick={handleStrategyChatSend}
-                    disabled={!strategyChatInput.trim() || strategyChatLoading}
-                    className="w-9 h-9 rounded-xl bg-brand/20 border border-brand/30 flex items-center justify-center text-brand hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
-                {/* Suggestion chips — only when no history yet */}
-                {strategyChatHistory.length === 0 && !strategyChatLoading && (
-                  <div className="px-3 pb-3 flex flex-wrap gap-1.5">
-                    {(isSocialTraffic.current
-                      ? ['Paste her message', 'Help me reply to this']
-                      : ['Should I ask what happened?', 'Is this a good time to check in?', 'How do I bring up plans?']
-                    ).map((chip) => (
-                      <button
-                        key={chip}
-                        onClick={() => { setStrategyChatInput(chip); }}
-                        className="px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-white/60 text-[11px] font-medium hover:bg-white/[0.08] hover:text-white/60 transition-all active:scale-95"
-                      >
-                        {chip}
-                      </button>
-                    ))}
-                    {isSocialTraffic.current && (
-                      <button
-                        onClick={() => coachFileInputRef.current?.click()}
-                        className="px-3 py-1.5 rounded-full bg-brand/10 border border-brand/20 text-brand/70 text-[11px] font-medium hover:bg-brand/20 hover:text-brand-soft transition-all active:scale-95"
-                      >
-                        📸 Upload screenshot
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {isPro && !strategyData && replies.length > 0 ? null : !isPro && replies.length > 0 ? (
-              <button
-                onClick={() => setShowPaywall(true)}
-                className="w-full mb-4 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.05] transition-all flex items-center gap-3 group"
-              >
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                  <Target className="h-4 w-4 text-emerald-400/50" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-white/40 text-xs font-bold">Strategy Mode</p>
-                  <p className="text-white/45 text-[11px]">AI coaching for every reply — Pro only</p>
-                </div>
-                <Lock className="h-3.5 w-3.5 text-white/45 group-hover:text-white/40 transition-colors" />
-              </button>
-            ) : null}
-
-            <div className="mb-4">
-              {showCraftedMessage && (
-                <p className={`text-[11px] font-bold uppercase tracking-widest mb-2 ${
-                  isPro ? 'text-emerald-400/60' : 'text-brand/60'
-                }`}>
-                  {isPro ? '✅ 3-agent verified • Safe to send' : 'Crafted with care'}
-                </p>
-              )}
-              <p className="text-white/60 text-xs font-bold uppercase tracking-[0.15em]">
-                {isPro ? 'Your verified replies' : 'Pick your reply'}
-              </p>
-            </div>
-
-            {!userId && replies.length > 0 && (
-              <div className="mb-4 rounded-2xl bg-brand/[0.10] border border-brand/25 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-brand/15 flex items-center justify-center shrink-0">
-                    <BookmarkPlus className="h-4 w-4 text-brand" />
-                  </div>
-                  <div>
-                    <p className="text-white/90 text-sm font-bold">Save this thread + build your Style DNA</p>
-                    <p className="text-white/50 text-xs leading-relaxed">Create a free account to keep this reply, return when they answer, and make future drafts sound more like you.</p>
-                    <p className="text-white/55 text-[11px] mt-1">Free account · no card · no inbox access</p>
-                  </div>
-                </div>
-                <Link
-                  href={`/login?mode=signup&redirect=${encodeURIComponent('/app?restore=1')}`}
-                  onClick={() => {
-                    const pending = JSON.stringify({
-                      savedAt: Date.now(),
-                      thread,
-                      replies,
-                      selectedContext,
-                      lastGeneratedMessage: lastGeneratedMessage || message,
-                    });
-                    try {
-                      sessionStorage.setItem(PENDING_THREAD_STORAGE_KEY, pending);
-                      localStorage.setItem(PENDING_THREAD_STORAGE_KEY, pending);
-                    } catch {}
-                    track('signup_cta_click', {
-                      from: 'reply_result_top',
-                      handoff: 'restore_thread',
-                      value: 'style_dna_save',
-                      source: isSocialTraffic.current ? 'social' : 'organic',
-                    });
-                  }}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand/35 border border-brand/35 text-white text-xs font-black hover:bg-brand/50 transition-all active:scale-95 whitespace-nowrap"
-                >
-                  Save + learn my style <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            )}
-
-            <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden">
-              {replies.map((reply, idx) => {
-                const config = TONE_CONFIG[reply.tone];
-                const isCopied = copied === reply.tone;
-                const label = ['A', 'B', 'C'][idx];
-                return (
-                  <div
-                    key={reply.tone}
-                    style={{ animationDelay: `${idx * 60}ms` }}
-                    className={`animate-in fade-in slide-in-from-bottom-2 w-full text-left group relative transition-all duration-200 ${
-                      isCopied
-                        ? 'bg-emerald-500/[0.08]'
-                        : 'hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <div className="flex gap-4 px-5 py-5">
-                      <div className={`w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b ${config.gradient} ${
-                        isCopied ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
-                      } transition-opacity`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2.5 mb-2.5">
-                          <span className="text-[13px] font-bold text-white/60">{config.emoji} {config.label}</span>
-                          <span className="text-white/50 text-[11px]">{reply.text ? reply.text.split(' ').length : 0}w</span>
-                          {v2Meta && v2Meta.toneChecks[reply.tone] && (
-                            <span className="text-[11px] font-bold text-blue-400/60 bg-blue-500/10 px-2 py-0.5 rounded">
-                              tone ✓
-                            </span>
-                          )}
-                        </div>
-                        {editingReply === reply.tone ? (
-                          <div className="space-y-2.5 mb-3">
-                            <textarea
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              className="w-full p-3 rounded-xl bg-white/[0.06] border border-brand/30 text-white placeholder-white/30 resize-none focus:outline-none focus:border-brand/50 transition-all min-h-[60px] text-sm leading-relaxed"
-                              placeholder="Edit this reply, add your ideas..."
-                              autoFocus
-                            />
-                            <div className="flex gap-1.5">
-                              <button
-                                onClick={() => handleRefine(reply.tone, reply.text)}
-                                disabled={refining || !editText.trim()}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-brand/20 border border-brand/30 text-brand hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30"
-                              >
-                                {refining ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                                {refining ? 'Polishing...' : 'Polish'}
-                              </button>
-                              <button
-                                onClick={() => handleUseRawEdit(reply.tone)}
-                                disabled={!editText.trim()}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10] transition-all active:scale-95 disabled:opacity-30"
-                              >
-                                <Check className="h-3 w-3" /> Use as is
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="px-3 py-2 rounded-xl text-xs font-bold text-white/55 hover:text-white/50 transition-all"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-white/90 text-[15px] font-medium leading-relaxed mb-3">{reply.text}</p>
-                        )}
-                        
-                        {/* Action buttons */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            onClick={() => handleCopy(reply.text, reply.tone)}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                              isCopied 
-                                ? 'bg-emerald-500/20 text-emerald-400' 
-                                : 'bg-white/[0.06] border border-white/[0.10] text-white/50 hover:text-white/80 hover:bg-white/[0.10]'
-                            }`}
-                          >
-                            {isCopied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy {label}</>}
-                          </button>
-                          <button
-                            onClick={() => handleMarkSent(reply)}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-brand/15 border border-brand/25 text-brand hover:bg-brand/25 transition-all active:scale-95"
-                          >
-                            <Send className="h-3.5 w-3.5" /> I sent this
-                          </button>
-                          {editingReply !== reply.tone && (
-                            <button
-                              onClick={() => handleStartEdit(reply.tone, reply.text)}
-                              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white/[0.04] border border-white/[0.08] text-white/55 hover:text-white/60 hover:bg-white/[0.08] transition-all active:scale-95"
-                            >
-                              <MessageCircle className="h-3 w-3" /> Edit
-                            </button>
-                          )}
-                          <div className="relative">
-                            <button
-                              onClick={() => setShareMenuOpen(shareMenuOpen === reply.tone ? null : reply.tone)}
-                              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 ${
-                                sharing === reply.tone
-                                  ? 'bg-brand/20 text-brand'
-                                  : 'bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/70 hover:bg-white/[0.10]'
-                              }`}
-                            >
-                              {sharing === reply.tone ? '✓ Shared' : <><Sparkles className="h-3.5 w-3.5" /> Share</>}
-                            </button>
-                            {shareMenuOpen === reply.tone && (
-                              <div className="absolute bottom-full mb-2 left-0 right-0 min-w-[180px] rounded-xl bg-raised border border-white/[0.12] overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                                <button
-                                  onClick={() => handleShareLink(reply)}
-                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2 border-b border-white/[0.06]"
-                                >
-                                  🔗 Copy Share Link
-                                </button>
-                                <button
-                                  onClick={() => handleDownloadImage(reply)}
-                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2 border-b border-white/[0.06]"
-                                >
-                                  📥 Download Image
-                                </button>
-                                <button
-                                  onClick={() => handleCopyImage(reply)}
-                                  className="w-full px-4 py-3 text-left text-xs font-medium text-white/60 hover:bg-white/[0.06] flex items-center gap-2"
-                                >
-                                  📋 Copy Image
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Regenerate + custom input */}
-            <div className="pt-3 space-y-2">
-              <button
-                onClick={handleRegenerate}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl bg-white/[0.04] border border-white/[0.10] text-white/40 hover:text-white/60 hover:bg-white/[0.08] text-xs font-bold transition-all active:scale-95 disabled:opacity-40"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-                {loading ? 'Generating...' : 'Generate different replies'}
-              </button>
-              {!showCustomSent ? (
-                <button
-                  onClick={() => setShowCustomSent(true)}
-                  className="w-full p-3.5 rounded-2xl bg-white/[0.04] border border-dashed border-white/[0.12] hover:bg-white/[0.08] hover:border-white/[0.18] transition-all text-white/40 hover:text-white/60 text-sm font-medium flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  I said something else...
-                </button>
-              ) : (
-                <div className="rounded-2xl bg-white/[0.04] border border-brand/20 p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                  <p className="text-brand text-xs font-bold">What did you actually send?</p>
-                  <textarea
-                    value={customSent}
-                    onChange={(e) => setCustomSent(e.target.value)}
-                    placeholder="Type what you sent them..."
-                    className="w-full p-3 rounded-xl bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/30 resize-none focus:outline-none focus:border-brand/30 transition-all min-h-[60px] text-sm"
-                    maxLength={500}
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleCustomSentSubmit}
-                      disabled={!customSent.trim()}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand/20 border border-brand/30 text-brand hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30"
-                    >
-                      <Send className="h-3.5 w-3.5" /> Add to thread
-                    </button>
-                    <button
-                      onClick={() => { setShowCustomSent(false); setCustomSent(''); }}
-                      className="px-4 py-2.5 rounded-xl text-xs font-bold bg-white/[0.06] border border-white/[0.10] text-white/40 hover:text-white/60 transition-all active:scale-95"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Try Again Button */}
-            <div className="text-center pt-4 animate-in fade-in duration-500 delay-300">
-              <button
-                onClick={handleTryAgain}
-                className="px-6 py-2.5 rounded-2xl bg-white/[0.06] border border-white/[0.12] text-white/50 hover:text-white/80 hover:bg-white/[0.12] font-bold text-xs transition-all active:scale-95"
-              >
-                <Sparkles className="h-3.5 w-3.5 inline mr-1.5" />
-                Try Another Message
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden animate-in fade-in duration-300">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-4 px-5 py-5">
-                <div className="w-1 shrink-0 self-stretch rounded-full bg-brand/20 animate-pulse" />
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-4 w-20 bg-white/[0.06] rounded-lg animate-pulse" />
-                    <div className="h-3 w-8 bg-white/[0.04] rounded animate-pulse" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-4 w-full bg-white/[0.06] rounded-lg animate-pulse" />
-                    <div className="h-4 w-4/5 bg-white/[0.04] rounded-lg animate-pulse" />
-                  </div>
-                  <div className="h-8 w-20 bg-white/[0.04] rounded-xl animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Empty State — Reply mode only */}
-        {appMode === 'reply' && !loading && replies.length === 0 && message === '' && (
-          <div className="text-center pt-10 pb-6 space-y-4 animate-in fade-in duration-500">
-            <p className="text-white/40 text-sm font-medium leading-relaxed max-w-[280px] mx-auto">
-              Paste what they said above and we&apos;ll craft the perfect reply.
-            </p>
-            <div className="flex items-center justify-center gap-3 text-xs font-bold text-white/50">
-              <span>them</span>
-              <span>→</span>
-              <span className="text-brand/40">you</span>
-              <span>→</span>
-              <span>send</span>
-            </div>
-          </div>
-        )}
-        {/* Room for the signed-in tab bar below scrolling modes (Coach sizes itself to fit). */}
-        {userId && appMode !== 'coach' && <div className="h-20 md:hidden" aria-hidden="true" />}
       </div>
       {userId && <AppNav />}
     </div>

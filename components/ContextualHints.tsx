@@ -6,23 +6,19 @@ import { Camera, X } from 'lucide-react';
 const STORAGE_KEY = 'tw_hint_screenshot_v2';
 
 type ContextualHintsProps = {
-  hasMessage: boolean;
-  hasReplies: boolean;
-  appMode: string;
   /** True once the person has uploaded a screenshot, so the tip is no longer news. */
   screenshotUsed?: boolean;
   onAction?: (hintId: string) => void;
 };
 
-export default function ContextualHints({ appMode, screenshotUsed = false, onAction }: ContextualHintsProps) {
+export default function ContextualHints({ screenshotUsed = false, onAction }: ContextualHintsProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (appMode !== 'coach') return;
     if (localStorage.getItem(STORAGE_KEY)) return;
     const timer = setTimeout(() => setVisible(true), 6000);
     return () => clearTimeout(timer);
-  }, [appMode]);
+  }, []);
 
   const dismiss = () => {
     setVisible(false);
