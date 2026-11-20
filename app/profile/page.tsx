@@ -21,6 +21,7 @@ type StyleStats = {
   avgWordCount: number;
   totalCopies: number;
   hasData: boolean;
+  week?: { used: number; answered: number; reported: number; bestStyle: string | null } | null;
   styleDna?: {
     sampleCount: number;
     confidence: number;
@@ -50,7 +51,24 @@ export default function ProfilePage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [confirmDeleteChats, setConfirmDeleteChats] = useState(false);
+  const [deletingChats, setDeletingChats] = useState(false);
   const { toast } = useToast();
+
+  const handleDeleteAllChats = async () => {
+    setDeletingChats(true);
+    try {
+      const res = await fetch('/api/threads?all=1', { method: 'DELETE' });
+      if (!res.ok) throw new Error('delete failed');
+      setSavedThreads([]);
+      setConfirmDeleteChats(false);
+      toast({ title: 'All chats deleted' });
+    } catch {
+      toast({ title: "Couldn't delete your chats", description: 'Try again in a moment.', variant: 'destructive' });
+    } finally {
+      setDeletingChats(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== 'DELETE') return;
@@ -283,6 +301,30 @@ export default function ProfilePage() {
               </Link>
             )}
 
+            {/* Your week: replies used, answers reported, and the style that's landing. */}
+            {styleStats?.week && (
+              <div className="rounded-2xl border border-brand/20 bg-brand/[0.05] p-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-brand/80">Your week</p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-2xl font-black text-cream">{styleStats.week.used}</p>
+                    <p className="text-xs text-sage">{styleStats.week.used === 1 ? 'reply used' : 'replies used'}</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black text-cream">
+                      {styleStats.week.reported ? `${styleStats.week.answered} of ${styleStats.week.reported}` : '—'}
+                    </p>
+                    <p className="text-xs text-sage">{styleStats.week.reported ? 'got an answer' : 'tell Coach when they reply'}</p>
+                  </div>
+                </div>
+                {styleStats.week.bestStyle && (
+                  <p className="mt-3 text-sm text-cream/90">
+                    <span className="font-bold capitalize">{styleStats.week.bestStyle}</span> replies are landing best for you this week.
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Style DNA — derived from choices, edits, and confirmed sends, never generated candidates. */}
             <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.05] p-4 space-y-3">
               <div className="flex items-start gap-3">
@@ -401,6 +443,36 @@ export default function ProfilePage() {
                     className="h-12 px-4 rounded-xl bg-brand/20 border border-brand/30 text-brand text-sm font-bold hover:bg-brand/30 transition-all active:scale-95 disabled:opacity-30 shrink-0 flex items-center justify-center">
                     {suggestionSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
                   </button>
+                </div>
+              )}
+            </div>
+
+            {/* Privacy: what's kept, and a one-step way to clear it */}
+            <div className="rounded-2xl border border-white/[0.08] p-5 space-y-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-brand" />
+                <p className="text-cream text-sm font-bold">Your privacy</p>
+              </div>
+              <p className="text-sage text-sm leading-relaxed">
+                Screenshots are read to write your reply and are never stored. Saved chats keep the text so Coach can pick up where you left off, and only you can see them.
+              </p>
+              {!confirmDeleteChats ? (
+                <button
+                  onClick={() => setConfirmDeleteChats(true)}
+                  disabled={savedThreads.length === 0}
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/[0.10] text-sm font-semibold text-sage transition-colors hover:text-cream disabled:opacity-40"
+                >
+                  <Trash2 className="h-4 w-4" /> {savedThreads.length === 0 ? 'No saved chats' : `Delete all ${savedThreads.length} saved chat${savedThreads.length === 1 ? '' : 's'}`}
+                </button>
+              ) : (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/[0.06] p-3 space-y-3">
+                  <p className="text-sm text-cream">Delete every saved chat? This can&apos;t be undone.</p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmDeleteChats(false)} className="flex-1 min-h-11 rounded-xl border border-white/[0.10] text-sm font-bold text-sage hover:text-cream">Cancel</button>
+                    <button onClick={handleDeleteAllChats} disabled={deletingChats} className="flex-1 min-h-11 rounded-xl bg-red-600/80 text-sm font-bold text-white hover:bg-red-600 disabled:opacity-50 flex items-center justify-center gap-2">
+                      {deletingChats ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delete all'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

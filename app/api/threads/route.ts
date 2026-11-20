@@ -153,6 +153,16 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
+    // "Delete all chats" in Account: removes every saved chat for this person only.
+    if (searchParams.get('all') === '1') {
+      const { error } = await adminSupabase
+        .from('saved_threads')
+        .delete()
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return NextResponse.json({ success: true });
+    }
+
     if (!id) {
       return NextResponse.json({ error: 'Thread ID is required' }, { status: 400 });
     }

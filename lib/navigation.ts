@@ -11,7 +11,8 @@ export function safeReturnPath(value: string | null | undefined, fallback = '/ap
 
 export function isSavedThreadReturn(value: string): boolean {
   const url = new URL(safeReturnPath(value), 'https://text-wingman.invalid');
-  return url.pathname === '/app' && url.searchParams.get('restore') === '1';
+  // restore=1: the homepage handoff; resume=1: a Coach chat saved before sign-up.
+  return url.pathname === '/app' && (url.searchParams.get('restore') === '1' || url.searchParams.get('resume') === '1');
 }
 
 export function confirmationReturnPath(redirectTo: string | null): string | null {
