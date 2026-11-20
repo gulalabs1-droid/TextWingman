@@ -14,7 +14,7 @@ function cookie() {
   return `sb-127-auth-token=base64-${b64({ access_token: token, token_type: 'bearer', expires_in: 3600, expires_at: expires, refresh_token: 'mock-refresh', user })}`;
 }
 
-test('checkout route prevents duplicate sessions and pauses new trials', { timeout: 60000 }, async () => {
+test('checkout is protected and chat deletion stays scoped to the signed-in user', { timeout: 60000 }, async () => {
   type Row = { user_id: string; attempt_id: string; stripe_session_id: string | null; [key: string]: unknown };
   type Session = { id: string; object: string; mode: string; status: string; url: string; client_reference_id: string; metadata: Record<string, string>; subscription: string | null };
   let guard: Row | null = null;
@@ -22,6 +22,7 @@ test('checkout route prevents duplicate sessions and pauses new trials', { timeo
   let failGuard = false;
   const sessions = new Map<string, Session>();
   const requests = new Map<string, string>();
+  const threads = new Map([['mine', userId], ['theirs', '00000000-0000-0000-0000-000000000002']]);
   const send = (res: ServerResponse, status: number, body: unknown, extra: Record<string, string> = {}) => {
     res.writeHead(status, { 'content-type': 'application/json', ...extra });
     res.end(body === null ? '' : JSON.stringify(body));
@@ -33,6 +34,14 @@ test('checkout route prevents duplicate sessions and pauses new trials', { timeo
       if (url.pathname === '/auth/v1/user') return send(res, 200, user);
       if (url.pathname === '/rest/v1/rpc/take_security_rate_limit') return send(res, 200, [{ allowed: true, retry_after_seconds: 600 }]);
       if (url.pathname === '/rest/v1/subscriptions') return send(res, 200, []);
+      if (url.pathname === '/rest/v1/saved_threads' && req.method === 'DELETE') {
+        const owner = url.searchParams.get('user_id')?.replace(/^eq\./, '');
+        const id = url.searchParams.get('id')?.replace(/^eq\./, '');
+        for (const [threadId, threadOwner] of threads) {
+          if (threadOwner === owner && (!id || id === threadId)) threads.delete(threadId);
+        }
+        return send(res, 204, null);
+      }
       if (url.pathname === '/rest/v1/checkout_guards') {
         if (failGuard) return send(res, 500, { code: 'test_failure', message: 'Unavailable' });
         if (req.method === 'POST') {
@@ -109,6 +118,13 @@ test('checkout route prevents duplicate sessions and pauses new trials', { timeo
     const checkout = (body: object, signedIn = true) => fetch(`http://127.0.0.1:${appPort}/api/checkout`, { method: 'POST', headers: { 'content-type': 'application/json', ...(signedIn ? { cookie: cookie() } : {}) }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000) });
     assert.equal((await checkout({ plan: 'monthly' }, false)).status, 401);
     assert.equal((await checkout({ plan: 'monthly', trial: true })).status, 409);
+    const deleteThreads = (query: string, signedIn = true) => fetch(`http://127.0.0.1:${appPort}/api/threads${query}`, { method: 'DELETE', headers: signedIn ? { cookie: cookie() } : {}, signal: AbortSignal.timeout(15000) });
+    assert.equal((await deleteThreads('?all=1', false)).status, 401);
+    assert.equal((await deleteThreads('?id=theirs')).status, 200);
+    assert.equal(threads.has('theirs'), true);
+    assert.equal((await deleteThreads('?all=1')).status, 200);
+    assert.equal(threads.has('mine'), false);
+    assert.equal(threads.has('theirs'), true);
     const concurrent = await Promise.all(Array.from({ length: 8 }, () => checkout({ plan: 'monthly' })));
     assert.ok(concurrent.every(response => response.status === 200), `Concurrent checkout responses: ${concurrent.map(response => response.status).join(', ')}`);
     const urls = await Promise.all(concurrent.map(async response => (await response.json()).url));

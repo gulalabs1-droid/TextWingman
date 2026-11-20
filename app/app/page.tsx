@@ -441,7 +441,7 @@ function CoachEntryCards({ threads, onUpload, onPaste, onLoadThread, highlightUp
                     )}
                   </div>
                   <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-sage/70">
-                    <Shield className="h-3 w-3" aria-hidden /> Screenshots are read, never stored.
+                    <Shield className="h-3 w-3" aria-hidden /> Screenshots are not saved in your chats.
                   </p>
                 </div>
   );

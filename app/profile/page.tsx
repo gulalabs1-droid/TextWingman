@@ -454,7 +454,7 @@ export default function ProfilePage() {
                 <p className="text-cream text-sm font-bold">Your privacy</p>
               </div>
               <p className="text-sage text-sm leading-relaxed">
-                Screenshots are read to write your reply and are never stored. Saved chats keep the text so Coach can pick up where you left off, and only you can see them.
+                Screenshots are sent to our AI provider for reading, but the images aren&apos;t saved in your chats. Saved chats can keep extracted text so Coach can pick up where you left off.
               </p>
               {!confirmDeleteChats ? (
                 <button
