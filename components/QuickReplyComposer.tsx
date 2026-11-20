@@ -694,7 +694,7 @@ export default function QuickReplyComposer({ embedded = false }: { embedded?: bo
             {!isExample && showProOffer && (
               <div className="mt-3 rounded-2xl border border-brand/30 bg-brand/10 p-4">
                 <h3 className="text-sm font-bold text-white">They replied. Keep the streak going.</h3>
-                <p className="mt-1 text-xs leading-relaxed text-white/60">Pro gives unlimited replies and Deep Analysis on every conversation.</p>
+                <p className="mt-1 text-xs leading-relaxed text-white/60">Pro gives unlimited replies and Deep Analysis for uploaded conversations.</p>
                 <Link
                   href="/pricing"
                   onClick={() => track('upgrade_clicked', { source, from: 'outcome_win' })}

@@ -1266,6 +1266,21 @@ export default function AppPage() {
 
   const coachSource = () => (isSocialTraffic.current ? 'social' : 'organic');
 
+  const refreshFreeUsage = async () => {
+    try {
+      const response = await fetch('/api/usage', { cache: 'no-store' });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.isPro) return;
+      if (typeof data.usageCount === 'number') setUsageCount(data.usageCount);
+      if (typeof data.remaining === 'number') setRemainingReplies(data.remaining);
+      if (typeof data.limit === 'number') setUsageLimit(data.limit);
+      setNextFreeAt(typeof data.nextFreeAt === 'string' ? data.nextFreeAt : null);
+    } catch {
+      // Keep the last known count if the refresh is temporarily unavailable.
+    }
+  };
+
   // One "generated" event per Coach answer that contains replies someone could send.
   const logCoachGenerated = (engine: 'fast' | 'verified' | 'deep', replyCount: number): string => {
     const runId = createReplyGenerationId();
@@ -1570,6 +1585,7 @@ export default function AppPage() {
         } finally {
           setStrategyChatLoading(false);
           setCoachPipelineStep(null);
+          if (!isPro) void refreshFreeUsage();
         }
       } else {
         toast({ title: "Couldn't read that screenshot", description: 'Try a clearer one, or paste the messages.', variant: 'destructive' });
@@ -1706,6 +1722,7 @@ export default function AppPage() {
     } finally {
       clearTimeout(timeout);
       setStrategyChatLoading(false);
+      if (!isPro) void refreshFreeUsage();
     }
   };
 
