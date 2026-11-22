@@ -25,5 +25,6 @@ test('Court is described as a real community vote and linked from the features p
   assert.match(court, /COMMUNITY VOTE/);
   assert.match(features, /href="\/court"/);
   assert.doesNotMatch(`${homepage}\n${court}`, /local preview|not a live audience vote|preview is not recorded/i);
-  assert.match(CHANGELOG[0].title, /Culture/);
+  // The Culture release stays in the changelog even as newer releases land on top.
+  assert.ok(CHANGELOG.some(entry => /Culture/.test(entry.title)));
 });

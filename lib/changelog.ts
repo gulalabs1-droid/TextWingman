@@ -10,6 +10,23 @@ export type ChangelogEntry = {
 // Add new entries at the TOP of this array (newest first)
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '5.0.0',
+    date: '2026-11-21',
+    title: 'A Smarter, Simpler Coach',
+    description: 'One place for every conversation. Coach now knows who you\'re talking to, sounds more like you, and gets out of your way.',
+    type: 'milestone',
+    highlights: [
+      'Coach reads who you\'re talking to from your screenshot and names the chat after them',
+      'Replies learn your texting style and which kinds of replies get answers',
+      'Tap Shorter, Warmer, Bolder or More casual to rework any set of drafts',
+      'Talk instead of type: dictate a message with the mic in Coach',
+      'Share a reply as a card that previews right in iMessage, X and Instagram',
+      'Tap any screenshot to see it full size; paste or drop screenshots straight into Coach',
+      'Screenshots are read, never stored, and you can delete every saved chat in one tap',
+      'Faster pages everywhere, and a calmer app with fewer pop-ups',
+    ],
+  },
+  {
     version: '4.10.0',
     date: '2026-11-11',
     title: 'The Culture Has Entered the Chat',

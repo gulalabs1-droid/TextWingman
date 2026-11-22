@@ -11,6 +11,9 @@ import styles from './homepage.module.css';
 const faqs = [
   { question: 'Can I try it without signing up?', answer: `Yes. Paste a message and get three reply options without an account or card. Free users get ${FREE_REPLY_LIMIT} uses per ${REPLY_USAGE_WINDOW_HOURS} hours, shared between reply generations and coach messages.` },
   { question: 'Does it send messages or connect to my inbox?', answer: 'No. Text Wingman only sees the text or screenshot you choose to share. You copy, edit and send the reply yourself. Remove names, phone numbers and anything private first.' },
+  { question: 'Do you keep my screenshots?', answer: 'No. Screenshots are read to write your reply and are never stored. If you save a chat, only its text is kept so Coach can pick up where you left off, and you can delete every saved chat from your account in one tap.' },
+  { question: 'Does it learn how I text?', answer: 'Yes. The replies you copy, edit and send teach Coach your usual length and style, and which kinds of replies are getting answers, so suggestions sound more like you over time. It learns from patterns, not from storing your messages.' },
+  { question: 'Is it only for dating?', answer: 'No. Coach works for a crush, a new match, friends, family, an ex, or your boss. Upload a screenshot and it works out who you\'re talking to, or pick it yourself.' },
   { question: 'Will it know what the other person means?', answer: 'It can suggest possibilities from the context you provide, not read minds. Replies are drafts, not guarantees of a response or a date.' },
   { question: 'How is this different from a general chatbot?', answer: 'Text Wingman puts the conversation, three reply options, editing and saved threads in one focused texting workspace.' },
   { question: 'What happens when I create an account?', answer: 'A free account lets you keep the conversation and return when they answer. Pro is optional and is not required to try your first replies.' },
