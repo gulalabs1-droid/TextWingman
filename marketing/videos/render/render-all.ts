@@ -64,6 +64,10 @@ for (const script of selected) {
     "--log",
     "warn",
   ];
+  // Chrome Headless Shell can't find its data files when the project path contains
+  // spaces. Point at a copy elsewhere with --browser=<path> or REMOTION_BROWSER_EXECUTABLE.
+  const browserExecutable = getFlag("browser") || process.env.REMOTION_BROWSER_EXECUTABLE;
+  if (browserExecutable) command.push("--browser-executable", browserExecutable);
 
   console.log(`${dryRun ? "Would render" : "Rendering"} ${fileName}`);
 

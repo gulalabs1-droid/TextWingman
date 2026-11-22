@@ -8,20 +8,25 @@ import {
 } from "remotion";
 import type { VideoProps } from "./types";
 
+// The Text Wingman palette: ink background, cream text, lime as the one accent.
+// `purple` and `pink` keep their names so the templates below stay unchanged,
+// but they now hold the brand lime and its soft tint.
 const brand = {
-  ink: "#f9fafb",
-  muted: "rgba(249, 250, 251, 0.68)",
-  quiet: "rgba(249, 250, 251, 0.42)",
+  ink: "#f5f7ec",
+  muted: "rgba(245, 247, 236, 0.70)",
+  quiet: "rgba(245, 247, 236, 0.45)",
   panel: "rgba(255, 255, 255, 0.075)",
   line: "rgba(255, 255, 255, 0.14)",
-  purple: "#9b5cff",
-  pink: "#ec5fc7",
+  purple: "#d3ff68",
+  pink: "#e4ffad",
+  limeInk: "#14200e",
+  bg: "#0b0f0c",
   green: "#34d399",
   red: "#fb7185",
   gold: "#fbbf24",
 };
 
-const accents = ["#9b5cff", "#14b8a6", "#f97316", "#38bdf8", "#ec5fc7"];
+const accents = ["#d3ff68", "#bef264", "#a3e635", "#d9f99d", "#86efac"];
 
 const scriptNumber = (scriptId: string) => {
   const [, numeric] = scriptId.split("-");
@@ -80,7 +85,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
       style={{
         overflow: "hidden",
         background:
-          `radial-gradient(circle at ${26 + drift / 9}% 10%, ${accent}47, transparent 32%), radial-gradient(circle at 82% 26%, rgba(236,95,199,0.24), transparent 30%), linear-gradient(180deg, #050508 0%, #0b0c12 50%, #050508 100%)`,
+          `radial-gradient(circle at ${26 + drift / 9}% 10%, ${accent}47, transparent 32%), radial-gradient(circle at 82% 26%, rgba(211,255,104,0.10), transparent 30%), linear-gradient(180deg, #070a08 0%, #0b0f0c 50%, #070a08 100%)`,
         color: brand.ink,
         fontFamily:
           'ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
@@ -154,16 +159,22 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
               width: 58,
               height: 58,
               borderRadius: 18,
-              background: `linear-gradient(135deg, ${accent}, ${brand.pink})`,
+              background: brand.purple,
               display: "grid",
               placeItems: "center",
-              boxShadow: `0 16px 40px ${accent}55`,
-              fontSize: 30,
+              boxShadow: `0 16px 40px ${brand.purple}40`,
+              transform: "rotate(-8deg)",
             }}
           >
-            TW
+            <svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke={brand.limeInk} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
+              <path d="m22 2-7 20-4-9-9-4Z" />
+              <path d="M22 2 11 13" />
+            </svg>
           </div>
-          <div style={{ fontSize: 34 }}>Text Wingman</div>
+          <div style={{ fontSize: 34, letterSpacing: -1 }}>
+            <span style={{ fontWeight: 500 }}>text</span>
+            <span style={{ fontWeight: 900, color: brand.purple }}>wingman</span>
+          </div>
         </div>
         <div
           style={{
@@ -293,9 +304,9 @@ const Bubble: React.FC<{
     tone === "bad"
       ? "rgba(251,113,133,0.16)"
       : tone === "good"
-        ? "linear-gradient(135deg, rgba(155,92,255,0.95), rgba(236,95,199,0.92))"
+        ? brand.purple
         : isYou
-          ? "rgba(155,92,255,0.22)"
+          ? "rgba(211,255,104,0.14)"
           : "rgba(255,255,255,0.10)";
   return (
     <div
@@ -319,7 +330,7 @@ const Bubble: React.FC<{
             tone === "bad"
               ? `2px solid rgba(251,113,133,0.35)`
               : "2px solid rgba(255,255,255,0.10)",
-          color: brand.ink,
+          color: tone === "good" ? brand.limeInk : brand.ink,
           fontSize: children.length > 56 ? 29 : 34,
           lineHeight: 1.18,
           fontWeight: tone === "good" ? 800 : 650,
@@ -378,13 +389,13 @@ const CTA: React.FC<{ text: string }> = ({ text }) => {
         style={{
           borderRadius: 30,
           padding: "28px 34px",
-          background: `linear-gradient(135deg, ${brand.purple}, ${brand.pink})`,
-          color: "white",
+          background: brand.purple,
+          color: brand.limeInk,
           fontSize: 40,
           lineHeight: 1.05,
           fontWeight: 950,
           textAlign: "center",
-          boxShadow: "0 26px 70px rgba(155,92,255,0.35)",
+          boxShadow: "0 26px 70px rgba(211,255,104,0.25)",
         }}
       >
         {text}
@@ -748,7 +759,7 @@ const ReplyCard: React.FC<{
     tone === "bad" ? brand.red : tone === "good" ? brand.green : brand.gold;
   const background =
     tone === "good"
-      ? "linear-gradient(135deg, rgba(155,92,255,0.92), rgba(236,95,199,0.88))"
+      ? brand.purple
       : tone === "bad"
         ? "rgba(251,113,133,0.14)"
         : "rgba(251,191,36,0.13)";
@@ -762,13 +773,13 @@ const ReplyCard: React.FC<{
         ...style,
       }}
     >
-      <MiniKicker label={label} color={tone === "good" ? "#d1fae5" : color} />
+      <MiniKicker label={label} color={tone === "good" ? brand.limeInk : color} />
       <div
         style={{
           fontSize: text.length > 48 ? 31 : 37,
           lineHeight: 1.13,
           fontWeight: 920,
-          color: brand.ink,
+          color: tone === "good" ? brand.limeInk : brand.ink,
         }}
       >
         {text}

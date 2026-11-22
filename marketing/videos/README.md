@@ -48,6 +48,15 @@ Preview what would render:
 npm run videos:render -- --limit=10 --dry-run
 ```
 
+If a render hangs or fails with `icudtl.dat not found in bundle` or `Target closed`, the cause is the space in this
+project's folder name: Chrome Headless Shell can't find its data files under such a path. Copy the browser somewhere
+without spaces and point the scripts at it:
+
+```bash
+cp -R node_modules/.remotion/chrome-headless-shell/mac-arm64/chrome-headless-shell-mac-arm64 /tmp/chs
+REMOTION_BROWSER_EXECUTABLE=/tmp/chs/chrome-headless-shell npm run videos:render -- --id=tw-501
+```
+
 Outputs land in:
 
 ```text
