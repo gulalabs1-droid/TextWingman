@@ -12,7 +12,8 @@ export type VideoTemplate =
   | "comment-bait"
   | "funeral"
   | "speedrun"
-  | "coach-scorecard";
+  | "coach-scorecard"
+  | "moment";
 
 export type VideoScript = {
   id: string;
@@ -28,6 +29,10 @@ export type VideoScript = {
   cta: string;
   campaign: string;
   contentSlug: string;
+  /** Small label above the hook; defaults to "STOP THE FUMBLE". */
+  kicker?: string;
+  /** Their reply after you sent the good one (the "moment" template's payoff). */
+  outcome?: string;
 };
 
 export type VideoProps = {

@@ -22,6 +22,7 @@ const validTemplates = new Set([
   "funeral",
   "speedrun",
   "coach-scorecard",
+  "moment",
 ]);
 const errors: string[] = [];
 const warnings: string[] = [];
@@ -61,6 +62,9 @@ for (const script of scripts) {
   if (script.goodReply.length > 74) warnings.push(`${prefix}: good reply is long`);
   if (script.badReply.length > 74) warnings.push(`${prefix}: bad reply is long`);
   if (script.why.length > 78) warnings.push(`${prefix}: why line is long`);
+  if (script.outcome && script.outcome.length > 74) warnings.push(`${prefix}: outcome is long`);
+  if (script.kicker && script.kicker.length > 28) warnings.push(`${prefix}: kicker is long`);
+  if (script.template === "moment" && !script.outcome) errors.push(`${prefix}: the moment template needs an outcome`);
 }
 
 const duplicateIds = scripts

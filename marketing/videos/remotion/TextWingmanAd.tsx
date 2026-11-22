@@ -194,7 +194,7 @@ const Shell: React.FC<{ children: React.ReactNode; scriptId: string }> = ({
   );
 };
 
-const Hook: React.FC<{ text: string; delay?: number }> = ({ text, delay = 8 }) => {
+const Hook: React.FC<{ text: string; delay?: number; kicker?: string; soft?: boolean }> = ({ text, delay = 8, kicker = "STOP THE FUMBLE", soft = false }) => {
   const frame = useCurrentFrame();
   const amount = pop(frame, delay);
   return (
@@ -214,15 +214,15 @@ const Hook: React.FC<{ text: string; delay?: number }> = ({ text, delay = 8 }) =
           margin: "0 auto 20px",
           borderRadius: 999,
           padding: "10px 18px",
-          background: "rgba(251,191,36,0.14)",
-          border: "2px solid rgba(251,191,36,0.32)",
-          color: brand.gold,
+          background: soft ? "rgba(211,255,104,0.12)" : "rgba(251,191,36,0.14)",
+          border: soft ? "2px solid rgba(211,255,104,0.30)" : "2px solid rgba(251,191,36,0.32)",
+          color: soft ? brand.purple : brand.gold,
           fontSize: 20,
           fontWeight: 950,
           letterSpacing: 1.1,
         }}
       >
-        STOP THE FUMBLE
+        {kicker}
       </div>
       <FitText
         maxChars={52}
@@ -415,9 +415,10 @@ const CTA: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-const WhyBar: React.FC<{ text: string; delay?: number }> = ({
+const WhyBar: React.FC<{ text: string; delay?: number; label?: string }> = ({
   text,
   delay = 350,
+  label = "WHY IT WORKS",
 }) => {
   const frame = useCurrentFrame();
   const amount = pop(frame, delay);
@@ -437,7 +438,7 @@ const WhyBar: React.FC<{ text: string; delay?: number }> = ({
       }}
     >
       <div style={{ color: brand.green, fontSize: 22, fontWeight: 950 }}>
-        WHY IT WORKS
+        {label}
       </div>
       <div
         style={{
@@ -1344,6 +1345,108 @@ const CoachScorecardTemplate: React.FC<VideoProps> = ({ script }) => {
   );
 };
 
+// "They're typing…" before their reply lands.
+const TypingDots: React.FC<{ delay: number }> = ({ delay }) => {
+  const frame = useCurrentFrame();
+  return (
+    <div style={{ display: "flex", marginBottom: 22, opacity: ease(frame, delay, delay + 8) }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          borderRadius: 30,
+          borderBottomLeftRadius: 8,
+          padding: "26px 30px",
+          background: "rgba(255,255,255,0.10)",
+          border: "2px solid rgba(255,255,255,0.10)",
+        }}
+      >
+        {[0, 1, 2].map((dot) => (
+          <div
+            key={dot}
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: 999,
+              background: brand.ink,
+              opacity: 0.35 + 0.65 * Math.max(0, Math.sin((frame - delay) / 4 - dot * 0.9)),
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// A heartfelt story: what they sent, the draft you almost sent (crossed out),
+// what you sent instead, and how they answered. Labelled as a dramatization,
+// because the outcome is a story, not a promise.
+const MomentTemplate: React.FC<VideoProps> = ({ script }) => {
+  const frame = useCurrentFrame();
+  const struck = ease(frame, 176, 198);
+  const replyAt = 300;
+  const replied = frame >= replyAt + 34;
+  return (
+    <Shell scriptId={script.id}>
+      <Hook text={script.hook} kicker={script.kicker || "SAY THE REAL THING"} soft />
+      <Phone>
+        <Bubble side="them" delay={54}>
+          {script.incoming}
+        </Bubble>
+        <Tag label="what you almost sent" color={brand.quiet} delay={100} />
+        <div style={{ position: "relative", opacity: 1 - struck * 0.55 }}>
+          <Bubble side="you" tone="bad" delay={120}>
+            {script.badReply}
+          </Bubble>
+          <div
+            style={{
+              position: "absolute",
+              left: "24%",
+              right: 8,
+              top: "42%",
+              height: 5,
+              borderRadius: 5,
+              background: brand.red,
+              transform: `scaleX(${struck})`,
+              transformOrigin: "left",
+            }}
+          />
+        </div>
+        <Tag label="what you sent" color={brand.purple} delay={212} style={{ marginTop: 10 }} />
+        <Bubble side="you" tone="good" delay={234}>
+          {script.goodReply}
+        </Bubble>
+        {script.outcome ? (
+          replied ? (
+            <Bubble side="them" delay={replyAt + 34}>
+              {script.outcome}
+            </Bubble>
+          ) : (
+            frame >= replyAt && <TypingDots delay={replyAt} />
+          )
+        ) : null}
+      </Phone>
+      <WhyBar text={script.why} delay={372} label="WHY IT LANDS" />
+      <CTA text={script.cta} />
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 92,
+          textAlign: "center",
+          fontSize: 19,
+          fontWeight: 700,
+          color: brand.quiet,
+          opacity: ease(frame, 430, 455),
+        }}
+      >
+        Dramatization. Fictional example.
+      </div>
+    </Shell>
+  );
+};
+
 export const TextWingmanAd: React.FC<VideoProps> = ({ script }) => {
   switch (script.template) {
     case "group-chat":
@@ -1372,6 +1475,8 @@ export const TextWingmanAd: React.FC<VideoProps> = ({ script }) => {
       return <SpeedrunTemplate script={script} />;
     case "coach-scorecard":
       return <CoachScorecardTemplate script={script} />;
+    case "moment":
+      return <MomentTemplate script={script} />;
     default:
       return <WrongRightTemplate script={script} />;
   }
