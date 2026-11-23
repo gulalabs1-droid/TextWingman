@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/site';
+import { SEO_GUIDES } from '@/lib/seo-guides';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date().toISOString();
@@ -8,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
     { url: `${SITE_URL}/features`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${SITE_URL}/guides`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/court`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/dont-send-that`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
     { url: `${SITE_URL}/after-dark`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
@@ -19,13 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
   ];
 
-  // Programmatic SEO pages — "how to reply to..." scenarios
-  const seoSlugs = [
-    'wyd-text', 'left-on-read', 'dry-texter', 'ex-texted-back', 'first-message-dating-app',
-    'goodnight-text', 'lol-response', 'one-word-replies', 'she-said-shes-busy',
-    'how-to-flirt-over-text', 'revive-dead-conversation', 'double-texting',
-    'what-to-say-after-first-date', 'respond-to-hey', 'he-hasnt-texted-back',
-  ];
+  const seoSlugs = SEO_GUIDES.map(guide => guide.slug);
 
   const seoPages: MetadataRoute.Sitemap = seoSlugs.map(slug => ({
     url: `${SITE_URL}/guides/${slug}`,

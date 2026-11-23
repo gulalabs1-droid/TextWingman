@@ -41,6 +41,7 @@ const BEACON_EVENTS = new Set([
   'checkout_start',
   'checkout_complete',
   'checkout_error',
+  'guide_cta_click',
 ]);
 
 let memoryVisitorId: string | null = null;

@@ -58,6 +58,7 @@ const CLIENT_EVENTS = new Set([
   'paywall_viewed', 'paywall_dismissed', 'screenshot_preview_opened', 'reply_shared',
   'voice_input_started', 'voice_input_failed', 'draft_tweaked', 'recap_viewed',
   'share_card_cta_click', 'sign_in_started', 'sign_in_completed',
+  'guide_cta_click',
   'auth_code_sent', 'auth_code_failed', 'onboarding_started',
   'onboarding_completed', 'first_run_start',
 ]);
