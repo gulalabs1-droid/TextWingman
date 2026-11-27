@@ -63,6 +63,18 @@ Outputs land in:
 marketing/videos/output/
 ```
 
+## Product demo
+
+`ProductDemo` (in `remotion/ProductDemo.tsx`) is a 28-second walkthrough of the real Coach screen: "sorry been busy",
+the paragraph you almost send, the screenshot in Coach, the detected Crush chip, Coach's read, three drafts, Copy, and
+their reply. Render it with:
+
+```bash
+npx remotion render marketing/videos/remotion/Root.tsx ProductDemo marketing/videos/output/tw-513-sorry-been-busy-product-demo.mp4
+```
+
+Add `--browser-executable=<path>` when the project path has spaces (see above).
+
 ## Creative System
 
 Each script in `scripts.json` contains:
